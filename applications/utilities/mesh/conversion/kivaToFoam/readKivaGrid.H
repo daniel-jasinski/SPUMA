@@ -148,7 +148,7 @@ for (label i=0; i<nPoints; i++)
                     end = pointMap[end];
                 }
 
-                label minLabel = min(start, end);
+                label minLabel = Foam::min(start, end);
 
                 pointMap[start] = pointMap[end] = minLabel;
             }
@@ -331,7 +331,7 @@ if
     {
         forAll(pf, pfi)
         {
-            minz = min(minz, points[pf[pfi]].z());
+            minz = Foam::min(minz, points[pf[pfi]].z());
         }
     }
 
@@ -344,7 +344,7 @@ if
         scalar minfz = GREAT;
         forAll(pf, pfi)
         {
-            minfz = min(minfz, points[pf[pfi]].z());
+            minfz = Foam::min(minfz, points[pf[pfi]].z());
         }
 
         if (minfz > minz)
@@ -371,7 +371,7 @@ if
         scalar minfz = GREAT;
         forAll(pf, pfi)
         {
-            minfz = min(minfz, points[pf[pfi]].z());
+            minfz = Foam::min(minfz, points[pf[pfi]].z());
         }
 
         if (minfz < zHeadMin)
