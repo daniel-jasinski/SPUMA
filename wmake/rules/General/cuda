@@ -27,13 +27,9 @@ CU_LIB_HEADER_DIRS = \
      $(GINC) \
      $(SYS_INC)
 
-cuEXP =
-
 cuFLAGS    = \
     $(cuARCH) $(GFLAGS) $(cuWARN) $(cuOPT) $(cuDBUG) $(ptFLAGS) \
     $(FOAM_EXTRA_CXXFLAGS) $(CU_LIB_HEADER_DIRS)
-
-cuFLAGS += $(cuEXP) 
 
 cutoo       = $(WM_SCHEDULER) $(NVCC) $(cuFLAGS) -c $< -o $@
 
