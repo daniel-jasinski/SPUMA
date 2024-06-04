@@ -26,3 +26,14 @@ ifeq (libo,$(FOAM_LINK_DUMMY_PSTREAM))
 else
     LIB_LIBS += -L$(FOAM_LIBBIN)/dummy -lPstream
 endif
+
+LIB_LIBS += -lcudart -lcusparse
+ifneq (,$(findstring true,$(have_cuda)))
+    c++FLAGS += -Dhave_cuda
+
+    ifneq (,$(findstring true,$(have_managed)))
+        c++FLAGS += -Dhave_managed
+    endif
+
+endif
+

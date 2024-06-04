@@ -31,6 +31,14 @@ $(fileOps)/collatedFileOperation/hostCollatedFileOperation.C
 $(fileOps)/collatedFileOperation/threadedCollatedOFstream.C
 $(fileOps)/collatedFileOperation/OFstreamCollator.C
 
+db/error/cudaError.cu
+pool = memoryPool
+$(pool)/cudaManagedMemoryPoolExecutor.cu
+$(pool)/MemoryPool.C
+$(pool)/fixedSizeMemoryPool.C
+$(pool)/dummyMemoryPool.C
+
+
 parallel/processorTopology/processorTopology.C
 
 bools = primitives/bools

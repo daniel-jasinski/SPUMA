@@ -68,7 +68,7 @@ export WM_COMPILER_TYPE=system
 # [WM_COMPILER] - Compiler:
 # = Gcc | Clang | Icc | Icx | Amd | Arm | Cray | Fujitsu | Nvidia |
 #   Gcc<digits> | Clang<digits>
-export WM_COMPILER=Gcc
+export WM_COMPILER=Nvidia
 
 # [WM_PRECISION_OPTION] - Floating-point precision:
 # = DP | SP | SPDP
@@ -133,7 +133,7 @@ projectDir="$HOME/OpenFOAM/OpenFOAM-$WM_PROJECT_VERSION"
 # [FOAM_SIGFPE] - Trap floating-point exceptions.
 #               - overrides the 'trapFpe' controlDict entry
 # = true | false
-#export FOAM_SIGFPE=true
+export FOAM_SIGFPE=false
 
 # [FOAM_SETNAN] - Initialize memory with NaN
 #               - overrides the 'setNaN' controlDict entry
@@ -160,7 +160,7 @@ projectDir="$HOME/OpenFOAM/OpenFOAM-$WM_PROJECT_VERSION"
 # = 32 | 64
 #   * on a 64-bit OS this can be 32 or 64
 #   * on a 32-bit OS this option is ignored (always 32-bit)
-#export WM_ARCH_OPTION=64
+export WM_ARCH_OPTION=64
 
 # [FOAM_EXTRA_CFLAGS, FOAM_EXTRA_CXXFLAGS, FOAM_EXTRA_LDFLAGS]
 # Additional compilation flags - do not inherit from the environment.
