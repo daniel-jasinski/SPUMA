@@ -50,6 +50,10 @@ namespace Foam
 
 typedef Field<vector> vectorField;
 
+// executor functions
+
+template<>
+void vectorField::negate();
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 //- Inplace normalise (float) vector field

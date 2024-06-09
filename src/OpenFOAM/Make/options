@@ -29,10 +29,10 @@ endif
 
 LIB_LIBS += -lcudart -lcusparse
 ifneq (,$(findstring true,$(have_cuda)))
-    c++FLAGS += -Dhave_cuda
+    EXE_INC += -Dhave_cuda
 
     ifneq (,$(findstring true,$(have_managed)))
-        c++FLAGS += -Dhave_managed
+        EXE_INC += -Dhave_managed
     endif
 
 endif

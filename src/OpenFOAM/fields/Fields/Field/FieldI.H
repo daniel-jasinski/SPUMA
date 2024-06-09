@@ -37,21 +37,21 @@ inline constexpr Foam::Field<Type>::Field() noexcept
 template<class Type>
 inline Foam::Field<Type>::Field(const label len)
 :
-    List<Type>(len)
+    List<Type>(len, poolSwitch(1))
 {}
 
 
 template<class Type>
 inline Foam::Field<Type>::Field(const label len, const Type& val)
 :
-    List<Type>(len, val)
+    List<Type>(len, val, poolSwitch(1))
 {}
 
 
 template<class Type>
 inline Foam::Field<Type>::Field(const label len, const Foam::zero)
 :
-    List<Type>(len, Foam::zero{})
+    List<Type>(len, Foam::zero{}, poolSwitch(1))
 {}
 
 
@@ -75,14 +75,14 @@ inline Foam::Field<Type>::Field(const Foam::one, const Foam::zero)
     List<Type>(Foam::one{}, Foam::zero{})
 {}
 
-
+// TODO memoryPool
 template<class Type>
 inline Foam::Field<Type>::Field(const Field<Type>& fld)
 :
     List<Type>(fld)
 {}
 
-
+// TODO memoryPool
 template<class Type>
 inline Foam::Field<Type>::Field(const UList<Type>& list)
 :

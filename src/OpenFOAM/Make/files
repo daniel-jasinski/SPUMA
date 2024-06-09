@@ -34,6 +34,7 @@ $(fileOps)/collatedFileOperation/OFstreamCollator.C
 db/error/cudaError.cu
 pool = memoryPool
 $(pool)/cudaManagedMemoryPoolExecutor.cu
+$(pool)/cudaMemoryPoolExecutor.cu
 $(pool)/MemoryPool.C
 $(pool)/fixedSizeMemoryPool.C
 $(pool)/dummyMemoryPool.C
@@ -768,6 +769,7 @@ fields/cloud/cloud.C
 Fields = fields/Fields
 
 $(Fields)/Field/FieldBase.C
+$(Fields)/Field/cudaFieldExecutor.cu
 $(Fields)/boolField/boolField.C
 $(Fields)/boolField/boolIOField.C
 $(Fields)/labelField/labelField.C

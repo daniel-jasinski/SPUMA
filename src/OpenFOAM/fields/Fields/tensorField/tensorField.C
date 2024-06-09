@@ -38,6 +38,20 @@ License
 namespace Foam
 {
 
+// executor functions
+template<>
+void tensorField::negate()
+{   
+    if (this->usePool())
+    {
+        this->exec->negate(this->begin(),this->size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_OP_F(tensor, *this, =, -, tensor, *this);
+    };
+
+};
 // * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
 
 UNARY_FUNCTION(scalar, tensor, tr)

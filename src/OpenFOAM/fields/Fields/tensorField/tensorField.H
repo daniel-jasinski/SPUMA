@@ -54,6 +54,9 @@ namespace Foam
 
 typedef Field<tensor> tensorField;
 
+// executor functions
+template<>
+void tensorField::negate();
 // * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
 
 //- Zip together tensor field from components

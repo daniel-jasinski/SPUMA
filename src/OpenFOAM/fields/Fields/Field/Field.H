@@ -54,15 +54,36 @@ SourceFiles
 #include "VectorSpace.H"
 #include "IOobjectOption.H"
 
+#include "FieldExecutor.H"
+#include <type_traits>
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+//traits helper
+
+// Base case: no types left to check
+template<typename T, typename... Ts>
+struct is_one_of;
+
+// Recursive case
+template<typename T, typename First, typename... Rest>
+struct is_one_of<T, First, Rest...> 
+    : std::conditional_t<std::is_same<T, First>::value, std::true_type, is_one_of<T, Rest...>> {};
+
+// Base case: when the list of types is empty
+template<typename T>
+struct is_one_of<T> : std::false_type {};
+
 
 // Forward Declarations
 class FieldMapper;
 class dictionary;
 class entry;
+
+template <typename Type, typename Enable = void>
+class FieldTypeBase;
 
 template<class Type> class Field;
 template<class Type> class SubField;
@@ -100,6 +121,35 @@ public:
         {}
 };
 
+//- Type dependant data members
+template<typename Type, typename Enable>
+class FieldTypeBase {};
+
+template<typename Type>
+class FieldTypeBase<Type,
+typename std::enable_if<is_one_of<Type,scalar,vector,tensor>::value>::type>
+//typename std::enable_if<std::is_same<Type,scalar>::value>::type>
+{
+protected:
+    //FieldExecutor<Type>* exec;
+public:
+    /*FieldTypeBase():
+    #ifdef have_cuda
+    exec(FieldExecutor<Type>::New("cuda"))
+    #else
+    exec(FieldExecutor<Type>::New("cpu"))
+    #endif
+    {};
+    
+    ~FieldTypeBase() {delete exec;};*/
+
+    #ifdef have_cuda
+        autoPtr<cudaFieldExecutor<Type>> exec = autoPtr<cudaFieldExecutor<Type>>::New(); 
+    #else
+        autoPtr<cpuFieldExecutor<Type>> exec = autoPtr<cpuFieldExecutor<Type>>::New(); 
+    #endif
+
+};
 
 /*---------------------------------------------------------------------------*\
                            Class Field Declaration
@@ -109,6 +159,7 @@ template<class Type>
 class Field
 :
     public FieldBase,
+    public FieldTypeBase<Type>,
     public List<Type>
 {
 public:
@@ -139,9 +190,11 @@ public:
         //- Construct given size
         //  For temporary fields that are initialised after construction
         inline explicit Field(const label len);
+        //inline explicit Field(const label len, poolSwitch usePool = false);
 
         //- Construct given size and initial value
         inline Field(const label len, const Type& val);
+        //inline Field(const label len, const Type& val, poolSwitch usePool = false);
 
         //- Construct given size and initial values of zero
         inline Field(const label len, const Foam::zero);

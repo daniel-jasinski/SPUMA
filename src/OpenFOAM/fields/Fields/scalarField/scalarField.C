@@ -40,6 +40,21 @@ Description
 namespace Foam
 {
 
+// executor functions
+template<>
+void scalarField::negate()
+{   
+    if (this->usePool())
+    {
+        this->exec->negate(this->begin(),this->size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_OP_F(scalar, *this, =, -, scalar, *this);
+    };
+
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 template<>
