@@ -66,6 +66,7 @@ namespace Foam
 
 // Forward Declarations
 class labelRange;
+//class MemmoryPool;
 
 template<class T> class List;
 template<class T> class SubList;
@@ -97,7 +98,8 @@ class UList
 
         //- Vector of values of type T
         T* __restrict__ v_;
-
+        
+        bool usePool_;
 
 protected:
 
@@ -238,11 +240,12 @@ public:
         inline constexpr UList() noexcept;
 
         //- Construct from components
-        inline UList(T* __restrict__ v, const label len) noexcept;
+        inline UList(T* __restrict__ v, const label len, bool usePool = false) noexcept;
 
 
     // Member Functions
-
+        // Query memory management
+            inline bool usePool() const noexcept { return usePool_; };
         // Access
 
             //- The forward circular index. The next index in the list

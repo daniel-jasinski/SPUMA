@@ -34,7 +34,17 @@ inline void Foam::List<T>::doAlloc()
     if (this->size_ > 0)
     {
         // With sign-check to avoid spurious -Walloc-size-larger-than
-        this->v_ = new T[this->size_];
+        if (this->usePool_)
+        {
+            this->v_ = reinterpret_cast<T*>
+            (
+                MemoryPool::getInstance()->allocate(this->size_*sizeof(T))
+            );
+        }
+        else
+        {
+            this->v_ = new T[this->size_];
+        }
     }
 }
 
@@ -138,7 +148,14 @@ inline void Foam::List<T>::clear()
 {
     if (this->v_)
     {
-        delete[] this->v_;
+        if (this->usePool_)
+        {
+            MemoryPool::getInstance()->free((void*)this->v_);
+        }
+        else
+        {
+            delete[] this->v_;
+        }   
         this->v_ = nullptr;
     }
     this->size_ = 0;

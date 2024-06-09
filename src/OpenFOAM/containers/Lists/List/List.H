@@ -47,12 +47,15 @@ SourceFiles
 #include "UList.H"
 #include "SLListFwd.H"
 
+#include "MemoryPool.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
 // Forward Declarations
+class MemoryPool;
+class poolSwitch;
 template<class T> class List;
 template<class T, unsigned N> class FixedList;
 template<class T, int SizeMin> class DynamicList;
@@ -66,6 +69,21 @@ typedef List<bool> boolList;        //!< A List of bools
 typedef List<char> charList;        //!< A List of chars
 typedef List<label> labelList;      //!< A List of labels
 
+
+class poolSwitch
+{
+    bool value_;
+public:
+    //- The value type
+    typedef poolSwitch value_type;
+
+    poolSwitch(const bool value): value_(value)
+    {};
+
+    operator bool() const noexcept { return value_; };
+    void operator = (bool value) noexcept { value_ = value;};
+    
+};
 
 /*---------------------------------------------------------------------------*\
                            Class List Declaration
@@ -126,7 +144,6 @@ public:
         //- Declare type of subList
         typedef SubList<T> subList;
 
-
     // Static Member Functions
 
         //- Return a null List (reference to a nullObject).
@@ -143,13 +160,16 @@ public:
         inline constexpr List() noexcept;
 
         //- Construct with given size
-        explicit List(const label len);
+        //explicit List(const label len);
+        explicit List(const label len, poolSwitch usePool = false);
 
         //- Construct with given size and value for all elements
-        List(const label len, const T& val);
+        //List(const label len, const T& val);
+        List(const label len, const T& val, poolSwitch usePool = false);
 
         //- Construct with given size initializing all elements to zero
-        List(const label len, const Foam::zero);
+        List(const label len, const Foam::zero, poolSwitch usePool = false);
+        //List(const label len, const Foam::zero, poolSwitch usePool = false);
 
         //- Construct with length=1, copying the value as the only content
         List(const Foam::one, const T& val);

@@ -32,7 +32,7 @@ License
 #include "contiguous.H"
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
-
+//TODO memoryPool
 template<class T>
 void Foam::List<T>::doResize(const label len)
 {
@@ -51,21 +51,57 @@ void Foam::List<T>::doResize(const label len)
             // Recover overlapping content when resizing
             T* old = this->v_;
             this->size_ = len;
-            this->v_ = new T[len];
-
+            if (this->usePool_)
+            {
+                this->v_ = static_cast<T*>
+                    (
+                        MemoryPool::getInstance()->allocate(len*sizeof(T))
+                    );
+            }
+            else
+            {
+                this->v_ = new T[len];
+            };
+            
             // Can dispatch with
             // - std::execution::parallel_unsequenced_policy
             // - std::execution::unsequenced_policy
             std::move(old, (old + overlap), this->v_);
 
-            delete[] old;
+            if (this->usePool_)
+            {
+                MemoryPool::getInstance()->free(old);
+            }
+            else
+            {
+                delete[] old;
+            };
         }
         else
         {
             // No overlapping content
-            delete[] this->v_;
+            if (this->usePool_)
+            {
+                MemoryPool::getInstance()->free(this->v_);
+            }
+            else
+            {
+                delete[] this->v_;
+            };
+
             this->size_ = len;
-            this->v_ = new T[len];
+            
+            if (this->usePool_)
+            {
+                this->v_ = static_cast<T*>
+                    (
+                        MemoryPool::getInstance()->allocate(len*sizeof(T))
+                    );
+            }
+            else
+            {
+                this->v_ = new T[len];
+            };
         }
     }
     else
@@ -87,10 +123,11 @@ void Foam::List<T>::doResize(const label len)
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
 
 template<class T>
-Foam::List<T>::List(const label len)
+Foam::List<T>::List(const label len, poolSwitch usePool)
 :
-    UList<T>(nullptr, len)
+    UList<T>(nullptr, len, usePool)
 {
+    Info << "alloc use pool : "<< usePool << nl;
     if (len < 0)
     {
         FatalErrorInFunction
@@ -103,10 +140,11 @@ Foam::List<T>::List(const label len)
 
 
 template<class T>
-Foam::List<T>::List(const label len, const T& val)
+Foam::List<T>::List(const label len, const T& val, poolSwitch usePool)
 :
-    UList<T>(nullptr, len)
+    UList<T>(nullptr, len, usePool)
 {
+    Info << "alloc use pool : "<< usePool << nl;
     if (len < 0)
     {
         FatalErrorInFunction
@@ -123,9 +161,9 @@ Foam::List<T>::List(const label len, const T& val)
 
 
 template<class T>
-Foam::List<T>::List(const label len, const Foam::zero)
+Foam::List<T>::List(const label len, const Foam::zero, poolSwitch usePool)
 :
-    UList<T>(nullptr, len)
+    UList<T>(nullptr, len, usePool)
 {
     if (len < 0)
     {
@@ -168,7 +206,7 @@ Foam::List<T>::List(const Foam::one, const Foam::zero)
     this->v_[0] = Zero;
 }
 
-
+// TODO memmoryPool
 template<class T>
 Foam::List<T>::List(const UList<T>& list)
 :
@@ -181,7 +219,7 @@ Foam::List<T>::List(const UList<T>& list)
     }
 }
 
-
+// TODO memmoryPool
 template<class T>
 Foam::List<T>::List(const List<T>& list)
 :
@@ -306,7 +344,14 @@ Foam::List<T>::List(DynamicList<T, SizeMin>&& list)
 template<class T>
 Foam::List<T>::~List()
 {
-    delete[] this->v_;
+    if(this->usePool_)
+    {
+        MemoryPool::getInstance()->free(this->v_);
+    }
+    else
+    {
+        delete[] this->v_;
+    }
 }
 
 

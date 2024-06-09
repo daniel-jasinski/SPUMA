@@ -35,20 +35,22 @@ template<class T>
 inline constexpr Foam::UList<T>::UList() noexcept
 :
     size_(0),
-    v_(nullptr)
+    v_(nullptr),
+    usePool_(false)
 {}
 
 
 template<class T>
-inline Foam::UList<T>::UList(T* __restrict__ v, const label len) noexcept
+inline Foam::UList<T>::UList(T* __restrict__ v, const label len, bool usePool) noexcept
 :
     size_(len),
-    v_(v)
+    v_(v),
+    usePool_(usePool)
 {}
 
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
-
+// TODO memorypool
 template<class T>
 inline void Foam::UList<T>::fill_uniform(const T& val)
 {
@@ -59,6 +61,24 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
     (
         this->v_, this->size_, val
     );
+    /*
+    if(this->usePool_)
+    {
+        MemoryPool::getInstance()->memSet
+        (
+            this->v,
+            (void*)&val,
+            sizeof(T)
+        )
+    }
+    else
+    {
+        std::fill_n
+        (
+            this->v_, this->size_, val
+        );
+    };
+    */
 }
 
 
