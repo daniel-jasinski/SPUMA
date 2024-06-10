@@ -234,9 +234,9 @@ Foam::List<T>::List(const List<T>& list)
 
 
 template<class T>
-Foam::List<T>::List(List<T>& list, bool reuse)
+Foam::List<T>::List(List<T>& list, bool reuse, poolSwitch usePool)
 :
-    UList<T>(nullptr, list.size_)
+    UList<T>(nullptr, list.size_, usePool)
 {
     if (reuse)
     {
@@ -343,14 +343,18 @@ Foam::List<T>::List(DynamicList<T, SizeMin>&& list)
 
 template<class T>
 Foam::List<T>::~List()
-{
-    if(this->usePool_)
+{   
+    if (this->size_ > 0)
     {
-        MemoryPool::getInstance()->free(this->v_);
-    }
-    else
-    {
-        delete[] this->v_;
+        if(this->usePool_)
+        {
+            MemoryPool::getInstance()->free(this->v_);
+            
+        }
+        else
+        {
+            delete[] this->v_;
+        }
     }
 }
 

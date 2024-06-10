@@ -187,7 +187,7 @@ public:
         explicit List(const UList<T>& list);
 
         //- Construct as copy or re-use as specified
-        List(List<T>& list, bool reuse);
+        List(List<T>& list, bool reuse, poolSwitch usePool = false);
 
         //- Copy construct subset of list
         List(const UList<T>& list, const labelUList& indices);

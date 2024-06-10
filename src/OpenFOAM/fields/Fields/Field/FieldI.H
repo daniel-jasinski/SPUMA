@@ -125,7 +125,7 @@ inline Foam::Field<Type>::Field(DynamicList<Type, SizeMin>&& list)
 template<class Type>
 inline Foam::Field<Type>::Field(Field<Type>& fld, bool reuse)
 :
-    List<Type>(fld, reuse)
+    List<Type>(fld, reuse,poolSwitch(1))
 {}
 
 
