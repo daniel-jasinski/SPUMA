@@ -248,6 +248,8 @@ do
                 -o -name '*.tcc' \
                 -o -name '*.[ht]pp' ${opt_extra:+-o -name '*.cpp'} \
                 -o -name '*.[ht]xx' ${opt_extra:+-o -name '*.cxx'} \
+                ${have_cuda:+-o -name '*.cu'} \
+                ${have_cuda:+-o -name '*.cuh'} \
             \)  \
             -exec ln "$link_option" {} . \;
     )
