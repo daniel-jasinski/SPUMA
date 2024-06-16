@@ -66,7 +66,7 @@ namespace Foam
 
 // Forward Declarations
 class labelRange;
-//class MemmoryPool;
+class MemoryPool;
 
 template<class T> class List;
 template<class T> class SubList;

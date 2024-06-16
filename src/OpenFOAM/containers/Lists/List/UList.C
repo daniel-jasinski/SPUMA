@@ -29,6 +29,7 @@ License
 #include "UList.H"
 #include "contiguous.H"
 #include "labelRange.H"
+#include "MemoryPool.H"
 
 #include <random>
 
@@ -116,7 +117,18 @@ void Foam::UList<T>::deepCopy(const UList<T>& list)
         // Can dispatch with
         // - std::execution::parallel_unsequenced_policy
         // - std::execution::unsequenced_policy
-        std::copy(list.cbegin(), list.cend(), this->v_);
+        if (list.usePool() && this->usePool_) //ADD case were the src list is not on the pool?
+        {
+            this->v_ = static_cast<T*>
+                (
+                    MemoryPool::getInstance()->allocate(this->size_*sizeof(T))
+                );
+            MemoryPool::getInstance()->memCopy(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+        }
+        else
+        {
+            std::copy(list.cbegin(), list.cend(), this->v_);
+        }
     }
 }
 

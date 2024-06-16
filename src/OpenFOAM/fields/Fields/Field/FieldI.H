@@ -132,7 +132,7 @@ inline Foam::Field<Type>::Field(Field<Type>& fld, bool reuse)
 template<class Type>
 inline Foam::Field<Type>::Field(const tmp<Field<Type>>& tfld)
 :
-    List<Type>(tfld.constCast(), tfld.movable())
+    List<Type>(tfld.constCast(), tfld.movable(), poolSwitch(1))
 {
     tfld.clear();
 }

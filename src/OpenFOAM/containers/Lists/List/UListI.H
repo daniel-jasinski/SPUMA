@@ -66,7 +66,7 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
     {
         MemoryPool::getInstance()->memSet
         (
-            this->v,
+            this->v_,
             (void*)&val,
             sizeof(T)
         )
@@ -81,7 +81,7 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
     */
 }
 
-
+// TODO MemmoryPool
 template<class T>
 inline void Foam::UList<T>::fill_uniform(const Foam::zero)
 {
