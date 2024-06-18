@@ -41,20 +41,6 @@ namespace Foam
 // of the definition of 'scalar' or 'vector' - useful for mixed-precision
 // operation.
 
-// executor functions
-template<>
-void vectorField::negate()
-{   
-    if (this->usePool())
-    {
-        this->exec->negate(this->begin(),this->size());
-    }
-    else
-    {
-        TFOR_ALL_F_OP_OP_F(vector, *this, =, -, vector, *this);
-    };
-
-};
 
 template<>
 void Field<Vector<float>>::normalise()

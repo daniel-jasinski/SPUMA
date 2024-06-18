@@ -52,11 +52,6 @@ namespace Foam
 typedef Field<scalar> scalarField;
 
 
-// executor functions
-
-template<>
-void scalarField::negate();
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 template<>

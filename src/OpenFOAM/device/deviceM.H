@@ -6,7 +6,7 @@
     #define FOAM_DEVICE_I __host__ __device__ __forceinline__
 #else
     #define FOAM_DEVICE
-    #define FOAM_DEVICE_I
+    #define FOAM_DEVICE_I inline
 #endif 
 
 

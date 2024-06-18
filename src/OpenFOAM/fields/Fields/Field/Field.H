@@ -144,9 +144,10 @@ public:
     ~FieldTypeBase() {delete exec;};*/
 
     #ifdef have_cuda
-        autoPtr<cudaFieldExecutor<Type>> exec = autoPtr<cudaFieldExecutor<Type>>::New(); 
+        //FieldExecutor<Type,Type>* exec = FieldExecutor<Type,Type>::New(); 
+        //cudaFieldExecutor<Type,Type,Type>* exec = new cudaFieldExecutor<Type,Type,Type>(); 
     #else
-        autoPtr<cpuFieldExecutor<Type>> exec = autoPtr<cpuFieldExecutor<Type>>::New(); 
+        //FieldExecutor<Type,Type>* exec = FieldExecutor<Type,Type>::New(); 
     #endif
 
 };

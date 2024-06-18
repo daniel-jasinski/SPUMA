@@ -127,7 +127,7 @@ Foam::List<T>::List(const label len, poolSwitch usePool)
 :
     UList<T>(nullptr, len, usePool)
 {
-    Info << "alloc use pool : "<< usePool << nl;
+    //Info << "alloc use pool : "<< usePool << nl;
     if (len < 0)
     {
         FatalErrorInFunction
@@ -144,7 +144,7 @@ Foam::List<T>::List(const label len, const T& val, poolSwitch usePool)
 :
     UList<T>(nullptr, len, usePool)
 {
-    Info << "alloc use pool : "<< usePool << nl;
+    //Info << "alloc use pool : "<< usePool << nl;
     if (len < 0)
     {
         FatalErrorInFunction
