@@ -125,14 +125,14 @@ inline Foam::Field<Type>::Field(DynamicList<Type, SizeMin>&& list)
 template<class Type>
 inline Foam::Field<Type>::Field(Field<Type>& fld, bool reuse)
 :
-    List<Type>(fld, reuse,poolSwitch(1))
+    List<Type>(fld, reuse)
 {}
 
 
 template<class Type>
 inline Foam::Field<Type>::Field(const tmp<Field<Type>>& tfld)
 :
-    List<Type>(tfld.constCast(), tfld.movable(), poolSwitch(1))
+    List<Type>(tfld.constCast(), tfld.movable())
 {
     tfld.clear();
 }

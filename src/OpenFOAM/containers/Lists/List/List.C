@@ -206,11 +206,11 @@ Foam::List<T>::List(const Foam::one, const Foam::zero)
     this->v_[0] = Zero;
 }
 
-// TODO memmoryPool
+
 template<class T>
 Foam::List<T>::List(const UList<T>& list)
 :
-    UList<T>(nullptr, list.size_)
+    UList<T>(nullptr, list.size_, list.usePool())
 {
     if (this->size_ > 0)
     {
@@ -223,7 +223,7 @@ Foam::List<T>::List(const UList<T>& list)
 template<class T>
 Foam::List<T>::List(const List<T>& list)
 :
-    UList<T>(nullptr, list.size_)
+    UList<T>(nullptr, list.size_, list.usePool())
 {
     if (this->size_ > 0)
     {
@@ -234,9 +234,9 @@ Foam::List<T>::List(const List<T>& list)
 
 
 template<class T>
-Foam::List<T>::List(List<T>& list, bool reuse, poolSwitch usePool)
+Foam::List<T>::List(List<T>& list, bool reuse)
 :
-    UList<T>(nullptr, list.size_, usePool)
+    UList<T>(nullptr, list.size_, list.usePool())
 {
     if (reuse)
     {
@@ -287,7 +287,7 @@ Foam::List<T>::List(const FixedList<T, N>& list)
     List<T>(list.begin(), list.end(), list.size())
 {}
 
-
+//TODO memoryPool
 template<class T>
 Foam::List<T>::List(const PtrList<T>& list)
 :
@@ -322,7 +322,7 @@ Foam::List<T>::List(std::initializer_list<T> list)
 template<class T>
 Foam::List<T>::List(List<T>&& list) noexcept
 :
-    UList<T>(list.data(), list.size())
+    UList<T>(list.data(), list.size(),list.usePool())
 {
     list.size_ = 0;
     list.v_ = nullptr;

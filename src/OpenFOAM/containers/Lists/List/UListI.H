@@ -28,6 +28,7 @@ License
 
 #include "error.H"
 // <algorithm> already included by stdFoam.H
+#include "MemoryPool.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -57,19 +58,20 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
     // Can dispatch with
     // - std::execution::parallel_unsequenced_policy
     // - std::execution::unsequenced_policy
-    std::fill_n
+    /*std::fill_n
     (
         this->v_, this->size_, val
-    );
-    /*
+    );*/
+    
     if(this->usePool_)
     {
-        MemoryPool::getInstance()->memSet
+        Foam::MemoryPool::getInstance()->memSet
         (
             this->v_,
             (void*)&val,
-            sizeof(T)
-        )
+            sizeof(T),
+            this->size_bytes()
+        );
     }
     else
     {
@@ -78,7 +80,7 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
             this->v_, this->size_, val
         );
     };
-    */
+    
 }
 
 // TODO MemmoryPool
@@ -94,10 +96,28 @@ inline void Foam::UList<T>::fill_uniform(const Foam::zero)
         // Can dispatch with
         // - std::execution::parallel_unsequenced_policy
         // - std::execution::unsequenced_policy
-        std::fill_n
+        /*std::fill_n
         (
             this->data_bytes(), this->size_bytes(), char(0)
-        );
+        );*/
+        
+        if(this->usePool_)
+        {
+            Foam::MemoryPool::getInstance()->memSet
+            (
+                this->v_,
+                0,
+                this->size_bytes()
+            );
+        }
+        else
+        {
+            std::fill_n
+            (
+                this->data_bytes(), this->size_bytes(), char(0)
+            );
+        };
+        
     }
     else
     {
