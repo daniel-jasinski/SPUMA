@@ -14,12 +14,8 @@
 #ifdef have_cuda
     #include <cuda_runtime_api.h>
     #define deviceSync() cudaDeviceSynchronize()
-    #define hostRegister(ptr, size) (cudaHostRegister( (void*)(ptr), (size), cudaHostRegisterReadOnly))
-    #define hostUnregister(ptr) (cudaHostUnregister((void*)(ptr)))
 #else 
     #define deviceSync() 
-    #define hostRegister(ptr, size)
-    #define hostUnregister(ptr) 
 #endif
 
 #define NUM_THREADS_PER_BLOCK 128
