@@ -769,8 +769,10 @@ fields/cloud/cloud.C
 Fields = fields/Fields
 
 $(Fields)/Field/FieldBase.C
-/*$(Fields)/Field/FieldExecutor.C*/
-/*#$(Fields)/Field/cudaFieldExecutor.cu*/
+$(Fields)/Field/FieldExecutor.C
+#ifdef have_cuda
+$(Fields)/Field/cudaFieldExecutor.cu
+#endif
 $(Fields)/boolField/boolField.C
 $(Fields)/boolField/boolIOField.C
 $(Fields)/labelField/labelField.C

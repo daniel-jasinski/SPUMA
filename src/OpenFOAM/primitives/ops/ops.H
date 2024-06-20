@@ -39,6 +39,7 @@ Description
 
 #include "stdFoam.H"    // For FOAM_NODISCARD
 
+#include "deviceM.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -54,7 +55,7 @@ namespace Foam
     template<class T1, class T2>                                               \
     struct opName##Op2                                                         \
     {                                                                          \
-        void operator()(T1& x, const T2& y) const                              \
+        FOAM_DEVICE_I void operator()(T1& x, const T2& y) const                              \
         {                                                                      \
             op;                                                                \
         }                                                                      \
@@ -63,7 +64,7 @@ namespace Foam
     template<class T>                                                          \
     struct opName##Op                                                          \
     {                                                                          \
-        void operator()(T& x, const T& y) const                                \
+        FOAM_DEVICE_I void operator()(T& x, const T& y) const                                \
         {                                                                      \
             op;                                                                \
         }                                                                      \
@@ -109,7 +110,7 @@ EqOp(nopEq, (void)x)
     template<class T, class T1, class T2>                                      \
     struct opName##Op3                                                         \
     {                                                                          \
-        FOAM_NODISCARD T operator()(const T1& x, const T2& y) const            \
+        FOAM_NODISCARD FOAM_DEVICE_I T operator()(const T1& x, const T2& y) const            \
         {                                                                      \
             return op;                                                         \
         }                                                                      \
@@ -118,7 +119,7 @@ EqOp(nopEq, (void)x)
     template<class T1, class T2>                                               \
     struct opName##Op2                                                         \
     {                                                                          \
-        FOAM_NODISCARD T1 operator()(const T1& x, const T2& y) const           \
+        FOAM_NODISCARD FOAM_DEVICE_I T1 operator()(const T1& x, const T2& y) const           \
         {                                                                      \
             return op;                                                         \
         }                                                                      \
@@ -127,7 +128,7 @@ EqOp(nopEq, (void)x)
     template<class T>                                                          \
     struct opName##Op                                                          \
     {                                                                          \
-        FOAM_NODISCARD T operator()(const T& x, const T& y) const              \
+        FOAM_NODISCARD FOAM_DEVICE_I T operator()(const T& x, const T& y) const              \
         {                                                                      \
             return op;                                                         \
         }                                                                      \

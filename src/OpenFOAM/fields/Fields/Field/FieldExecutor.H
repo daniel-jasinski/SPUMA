@@ -6,51 +6,46 @@
 #include "vector.H"
 #include "tensor.H"
 #include "word.H"
-
 #include "cpuFieldExecutor.H"
-#include "cudaFieldExecutor.H"
+#ifdef have_cuda
+    #include "cudaFieldExecutor.cuh"
+#endif
 
+//TODO implementt factory method: add vitual function and implement static selector
 namespace Foam
 {
 
-template <typename Type>
+// fwd declarations
+#ifdef have_cuda
+//template<typename ResultType,typename Type1, typename Type2> class cudaFieldExecutor;
+template<typename Op> class cudaFieldExecutor;
+#endif
+//template<typename ResultType,typename Type1, typename Type2> class cpuFieldExecutor;
+template<typename Op> class cpuFieldExecutor;
+
+template <typename Op>
 class FieldExecutor
 {
 //private:
-    //FieldExecutor<Type>* execPtr = nullptr;
-
 protected:
+    static FieldExecutor<Op>* execPtr_;
 
 public:
 
-    //virtual ~FieldExecutor(){ delete execPtr;};
+    virtual ~FieldExecutor(){};
 
-    virtual void negate(Type* fieltPtr, const label loop_len) = 0;
+    //no copy constructor
+    FieldExecutor(FieldExecutor& other) = delete;
+    // add virtual methods
 
-    /*inline static FieldExecutor<Type>* New(word type)
-    {   
-        if(!execPtr)
-        {
-            if(type == "cuda")
-            {
-                execPtr = new cudaFieldExecutor<Type>();
-            }
-            else if (type == "cpu")
-            {
-                execPtr = new cpuFieldExecutor<Type>();
-            }
-            else
-            {
-                Info << "wrong executor type" << endl;
-            }
-        }
-        
-        return execPtr;
-    };
-    */
-
+    static FieldExecutor<Op>* New();
+ 
 };
 
 }
+
+#ifdef NoRepository
+    #include "FieldExecutor.C"
+#endif
 
 #endif

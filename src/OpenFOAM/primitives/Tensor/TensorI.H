@@ -1047,7 +1047,7 @@ operator-(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 
 //- Return the Hodge dual of a Tensor as a Vector
 template<class Cmpt>
-inline Vector<Cmpt> operator*(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Vector<Cmpt> operator*(const Tensor<Cmpt>& t)
 {
     return Vector<Cmpt>(t.yz(), -t.xz(), t.xy());
 }
@@ -1055,7 +1055,7 @@ inline Vector<Cmpt> operator*(const Tensor<Cmpt>& t)
 
 //- Return the Hodge dual of a Vector as a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> operator*(const Vector<Cmpt>& v)
+FOAM_DEVICE inline Tensor<Cmpt> operator*(const Vector<Cmpt>& v)
 {
     return Tensor<Cmpt>
     (
@@ -1102,7 +1102,7 @@ operator/(const Tensor<Cmpt>& t, const Cmpt s)
 
 //- Inner-product of a Tensor and a Tensor
 template<class Cmpt>
-inline typename innerProduct<Tensor<Cmpt>, Tensor<Cmpt>>::type
+FOAM_DEVICE inline typename innerProduct<Tensor<Cmpt>, Tensor<Cmpt>>::type
 operator&(const Tensor<Cmpt>& t1, const Tensor<Cmpt>& t2)
 {
     return t1.inner(t2);
@@ -1203,7 +1203,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Vector<Cmpt>
+FOAM_DEVICE inline Vector<Cmpt>
 operator&(const Tensor<Cmpt>& t, const Vector<Cmpt>& v)
 {
     return Vector<Cmpt>
@@ -1221,7 +1221,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Vector<Cmpt>
+FOAM_DEVICE inline Vector<Cmpt>
 operator&(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
 {
     return Vector<Cmpt>

@@ -598,11 +598,30 @@ void Foam::Field<Type>::rmap
 
 template<class Type>
 void Foam::Field<Type>::negate()
-{
-    TFOR_ALL_F_OP_OP_F(Type, *this, =, -, Type, *this)
+{  
+    if constexpr (is_one_of<Type,scalar,vector,tensor>::value)
+    { 
+        if (this->usePool())
+        {
+            auto exec = tmp<cudaFieldExecutor<typename Foam::exec::negateOp2<Type,Type>>>::New();
+            exec->opF_OP_F
+            (
+                this->begin(),
+                Foam::exec::negateOp2<Type,Type>(),
+                this->size()
+            );
+        }
+        else
+        {
+            TFOR_ALL_F_OP_OP_F(Type, *this, =, -, Type, *this);
+        };
+    }
+    else
+    {
+       TFOR_ALL_F_OP_OP_F(Type, *this, =, -, Type, *this); 
+    }
+
 }
-
-
 // A no-op except for vector specialization
 template<class Type>
 void Foam::Field<Type>::normalise()

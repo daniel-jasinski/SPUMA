@@ -31,6 +31,7 @@ License
 #include "UPstream.H"
 #include "MinMax.H"
 
+#include "FieldExecutor.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam

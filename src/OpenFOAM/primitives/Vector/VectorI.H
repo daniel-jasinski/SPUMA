@@ -150,7 +150,7 @@ Foam::Vector<Cmpt>::removeCollinear(const Vector<Cmpt>& unitVec)
 // * * * * * * * * * * * * * * * Member Operations * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Cmpt Foam::Vector<Cmpt>::inner(const Vector<Cmpt>& v2) const
+FOAM_DEVICE inline Cmpt Foam::Vector<Cmpt>::inner(const Vector<Cmpt>& v2) const
 {
     const Vector<Cmpt>& v1 = *this;
 
@@ -159,7 +159,7 @@ inline Cmpt Foam::Vector<Cmpt>::inner(const Vector<Cmpt>& v2) const
 
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt>
+FOAM_DEVICE inline Foam::Vector<Cmpt>
 Foam::Vector<Cmpt>::cross(const Vector<Cmpt>& v2) const
 {
     const Vector<Cmpt>& v1 = *this;
@@ -290,28 +290,28 @@ public:
 
 
 template<class Cmpt>
-inline Cmpt operator&(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
+FOAM_DEVICE inline Cmpt operator&(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
 {
     return v1.inner(v2);
 }
 
 
 template<class Cmpt>
-inline Vector<Cmpt> operator^(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
+FOAM_DEVICE inline Vector<Cmpt> operator^(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
 {
     return v1.cross(v2);
 }
 
 
 template<class Cmpt>
-inline Vector<Cmpt> operator*(const Cmpt& s, const Vector<Cmpt>& v)
+FOAM_DEVICE inline Vector<Cmpt> operator*(const Cmpt& s, const Vector<Cmpt>& v)
 {
     return Vector<Cmpt>(s*v.x(), s*v.y(), s*v.z());
 }
 
 
 template<class Cmpt>
-inline Vector<Cmpt> operator*(const Vector<Cmpt>& v, const Cmpt& s)
+FOAM_DEVICE inline Vector<Cmpt> operator*(const Vector<Cmpt>& v, const Cmpt& s)
 {
     return s*v;
 }

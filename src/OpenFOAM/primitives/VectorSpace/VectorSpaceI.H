@@ -30,6 +30,7 @@ License
 #include "products.H"
 #include "VectorSpaceOps.H"
 #include "ops.H"
+#include "deviceM.H"
 #include <type_traits>
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -334,7 +335,7 @@ ConstBlock<SubVector, BStart>::operator()
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -715,7 +716,7 @@ inline typename innerProduct<Form1, Form2>::type dot
 // * * * * * * * * * * * * * * * Global Operators  * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator-
+FOAM_DEVICE inline Form operator-
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -727,7 +728,7 @@ inline Form operator-
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator+
+FOAM_DEVICE inline Form operator+
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -739,7 +740,7 @@ inline Form operator+
 }
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator-
+FOAM_DEVICE inline Form operator-
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -752,7 +753,7 @@ inline Form operator-
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator*
+FOAM_DEVICE inline Form operator*
 (
     scalar s,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
@@ -765,7 +766,7 @@ inline Form operator*
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator*
+FOAM_DEVICE inline Form operator*
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs,
     scalar s
@@ -778,7 +779,7 @@ inline Form operator*
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator/
+FOAM_DEVICE inline Form operator/
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs,
     scalar s
@@ -818,7 +819,7 @@ inline Form operator/
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt operator&&
+FOAM_DEVICE inline Cmpt operator&&
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2

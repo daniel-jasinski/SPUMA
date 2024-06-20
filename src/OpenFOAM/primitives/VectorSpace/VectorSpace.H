@@ -47,6 +47,8 @@ SourceFiles
 #include "word.H"
 #include "zero.H"
 
+#include "deviceM.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -203,7 +205,7 @@ public:
         inline const Cmpt& operator[](const direction) const;
         inline Cmpt& operator[](const direction);
 
-        inline void operator=(const VectorSpace<Form, Cmpt, Ncmpts>&);
+        FOAM_DEVICE inline void operator=(const VectorSpace<Form, Cmpt, Ncmpts>&);
         inline void operator+=(const VectorSpace<Form, Cmpt, Ncmpts>&);
         inline void operator-=(const VectorSpace<Form, Cmpt, Ncmpts>&);
 

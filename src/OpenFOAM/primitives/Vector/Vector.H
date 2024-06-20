@@ -165,10 +165,10 @@ public:
         inline Vector<Cmpt>& removeCollinear(const Vector<Cmpt>& unitVec);
 
         //- Scalar-product of \c this with another Vector.
-        inline Cmpt inner(const Vector<Cmpt>& v2) const;
+        FOAM_DEVICE inline Cmpt inner(const Vector<Cmpt>& v2) const;
 
         //- Cross-product of \c this with another Vector.
-        inline Vector<Cmpt> cross(const Vector<Cmpt>& v2) const;
+        FOAM_DEVICE inline Vector<Cmpt> cross(const Vector<Cmpt>& v2) const;
 
 
     // Comparison Operations

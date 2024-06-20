@@ -160,7 +160,7 @@ template<class Type>
 class Field
 :
     public FieldBase,
-    public FieldTypeBase<Type>,
+    //public FieldTypeBase<Type>,
     public List<Type>
 {
 public:

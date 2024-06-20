@@ -69,41 +69,52 @@ tmp<Field<ReturnType>> Func                                                    \
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#define UNARY_OPERATOR(ReturnType, Type1, Op, OpFunc)                          \
-                                                                               \
-TEMPLATE                                                                       \
-void OpFunc                                                                    \
-(                                                                              \
-    Field<ReturnType>& result,                                                 \
-    const UList<Type1>& f1                                                     \
-)                                                                              \
-{                                                                              \
-    TFOR_ALL_F_OP_OP_F(ReturnType, result, =, Op, Type1, f1)                   \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const UList<Type1>& f1                                                     \
-)                                                                              \
-{                                                                              \
-    auto tres = tmp<Field<ReturnType>>::New(f1.size());                        \
-    OpFunc(tres.ref(), f1);                                                    \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1                                               \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                         \
-    OpFunc(tres.ref(), tf1());                                                 \
-    tf1.clear();                                                               \
-    return tres;                                                               \
+#define UNARY_OPERATOR(ReturnType, Type1, Op, OpFunc)                        \
+                                                                             \
+TEMPLATE                                                                     \
+void OpFunc(                                                                 \
+    Field<ReturnType> &result,                                               \
+    const UList<Type1> &f1)                                                  \
+{                                                                            \
+    if (result.usePool() && f1.usePool())                                    \
+    {                                                                        \
+        /* Check fields have same size */                                    \
+        checkFields(result, f1, "f1 = " #Op " f2");                          \
+        auto exec = \
+            tmp<\
+            cudaFieldExecutor<typename Foam::exec::OpFunc##Op2<ReturnType, Type1> \
+            > \
+            >::New(); \
+        exec->opF_OP_F(                                                      \
+            result.begin(),                                                  \
+            f1.begin(),                                                      \
+            Foam::exec::OpFunc##Op2<ReturnType, Type1>(),              \
+            result.size());                                                  \
+    }                                                                        \
+    else                                                                     \
+    {                                                                        \
+        TFOR_ALL_F_OP_OP_F(ReturnType, result, =, Op, Type1, f1)             \
+    }                                                                        \
+}                                                                            \
+                                                                             \
+TEMPLATE                                                                     \
+tmp<Field<ReturnType>> operator Op(                                          \
+    const UList<Type1> &f1)                                                  \
+{                                                                            \
+    auto tres = tmp<Field<ReturnType>>::New(f1.size());                      \
+    OpFunc(tres.ref(), f1);                                                  \
+    return tres;                                                             \
+}                                                                            \
+                                                                             \
+TEMPLATE                                                                     \
+tmp<Field<ReturnType>> operator Op(                                          \
+    const tmp<Field<Type1>> &tf1)                                            \
+{                                                                            \
+    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                       \
+    OpFunc(tres.ref(), tf1());                                               \
+    tf1.clear();                                                             \
+    return tres;                                                             \
 }
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -287,151 +298,179 @@ tmp<Field<ReturnType>> Func                                                    \
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#define BINARY_OPERATOR(ReturnType, Type1, Type2, Op, OpFunc)                  \
-                                                                               \
-TEMPLATE                                                                       \
-void OpFunc                                                                    \
-(                                                                              \
-    Field<ReturnType>& result,                                                 \
-    const UList<Type1>& f1,                                                    \
-    const UList<Type2>& f2                                                     \
-)                                                                              \
-{                                                                              \
-    TFOR_ALL_F_OP_F_OP_F(ReturnType, result, =, Type1, f1, Op, Type2, f2)      \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const UList<Type1>& f1,                                                    \
-    const UList<Type2>& f2                                                     \
-)                                                                              \
-{                                                                              \
-    auto tres = tmp<Field<ReturnType>>::New(f1.size());                        \
-    OpFunc(tres.ref(), f1, f2);                                                \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const UList<Type1>& f1,                                                    \
-    const tmp<Field<Type2>>& tf2                                               \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type2>::New(tf2);                         \
-    OpFunc(tres.ref(), f1, tf2());                                             \
-    tf2.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1,                                              \
-    const UList<Type2>& f2                                                     \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                         \
-    OpFunc(tres.ref(), tf1(), f2);                                             \
-    tf1.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1,                                              \
-    const tmp<Field<Type2>>& tf2                                               \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type2>::New(tf1, tf2);   \
-    OpFunc(tres.ref(), tf1(), tf2());                                          \
-    tf1.clear();                                                               \
-    tf2.clear();                                                               \
-    return tres;                                                               \
-}
 
+//TODO : define other macro for ops on type that cannot be parallellized per component
+#define BINARY_OPERATOR(ReturnType, Type1, Type2, Op, OpFunc)                                                \
+                                                                                                             \
+TEMPLATE                                                                                                     \
+void OpFunc(                                                                                                 \
+    Field<ReturnType> &result,                                                                               \
+    const UList<Type1> &f1,                                                                                  \
+    const UList<Type2> &f2)                                                                                  \
+{                                                                                                            \
+    if (result.usePool() && f1.usePool() && f2.usePool())                                                    \
+    {                                                                                                        \
+        checkFields(result, f1, f2, "f1 = f2 " #Op " f3");                                                   \
+        /* this op cannot be dispatched per component*/                                                      \
+        auto exec =                                                                                          \
+            tmp<                                                                                             \
+                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3F_OP_F<ReturnType, Type1, Type2>>>::New(); \
+        exec->opF_OP_F(                                                                                      \
+            result.begin(),                                                                                  \
+            f1.begin(),                                                                                      \
+            f2.begin(),                                                                                      \
+            Foam::exec::OpFunc##Op3F_OP_F<ReturnType, Type1, Type2>(),                                       \
+            result.size());                                                                                  \
+    }                                                                                                        \
+    else                                                                                                     \
+    {                                                                                                        \
+        TFOR_ALL_F_OP_F_OP_F(ReturnType, result, =, Type1, f1, Op, Type2, f2)                                \
+    }                                                                                                        \
+}                                                                                                            \
+                                                                                                             \
+TEMPLATE                                                                                                     \
+tmp<Field<ReturnType>> operator Op(                                                                          \
+    const UList<Type1> &f1,                                                                                  \
+    const UList<Type2> &f2)                                                                                  \
+{                                                                                                            \
+    auto tres = tmp<Field<ReturnType>>::New(f1.size());                                                      \
+    OpFunc(tres.ref(), f1, f2);                                                                              \
+    return tres;                                                                                             \
+}                                                                                                            \
+                                                                                                             \
+TEMPLATE                                                                                                     \
+tmp<Field<ReturnType>> operator Op(                                                                          \
+    const UList<Type1> &f1,                                                                                  \
+    const tmp<Field<Type2>> &tf2)                                                                            \
+{                                                                                                            \
+    auto tres = reuseTmp<ReturnType, Type2>::New(tf2);                                                       \
+    OpFunc(tres.ref(), f1, tf2());                                                                           \
+    tf2.clear();                                                                                             \
+    return tres;                                                                                             \
+}                                                                                                            \
+                                                                                                             \
+TEMPLATE                                                                                                     \
+tmp<Field<ReturnType>> operator Op(                                                                          \
+    const tmp<Field<Type1>> &tf1,                                                                            \
+    const UList<Type2> &f2)                                                                                  \
+{                                                                                                            \
+    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                                                       \
+    OpFunc(tres.ref(), tf1(), f2);                                                                           \
+    tf1.clear();                                                                                             \
+    return tres;                                                                                             \
+}                                                                                                            \
+                                                                                                             \
+TEMPLATE                                                                                                     \
+tmp<Field<ReturnType>> operator Op(                                                                          \
+    const tmp<Field<Type1>> &tf1,                                                                            \
+    const tmp<Field<Type2>> &tf2)                                                                            \
+{                                                                                                            \
+    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type2>::New(tf1, tf2);                                 \
+    OpFunc(tres.ref(), tf1(), tf2());                                                                        \
+    tf1.clear();                                                                                             \
+    tf2.clear();                                                                                             \
+    return tres;                                                                                             \
+}
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#define BINARY_TYPE_OPERATOR_SF(ReturnType, Type1, Type2, Op, OpFunc)          \
-                                                                               \
-TEMPLATE                                                                       \
-void OpFunc                                                                    \
-(                                                                              \
-    Field<ReturnType>& result,                                                 \
-    const Type1& s1,                                                           \
-    const UList<Type2>& f2                                                     \
-)                                                                              \
-{                                                                              \
-    TFOR_ALL_F_OP_S_OP_F(ReturnType, result, =, Type1, s1, Op, Type2, f2)      \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const Type1& s1,                                                           \
-    const UList<Type2>& f2                                                     \
-)                                                                              \
-{                                                                              \
-    auto tres = tmp<Field<ReturnType>>::New(f2.size());                        \
-    OpFunc(tres.ref(), s1, f2);                                                \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const Type1& s1,                                                           \
-    const tmp<Field<Type2>>& tf2                                               \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type2>::New(tf2);                         \
-    OpFunc(tres.ref(), s1, tf2());                                             \
-    tf2.clear();                                                               \
-    return tres;                                                               \
+#define BINARY_TYPE_OPERATOR_SF(ReturnType, Type1, Type2, Op, OpFunc)                                  \
+                                                                                                       \
+TEMPLATE                                                                                               \
+void OpFunc(                                                                                           \
+    Field<ReturnType> &result,                                                                         \
+    const Type1 &s1,                                                                                   \
+    const UList<Type2> &f2)                                                                            \
+{                                                                                                      \
+    if (result.usePool() && f2.usePool())                                                              \
+    {                                                                                                  \
+        /* Check fields have same size */                                                              \
+        checkFields(result, f2, "f1 = s " #Op " f2");                                                  \
+        auto exec =                                                                                    \
+            tmp<                                                                                       \
+                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>>>::New(); \
+        exec->opS_OP_F(                                                                                \
+            result.begin(),                                                                            \
+            s1,                                                                                        \
+            f2.begin(),                                                                                \
+            Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>(),                                       \
+            result.size());                                                                            \
+    }                                                                                                  \
+    else                                                                                               \
+    {                                                                                                  \
+        TFOR_ALL_F_OP_S_OP_F(ReturnType, result, =, Type1, s1, Op, Type2, f2)                          \
+    }                                                                                                  \
+}                                                                                                      \
+                                                                                                       \
+TEMPLATE                                                                                               \
+tmp<Field<ReturnType>> operator Op(                                                                    \
+    const Type1 & s1,                                                                                  \
+    const UList<Type2> &f2)                                                                            \
+{                                                                                                      \
+    auto tres = tmp<Field<ReturnType>>::New(f2.size());                                                \
+    OpFunc(tres.ref(), s1, f2);                                                                        \
+    return tres;                                                                                       \
+}                                                                                                      \
+                                                                                                       \
+TEMPLATE                                                                                               \
+tmp<Field<ReturnType>> operator Op(                                                                    \
+    const Type1 & s1,                                                                                  \
+    const tmp<Field<Type2>> &tf2)                                                                      \
+{                                                                                                      \
+    auto tres = reuseTmp<ReturnType, Type2>::New(tf2);                                                 \
+    OpFunc(tres.ref(), s1, tf2());                                                                     \
+    tf2.clear();                                                                                       \
+    return tres;                                                                                       \
 }
 
-
-#define BINARY_TYPE_OPERATOR_FS(ReturnType, Type1, Type2, Op, OpFunc)          \
-                                                                               \
-TEMPLATE                                                                       \
-void OpFunc                                                                    \
-(                                                                              \
-    Field<ReturnType>& result,                                                 \
-    const UList<Type1>& f1,                                                    \
-    const Type2& s2                                                            \
-)                                                                              \
-{                                                                              \
-    TFOR_ALL_F_OP_F_OP_S(ReturnType, result, =, Type1, f1, Op, Type2, s2)      \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const UList<Type1>& f1,                                                    \
-    const Type2& s2                                                            \
-)                                                                              \
-{                                                                              \
-    auto tres = tmp<Field<ReturnType>>::New(f1.size());                        \
-    OpFunc(tres.ref(), f1, s2);                                                \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> operator Op                                             \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1,                                              \
-    const Type2& s2                                                            \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                         \
-    OpFunc(tres.ref(), tf1(), s2);                                             \
-    tf1.clear();                                                               \
-    return tres;                                                               \
+#define BINARY_TYPE_OPERATOR_FS(ReturnType, Type1, Type2, Op, OpFunc)                                  \
+                                                                                                       \
+TEMPLATE                                                                                               \
+void OpFunc(                                                                                           \
+    Field<ReturnType> &result,                                                                         \
+    const UList<Type1> &f1,                                                                            \
+    const Type2 &s2)                                                                                   \
+{                                                                                                      \
+    if (result.usePool() && f1.usePool())                                                              \
+    {                                                                                                  \
+        /* Check fields have same size */                                                              \
+        checkFields(result, f1, "f1 = s " #Op " f2");                                                  \
+        auto exec =                                                                                    \
+            tmp<                                                                                       \
+                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>>>::New(); \
+        exec->opF_OP_S(                                                                                \
+            result.begin(),                                                                            \
+            f1.begin(),                                                                                \
+            s2,                                                                                        \
+            Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>(),                                       \
+            result.size());                                                                            \
+    }                                                                                                  \
+    else                                                                                               \
+    {                                                                                                  \
+        TFOR_ALL_F_OP_F_OP_S(ReturnType, result, =, Type1, f1, Op, Type2, s2)                          \
+    }                                                                                                  \
+}                                                                                                      \
+                                                                                                       \
+TEMPLATE                                                                                               \
+tmp<Field<ReturnType>> operator Op(                                                                    \
+    const UList<Type1> &f1,                                                                            \
+    const Type2 & s2)                                                                                  \
+{                                                                                                      \
+    auto tres = tmp<Field<ReturnType>>::New(f1.size());                                                \
+    OpFunc(tres.ref(), f1, s2);                                                                        \
+    return tres;                                                                                       \
+}                                                                                                      \
+                                                                                                       \
+TEMPLATE                                                                                               \
+tmp<Field<ReturnType>> operator Op(                                                                    \
+    const tmp<Field<Type1>> &tf1,                                                                      \
+    const Type2 & s2)                                                                                  \
+{                                                                                                      \
+    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                                                 \
+    OpFunc(tres.ref(), tf1(), s2);                                                                     \
+    tf1.clear();                                                                                       \
+    return tres;                                                                                       \
 }
-
 
 #define BINARY_TYPE_OPERATOR(ReturnType, Type1, Type2, Op, OpFunc)             \
     BINARY_TYPE_OPERATOR_SF(ReturnType, Type1, Type2, Op, OpFunc)              \
