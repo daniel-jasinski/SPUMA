@@ -77,11 +77,17 @@ public:
     //- The value type
     typedef poolSwitch value_type;
 
-    poolSwitch(const bool value): value_(value)
-    {};
+    poolSwitch()=delete;
+    //- allow constructor just from bool and label
+    explicit poolSwitch(const bool value): value_(value){};
+    explicit poolSwitch(const label value): value_(value){};
 
+    // allow cast to Bool
     operator bool() const noexcept { return value_; };
-    void operator = (bool value) noexcept { value_ = value;};
+    
+    //- Delete copy assignment operators from other types
+    template <typename T>
+    poolSwitch& operator=(T ) = delete;
     
 };
 
@@ -161,14 +167,14 @@ public:
 
         //- Construct with given size
         //explicit List(const label len);
-        explicit List(const label len, poolSwitch usePool = false);
+        explicit List(const label len, poolSwitch usePool = poolSwitch(false));
 
         //- Construct with given size and value for all elements
         //List(const label len, const T& val);
-        List(const label len, const T& val, poolSwitch usePool = false);
+        List(const label len, const T& val, poolSwitch usePool = poolSwitch(false));
 
         //- Construct with given size initializing all elements to zero
-        List(const label len, const Foam::zero, poolSwitch usePool = false);
+        List(const label len, const Foam::zero, poolSwitch usePool = poolSwitch(false));
         //List(const label len, const Foam::zero, poolSwitch usePool = false);
 
         //- Construct with length=1, copying the value as the only content
