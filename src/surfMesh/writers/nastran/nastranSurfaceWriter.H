@@ -59,14 +59,10 @@ Description
             }
 
             // Specific NASTRAN load types
-            PLOAD2 ( pMean );
-            PLOAD4 ( "p.*" );
-
             // old style specification
             fields
             (
                 (pMean  PLOAD2)
-                (p      PLOAD4)
             );
         }
     }
