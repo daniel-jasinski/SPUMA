@@ -18,9 +18,20 @@
     #define deviceSync() 
 #endif
 
+// number of thread per block
 #define NUM_THREADS_PER_BLOCK 128
+//number of streaming multiprocessor per device (124 on A100)
+#define NUM_SM 124 
+
+//- calc the number of block for a generic kernel
 #define SET_NUM_BLOCKS(size)           \
     (size + NUM_THREADS_PER_BLOCK - 1) \
     / NUM_THREADS_PER_BLOCK
+
+//- calc the number of block for binary tree reduction algorithm
+#define SET_TREE_REDUCE_NUM_BLOCKS(size)           \
+    (size + 2*NUM_THREADS_PER_BLOCK - 1) \
+    / (2*NUM_THREADS_PER_BLOCK)
+
 
 #endif

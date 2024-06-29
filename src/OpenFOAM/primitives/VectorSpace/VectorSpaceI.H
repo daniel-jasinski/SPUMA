@@ -84,7 +84,7 @@ inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::ConstBlock<SubVector, BStart>
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline const Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
+FOAM_DEVICE inline const Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 (
     const direction d
 ) const
@@ -103,7 +103,7 @@ inline const Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
+FOAM_DEVICE inline Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 (
     const direction d
 )
@@ -122,7 +122,7 @@ inline Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 (
     Cmpt& c,
     const direction d
@@ -142,7 +142,7 @@ inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::replace
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::replace
 (
     const direction d,
     const Cmpt& c
@@ -345,7 +345,7 @@ FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator+=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator+=
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -355,7 +355,7 @@ inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator+=
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator-=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator-=
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -365,14 +365,14 @@ inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator-=
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=(const Foam::zero)
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=(const Foam::zero)
 {
     VectorSpaceOps<Ncmpts,0>::eqOpS(*this, 0, eqOp<Cmpt>());
 }
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator*=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator*=
 (
     const scalar s
 )
@@ -382,7 +382,7 @@ inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator*=
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator/=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator/=
 (
     const scalar s
 )
@@ -399,7 +399,7 @@ namespace Foam
 // * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt& setComponent
+FOAM_DEVICE inline Cmpt& setComponent
 (
     VectorSpace<Form, Cmpt, Ncmpts>& vs,
     const direction d
@@ -410,7 +410,7 @@ inline Cmpt& setComponent
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline const Cmpt& component
+FOAM_DEVICE inline const Cmpt& component
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs,
     const direction d

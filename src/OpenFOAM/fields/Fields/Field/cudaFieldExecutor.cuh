@@ -22,10 +22,7 @@ class cudaFieldExecutor
 public:
     
     //cudaFieldExecutor() = default;
-
-    //template<typename Type>    
-    //void negate(Type1* fieldPtr, const label loop_len);
-    // template<typename Op>
+    //NOTE pass op as rvalue reference
     void opF_OP_F
     (
         resultType* resultPtr,
@@ -33,7 +30,6 @@ public:
         const label loop_len
     );
 
-    // template<typename Op>
     void opF_OP_F
     (
         resultType* resultPtr,
@@ -42,7 +38,6 @@ public:
         const label loop_len
     );
     // TODO change Op to allow for move semantic
-//    template<typename Op>
     void opF_OP_F
     (
         resultType* resultPtr,
@@ -52,7 +47,6 @@ public:
         const label loop_len
     );
     
-    // template<typename Op>
     void opS_OP_F
     (
         resultType* resultPtr,
@@ -62,7 +56,6 @@ public:
         const label loop_len
     );
     
-    // template<typename Op>
     void opF_OP_S
     (
         resultType* resultPtr,
@@ -71,6 +64,17 @@ public:
         Op op,
         const label loop_len
     );
+
+    // sumProd
+    void reductionSum
+    (
+        resultType &result,
+        const Type1* field1Ptr,
+        const Type2* field2Ptr,
+        Op op,
+        const label loop_len 
+    );
+
 };
 
 }

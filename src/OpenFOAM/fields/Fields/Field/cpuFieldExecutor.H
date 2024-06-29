@@ -93,6 +93,35 @@ public:
             op(resultPtr[i],field2Ptr[i], cmptRef);
         }        
     };
+
+    inline void reductionSum
+    (
+        resultType &result,
+        const Type1* field1Ptr,
+        const Type2* field2Ptr,
+        Op op,
+        const label loop_len 
+    )
+    {
+        for (label i = 0; i < loop_len; i++)
+        {
+            result += op(field1Ptr[i],field2Ptr[i]);
+        }   
+    };
+    
+    inline void reductionSum
+    (
+        resultType &result,
+        const Type1* field1Ptr,
+        Op op,
+        const label loop_len 
+    )
+    {
+        for (label i = 0; i < loop_len; i++)
+        {
+            result += op(field1Ptr[i]);
+        }   
+    };
 };
 
 }

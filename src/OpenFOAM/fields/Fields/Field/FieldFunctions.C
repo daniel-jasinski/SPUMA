@@ -486,7 +486,15 @@ sumProd(const UList<Type>& f1, const UList<Type>& f2)
     resultType result = Zero;
     if (f1.size() && (f1.size() == f2.size()))
     {
-        TFOR_ALL_S_OP_F_OP_F(resultType, result, +=, Type, f1, &&, Type, f2)
+        if(f1.usePool() && f2.usePool())
+        {
+            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumProdOp<resultType,Type>>>::New();
+            exec->reductionSum(result,f1.begin(),f2.begin(),Foam::exec::sumProdOp<resultType,Type>(),f1.size());
+        }
+        else
+        {
+            TFOR_ALL_S_OP_F_OP_F(resultType, result, +=, Type, f1, &&, Type, f2)
+        };
     }
     return result;
 }

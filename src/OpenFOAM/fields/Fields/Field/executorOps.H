@@ -1,10 +1,10 @@
 #ifndef Foam_executor_ops_H
 #define Foam_executor_ops_H
 
-/*  use cmptType and Type do properly cast input pointer and set nComponents
+/*  use cmptType and Type to properly cast input pointer and set nComponents
     accordingly to launch size*ncompontes when possible
     further typdef are required in this implementation to allow the executors
-    to be template just by the op.
+    to be templated just by the op.
 */
 #include "deviceM.H"
 #include "pTraits.H"
@@ -16,7 +16,34 @@ namespace Foam
 
 namespace exec
 {
-   
+
+template<typename T, typename... P0toN>
+struct is_one_of;
+
+template<typename T>
+struct is_one_of<T> : std::false_type
+{};
+template<typename T, typename... P1toN>
+struct is_one_of<T,T,P1toN...> : std::true_type
+{};
+template<typename T, typename P0, typename... P1toN>
+struct is_one_of<T,P0,P1toN...> : is_one_of<T,P1toN...>
+{};
+//
+template<typename T>
+struct selfAssignOp
+{
+    typedef T execT1;
+    typedef T execT2;
+    typedef T execResultT;
+    typedef typename pTraits<T>::cmptType resultT; // tipo sdata
+    typedef typename pTraits<T>::cmptType Type; //tipe field
+    static constexpr direction nComponents = pTraits_nComponents<T>::value;
+    FOAM_DEVICE_I void operator()(resultT& z, Type& x){
+        z = x;
+    }; 
+};
+
 //NOTE on void ops: arguments must be passed by reference
 template<typename T,typename T1, typename T2>
 struct noopOp3
@@ -61,7 +88,7 @@ template <typename T, typename T1>
 struct negateOp2
 {
     typedef T1 execT1;
-    typedef T1 execT2; // treat this as void?
+    typedef T1 execT2; 
     typedef T execResultT;
     typedef typename pTraits<T>::cmptType resultT;
     typedef typename pTraits<T1>::cmptType Type;
@@ -151,9 +178,9 @@ struct opName##Op3F_OP_F<T, T, T>                                             \
     }                                                                         \
 };
 
-                                        OpHomo(add, z = x + y)
-                                            OpHomo(subtract, z = x - y)
-                                                OpHomo(minus, z = x - y)
+OpHomo(add, z = x + y)
+OpHomo(subtract, z = x - y)
+OpHomo(minus, z = x - y)
 
 // partial specialization for  scalar
 #define OpScalar(opName, op)                                                   \
@@ -268,6 +295,66 @@ OpAllScalar(divide, z = x / y)
 #undef OpScalar
 #undef OpAllScalar
 #undef OpHomo
+
+
+// reduction ops: sum, sumProd, sumSqr, sumMag
+
+// resultType T, fieldType T1
+template<typename T, typename T1, class Enable = void>
+struct sumProdOp
+{
+    typedef T1 execT1;
+    typedef T1 execT2; 
+    typedef T execResultT;
+    typedef T resultT;
+    typedef T1 Type1; // field
+    typedef T1 Type2; // field
+    static constexpr direction nComponents = 1;
+    FOAM_DEVICE_I resultT operator()(const Type1& x, const Type2& y)
+    {
+        return x&&y;
+    };
+
+};
+
+// SFINAE: choose more specialized template
+// enable_if has member type if value is true
+template<typename T,typename T1>
+struct sumProdOp<T,T1, typename std::enable_if<is_one_of<T1,scalar,vector,tensor>::value>::type>
+{
+    typedef T1 execT1;
+    typedef T1 execT2; 
+    typedef T execResultT;
+    typedef T resultT;
+    typedef typename pTraits<T1>::cmptType Type1; // field
+    typedef typename pTraits<T1>::cmptType Type2; // field
+    static constexpr direction nComponents = pTraits_nComponents<T1>::value;
+    FOAM_DEVICE_I resultT operator()(const Type1& x, const Type2& y)
+    {
+        return x*y;
+    };
+ 
+};
+
+#define reductionOp(name, op) \
+template<typename T, typename T1, class Enable = void> \
+struct name##Op \
+{ \
+    typedef T1 execT1;\
+    typedef T1 execT2; \
+    typedef T execResultT;\
+    typedef T resultT;\
+    typedef T1 Type1;\
+    static constexpr direction nComponents = 1; \
+    FOAM_DEVICE_I resultT operator()(const Type1& x) \
+    {\
+        return op;\
+    };\
+};
+
+reductionOp(sum, x)
+reductionOp(sumSqr, sqr(x))
+reductionOp(sumMag, mag(x))
 
 
 }; // end namespace exec

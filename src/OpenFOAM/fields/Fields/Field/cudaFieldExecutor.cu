@@ -5,6 +5,8 @@
 #include "executorOps.H"
 #include "deviceM.H"
 #include "cudaError.H"
+#include "uLabel.H"
+#include <cmath>
 #include <cuda_runtime_api.h>
 
 namespace Foam
@@ -13,14 +15,17 @@ namespace Foam
 namespace cuda
 {
 
-template <typename cmptType, direction nComponents> //cmpType : int, double , complex:( etc
-__global__
-void negate(cmptType* const __restrict__ fp, const label loop_len)
-{   
-    label i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < loop_len*nComponents)
-        fp[i] = - fp[i]; // assume that - operator is defined for Type // note problem for complex
 
+template <typename T,label blockSize>
+__device__
+void warpReduce(volatile T* sdata, label tid) // volataile to ensure visibility of memory operations
+{
+    if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
+    if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
+    if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
+    if (blockSize >= 8)  sdata[tid] += sdata[tid + 4];
+    if (blockSize >= 4)  sdata[tid] += sdata[tid + 2];
+    if (blockSize >= 2)  sdata[tid] += sdata[tid + 1];
 };
 
 template<typename Type1,typename Op>
@@ -36,10 +41,6 @@ void opKernel
     if (i < loop_len)
         op(fp[i],fp[i]);
 };
-// NOTA: in realtá se in op pass puntatori potrei specificare anche li il modo in cui accedo agli stessi?
-// se modifico un poco la macro,
-// cosí l'executor consisterebbe di un solo kernel!! (o quasi)
-// la strategia migliore non é chiara
 
 template <typename Type1, typename Type2,
 typename Op >
@@ -108,33 +109,61 @@ void opKernel
         op(resultp[i], fp[i], s);
 };
 
-}; // end namespace cuda
+// reduction kernel // nota al momento funziona solo su riduzione a scalare atomicAdd non implementata per tutti i tipi
+template <typename resultType, typename Type1, typename Type2,
+typename Op >
+__global__
+void reductionSumKernel
+(
+    //resultType* const __restrict__ result,
+    resultType& result,
+    const Type1* const __restrict__ f1p,
+    const Type2* const __restrict__ f2p,
+    Op& op,
+    const label loop_len
+)
+{   
+          unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x; // global id
+    const unsigned int tid = threadIdx.x; //block local thread id
+    const label gsize = loop_len;
+    const unsigned int blockSize = NUM_THREADS_PER_BLOCK; 
+    const unsigned int gridSize = blockDim.x*2*gridDim.x; //number of thread in a grid
+
+    __shared__ resultType sdata[NUM_THREADS_PER_BLOCK]; //static array in shared memory where the redution is computed
+    sdata[tid] = resultType(Zero); //initialize local value to zero
+
+    //load from gloabl memory + gsize/gridSize step of reduction 
+    while (id < gsize){
+        sdata[tid] += op(f1p[id],f2p[id]) + op(f1p[id+blockSize],f2p[id+blockSize]);
+        id += gridSize;
+    }
+    __syncthreads();
+
+    //block wise reduction steps
+    if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+    if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+    if (blockSize >= 128) { if (tid < 64)  { sdata[tid] += sdata[tid + 64];  } __syncthreads(); }
+
+    //warp wise reduction step
+    //in warp: syncthread guaranteed
+    if (tid < 32)
+    {
+        warpReduce<resultType,blockSize>(sdata, tid);
+    }
+
+    // global accumulator
+    if (tid == 0)
+    {
+        atomicAdd(&result, sdata[0]); //each "master" rank 0 thread add its value to the global variable
+    }
+};
+
+}; //end namespace cuda
 
 };
 
 /*---------------- Memeber functions ----------------------------------------------- */
 
-//template<typename Type1, typename Type2>
-//void Foam::cudaFieldExecutor<Type1,Type2>::negate(Type1* fieldPtr, const label loop_len)
-/*template< typename resultType,typename Type1, typename Type2>
-void Foam::cudaFieldExecutor<resultType,Type1,Type2>::negate(Type1* fieldPtr, const label loop_len)
-{
-    typedef typename pTraits<Type1>::cmptType cmptType1;
-    static constexpr direction nComponents1 = pTraits_nComponents<Type1>::value;
-    
-    cmptType1* const __restrict__ f1p = reinterpret_cast<cmptType1*>(fieldPtr); // array continuos in memory
-    
-    const label numBlocks = SET_NUM_BLOCKS(loop_len*nComponents1);
-
-    Foam::cuda::negate<cmptType1,nComponents1><<<numBlocks, NUM_THREADS_PER_BLOCK>>>(f1p, loop_len);
-    CHECK_LAST_CUDA_ERROR();
-    Info << "EXEC: ciao negate" << endl;
-
-    deviceSync();
-};
-*/
-
-//template<typename resultType, typename Type1, typename Type2>
 template<typename Op>
 void Foam::cudaFieldExecutor<Op>::opF_OP_F
 (
@@ -165,7 +194,6 @@ void Foam::cudaFieldExecutor<Op>::opF_OP_F
     deviceSync();
 };
 
-//template<typename resultType, typename Type1, typename Type2>
 template<typename Op>
 void Foam::cudaFieldExecutor<Op>::opF_OP_F
 (
@@ -200,7 +228,6 @@ void Foam::cudaFieldExecutor<Op>::opF_OP_F
     deviceSync();
 };
 
-//template<typename resultType, typename Type1, typename Type2>
 template<typename Op>
 void Foam::cudaFieldExecutor<Op>::opF_OP_F
 (
@@ -239,7 +266,6 @@ void Foam::cudaFieldExecutor<Op>::opF_OP_F
     deviceSync();
 };
 
-//template<typename resultType, typename Type1, typename Type2>
 template<typename Op>
 void Foam::cudaFieldExecutor<Op>::opS_OP_F
 (
@@ -261,6 +287,7 @@ void Foam::cudaFieldExecutor<Op>::opS_OP_F
     
     //prepare single cmpt to be used/transferred on device
     //if constexpr(!std::is_same<refT,scalar>::value || !std::is_same<refT,label>::value)
+    //if (mem.registered())
     //cudaHostRegister(const_cast<refT*>(&cmptref), sizeof(refT), cudaHostRegisterReadOnly);
     
     // calc number of block to dispatch
@@ -275,16 +302,14 @@ void Foam::cudaFieldExecutor<Op>::opS_OP_F
             op,
             loop_len*op.nComponents
         );
+    
+    deviceSync();
     CHECK_LAST_CUDA_ERROR();
     //if constexpr(!std::is_same<refT,scalar>::value || !std::is_same<refT,label>::value)
     //cudaHostUnregister(const_cast<refT*>(&cmptref));
-    //Info << "EXEC: ciao cuda op" << endl;
-
-    deviceSync();
+    //Info << "EXEC: ciao cuda op" << endsente di confrontare i costi delle coperture r.c. auto offerte dalle imprese assicurative operanti in Italia. 
 };
 
-
-//template<typename resultType, typename Type1, typename Type2>
 template<typename Op>
 void Foam::cudaFieldExecutor<Op>::opF_OP_S
 (
@@ -333,6 +358,39 @@ void Foam::cudaFieldExecutor<Op>::opF_OP_S
     deviceSync();
 };
 
+template <typename Op>
+void Foam::cudaFieldExecutor<Op>::reductionSum(
+    resultType &result,
+    const Type1 *field1Ptr,
+    const Type2 *field2Ptr,
+    Op op,
+    const label loop_len)
+{
 
+    typedef typename Op::resultT resultT;
+    typedef typename Op::Type1 T1;
+    typedef typename Op::Type2 T2;
 
+    resultT &resultRef = reinterpret_cast<resultT &>(result);
+    const T1 *const f1p = reinterpret_cast<const T1 *>(field1Ptr);
+    const T2 *const f2p = reinterpret_cast<const T2 *>(field2Ptr);
+
+    // cudaHostRegister(&result,sizeof(resultType),cudaHostRegisterDefault);
+
+    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(loop_len);
+
+    Foam::cuda::reductionSumKernel<resultType, T1, T2, Op>
+        //<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+        <<<((numBlocks + NUM_SM - 1) / NUM_SM) * NUM_SM, NUM_THREADS_PER_BLOCK>>>(
+            resultRef,
+            f1p,
+            f2p,
+            op,
+            loop_len * op.nComponents);
+    deviceSync();
+
+    CHECK_LAST_CUDA_ERROR();
+
+    // cudaHostUnregister(&result);
+};
 #endif
