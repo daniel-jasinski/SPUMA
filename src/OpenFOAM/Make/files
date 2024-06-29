@@ -39,6 +39,7 @@ $(pool)/MemoryPool.C
 $(pool)/fixedSizeMemoryPool.C
 $(pool)/dummyMemoryPool.C
 
+memoryRegister/memoryRegister.C
 
 parallel/processorTopology/processorTopology.C
 
