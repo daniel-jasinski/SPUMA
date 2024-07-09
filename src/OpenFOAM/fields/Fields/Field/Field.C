@@ -648,8 +648,23 @@ void Foam::Field<Type>::replace
     const UList<cmptType>& sf
 )
 {
-    TFOR_ALL_F_OP_FUNC_S_F(Type, *this, ., replace, const direction, d,
-        cmptType, sf)
+    if(this->usePool() && sf.usePool())
+    {
+        checkFields(*this, sf, "f1.replace(s, f2)");
+        auto exec = tmp<cudaFieldExecutor<Foam::exec::replaceOp<Type>>>::New();
+        exec->opF_OP_F
+            (
+                this->begin(),
+                sf.begin(),
+                Foam::exec::replaceOp<Type>(d),
+                this->size()
+            );
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_S_F(Type, *this, ., replace, const direction, d,
+            cmptType, sf)
+    }
 }
 
 
@@ -672,8 +687,22 @@ void Foam::Field<Type>::replace
     const cmptType& c
 )
 {
-    TFOR_ALL_F_OP_FUNC_S_S(Type, *this, ., replace, const direction, d,
-        cmptType, c)
+    if(this->usePool())
+    {
+        auto exec = tmp<cudaFieldExecutor<Foam::exec::replaceOp<Type>>>::New();
+        exec->opF_OP_S
+            (
+                this->begin(),
+                c,
+                Foam::exec::replaceOp<Type>(d),
+                this->size()
+            );
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_S_S(Type, *this, ., replace, const direction, d,
+            cmptType, c)
+    }
 }
 
 
@@ -792,7 +821,7 @@ void Foam::Field<Type>::operator=(const tmp<Field>& rhs)
     List<Type>::operator=(rhs());
 }
 
-
+//TODO executor
 template<class Type>
 template<class Form, class Cmpt, Foam::direction nCmpt>
 void Foam::Field<Type>::operator=(const VectorSpace<Form,Cmpt,nCmpt>& vs)
@@ -800,32 +829,56 @@ void Foam::Field<Type>::operator=(const VectorSpace<Form,Cmpt,nCmpt>& vs)
     TFOR_ALL_F_OP_S(Type, *this, =, VSType, vs)
 }
 
-
-#define COMPUTED_ASSIGNMENT(TYPE, op)                                          \
-                                                                               \
-template<class Type>                                                           \
-void Foam::Field<Type>::operator op(const UList<TYPE>& f)                      \
-{                                                                              \
-    TFOR_ALL_F_OP_F(Type, *this, op, TYPE, f)                                  \
-}                                                                              \
-                                                                               \
-template<class Type>                                                           \
-void Foam::Field<Type>::operator op(const tmp<Field<TYPE>>& tf)                \
-{                                                                              \
-    operator op(tf());                                                         \
-    tf.clear();                                                                \
-}                                                                              \
-                                                                               \
-template<class Type>                                                           \
-void Foam::Field<Type>::operator op(const TYPE& t)                             \
-{                                                                              \
-    TFOR_ALL_F_OP_S(Type, *this, op, TYPE, t)                                  \
+#define COMPUTED_ASSIGNMENT(TYPE, name, op)                                           \
+                                                                                      \
+template <class Type>                                                                 \
+void Foam::Field<Type>::operator op(const UList<TYPE> &f)                             \
+{                                                                                     \
+    if (this->usePool() && f.usePool())                                               \
+    {                                                                                 \
+        checkFields(*this, f, "f1 " #op " f2");                                       \
+        auto exec = tmp<cudaFieldExecutor<Foam::exec::name##Op2<Type, TYPE>>>::New(); \
+        exec->opF_OP_F(                                                               \
+            this->begin(),                                                            \
+            f.begin(),                                                                \
+            Foam::exec::name##Op2<Type, TYPE>(),                                      \
+            f.size());                                                                \
+    }                                                                                 \
+    else                                                                              \
+    {                                                                                 \
+        TFOR_ALL_F_OP_F(Type, *this, op, TYPE, f)                                     \
+    }                                                                                 \
+}                                                                                     \
+                                                                                      \
+template <class Type>                                                                 \
+void Foam::Field<Type>::operator op(const tmp<Field<TYPE>> &tf)                       \
+{                                                                                     \
+    operator op(tf());                                                                \
+    tf.clear();                                                                       \
+}                                                                                     \
+                                                                                      \
+template <class Type>                                                                 \
+void Foam::Field<Type>::operator op(const TYPE & t)                                   \
+{                                                                                     \
+    if (this->usePool())                                                              \
+    {                                                                                 \
+        auto exec = tmp<cudaFieldExecutor<Foam::exec::name##Op2<Type, TYPE>>>::New(); \
+        exec->opF_OP_S(                                                               \
+            this->begin(),                                                            \
+            t,                                                                        \
+            Foam::exec::name##Op2<Type, TYPE>(),                                      \
+            this->size());                                                            \
+    }                                                                                 \
+    else                                                                              \
+    {                                                                                 \
+        TFOR_ALL_F_OP_S(Type, *this, op, TYPE, t)                                     \
+    }                                                                                 \
 }
 
-COMPUTED_ASSIGNMENT(Type, +=)
-COMPUTED_ASSIGNMENT(Type, -=)
-COMPUTED_ASSIGNMENT(scalar, *=)
-COMPUTED_ASSIGNMENT(scalar, /=)
+COMPUTED_ASSIGNMENT(Type,eqSum, +=)
+COMPUTED_ASSIGNMENT(Type,eqMinus, -=)
+COMPUTED_ASSIGNMENT(scalar,eqProd, *=)
+COMPUTED_ASSIGNMENT(scalar,eqDivide, /=)
 
 #undef COMPUTED_ASSIGNMENT
 

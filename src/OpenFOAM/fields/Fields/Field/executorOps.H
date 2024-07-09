@@ -29,17 +29,19 @@ struct is_one_of<T,T,P1toN...> : std::true_type
 template<typename T, typename P0, typename... P1toN>
 struct is_one_of<T,P0,P1toN...> : is_one_of<T,P1toN...>
 {};
+
+
 //
-template<typename T>
-struct selfAssignOp
+template<typename T,typename T1>
+struct assignOp
 {
-    typedef T execT1;
-    typedef T execT2;
+    typedef T1 execT1;
+    typedef T1 execT2;
     typedef T execResultT;
     typedef typename pTraits<T>::cmptType resultT; // tipo sdata
-    typedef typename pTraits<T>::cmptType Type; //tipe field
-    static constexpr direction nComponents = pTraits_nComponents<T>::value;
-    FOAM_DEVICE_I void operator()(resultT& z, Type& x){
+    typedef typename pTraits<T1>::cmptType Type1; //tipe field
+    static constexpr direction nComponents = pTraits_nComponents<T1>::value;
+    FOAM_DEVICE_I void operator()(resultT& z, const Type1& x){
         z = x;
     }; 
 };
@@ -58,30 +60,42 @@ struct noopOp3
     FOAM_DEVICE_I void operator()(resultT& z, Type1& x, Type2& y){};
 };
 
-// non tested macro
-/*#define binaryOp(opName, op)                                                 \
-template <typename T1, typename T2>                                          \
-struct opName##Op2F_OP_F                                                     \
-{                                                                            \
-    typedef typename pTraits<T1>::cmptType resultT;                          \
-    typedef typename pTraits<T2>::cmptType Type;                             \
-    static constexpr direction nComponents = pTraits_nComponents<T1>::value; \
-    FOAM_DEVICE_I void operator()(resultT& x, const Type& y)                 \
-    {                                                                        \
-        op;                                                                  \
-    }                                                                        \
-};                                                                           \
-template <typename T1, typename T2>                                          \
-struct opName##Op2                                                           \
-{                                                                            \
-    typedef T1 resultT;                                                      \
-    typedef T2 Type;                                                         \
-    static constexpr direction nComponents = 1;                              \
-    FOAM_DEVICE_I void operator()(resultT& x, const Type& y)                 \
-    {                                                                        \
-        op;                                                                  \
-    }                                                                        \
-};*/
+#define binaryOp(opName, op)                                                \
+template <typename T, typename T1>                                          \
+struct opName##Op2F_OP_F                                                    \
+{                                                                           \
+    typedef T1 execT1;                                                      \
+    typedef T1 execT2;                                                      \
+    typedef T execResultT;                                                  \
+    typedef typename pTraits<T1>::cmptType Type1;                           \
+    typedef typename pTraits<T1>::cmptType Type2;                           \
+    typedef typename pTraits<T>::cmptType resultT;                          \
+    static constexpr direction nComponents = pTraits_nComponents<T>::value; \
+    FOAM_DEVICE_I void operator()(resultT &x, const Type1 &y)               \
+    {                                                                       \
+        op;                                                                 \
+    }                                                                       \
+};                                                                          \
+template <typename T, typename T1>                                          \
+struct opName##Op2                                                          \
+{                                                                           \
+    typedef T1 execT1;                                                      \
+    typedef T1 execT2;                                                      \
+    typedef T execResultT;                                                  \
+    typedef T1 Type1;                                                       \
+    typedef T1 Type2;                                                       \
+    typedef T resultT;                                                      \
+    static constexpr direction nComponents = 1;                             \
+    FOAM_DEVICE_I void operator()(resultT &x, const Type1 &y)               \
+    {                                                                       \
+        op;                                                                 \
+    }                                                                       \
+};
+
+binaryOp(eqSum, x += y)
+binaryOp(eqMinus, x -= y)
+binaryOp(eqProd, x *= y)
+binaryOp(eqDivide, x /= y)
 
 // specialization of particular ops
 template <typename T, typename T1>
@@ -91,9 +105,9 @@ struct negateOp2
     typedef T1 execT2; 
     typedef T execResultT;
     typedef typename pTraits<T>::cmptType resultT;
-    typedef typename pTraits<T1>::cmptType Type;
+    typedef typename pTraits<T1>::cmptType Type1;
     static constexpr direction nComponents = pTraits_nComponents<T>::value;
-    FOAM_DEVICE_I void operator()(resultT& x, const Type& y)
+    FOAM_DEVICE_I void operator()(resultT& x, const Type1& y)
     {
         x = -y;
     }
@@ -107,12 +121,53 @@ struct hdualOp2
     typedef T execResultT;
 
     typedef T resultT;
-    typedef T1 Type;
+    typedef T1 Type1;
     static constexpr direction nComponents = 1;
-    FOAM_DEVICE_I void operator()(resultT& x, const Type& y)
+    FOAM_DEVICE_I void operator()(resultT& x, const Type1& y)
     {
         x = *y;
     }
+};
+
+template <typename T, typename T1>
+struct componentOp
+{
+    typedef T1 execT1;
+    typedef T1 execT2; 
+    typedef T execResultT;
+    typedef T resultT;
+    typedef T1 Type1;
+    static constexpr direction nComponents = 1;
+
+    componentOp(const direction d) noexcept: c(d) {};
+
+    FOAM_DEVICE_I void operator()(resultT& x, const Type1& y)
+    {
+        x = y.component(c);
+    }
+
+private:
+   direction c;
+};
+
+template <typename T>
+struct replaceOp
+{
+    typedef typename pTraits<T>::cmptType execT1;
+    typedef typename pTraits<T>::cmptType execT2; 
+    typedef T execResultT;
+    typedef T resultT;
+    typedef typename pTraits<T>::cmptType Type1;
+    static constexpr direction nComponents = 1;
+    
+    replaceOp(const direction d) noexcept: c(d) {};     
+    FOAM_DEVICE_I void operator()(resultT& x, const Type1& y)
+    {
+        x.replace(c,y);
+    }
+
+private:
+    direction c;
 };
 
 // Triple template parameter
@@ -336,20 +391,20 @@ struct sumProdOp<T,T1, typename std::enable_if<is_one_of<T1,scalar,vector,tensor
  
 };
 
-#define reductionOp(name, op) \
-template<typename T, typename T1, class Enable = void> \
-struct name##Op \
-{ \
-    typedef T1 execT1;\
-    typedef T1 execT2; \
-    typedef T execResultT;\
-    typedef T resultT;\
-    typedef T1 Type1;\
-    static constexpr direction nComponents = 1; \
-    FOAM_DEVICE_I resultT operator()(const Type1& x) \
-    {\
-        return op;\
-    };\
+#define reductionOp(name, op)                        \
+template <typename T, typename T1>                   \
+struct name##Op                                      \
+{                                                    \
+    typedef T1 execT1;                               \
+    typedef T1 execT2;                               \
+    typedef T execResultT;                           \
+    typedef T resultT;                               \
+    typedef T1 Type1;                                \
+    static constexpr direction nComponents = 1;      \
+    FOAM_DEVICE_I resultT operator()(const Type1 &x) \
+    {                                                \
+        return op;                                   \
+    };                                               \
 };
 
 reductionOp(sum, x)

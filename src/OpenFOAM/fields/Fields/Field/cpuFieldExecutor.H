@@ -11,7 +11,6 @@ template<typename Op>
 class cpuFieldExecutor
 :
     public refCount
-    //public FieldExecutor<Type1,Type2>
 {
     typedef typename Op::execResultT resultType;
     typedef typename Op::execT1 Type1;
@@ -97,8 +96,8 @@ public:
     inline void reductionSum
     (
         resultType &result,
-        const Type1* field1Ptr,
-        const Type2* field2Ptr,
+        const Type1* const __restrict__ field1Ptr,
+        const Type2* const __restrict__ field2Ptr,
         Op op,
         const label loop_len 
     )
@@ -112,7 +111,7 @@ public:
     inline void reductionSum
     (
         resultType &result,
-        const Type1* field1Ptr,
+        const Type1* const __restrict__ field1Ptr,
         Op op,
         const label loop_len 
     )

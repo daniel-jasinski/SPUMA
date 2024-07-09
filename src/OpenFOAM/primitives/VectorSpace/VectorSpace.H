@@ -160,7 +160,7 @@ public:
     // Constructors
 
         //- Construct initialized to zero
-        inline VectorSpace(const Foam::zero);
+        FOAM_DEVICE inline VectorSpace(const Foam::zero);
 
         //- Copy construct
         inline VectorSpace(const VectorSpace<Form, Cmpt, Ncmpts>& vs);
@@ -181,11 +181,11 @@ public:
             return Ncmpts;
         }
 
-        inline const Cmpt& component(const direction) const;
-        inline Cmpt& component(const direction);
+        FOAM_DEVICE inline const Cmpt& component(const direction) const;
+        FOAM_DEVICE inline Cmpt& component(const direction);
 
-        inline void component(Cmpt&, const direction) const;
-        inline void replace(const direction, const Cmpt&);
+        FOAM_DEVICE inline void component(Cmpt&, const direction) const;
+        FOAM_DEVICE inline void replace(const direction, const Cmpt&);
 
         //- Return const pointer to the first data element
         inline const Cmpt* cdata() const noexcept;
@@ -206,12 +206,12 @@ public:
         inline Cmpt& operator[](const direction);
 
         FOAM_DEVICE inline void operator=(const VectorSpace<Form, Cmpt, Ncmpts>&);
-        inline void operator+=(const VectorSpace<Form, Cmpt, Ncmpts>&);
-        inline void operator-=(const VectorSpace<Form, Cmpt, Ncmpts>&);
+        FOAM_DEVICE inline void operator+=(const VectorSpace<Form, Cmpt, Ncmpts>&);
+        FOAM_DEVICE inline void operator-=(const VectorSpace<Form, Cmpt, Ncmpts>&);
 
-        inline void operator=(const Foam::zero);
-        inline void operator*=(const scalar);
-        inline void operator/=(const scalar);
+        FOAM_DEVICE inline void operator=(const Foam::zero);
+        FOAM_DEVICE inline void operator*=(const scalar);
+        FOAM_DEVICE inline void operator/=(const scalar);
 
 
     // Iterators

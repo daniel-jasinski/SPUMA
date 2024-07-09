@@ -36,7 +36,7 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace(const Foam::zero)
+FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace(const Foam::zero)
 {
     VectorSpaceOps<Ncmpts,0>::eqOpS(*this, Zero, eqOp<Cmpt>());
 }
@@ -462,7 +462,7 @@ inline typename powProduct<Form, 2>::type pow
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline scalar magSqr
+FOAM_DEVICE inline scalar magSqr
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -474,7 +474,7 @@ inline scalar magSqr
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline scalar mag
+FOAM_DEVICE inline scalar mag
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )

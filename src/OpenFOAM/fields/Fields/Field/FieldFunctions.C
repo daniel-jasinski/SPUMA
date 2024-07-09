@@ -50,10 +50,26 @@ void component
 {
     typedef typename Field<Type>::cmptType resultType;
 
-    TFOR_ALL_F_OP_F_FUNC_S
-    (
-        resultType, result, =, Type, f1, .component, const direction, d
-    )
+    if (result.usePool() && f1.usePool())
+    {
+        checkFields(result, f1, "f1 = f2.component(s)");
+        auto exec = tmp<cudaFieldExecutor<Foam::exec::componentOp<resultType,Type>>>::New();
+        //auto exec = tmp<cudaFieldExecutor<Foam::exec::assignOp<resultType,Type>>>::New();
+        exec->opF_OP_F
+            (
+                result.begin(),
+                f1.begin(),
+                Foam::exec::componentOp<resultType,Type>(d),
+                f1.size()
+            );
+    }
+    else
+    {
+        TFOR_ALL_F_OP_F_FUNC_S
+        (
+            resultType, result, =, Type, f1, .component, const direction, d
+        )
+    }
 }
 
 
@@ -409,8 +425,15 @@ Type sum(const UList<Type>& f1)
 
     if (f1.size())
     {
-        // Use resultType() as functional cast
-        TFOR_ALL_S_OP_FUNC_F(resultType, result, +=, resultType, Type, f1)
+        if(f1.usePool())
+        {
+            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumOp<resultType,Type>>>::New();
+            exec->reductionSum(result,f1.begin(),Foam::exec::sumOp<resultType,Type>(),f1.size());
+        }
+        else
+        {
+            TFOR_ALL_S_OP_FUNC_F(resultType, result, +=, resultType, Type, f1)
+        }
     }
 
     return Type(result);
@@ -531,7 +554,15 @@ sumSqr(const UList<Type>& f1)
     resultType result = Zero;
     if (f1.size())
     {
-        TFOR_ALL_S_OP_FUNC_F(resultType, result, +=, sqr, Type, f1)
+        if (f1.usePool())
+        {
+            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumSqrOp<resultType,Type>>>::New();
+            exec->reductionSum(result,f1.begin(),Foam::exec::sumSqrOp<resultType,Type>(),f1.size());
+        }
+        else
+        {
+            TFOR_ALL_S_OP_FUNC_F(resultType, result, +=, sqr, Type, f1)
+        }
     }
     return result;
 }
@@ -556,7 +587,15 @@ sumMag(const UList<Type>& f1)
     resultType result = Zero;
     if (f1.size())
     {
-        TFOR_ALL_S_OP_FUNC_F(resultType, result, +=, mag, Type, f1)
+        if (f1.usePool())
+        {
+            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumMagOp<resultType,Type>>>::New();
+            exec->reductionSum(result,f1.begin(),Foam::exec::sumMagOp<resultType,Type>(),f1.size());
+        }
+        else
+        {
+            TFOR_ALL_S_OP_FUNC_F(resultType, result, +=, mag, Type, f1)
+        }
     }
     return result;
 }
@@ -790,12 +829,12 @@ void OpFunc(                                                                    
         auto exec =                                                                                    \
             tmp<                                                                                       \
                 cudaFieldExecutor<                                                                     \
-                    typename Foam::exec::OpFunc##Op3F_OP_F<resultType, Type1, Type2>>>::New();         \
+                    typename Foam::exec::OpFunc##Op3<resultType, Type1, Type2>>>::New();         \
         exec->opF_OP_F(                                                                                \
             result.begin(),                                                                            \
             f1.begin(),                                                                                \
             f2.begin(),                                                                                \
-            Foam::exec::OpFunc##Op3F_OP_F<resultType, Type1, Type2>(),                                 \
+            Foam::exec::OpFunc##Op3<resultType, Type1, Type2>(),                                 \
             result.size());                                                                            \
     }                                                                                                  \
     else                                                                                               \

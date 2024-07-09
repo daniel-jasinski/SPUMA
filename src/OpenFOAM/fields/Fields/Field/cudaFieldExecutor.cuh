@@ -2,18 +2,17 @@
 #define Foam_Cuda_Field_Executor_H
 
 #include "FieldExecutor.H"
+#include "MemoryPool.H"
 
 namespace Foam
 {
 
 //fwd declaration
-//template<typename resultType,typename Type1, typename Type2, typename Op> class FieldExecutor;
 
 template<typename Op>
 class cudaFieldExecutor
 :
     public refCount
-//    public FieldExecutor<Type1, Type2>
 {
     typedef typename Op::execResultT resultType;
     typedef typename Op::execT1 Type1;
@@ -37,6 +36,16 @@ public:
         Op op,
         const label loop_len
     );
+
+
+    void opF_OP_S
+    (
+        resultType* resultPtr,
+        const Type1& cmptRef,
+        Op op,
+        const label loop_len
+    );
+    
     // TODO change Op to allow for move semantic
     void opF_OP_F
     (
@@ -71,6 +80,14 @@ public:
         resultType &result,
         const Type1* field1Ptr,
         const Type2* field2Ptr,
+        Op op,
+        const label loop_len 
+    );
+
+    void reductionSum
+    (
+        resultType &result,
+        const Type1* field1Ptr,
         Op op,
         const label loop_len 
     );
