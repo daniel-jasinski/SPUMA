@@ -142,10 +142,10 @@ public:
         ) const noexcept;
 
         //- The length (L2-norm) of the vector
-        inline scalar mag() const;
+        FOAM_DEVICE inline scalar mag() const;
 
         //- The length (L2-norm) squared of the vector.
-        inline scalar magSqr() const;
+        FOAM_DEVICE inline scalar magSqr() const;
 
         //- The L2-norm distance from another vector.
         //- The mag() of the difference.

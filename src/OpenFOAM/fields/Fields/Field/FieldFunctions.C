@@ -511,8 +511,8 @@ sumProd(const UList<Type>& f1, const UList<Type>& f2)
     {
         if(f1.usePool() && f2.usePool())
         {
-            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumProdOp<resultType,Type>>>::New();
-            exec->reductionSum(result,f1.begin(),f2.begin(),Foam::exec::sumProdOp<resultType,Type>(),f1.size());
+            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumProdOp<resultType,Type,Type>>>::New();
+            exec->reductionSum(result,f1.begin(),f2.begin(),Foam::exec::sumProdOp<resultType,Type,Type>(),f1.size());
         }
         else
         {

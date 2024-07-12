@@ -2,7 +2,6 @@
 #define Foam_Cuda_Field_Executor_H
 
 #include "FieldExecutor.H"
-#include "MemoryPool.H"
 
 namespace Foam
 {
@@ -17,6 +16,7 @@ class cudaFieldExecutor
     typedef typename Op::execResultT resultType;
     typedef typename Op::execT1 Type1;
     typedef typename Op::execT2 Type2;
+    typedef typename Op::execT3 Type3;
 
 public:
     
@@ -74,7 +74,26 @@ public:
         const label loop_len
     );
 
-    // sumProd
+    void opF_OP_F_F
+    (
+        resultType* resultPtr,
+        const Type1* field1Ptr,
+        const Type2* field2Ptr,
+        const Type3* field3Ptr,
+        Op op,
+        const label loop_len
+    );
+    
+    void opF_OP_F_S
+    (
+        resultType* resultPtr,
+        const Type1* field1Ptr,
+        const Type2* field2Ptr,
+        const Type3 &cmptRef,
+        Op op,
+        const label loop_len
+    );
+
     void reductionSum
     (
         resultType &result,

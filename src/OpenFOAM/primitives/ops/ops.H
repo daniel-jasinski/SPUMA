@@ -55,7 +55,7 @@ namespace Foam
     template<class T1, class T2>                                               \
     struct opName##Op2                                                         \
     {                                                                          \
-        FOAM_DEVICE_I void operator()(T1& x, const T2& y) const                              \
+        FOAM_DEVICE inline void operator()(T1& x, const T2& y) const           \
         {                                                                      \
             op;                                                                \
         }                                                                      \
@@ -64,7 +64,7 @@ namespace Foam
     template<class T>                                                          \
     struct opName##Op                                                          \
     {                                                                          \
-        FOAM_DEVICE_I void operator()(T& x, const T& y) const                                \
+        FOAM_DEVICE inline void operator()(T& x, const T& y) const             \
         {                                                                      \
             op;                                                                \
         }                                                                      \

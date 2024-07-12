@@ -130,6 +130,48 @@ void opKernel
         op(resultp[i], fp[i], s);
 };
 
+template <typename resultType, typename Type1, typename Type2, typename Type3,
+typename Op >
+__global__
+void opKernel
+(
+    resultType* const __restrict__ resultp,
+    const Type1* const __restrict__ f1p,
+    const Type2* const __restrict__ f2p,
+    const Type3* const __restrict__ f3p,
+    Op op,
+    const label loop_len
+)
+{   
+          unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int gridSize = blockDim.x * gridDim.x;
+    while (i < loop_len){
+        op(resultp[i],f1p[i], f2p[i], f3p[i]);
+        i += gridSize;
+    }
+};
+
+template <typename resultType, typename Type1, typename Type2, typename Type3,
+typename Op >
+__global__
+void opKernel
+(
+    resultType* const __restrict__ resultp,
+    const Type1* const __restrict__ f1p,
+    const Type2* const __restrict__ f2p,
+    const Type3 s,
+    Op op,
+    const label loop_len
+)
+{   
+          unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int gridSize = blockDim.x * gridDim.x;
+    while (i < loop_len){
+        op(resultp[i],f1p[i], f2p[i], s);
+        i += gridSize;
+    }
+};
+
 // reduction kernels
 
 template <typename resultType, typename Type1, typename Type2,
@@ -186,7 +228,7 @@ void reductionSumKernel
 
 
 //NOTE: global accumulator handled with a mutex
-template <typename resultType, typename Type1, typename Type2,
+template <typename resultType, typename Type1,
 typename Op >
 __global__
 void reductionSumKernel
@@ -460,13 +502,95 @@ void Foam::cudaFieldExecutor<Op>::opF_OP_S
 
 };
 
+template<typename Op>
+void Foam::cudaFieldExecutor<Op>::opF_OP_F_F
+(
+    resultType* resultPtr,
+    const Type1* field1Ptr,
+    const Type2* field2Ptr,
+    const Type3* field3Ptr,
+    Op op,
+    const label loop_len
+)
+{
+    // appropriate pointer casting
+    typedef typename Op::resultT resultT;
+    typedef typename Op::Type1   T1;
+    typedef typename Op::Type2   T2;
+    typedef typename Op::Type3   T3;
+
+    resultT* const resultp = reinterpret_cast<resultT*>(resultPtr);  
+    const T1* const f1p =    reinterpret_cast<const T1*>(field1Ptr);  
+    const T2* const f2p =    reinterpret_cast<const T1*>(field2Ptr);  
+    const T3* const f3p =    reinterpret_cast<const T3*>(field3Ptr);  
+    
+    // calc number of block to dispatch
+    const label numBlocks = SET_NUM_BLOCKS(loop_len*op.nComponents);
+
+    Foam::cuda::opKernel<resultT,T1,T2,T3,Op>
+        <<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+        (
+            resultp,
+            f1p,
+            f2p,
+            field3Ptr,
+            op,
+            loop_len*op.nComponents
+        );
+    deviceSync();    
+    CHECK_LAST_CUDA_ERROR();
+
+};
+
+template<typename Op>
+void Foam::cudaFieldExecutor<Op>::opF_OP_F_S
+(
+    resultType* resultPtr,
+    const Type1* field1Ptr,
+    const Type2* field2Ptr,
+    const Type3 &cmptRef,
+    Op op,
+    const label loop_len
+)
+{
+    // appropriate pointer casting
+    typedef typename Op::resultT resultT;
+    typedef typename Op::Type1   T1;
+    typedef typename Op::Type2   T2;
+    //typedef typename Op::Type3   T3;
+
+    resultT* const resultp = reinterpret_cast<resultT*>(resultPtr);  
+    const T1* const f1p =    reinterpret_cast<const T1*>(field1Ptr);  
+    const T2* const f2p =    reinterpret_cast<const T2*>(field2Ptr);  
+    //const T3& cmptref =    reinterpret_cast<const T3&>(cmptRef); 
+    
+    // calc number of block to dispatch
+    const label numBlocks = SET_NUM_BLOCKS(loop_len*op.nComponents);
+
+    Foam::cuda::opKernel<resultT,T1,T2,scalar,Op>
+        <<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+        (
+            resultp,
+            f1p,
+            f2p,
+            cmptRef,
+            op,
+            loop_len*op.nComponents
+        );
+    deviceSync();    
+    CHECK_LAST_CUDA_ERROR();
+
+};
+
 template <typename Op>
-void Foam::cudaFieldExecutor<Op>::reductionSum(
+void Foam::cudaFieldExecutor<Op>::reductionSum
+(
     resultType &result,
     const Type1 *field1Ptr,
     const Type2 *field2Ptr,
     Op op,
-    const label loop_len)
+    const label loop_len
+)
 {
 
     typedef typename Op::resultT resultT;
@@ -521,7 +645,7 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
     Foam::cuda::spinLock lock;
 
     Foam::cuda::reductionSumKernel<resultType,T1,Op>
-        <<<(numBlocks + NUM_SM -1)/NUM_SM, NUM_THREADS_PER_BLOCK>>>
+        <<<(numBlocks/NUM_SM + NUM_SM), NUM_THREADS_PER_BLOCK>>>
         //<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
         (
             &resultRef,

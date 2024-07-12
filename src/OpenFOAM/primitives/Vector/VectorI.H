@@ -80,7 +80,7 @@ inline const Foam::Vector<Cmpt>& Foam::Vector<Cmpt>::centre
 
 
 template<class Cmpt>
-inline Foam::scalar Foam::Vector<Cmpt>::magSqr() const
+FOAM_DEVICE inline Foam::scalar Foam::Vector<Cmpt>::magSqr() const
 {
     return
     (
@@ -92,7 +92,7 @@ inline Foam::scalar Foam::Vector<Cmpt>::magSqr() const
 
 
 template<class Cmpt>
-inline Foam::scalar Foam::Vector<Cmpt>::mag() const
+FOAM_DEVICE inline Foam::scalar Foam::Vector<Cmpt>::mag() const
 {
     return ::sqrt(this->magSqr());
 }
@@ -256,7 +256,7 @@ namespace Foam
 
 //- Linear interpolation of vectors a and b by factor t
 template<class Cmpt>
-inline Vector<Cmpt> lerp
+FOAM_DEVICE inline Vector<Cmpt> lerp
 (
     const Vector<Cmpt>& a,
     const Vector<Cmpt>& b,

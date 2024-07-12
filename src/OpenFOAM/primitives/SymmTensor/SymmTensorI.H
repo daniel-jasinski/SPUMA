@@ -596,7 +596,7 @@ innerSqr(const SymmTensor<Cmpt>& st)
 
 //- Return the square of Frobenius norm of a SymmTensor
 template<class Cmpt>
-inline Foam::scalar magSqr(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline Foam::scalar magSqr(const SymmTensor<Cmpt>& st)
 {
     return
     (
@@ -609,7 +609,7 @@ inline Foam::scalar magSqr(const SymmTensor<Cmpt>& st)
 
 //- Return the square of a Vector as a SymmTensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> sqr(const Vector<Cmpt>& v)
+FOAM_DEVICE inline SymmTensor<Cmpt> sqr(const Vector<Cmpt>& v)
 {
     return SymmTensor<Cmpt>
     (
@@ -622,7 +622,7 @@ inline SymmTensor<Cmpt> sqr(const Vector<Cmpt>& v)
 
 //- Linear interpolation of symmetric tensors a and b by factor t
 template<class Cmpt>
-inline SymmTensor<Cmpt> lerp
+FOAM_DEVICE inline SymmTensor<Cmpt> lerp
 (
     const SymmTensor<Cmpt>& a,
     const SymmTensor<Cmpt>& b,

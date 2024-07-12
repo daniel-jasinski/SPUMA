@@ -122,7 +122,7 @@ inline SphericalTensor<Cmpt> inv(const SphericalTensor<Cmpt>& st)
 
 //- Return the square of Frobenius norm of a SphericalTensor
 template<class Cmpt>
-inline Foam::scalar magSqr(const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE inline Foam::scalar magSqr(const SphericalTensor<Cmpt>& st)
 {
     return st.diagSqr();
 }
@@ -162,7 +162,7 @@ inline Cmpt cmptAv(const SphericalTensor<Cmpt>& st)
 
 //- Linear interpolation of spherical tensors a and b by factor t
 template<class Cmpt>
-inline SphericalTensor<Cmpt> lerp
+FOAM_DEVICE inline SphericalTensor<Cmpt> lerp
 (
     const SphericalTensor<Cmpt>& a,
     const SphericalTensor<Cmpt>& b,

@@ -314,12 +314,12 @@ void OpFunc(                                                                    
         /* this op cannot be dispatched per component*/                                                      \
         auto exec =                                                                                          \
             tmp<                                                                                             \
-                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3F_OP_F<ReturnType, Type1, Type2>>>::New(); \
+                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>>>::New();       \
         exec->opF_OP_F(                                                                                      \
             result.begin(),                                                                                  \
             f1.begin(),                                                                                      \
             f2.begin(),                                                                                      \
-            Foam::exec::OpFunc##Op3F_OP_F<ReturnType, Type1, Type2>(),                                       \
+            Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>(),                                             \
             result.size());                                                                                  \
     }                                                                                                        \
     else                                                                                                     \
@@ -479,213 +479,215 @@ tmp<Field<ReturnType>> operator Op(                                             
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#define TERNARY_FUNCTION(ReturnType, Type1, Type2, Type3, Func)                \
-                                                                               \
-TEMPLATE                                                                       \
-void Func                                                                      \
-(                                                                              \
-    Field<ReturnType>& result,                                                 \
-    const UList<Type1>& f1,                                                    \
-    const UList<Type2>& f2,                                                    \
-    const UList<Type3>& f3                                                     \
-)                                                                              \
-{                                                                              \
-    TFOR_ALL_F_OP_FUNC_F_F_F                                                   \
-    (                                                                          \
-        ReturnType, result, =, ::Foam::Func, Type1, f1, Type2, f2, Type3, f3   \
-    )                                                                          \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const UList<Type1>& f1,                                                    \
-    const UList<Type2>& f2,                                                    \
-    const UList<Type3>& f3                                                     \
-)                                                                              \
-{                                                                              \
-    auto tres = tmp<Field<ReturnType>>::New(f1.size());                        \
-    Func(tres.ref(), f1, f2, f3);                                              \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1,                                              \
-    const UList<Type2>& f2,                                                    \
-    const UList<Type3>& f3                                                     \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                         \
-    Func(tres.ref(), tf1(), f2, f3);                                           \
-    tf1.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const UList<Type1>& f1,                                                    \
-    const tmp<Field<Type2>>& tf2,                                              \
-    const UList<Type3>& f3                                                     \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type2>::New(tf2);                         \
-    Func(tres.ref(), f1, tf2(), f3);                                           \
-    tf2.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const UList<Type1>& f1,                                                    \
-    const UList<Type2>& f2,                                                    \
-    const tmp<Field<Type3>>& tf3                                               \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type3>::New(tf3);                         \
-    Func(tres.ref(), f1, f2, tf3());                                           \
-    tf3.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1,                                              \
-    const tmp<Field<Type2>>& tf2,                                              \
-    const UList<Type3>& f3                                                     \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type2>::New(tf1, tf2);   \
-    Func(tres.ref(), tf1(), tf2(), f3);                                        \
-    tf1.clear();                                                               \
-    tf2.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1,                                              \
-    const UList<Type2>& f2,                                                    \
-    const tmp<Field<Type3>>& tf3                                               \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type3>::New(tf1, tf3);   \
-    Func(tres.ref(), tf1(), f2, tf3());                                        \
-    tf1.clear();                                                               \
-    tf3.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const UList<Type1>& f1,                                                    \
-    const tmp<Field<Type2>>& tf2,                                              \
-    const tmp<Field<Type3>>& tf3                                               \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmpTmp<ReturnType, Type2, Type2, Type3>::New(tf2, tf3);   \
-    Func(tres.ref(), f1, tf2(), tf3());                                        \
-    tf2.clear();                                                               \
-    tf3.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1,                                              \
-    const tmp<Field<Type2>>& tf2,                                              \
-    const tmp<Field<Type3>>& tf3                                               \
-)                                                                              \
-{                                                                              \
-    /* TBD: check all three types? */                                          \
-    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type2>::New(tf1, tf2);   \
-    Func(tres.ref(), tf1(), tf2(), tf3());                                     \
-    tf1.clear();                                                               \
-    tf2.clear();                                                               \
-    tf3.clear();                                                               \
-    return tres;                                                               \
+#define TERNARY_FUNCTION(ReturnType, Type1, Type2, Type3, Func)                   \
+                                                                                  \
+TEMPLATE                                                                          \
+void Func(                                                                        \
+    Field<ReturnType> &result,                                                    \
+    const UList<Type1> &f1,                                                       \
+    const UList<Type2> &f2,                                                       \
+    const UList<Type3> &f3)                                                       \
+{                                                                                 \
+    if (result.usePool() && f1.usePool() && f2.usePool() && f3.usePool())         \
+    {                                                                             \
+        /* Check fields have same size */                                         \
+        checkFields(result, f1, f2, f3, "f1 = " #Func "(f2, f3, f4)");            \
+        auto exec = tmp<                                                          \
+            cudaFieldExecutor<                                                    \
+                Foam::exec::Func##Op<ReturnType, Type1, Type2, Type3>>>::New();   \
+        exec->opF_OP_F_F(                                                         \
+            result.begin(),                                                       \
+            f1.begin(),                                                           \
+            f2.begin(),                                                           \
+            f3.begin(),                                                           \
+            Foam::exec::Func##Op<ReturnType, Type1, Type2, Type3>(),              \
+            result.size());                                                       \
+    }                                                                             \
+    else                                                                          \
+    {                                                                             \
+        TFOR_ALL_F_OP_FUNC_F_F_F(                                                 \
+            ReturnType, result, =, ::Foam::Func, Type1, f1, Type2, f2, Type3, f3) \
+    }                                                                             \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const UList<Type1> &f1,                                                       \
+    const UList<Type2> &f2,                                                       \
+    const UList<Type3> &f3)                                                       \
+{                                                                                 \
+    auto tres = tmp<Field<ReturnType>>::New(f1.size());                           \
+    Func(tres.ref(), f1, f2, f3);                                                 \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const tmp<Field<Type1>> &tf1,                                                 \
+    const UList<Type2> &f2,                                                       \
+    const UList<Type3> &f3)                                                       \
+{                                                                                 \
+    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                            \
+    Func(tres.ref(), tf1(), f2, f3);                                              \
+    tf1.clear();                                                                  \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const UList<Type1> &f1,                                                       \
+    const tmp<Field<Type2>> &tf2,                                                 \
+    const UList<Type3> &f3)                                                       \
+{                                                                                 \
+    auto tres = reuseTmp<ReturnType, Type2>::New(tf2);                            \
+    Func(tres.ref(), f1, tf2(), f3);                                              \
+    tf2.clear();                                                                  \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const UList<Type1> &f1,                                                       \
+    const UList<Type2> &f2,                                                       \
+    const tmp<Field<Type3>> &tf3)                                                 \
+{                                                                                 \
+    auto tres = reuseTmp<ReturnType, Type3>::New(tf3);                            \
+    Func(tres.ref(), f1, f2, tf3());                                              \
+    tf3.clear();                                                                  \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const tmp<Field<Type1>> &tf1,                                                 \
+    const tmp<Field<Type2>> &tf2,                                                 \
+    const UList<Type3> &f3)                                                       \
+{                                                                                 \
+    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type2>::New(tf1, tf2);      \
+    Func(tres.ref(), tf1(), tf2(), f3);                                           \
+    tf1.clear();                                                                  \
+    tf2.clear();                                                                  \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const tmp<Field<Type1>> &tf1,                                                 \
+    const UList<Type2> &f2,                                                       \
+    const tmp<Field<Type3>> &tf3)                                                 \
+{                                                                                 \
+    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type3>::New(tf1, tf3);      \
+    Func(tres.ref(), tf1(), f2, tf3());                                           \
+    tf1.clear();                                                                  \
+    tf3.clear();                                                                  \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const UList<Type1> &f1,                                                       \
+    const tmp<Field<Type2>> &tf2,                                                 \
+    const tmp<Field<Type3>> &tf3)                                                 \
+{                                                                                 \
+    auto tres = reuseTmpTmp<ReturnType, Type2, Type2, Type3>::New(tf2, tf3);      \
+    Func(tres.ref(), f1, tf2(), tf3());                                           \
+    tf2.clear();                                                                  \
+    tf3.clear();                                                                  \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const tmp<Field<Type1>> &tf1,                                                 \
+    const tmp<Field<Type2>> &tf2,                                                 \
+    const tmp<Field<Type3>> &tf3)                                                 \
+{                                                                                 \
+    /* TBD: check all three types? */                                             \
+    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type2>::New(tf1, tf2);      \
+    Func(tres.ref(), tf1(), tf2(), tf3());                                        \
+    tf1.clear();                                                                  \
+    tf2.clear();                                                                  \
+    tf3.clear();                                                                  \
+    return tres;                                                                  \
 }
 
-
-#define TERNARY_TYPE_FUNCTION_FFS(ReturnType, Type1, Type2, Type3, Func)       \
-                                                                               \
-TEMPLATE                                                                       \
-void Func                                                                      \
-(                                                                              \
-    Field<ReturnType>& result,                                                 \
-    const UList<Type1>& f1,                                                    \
-    const UList<Type2>& f2,                                                    \
-    const Type3& s3                                                            \
-)                                                                              \
-{                                                                              \
-    TFOR_ALL_F_OP_FUNC_F_F_S                                                   \
-    (                                                                          \
-        ReturnType, result, =, ::Foam::Func, Type1, f1, Type2, f2, Type3, s3   \
-    )                                                                          \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const UList<Type1>& f1,                                                    \
-    const UList<Type2>& f2,                                                    \
-    const Type3& s3                                                            \
-)                                                                              \
-{                                                                              \
-    auto tres = tmp<Field<ReturnType>>::New(f1.size());                        \
-    Func(tres.ref(), f1, f2, s3);                                              \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1,                                              \
-    const UList<Type2>& f2,                                                    \
-    const Type3& s3                                                            \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                         \
-    Func(tres.ref(), tf1(), f2, s3);                                           \
-    tf1.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const UList<Type1>& f1,                                                    \
-    const tmp<Field<Type2>>& tf2,                                              \
-    const Type3& s3                                                            \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type2>::New(tf2);                         \
-    Func(tres.ref(), f1, tf2(), s3);                                           \
-    tf2.clear();                                                               \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1,                                              \
-    const tmp<Field<Type2>>& tf2,                                              \
-    const Type3& s3                                                            \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type2>::New(tf1, tf2);   \
-    Func(tres.ref(), tf1(), tf2(), s3);                                        \
-    tf1.clear();                                                               \
-    tf2.clear();                                                               \
-    return tres;                                                               \
+#define TERNARY_TYPE_FUNCTION_FFS(ReturnType, Type1, Type2, Type3, Func)          \
+                                                                                  \
+TEMPLATE                                                                          \
+void Func(                                                                        \
+    Field<ReturnType> &result,                                                    \
+    const UList<Type1> &f1,                                                       \
+    const UList<Type2> &f2,                                                       \
+    const Type3 &s3)                                                              \
+{                                                                                 \
+    if (result.usePool() && f1.usePool() && f2.usePool())                         \
+    {                                                                             \
+        /* Check fields have same size */                                         \
+        checkFields(result, f1, f2, "f1 = " #Func "(f2, f3, s)");                 \
+        auto exec = tmp<                                                          \
+            cudaFieldExecutor<                                                    \
+                Foam::exec::Func##Op<ReturnType, Type1, Type2, Type3>>>::New();   \
+        exec->opF_OP_F_S(                                                         \
+            result.begin(),                                                       \
+            f1.begin(),                                                           \
+            f2.begin(),                                                           \
+            s3,                                                                   \
+            Foam::exec::Func##Op<ReturnType, Type1, Type2, Type3>(),              \
+            result.size());                                                       \
+    }                                                                             \
+    else                                                                          \
+    {                                                                             \
+        TFOR_ALL_F_OP_FUNC_F_F_S(                                                 \
+            ReturnType, result, =, ::Foam::Func, Type1, f1, Type2, f2, Type3, s3) \
+    }                                                                             \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const UList<Type1> &f1,                                                       \
+    const UList<Type2> &f2,                                                       \
+    const Type3 &s3)                                                              \
+{                                                                                 \
+    auto tres = tmp<Field<ReturnType>>::New(f1.size());                           \
+    Func(tres.ref(), f1, f2, s3);                                                 \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const tmp<Field<Type1>> &tf1,                                                 \
+    const UList<Type2> &f2,                                                       \
+    const Type3 &s3)                                                              \
+{                                                                                 \
+    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                            \
+    Func(tres.ref(), tf1(), f2, s3);                                              \
+    tf1.clear();                                                                  \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const UList<Type1> &f1,                                                       \
+    const tmp<Field<Type2>> &tf2,                                                 \
+    const Type3 &s3)                                                              \
+{                                                                                 \
+    auto tres = reuseTmp<ReturnType, Type2>::New(tf2);                            \
+    Func(tres.ref(), f1, tf2(), s3);                                              \
+    tf2.clear();                                                                  \
+    return tres;                                                                  \
+}                                                                                 \
+                                                                                  \
+TEMPLATE                                                                          \
+tmp<Field<ReturnType>> Func(                                                      \
+    const tmp<Field<Type1>> &tf1,                                                 \
+    const tmp<Field<Type2>> &tf2,                                                 \
+    const Type3 &s3)                                                              \
+{                                                                                 \
+    auto tres = reuseTmpTmp<ReturnType, Type1, Type1, Type2>::New(tf1, tf2);      \
+    Func(tres.ref(), tf1(), tf2(), s3);                                           \
+    tf1.clear();                                                                  \
+    tf2.clear();                                                                  \
+    return tres;                                                                  \
 }
-
 
 // ************************************************************************* //

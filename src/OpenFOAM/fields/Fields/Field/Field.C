@@ -599,27 +599,20 @@ void Foam::Field<Type>::rmap
 template<class Type>
 void Foam::Field<Type>::negate()
 {  
-    if constexpr (is_one_of<Type,scalar,vector,tensor>::value)
-    { 
-        if (this->usePool())
-        {
-            auto exec = tmp<cudaFieldExecutor<typename Foam::exec::negateOp2<Type,Type>>>::New();
-            exec->opF_OP_F
-            (
-                this->begin(),
-                Foam::exec::negateOp2<Type,Type>(),
-                this->size()
-            );
-        }
-        else
-        {
-            TFOR_ALL_F_OP_OP_F(Type, *this, =, -, Type, *this);
-        };
+    if (this->usePool())
+    {
+        auto exec = tmp<cudaFieldExecutor<typename Foam::exec::negateOp2<Type,Type>>>::New();
+        exec->opF_OP_F
+        (
+            this->begin(),
+            Foam::exec::negateOp2<Type,Type>(),
+            this->size()
+        );
     }
     else
     {
-       TFOR_ALL_F_OP_OP_F(Type, *this, =, -, Type, *this); 
-    }
+        TFOR_ALL_F_OP_OP_F(Type, *this, =, -, Type, *this);
+    };
 
 }
 // A no-op except for vector specialization
@@ -651,12 +644,12 @@ void Foam::Field<Type>::replace
     if(this->usePool() && sf.usePool())
     {
         checkFields(*this, sf, "f1.replace(s, f2)");
-        auto exec = tmp<cudaFieldExecutor<Foam::exec::replaceOp<Type>>>::New();
+        auto exec = tmp<cudaFieldExecutor<Foam::exec::replaceOp<Type,cmptType>>>::New();
         exec->opF_OP_F
             (
                 this->begin(),
                 sf.begin(),
-                Foam::exec::replaceOp<Type>(d),
+                Foam::exec::replaceOp<Type,cmptType>(d),
                 this->size()
             );
     }
@@ -689,12 +682,12 @@ void Foam::Field<Type>::replace
 {
     if(this->usePool())
     {
-        auto exec = tmp<cudaFieldExecutor<Foam::exec::replaceOp<Type>>>::New();
+        auto exec = tmp<cudaFieldExecutor<Foam::exec::replaceOp<Type,cmptType>>>::New();
         exec->opF_OP_S
             (
                 this->begin(),
                 c,
-                Foam::exec::replaceOp<Type>(d),
+                Foam::exec::replaceOp<Type,cmptType>(d),
                 this->size()
             );
     }

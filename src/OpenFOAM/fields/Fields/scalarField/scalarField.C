@@ -104,8 +104,16 @@ float sumProd(const UList<float>& f1, const UList<float>& f2)
         // std::inner_product
         if(f1.usePool() && f2.usePool())
         {
-            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumProdOp<double,float>>>::New();
-            exec->reductionSum(reinterpret_cast<double&>(result),f1.begin(),f2.begin(),Foam::exec::sumProdOp<double,float>(),f1.size());
+            auto exec = 
+                tmp<cudaFieldExecutor<Foam::exec::sumProdOp<double,floatScalar,floatScalar>>>::New();
+            exec->reductionSum
+            (
+                reinterpret_cast<double&>(result),
+                f1.begin(),
+                f2.begin(),
+                Foam::exec::sumProdOp<double,floatScalar,floatScalar>(),
+                f1.size()
+            );
         }
         else
         {
@@ -124,8 +132,16 @@ double sumProd(const UList<double>& f1, const UList<double>& f2)
     {
         if(f1.usePool() && f2.usePool())
         {
-            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumProdOp<scalar,scalar>>>::New();
-            exec->reductionSum(result,f1.begin(),f2.begin(),Foam::exec::sumProdOp<scalar,scalar>(),f1.size());
+            auto exec = 
+                tmp<cudaFieldExecutor<Foam::exec::sumProdOp<scalar,scalar,scalar>>>::New();
+            exec->reductionSum
+            (
+                result,
+                f1.begin(),
+                f2.begin(),
+                Foam::exec::sumProdOp<scalar,scalar,scalar>(),
+                f1.size()
+            );
         }
         else
         {
