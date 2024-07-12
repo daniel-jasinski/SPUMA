@@ -52,6 +52,7 @@ struct cmptTypes
     static constexpr direction nComponents = pTraits_nComponents<T>::value;
 };
 
+typedef baseTypes<scalar,scalar,scalar,scalar> scalarTypes;
 
 //
 template<typename T,typename T1>
@@ -395,6 +396,27 @@ reductionOp(sum, x)
 reductionOp(sumSqr, sqr(x))
 reductionOp(sumMag, mag(x))
 
+// scalar ops
+#define scalarOp(name, op)                             \
+template <typename T, typename T1>                     \
+struct name##Op                                        \
+{                                                      \
+    name##Op(){NotImplemented;}                        \
+};                                                     \
+template <>                                            \
+struct name##Op<scalar, scalar>                        \
+    : public scalarTypes                               \
+{                                                      \
+    typedef scalarTypes BTypes;                        \
+    FOAM_DEVICE_I void operator()(                     \
+        typename BTypes::resultT &x,                   \
+        const typename BTypes::Type1 &y) const         \
+    {                                                  \
+        op;                                            \
+    }                                                  \
+};
+
+scalarOp(neg, x = neg(y))
 
 }; // end namespace exec
 

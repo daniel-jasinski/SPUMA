@@ -56,6 +56,7 @@ SourceFiles
 \*---------------------------------------------------------------------------*/
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#include "deviceM.H"
 
 namespace Foam
 {
@@ -254,7 +255,7 @@ inline Scalar pos0(const Scalar s) noexcept
 
 
 //- Return 1 if s is less than zero, or otherwise 0
-inline Scalar neg(const Scalar s) noexcept
+FOAM_DEVICE inline Scalar neg(const Scalar s) noexcept
 {
     return (s < 0)? 1: 0;
 }

@@ -249,7 +249,6 @@ void reductionSumKernel
     __shared__ resultType sdata[NUM_THREADS_PER_BLOCK]; //static arry in shared memory where the redution is computed
     sdata[tid] = resultType(Zero); //initialize array
 
-    __threadfence();
     __syncthreads();
     //grid-wise reduction step
     //load from gloabl memory + gsize/gridSize step of reduction 

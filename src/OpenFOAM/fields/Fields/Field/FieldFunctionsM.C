@@ -66,6 +66,57 @@ tmp<Field<ReturnType>> Func                                                    \
     return tres;                                                               \
 }
 
+#define UNARY_FUNCTION_EXEC(ReturnType, Type1, Func)                           \
+                                                                               \
+TEMPLATE                                                                       \
+void Func                                                                      \
+(                                                                              \
+    Field<ReturnType>& result,                                                 \
+    const UList<Type1>& f1                                                     \
+)                                                                              \
+{                                                                              \
+    if (result.usePool() && f1.usePool())\
+    {\
+        /* Check fields have same size */                                      \
+        checkFields(result, f1, "f1 = " #Func "(f2)");                         \
+        auto exec = tmp<\
+            cudaFieldExecutor<Foam::exec::Func##Op<ReturnType,Type1>>>::New();\
+        exec->opF_OP_F\
+        (\
+            result.begin(),\
+            f1.begin(),\
+            Foam::exec::Func##Op<ReturnType,Type1>(),\
+            f1.size()\
+        );\
+    }\
+    else\
+    {\
+        TFOR_ALL_F_OP_FUNC_F(ReturnType, result, =, ::Foam::Func, Type1, f1)   \
+    }\
+}                                                                              \
+                                                                               \
+TEMPLATE                                                                       \
+tmp<Field<ReturnType>> Func                                                    \
+(                                                                              \
+    const UList<Type1>& f1                                                     \
+)                                                                              \
+{                                                                              \
+    auto tres = tmp<Field<ReturnType>>::New(f1.size());                        \
+    Func(tres.ref(), f1);                                                      \
+    return tres;                                                               \
+}                                                                              \
+                                                                               \
+TEMPLATE                                                                       \
+tmp<Field<ReturnType>> Func                                                    \
+(                                                                              \
+    const tmp<Field<Type1>>& tf1                                               \
+)                                                                              \
+{                                                                              \
+    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                         \
+    Func(tres.ref(), tf1());                                                   \
+    tf1.clear();                                                               \
+    return tres;                                                               \
+}
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
