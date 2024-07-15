@@ -24,7 +24,7 @@ struct spinLock
         while (atomicCAS((int*)mutex_, 0, 1) == 1) {};
     }
     
-    __device__ inline void exp_backoff_lock() {
+    /*__device__ inline void exp_backoff_lock() {
         unsigned int ns = 8;
         while (atomicCAS((int*)mutex_, 0, 1) == 1) {
             __nanosleep(ns);
@@ -32,7 +32,7 @@ struct spinLock
                ns *= 2;
             }
         }
-    }
+    }*/
 
     __device__ inline void unlock() {
         atomicExch((int*)mutex_, 0);
@@ -48,12 +48,26 @@ __device__
 void warpReduceNoVolatile( T* sdata, int tid)
 {   
     __threadfence_block();
-    if (blockSize >= 64) {sdata[tid] += sdata[tid + 32]; __threadfence_block(); }
-    if (blockSize >= 32) {sdata[tid] += sdata[tid + 16]; __threadfence_block(); }
-    if (blockSize >= 16) {sdata[tid] += sdata[tid + 8]; __threadfence_block();  }
-    if (blockSize >= 8)  {sdata[tid] += sdata[tid + 4]; __threadfence_block();  }
-    if (blockSize >= 4)  {sdata[tid] += sdata[tid + 2];  __threadfence_block(); }
-    if (blockSize >= 2)  {sdata[tid] += sdata[tid + 1]; __threadfence_block();  }
+    if (blockSize >= 64) { sdata[tid] += sdata[tid + 32];  __threadfence_block(); }
+    if (blockSize >= 32) { sdata[tid] += sdata[tid + 16];  __threadfence_block(); }
+    if (blockSize >= 16) { sdata[tid] += sdata[tid + 8] ;  __threadfence_block();  }
+    if (blockSize >= 8)  { sdata[tid] += sdata[tid + 4] ;  __threadfence_block();  }
+    if (blockSize >= 4)  { sdata[tid] += sdata[tid + 2] ;   __threadfence_block(); }
+    if (blockSize >= 2)  { sdata[tid] += sdata[tid + 1] ;  __threadfence_block();  }
+};
+
+
+template <typename T,typename Op,int blockSize>
+__device__
+void warpReduceNoVolatile( T* sdata, Op& op,int tid)
+{   
+    __threadfence_block();
+    if (blockSize >= 64) { sdata[tid] = op(sdata[tid],sdata[tid + 32]);  __threadfence_block(); }
+    if (blockSize >= 32) { sdata[tid] = op(sdata[tid],sdata[tid + 16]);  __threadfence_block(); }
+    if (blockSize >= 16) { sdata[tid] = op(sdata[tid],sdata[tid + 8] );  __threadfence_block();  }
+    if (blockSize >= 8)  { sdata[tid] = op(sdata[tid],sdata[tid + 4] );  __threadfence_block();  }
+    if (blockSize >= 4)  { sdata[tid] = op(sdata[tid],sdata[tid + 2] );   __threadfence_block(); }
+    if (blockSize >= 2)  { sdata[tid] = op(sdata[tid],sdata[tid + 1] );  __threadfence_block();  }
 };
 
 template <typename T,int blockSize>
