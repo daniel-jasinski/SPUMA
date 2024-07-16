@@ -440,7 +440,7 @@ namespace Foam
 
 //- Return the trace of a SymmTensor
 template<class Cmpt>
-inline Cmpt tr(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline Cmpt tr(const SymmTensor<Cmpt>& st)
 {
     return st.xx() + st.yy() + st.zz();
 }
@@ -448,7 +448,7 @@ inline Cmpt tr(const SymmTensor<Cmpt>& st)
 
 //- Return the spherical part of a SymmTensor
 template<class Cmpt>
-inline SphericalTensor<Cmpt> sph(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline SphericalTensor<Cmpt> sph(const SymmTensor<Cmpt>& st)
 {
     return SphericalTensor<Cmpt>
     (
@@ -459,7 +459,7 @@ inline SphericalTensor<Cmpt> sph(const SymmTensor<Cmpt>& st)
 
 //- Return the symmetric part of a SymmTensor, i.e. itself
 template<class Cmpt>
-inline const SymmTensor<Cmpt>& symm(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline const SymmTensor<Cmpt>& symm(const SymmTensor<Cmpt>& st)
 {
     return st;
 }
@@ -467,7 +467,7 @@ inline const SymmTensor<Cmpt>& symm(const SymmTensor<Cmpt>& st)
 
 //- Return twice the symmetric part of a SymmTensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> twoSymm(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline SymmTensor<Cmpt> twoSymm(const SymmTensor<Cmpt>& st)
 {
     return 2*st;
 }
@@ -475,7 +475,7 @@ inline SymmTensor<Cmpt> twoSymm(const SymmTensor<Cmpt>& st)
 
 //- Return the deviatoric part of the symmetric part of a SymmTensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> devSymm(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline SymmTensor<Cmpt> devSymm(const SymmTensor<Cmpt>& st)
 {
     return dev(st);
 }
@@ -483,7 +483,7 @@ inline SymmTensor<Cmpt> devSymm(const SymmTensor<Cmpt>& st)
 
 //- Return the deviatoric part of twice the symmetric part of a SymmTensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> devTwoSymm(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline SymmTensor<Cmpt> devTwoSymm(const SymmTensor<Cmpt>& st)
 {
     return dev2(st);
 }
@@ -491,7 +491,7 @@ inline SymmTensor<Cmpt> devTwoSymm(const SymmTensor<Cmpt>& st)
 
 //- Return the deviatoric part of a SymmTensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> dev(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline SymmTensor<Cmpt> dev(const SymmTensor<Cmpt>& st)
 {
     return st - sph(st);
 }
@@ -499,7 +499,7 @@ inline SymmTensor<Cmpt> dev(const SymmTensor<Cmpt>& st)
 
 //- Return the two-third deviatoric part of a SymmTensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> dev2(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline SymmTensor<Cmpt> dev2(const SymmTensor<Cmpt>& st)
 {
     return st - 2*sph(st);
 }
@@ -507,7 +507,7 @@ inline SymmTensor<Cmpt> dev2(const SymmTensor<Cmpt>& st)
 
 //- Return the determinant of a SymmTensor
 template<class Cmpt>
-inline Cmpt det(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline Cmpt det(const SymmTensor<Cmpt>& st)
 {
     return st.det();
 }
@@ -515,7 +515,7 @@ inline Cmpt det(const SymmTensor<Cmpt>& st)
 
 //- Return the cofactor of a SymmTensor as a SymmTensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> cof(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline SymmTensor<Cmpt> cof(const SymmTensor<Cmpt>& st)
 {
     return st.cof();
 }

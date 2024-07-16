@@ -106,6 +106,33 @@ binaryOp(eqMinus, cmpt, x -= y)
 binaryOp(eqProd, base, x *= y)
 binaryOp(eqDivide, base, x /= y)
 
+#undef binaryOp
+
+#define binaryOp(opName, op)             \
+template <typename T, typename T1>             \
+struct opName##Op                             \
+: public baseTypes<T, T1, T1, T1>            \
+{                                              \
+    typedef baseTypes<T, T1, T1, T1> BTypes; \
+    FOAM_DEVICE_I void operator()              \
+    (                                          \
+        typename BTypes::resultT &x,           \
+        const typename BTypes::Type1 &y        \
+    ) const                                    \
+    {                                          \
+        op;                                    \
+    }                                          \
+};
+
+binaryOp(dev2, x = dev(y))
+binaryOp(dev, x = dev2(y))
+binaryOp(tr, x = tr(y))
+binaryOp(cof, x = cof(y))
+binaryOp(det, x = det(y))
+binaryOp(symm, x = symm(y))
+binaryOp(sph, x = sph(y))
+binaryOp(skew, x = skew(y))
+
 // specialization of particular ops
 template <typename T, typename T1>
 struct negateOp2
@@ -395,6 +422,7 @@ struct name##Op                               \
 reductionOp(sum, x)
 reductionOp(sumSqr, sqr(x))
 reductionOp(sumMag, mag(x))
+#undef reductionOp
 
 // scalar ops
 #define scalarOp(name, op)                             \
@@ -418,6 +446,7 @@ struct name##Op<scalar, scalar>                        \
 
 scalarOp(neg, x = neg(y))
 
+#undef scalarOp
 }; // end namespace exec
 
 }

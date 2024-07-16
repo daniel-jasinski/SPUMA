@@ -423,7 +423,7 @@ inline bool Foam::Tensor<Cmpt>::is_identity(const scalar tol) const
 // * * * * * * * * * * * * * * * Member Operations * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::T() const
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::T() const
 {
     return Tensor<Cmpt>
     (
@@ -435,7 +435,7 @@ inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::T() const
 
 
 template<class Cmpt>
-inline Cmpt Foam::Tensor<Cmpt>::det() const
+FOAM_DEVICE inline Cmpt Foam::Tensor<Cmpt>::det() const
 {
     return
     (
@@ -725,7 +725,7 @@ namespace Foam
 
 //- Return the trace of a Tensor
 template<class Cmpt>
-inline Cmpt tr(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Cmpt tr(const Tensor<Cmpt>& t)
 {
     return t.xx() + t.yy() + t.zz();
 }
@@ -733,7 +733,7 @@ inline Cmpt tr(const Tensor<Cmpt>& t)
 
 //- Return the spherical part of a Tensor
 template<class Cmpt>
-inline SphericalTensor<Cmpt> sph(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SphericalTensor<Cmpt> sph(const Tensor<Cmpt>& t)
 {
     return SphericalTensor<Cmpt>
     (
@@ -744,7 +744,7 @@ inline SphericalTensor<Cmpt> sph(const Tensor<Cmpt>& t)
 
 //- Return the symmetric part of a Tensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> symm(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SymmTensor<Cmpt> symm(const Tensor<Cmpt>& t)
 {
     return SymmTensor<Cmpt>
     (
@@ -757,7 +757,7 @@ inline SymmTensor<Cmpt> symm(const Tensor<Cmpt>& t)
 
 //- Return twice the symmetric part of a Tensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> twoSymm(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SymmTensor<Cmpt> twoSymm(const Tensor<Cmpt>& t)
 {
     return SymmTensor<Cmpt>
     (
@@ -770,7 +770,7 @@ inline SymmTensor<Cmpt> twoSymm(const Tensor<Cmpt>& t)
 
 //- Return the deviatoric part of the symmetric part of a Tensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> devSymm(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SymmTensor<Cmpt> devSymm(const Tensor<Cmpt>& t)
 {
     const Cmpt sph(tr(t)/3.0);
 
@@ -785,7 +785,7 @@ inline SymmTensor<Cmpt> devSymm(const Tensor<Cmpt>& t)
 
 //- Return the deviatoric part of twice the symmetric part of a Tensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> devTwoSymm(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SymmTensor<Cmpt> devTwoSymm(const Tensor<Cmpt>& t)
 {
     const Cmpt sph((2.0/3.0)*tr(t));
 
@@ -800,7 +800,7 @@ inline SymmTensor<Cmpt> devTwoSymm(const Tensor<Cmpt>& t)
 
 //- Return the skew-symmetric part of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> skew(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> skew(const Tensor<Cmpt>& t)
 {
     return Tensor<Cmpt>
     (
@@ -813,7 +813,7 @@ inline Tensor<Cmpt> skew(const Tensor<Cmpt>& t)
 
 //- Return the skew-symmetric part of a SymmTensor as a Tensor
 template<class Cmpt>
-inline const Tensor<Cmpt>& skew(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline const Tensor<Cmpt>& skew(const SymmTensor<Cmpt>& st)
 {
     return Tensor<Cmpt>::zero;
 }
@@ -821,7 +821,7 @@ inline const Tensor<Cmpt>& skew(const SymmTensor<Cmpt>& st)
 
 //- Return the deviatoric part of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> dev(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> dev(const Tensor<Cmpt>& t)
 {
     return t - sph(t);
 }
@@ -829,7 +829,7 @@ inline Tensor<Cmpt> dev(const Tensor<Cmpt>& t)
 
 //- Return the two-third deviatoric part of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> dev2(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> dev2(const Tensor<Cmpt>& t)
 {
     return t - 2*sph(t);
 }
@@ -837,7 +837,7 @@ inline Tensor<Cmpt> dev2(const Tensor<Cmpt>& t)
 
 //- Return the determinant of a Tensor
 template<class Cmpt>
-inline Cmpt det(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Cmpt det(const Tensor<Cmpt>& t)
 {
     return t.det();
 }
@@ -845,7 +845,7 @@ inline Cmpt det(const Tensor<Cmpt>& t)
 
 //- Return the cofactor Tensor of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> cof(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> cof(const Tensor<Cmpt>& t)
 {
     return t.cof();
 }
@@ -907,7 +907,7 @@ inline Cmpt invariantIII(const Tensor<Cmpt>& t)
 
 //- Linear interpolation of tensors a and b by factor t
 template<class Cmpt>
-inline Tensor<Cmpt> lerp
+FOAM_DEVICE inline Tensor<Cmpt> lerp
 (
     const Tensor<Cmpt>& a,
     const Tensor<Cmpt>& b,

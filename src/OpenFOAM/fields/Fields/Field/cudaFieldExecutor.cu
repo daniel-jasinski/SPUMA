@@ -91,9 +91,13 @@ void opKernel
     const label loop_len
 )
 {   
-    label i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < loop_len)
+
+              unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int gridSize = blockDim.x * gridDim.x;
+    while (i < loop_len){
         op(resultp[i],f1p[i], f2p[i]);
+        i += gridSize;
+    }
 };
 
 template <typename resultType, typename Type1, typename Type2,
@@ -243,10 +247,12 @@ void reductionSumKernel
           unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x; // global id
     const unsigned int tid = threadIdx.x; //block local thread id
     const label gsize = loop_len;
-    const unsigned int blockSize = NUM_THREADS_PER_BLOCK; 
+    //const unsigned int blockSize = NUM_THREADS_PER_BLOCK; 
+    const unsigned int blockSize = 16; 
     const unsigned int gridSize = blockDim.x*2*gridDim.x; //number of thread in a grid
 
-    __shared__ resultType sdata[NUM_THREADS_PER_BLOCK]; //static arry in shared memory where the redution is computed
+    //__shared__ resultType sdata[NUM_THREADS_PER_BLOCK]; //static arry in shared memory where the redution is computed
+    __shared__ resultType sdata[16]; //static array in shared memory where the redution is computed
     sdata[tid] = resultType(Zero); //initialize array
 
     __syncthreads();
@@ -287,6 +293,84 @@ void reductionSumKernel
     }
 
 };
+
+template <typename resultType, typename Type1,
+typename Op >
+__global__
+void reductionEqKernel
+(
+    resultType* const __restrict__ result,
+    const Type1* const __restrict__ f1p,
+    Op op,
+    spinLock& lock,
+    const label loop_len
+)
+{
+          unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x; // global id
+    const unsigned int tid = threadIdx.x; //block local thread id
+    const label gsize = loop_len;
+    const unsigned int blockSize = NUM_THREADS_PER_BLOCK; 
+    const unsigned int gridSize = blockDim.x*2*gridDim.x; //number of thread in a grid
+
+    __shared__ resultType sdata[NUM_THREADS_PER_BLOCK]; //static arry in shared memory where the redution is computed
+    sdata[tid] = resultType(Zero); //initialize array
+    resulType value = op.initvalue; //ptraits<>::min
+
+    __syncthreads();
+    //grid-wise reduction step
+    //load from gloabl memory + gsize/gridSize step of reduction 
+    while (id < gsize){
+        //handle loop_len not multiple of blockSize
+        if (id+blockSize < gsize){
+            value = op(op(f1[id],value),f1[id+blocksize]);
+        }else{
+            value = op(op(f1[id],value));
+        }
+        sdata[tid] = value;
+        id += gridSize;
+    }
+    __syncthreads();
+
+    //block wise reduction steps
+    if (blockSize >= 512) {
+        if (tid < 256) {
+            value = op(sdata[tid + 256]);
+            sdata[i] = value; 
+        } __syncthreads(); 
+    }
+    if (blockSize >= 256) {
+        if (tid < 128) {
+            value = op(sdata[tid + 128],value);
+            sdata[tid]=value; 
+        } __syncthreads(); 
+    }
+    if (blockSize >= 128) {
+        if (tid < 64) {
+            value = op(sdata[tid + 64],value);
+            sdata[tid]=value; 
+        } __syncthreads(); 
+    }
+
+    //warp wise reduction step
+    //in warp: syncthread guaranteed
+    if (tid < 32)
+    {
+        warpReduceOpNoVolatile<resultType,Op,blockSize>(sdata, op, tid);
+    }
+
+    __syncthreads();
+    // note for high number of block too much contention of the mutex!
+    if(tid == 0)
+    {
+        lock.lock();
+        __threadfence();
+        *result = op(sdata[0],*result);
+        __threadfence();
+        lock.unlock();
+    }
+
+};
+
 
 };// end namespace cuda
 
@@ -605,7 +689,6 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(loop_len);
 
     Foam::cuda::reductionSumKernel<resultType, T1, T2, Op>
-        //<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
         <<<(numBlocks/NUM_SM + NUM_SM), NUM_THREADS_PER_BLOCK>>>
         (
             &resultRef,
@@ -644,8 +727,9 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
     Foam::cuda::spinLock lock;
 
     Foam::cuda::reductionSumKernel<resultType,T1,Op>
-        <<<(numBlocks/NUM_SM + NUM_SM), NUM_THREADS_PER_BLOCK>>>
-        //<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+        //<<<((numBlocks+ NUM_SM-1)/NUM_SM), NUM_THREADS_PER_BLOCK,NUM_THREADS_PER_BLOCK*sizeof(resultT)>>>
+        <<<((numBlocks+ NUM_SM-1)/NUM_SM),16>>> //nvlink error   : Entry function '_ZN4Foam4cuda18reductionSumKernelIddNS_4exec5sumOpIddEEEEvPT_PKT0_T1_RNS0_8spinLockEi' uses too much shared data (0xd800 bytes, 0xc000 max)
+        //<<<1, NUM_THREADS_PER_BLOCK>>>
         (
             &resultRef,
             f1p,
@@ -660,4 +744,41 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
     CHECK_CUDA_ERROR(cudaHostUnregister(&resultRef));
 }
 
+template<typename Op>
+void Foam::cudaFieldExecutor<Op>::reductionEq
+(
+    resultType& result,
+    const Type1* field1Ptr,
+    Op op,
+    const label loop_len 
+)
+{
+    typedef typename Op::resultT resultT;
+    typedef typename Op::Type1   T1;
+
+    resultT& resultRef = reinterpret_cast<resultT&>(result);  
+    const T1* const f1p = reinterpret_cast<const T1*>(field1Ptr);  
+
+    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(loop_len);
+    
+    CHECK_CUDA_ERROR(cudaHostRegister(&resultRef,sizeof(resultT),cudaHostRegisterDefault));
+
+    // create lock
+    Foam::cuda::spinLock lock;
+
+    Foam::cuda::reductionEqKernel<resultType,T1,Op>
+        <<<((numBlocks+ NUM_SM-1)/NUM_SM), NUM_THREADS_PER_BLOCK>>>
+        (
+            &resultRef,
+            f1p,
+            op,
+            lock,
+            loop_len*op.nComponents
+        );
+    deviceSync(); 
+    CHECK_LAST_CUDA_ERROR();
+
+
+    CHECK_CUDA_ERROR(cudaHostUnregister(&resultRef));
+}
 #endif

@@ -279,10 +279,10 @@ public:
     // Tensor Operations
 
         //- Return non-Hermitian transpose
-        inline Tensor<Cmpt> T() const;
+        FOAM_DEVICE inline Tensor<Cmpt> T() const;
 
         //- The determinate
-        inline Cmpt det() const;
+        FOAM_DEVICE inline Cmpt det() const;
 
         //- The 2D determinant by excluding given direction
         inline Cmpt det2D(const direction excludeCmpt) const;

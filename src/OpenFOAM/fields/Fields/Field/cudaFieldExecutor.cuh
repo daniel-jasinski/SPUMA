@@ -111,6 +111,14 @@ public:
         const label loop_len 
     );
 
+    void reductionEq
+    (
+        resultType &result,
+        const Type1* field1Ptr,
+        Op op,
+        const label loop_len 
+    );
+
 };
 
 }

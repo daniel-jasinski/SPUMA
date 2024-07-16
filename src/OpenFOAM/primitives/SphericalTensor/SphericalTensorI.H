@@ -80,7 +80,7 @@ namespace Foam
 
 //- Return the trace of a SphericalTensor
 template<class Cmpt>
-inline Cmpt tr(const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE inline Cmpt tr(const SphericalTensor<Cmpt>& st)
 {
     return 3*st.ii();
 }
@@ -88,7 +88,7 @@ inline Cmpt tr(const SphericalTensor<Cmpt>& st)
 
 //- Return the spherical part of a SphericalTensor, i.e. itself
 template<class Cmpt>
-inline SphericalTensor<Cmpt> sph(const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE inline SphericalTensor<Cmpt> sph(const SphericalTensor<Cmpt>& st)
 {
     return st;
 }
@@ -96,7 +96,7 @@ inline SphericalTensor<Cmpt> sph(const SphericalTensor<Cmpt>& st)
 
 //- Return the determinant of a SphericalTensor
 template<class Cmpt>
-inline Cmpt det(const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE inline Cmpt det(const SphericalTensor<Cmpt>& st)
 {
     return st.ii()*st.ii()*st.ii();
 }
