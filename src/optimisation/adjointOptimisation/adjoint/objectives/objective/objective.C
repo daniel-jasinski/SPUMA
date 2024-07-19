@@ -373,7 +373,7 @@ void objective::doNormalization()
 {
     if (normalize_ && normFactor_)
     {
-        const scalar oneOverNorm(1./normFactor_());
+        /*const scalar oneOverNorm(1./normFactor_());
 
         if (hasdJdb())
         {
@@ -415,6 +415,7 @@ void objective::doNormalization()
         {
             gradDxDbMultPtr_() *= oneOverNorm;
         }
+        */
     }
 }
 
