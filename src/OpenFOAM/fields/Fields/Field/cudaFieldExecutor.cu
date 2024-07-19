@@ -1,11 +1,8 @@
-#ifndef Foam_Cuda_field_Executor_C
-#define Foam_Cuda_field_Executor_C
 
 #include "cudaFieldExecutor.cuh"
 #include "executorOps.H"
 #include "deviceM.H"
 #include "cudaError.H"
-#include "uLabel.H"
 #include "deviceUtils.H"
 #include <cmath>
 #include <cuda_runtime_api.h>
@@ -253,7 +250,7 @@ void reductionSumKernel
 
     //__shared__ resultType sdata[NUM_THREADS_PER_BLOCK]; //static arry in shared memory where the redution is computed
     __shared__ resultType sdata[16]; //static array in shared memory where the redution is computed
-    sdata[tid] = resultType(Zero); //initialize array
+    memset(&sdata[tid],0,sizeof(resultType));
 
     __syncthreads();
     //grid-wise reduction step
@@ -719,17 +716,15 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
     resultT& resultRef = reinterpret_cast<resultT&>(result);  
     const T1* const f1p = reinterpret_cast<const T1*>(field1Ptr);  
 
-    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(loop_len);
+    const label numBlocks = (loop_len + 2*16-1)/32;
     
     CHECK_CUDA_ERROR(cudaHostRegister(&resultRef,sizeof(resultT),cudaHostRegisterDefault));
 
     // create lock
     Foam::cuda::spinLock lock;
-
+//nvlink error   : Entry function '_ZN4Foam4cuda18reductionSumKernelIddNS_4exec5sumOpIddEEEEvPT_PKT0_T1_RNS0_8spinLockEi' uses too much shared data (0xd800 bytes, 0xc000 max)
     Foam::cuda::reductionSumKernel<resultType,T1,Op>
-        //<<<((numBlocks+ NUM_SM-1)/NUM_SM), NUM_THREADS_PER_BLOCK,NUM_THREADS_PER_BLOCK*sizeof(resultT)>>>
-        <<<((numBlocks+ NUM_SM-1)/NUM_SM),16>>> //nvlink error   : Entry function '_ZN4Foam4cuda18reductionSumKernelIddNS_4exec5sumOpIddEEEEvPT_PKT0_T1_RNS0_8spinLockEi' uses too much shared data (0xd800 bytes, 0xc000 max)
-        //<<<1, NUM_THREADS_PER_BLOCK>>>
+        <<<((numBlocks+ NUM_SM-1)/NUM_SM),16>>>
         (
             &resultRef,
             f1p,
@@ -781,4 +776,4 @@ void Foam::cudaFieldExecutor<Op>::reductionEq
 
     CHECK_CUDA_ERROR(cudaHostUnregister(&resultRef));
 }
-#endif
+
