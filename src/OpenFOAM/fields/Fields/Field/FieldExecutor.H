@@ -2,10 +2,7 @@
 #define Foam_Field_Executor_H
 
 #include "label.H"
-#include "scalar.H"
-#include "vector.H"
-#include "tensor.H"
-#include "word.H"
+
 #include "cpuFieldExecutor.H"
 #ifdef have_cuda
     #include "cudaFieldExecutor.cuh"

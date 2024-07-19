@@ -2,6 +2,7 @@
 #define Foam_Cuda_Field_Executor_H
 
 #include "FieldExecutor.H"
+#include "refCount.H"
 
 namespace Foam
 {
