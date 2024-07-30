@@ -244,12 +244,11 @@ void reductionSumKernel
           unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x; // global id
     const unsigned int tid = threadIdx.x; //block local thread id
     const label gsize = loop_len;
-    //const unsigned int blockSize = NUM_THREADS_PER_BLOCK; 
-    const unsigned int blockSize = 16; 
+    const unsigned int blockSize = NUM_THREADS_PER_BLOCK; 
     const unsigned int gridSize = blockDim.x*2*gridDim.x; //number of thread in a grid
 
-    //__shared__ resultType sdata[NUM_THREADS_PER_BLOCK]; //static arry in shared memory where the redution is computed
-    __shared__ resultType sdata[16]; //static array in shared memory where the redution is computed
+    SharedMemory<resultType> smem;
+    resultType *sdata = smem.getPointer();
     memset(&sdata[tid],0,sizeof(resultType));
 
     __syncthreads();
@@ -716,15 +715,26 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
     resultT& resultRef = reinterpret_cast<resultT&>(result);  
     const T1* const f1p = reinterpret_cast<const T1*>(field1Ptr);  
 
-    const label numBlocks = (loop_len + 2*16-1)/32;
-    
+    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(loop_len);
     CHECK_CUDA_ERROR(cudaHostRegister(&resultRef,sizeof(resultT),cudaHostRegisterDefault));
 
     // create lock
     Foam::cuda::spinLock lock;
-//nvlink error   : Entry function '_ZN4Foam4cuda18reductionSumKernelIddNS_4exec5sumOpIddEEEEvPT_PKT0_T1_RNS0_8spinLockEi' uses too much shared data (0xd800 bytes, 0xc000 max)
+
+    int maxbytes = MAX_SMEM; 
+    // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
+    CHECK_CUDA_ERROR
+    (
+        cudaFuncSetAttribute
+        (
+            Foam::cuda::reductionSumKernel<resultType,T1,Op>,
+            cudaFuncAttributeMaxDynamicSharedMemorySize, 
+            maxbytes
+        )
+    );
+    
     Foam::cuda::reductionSumKernel<resultType,T1,Op>
-        <<<((numBlocks+ NUM_SM-1)/NUM_SM),16>>>
+        <<<((numBlocks+ NUM_SM-1)/NUM_SM),NUM_THREADS_PER_BLOCK,maxbytes>>>
         (
             &resultRef,
             f1p,

@@ -21,7 +21,10 @@
 // number of thread per block
 #define NUM_THREADS_PER_BLOCK 128
 //number of streaming multiprocessor per device (124 on A100)
-#define NUM_SM 124 
+#define NUM_SM 124
+
+// max shared memory addressable by a block on c.u 8.0, 132 kB
+#define MAX_SMEM 135168
 
 //- calc the number of block for a generic kernel
 #define SET_NUM_BLOCKS(size)           \
