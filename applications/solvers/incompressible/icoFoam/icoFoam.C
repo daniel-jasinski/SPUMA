@@ -62,7 +62,7 @@ Description
     \endplaintable
 
 \*---------------------------------------------------------------------------*/
-
+#include "MemoryPool.H"
 #include "fvCFD.H"
 #include "pisoControl.H"
 
@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
         " of Newtonian fluids."
     );
 
+    #include "createMemoryPool.H"
     #include "postProcess.H"
 
     #include "addCheckCaseOptions.H"
@@ -113,7 +114,7 @@ int main(int argc, char *argv[])
         }
 
         // --- PISO loop
-        while (piso.correct())
+        /*while (piso.correct())
         {
             volScalarField rAU(1.0/UEqn.A());
             volVectorField HbyA(constrainHbyA(rAU*UEqn.H(), U, p));
@@ -154,8 +155,9 @@ int main(int argc, char *argv[])
             U = HbyA - rAU*fvc::grad(p);
             U.correctBoundaryConditions();
         }
+        */
 
-        runTime.write();
+        //runTime.write();
 
         runTime.printExecutionTime(Info);
     }
