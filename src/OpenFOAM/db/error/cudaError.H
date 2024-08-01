@@ -23,7 +23,7 @@ License
 
 #ifndef cudaError_H
 #define cudaError_H
-
+#include "error.H"
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime_api.h>

@@ -37,7 +37,8 @@ int checkCudaError
         std::cerr << "CUDA Runtime Error at: " << file << ":" << line
                   << std::endl;
         std::cerr << cudaGetErrorString(err) << " " << func << std::endl;
-        abort();
+        
+        FatalErrorInFunction<<abort(Foam::FatalError);
     }
     return static_cast<int>(err);
 }
@@ -54,7 +55,8 @@ int checkLastCudaError
         std::cerr << "CUDA Runtime Error at: " << file << ":" << line
                   << std::endl;
         std::cerr << cudaGetErrorString(err) << std::endl;
-        abort();
+        
+        FatalErrorInFunction<<abort(Foam::FatalError);
     }
     return static_cast<int>(err);
 }
