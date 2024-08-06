@@ -30,7 +30,7 @@ License
 template<class Type>
 inline constexpr Foam::Field<Type>::Field() noexcept
 :
-    List<Type>()
+    List<Type>(poolSwitch(1))
 {}
 
 

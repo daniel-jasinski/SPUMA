@@ -121,6 +121,11 @@ void Foam::List<T>::doResize(const label len)
 
 
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
+template<class T>
+Foam::List<T>::List(const poolSwitch usePool)
+:
+    UList<T>(nullptr, 0, usePool)
+{}
 
 template<class T>
 Foam::List<T>::List(const label len, poolSwitch usePool)

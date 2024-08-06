@@ -169,6 +169,8 @@ public:
         //explicit List(const label len);
         explicit List(const label len, poolSwitch usePool = poolSwitch(false));
 
+        explicit List(const poolSwitch usePool);
+        
         //- Construct with given size and value for all elements
         //List(const label len, const T& val);
         List(const label len, const T& val, poolSwitch usePool = poolSwitch(false));
