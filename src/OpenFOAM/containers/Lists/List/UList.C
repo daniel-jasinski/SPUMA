@@ -125,6 +125,14 @@ void Foam::UList<T>::deepCopy(const UList<T>& list)
                 );
             MemoryPool::getInstance()->memCopy(this->v_,(void*)list.begin(),this->size_*sizeof(T));
         }
+        else if (this->usePool_ && !list.usePool())
+        {
+            this->v_ = static_cast<T*>
+            (
+                MemoryPool::getInstance()->allocate(this->size_*sizeof(T))
+            );
+            MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+        }
         else
         {
             std::copy(list.cbegin(), list.cend(), this->v_);

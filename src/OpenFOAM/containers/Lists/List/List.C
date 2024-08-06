@@ -394,7 +394,15 @@ void Foam::List<T>::transfer(List<T>& list)
     // Clear and swap
     clear();
     this->size_ = list.size_;
-    this->v_ = list.v_;
+    if (this->usePool() && !list.usePool())
+    {
+        doAlloc();
+        MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+    }
+    else
+    {
+        this->v_ = list.v_;
+    }
 
     list.size_ = 0;
     list.v_ = nullptr;
