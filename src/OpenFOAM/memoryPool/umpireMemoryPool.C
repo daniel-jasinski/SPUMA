@@ -120,6 +120,8 @@ void* Foam::umpireMemoryPool::allocate(uint64_t sizeInBytes)
 // free function
 void Foam::umpireMemoryPool::free(void* ptr)
 {
+    //if ptr is null do nothing
+    if (ptr == nullptr) return;
     //check if pointer was allocated with pool
     if (!this->isValid(ptr))
         return;

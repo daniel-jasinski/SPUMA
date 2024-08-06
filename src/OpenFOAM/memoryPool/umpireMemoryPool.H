@@ -191,6 +191,9 @@ public:
 
 inline bool Foam::umpireMemoryPool::isValid(void* poolPtr)
 {
+    // if poolPtr is null
+    if (!poolPtr) return false;
+
     auto record = rm_.findAllocationRecord(poolPtr);
     bool valid = record->ptr == nullptr ? false : true;
     if (!valid)

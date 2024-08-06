@@ -163,6 +163,8 @@ public:
 
 inline bool Foam::fixedSizeMemoryPool::isValid(void* poolPtr)
 {
+    if ( !poolPtr ) return false;
+
     blockList::iterator block = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
     bool valid = block == this->usedBlockList_.end() ? false : true;
     if (!valid)

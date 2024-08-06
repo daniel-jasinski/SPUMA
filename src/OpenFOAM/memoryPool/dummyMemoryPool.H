@@ -162,6 +162,9 @@ public:
 
 inline bool Foam::dummyMemoryPool::isValid(void* poolPtr)
 {
+    //case when poolPtr is null
+    if ( !poolPtr ) return false;
+
     blockList::iterator block = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
     bool valid = block == this->usedBlockList_.end() ? false : true;
     if (!valid)
