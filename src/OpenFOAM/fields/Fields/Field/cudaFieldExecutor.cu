@@ -708,7 +708,6 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
     const label loop_len 
 )
 {
-    //Info<< "CUDA redux" <<endl;
     typedef typename Op::resultT resultT;
     typedef typename Op::Type1   T1;
 
@@ -740,7 +739,7 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
             f1p,
             op,
             lock,
-            loop_len*op.nComponents
+            loop_len
         );
     deviceSync(); 
     CHECK_LAST_CUDA_ERROR();

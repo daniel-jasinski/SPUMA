@@ -204,8 +204,17 @@ void mag
 )
 {
     typedef typename typeOfMag<Type>::type resultType;
-
-    TFOR_ALL_F_OP_FUNC_F(resultType, result, =, mag, Type, f1)
+    if (result.usePool() && f1.usePool())
+    {
+        /* Check fields have same size */
+        checkFields(result, f1, "f1 = mag(f2)");
+        auto exec = tmp<cudaFieldExecutor<Foam::exec::magOp<resultType,Type>>>::New();
+        exec->opF_OP_F(result.begin(),f1.begin(),Foam::exec::magOp<resultType,Type>(),f1.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_F(resultType, result, =, mag, Type, f1)
+    }
 }
 
 template<class Type>

@@ -122,7 +122,7 @@ void warpReduce(volatile T* sdata, int tid) // volataile to ensure visibility of
 // of the same shared pointer of different type.
 template <typename T>
 struct SharedMemory{
-  __device__ T *getPointer(){
+  __device__ inline T *getPointer(){
     extern __shared__ __align__(8) char smem[];
     return reinterpret_cast<T*>(smem);
   }

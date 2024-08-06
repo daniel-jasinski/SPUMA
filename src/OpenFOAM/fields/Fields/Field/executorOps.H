@@ -124,6 +124,7 @@ struct opName##Op                             \
     }                                          \
 };
 
+binaryOp(mag, x = mag(y))
 binaryOp(dev2, x = dev(y))
 binaryOp(dev, x = dev2(y))
 binaryOp(tr, x = tr(y))
@@ -277,6 +278,7 @@ OpSameType(add, z = x + y)
 OpSameType(subtract, z = x - y)
 
 // partial specialization for  1 scalar argument // adjust instead of scalar typename pTraiTs<T>::cmptType
+/*
 #define OpScalar(opName, op)                  \
 template <typename T, typename T2>            \
 struct opName##Op3<T, scalar, T2>             \
@@ -313,7 +315,7 @@ OpScalar(add, z = x + y)
 OpScalar(subtract, z = x - y)
 OpScalar(multiply, z = x * y)
 OpScalar(divide, z = x / y)
-
+*/
 // full spec for all scalar
 #define OpAllScalar(opName, op)                            \
 template <>                                                \
