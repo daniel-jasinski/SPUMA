@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
         }
 
         // --- PISO loop
-        /*while (piso.correct())
+        while (piso.correct())
         {
             volScalarField rAU(1.0/UEqn.A());
             volVectorField HbyA(constrainHbyA(rAU*UEqn.H(), U, p));
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
             U = HbyA - rAU*fvc::grad(p);
             U.correctBoundaryConditions();
         }
-        */
+
 
         //runTime.write();
 
