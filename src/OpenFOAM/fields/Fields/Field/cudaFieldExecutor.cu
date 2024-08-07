@@ -685,7 +685,7 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(loop_len);
 
     Foam::cuda::reductionSumKernel<resultType, T1, T2, Op>
-        <<<(numBlocks/NUM_SM + NUM_SM), NUM_THREADS_PER_BLOCK>>>
+        <<<((numBlocks+ NUM_SM-1)/NUM_SM), NUM_THREADS_PER_BLOCK>>>
         (
             &resultRef,
             f1p,
