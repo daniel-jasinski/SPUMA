@@ -478,6 +478,8 @@ $(lduAddressing)/lduInterface/processorLduInterface.C
 $(lduAddressing)/lduInterface/cyclicLduInterface.C
 $(lduAddressing)/lduInterface/lduPrimitiveProcessorInterface.C
 
+$(lduMatrix)/lduExecutor/cudalduExecutor.cu
+
 lduInterfaceFields = $(lduAddressing)/lduInterfaceFields
 $(lduInterfaceFields)/lduInterfaceField/lduInterfaceField.C
 $(lduInterfaceFields)/processorLduInterfaceField/processorLduInterfaceField.C

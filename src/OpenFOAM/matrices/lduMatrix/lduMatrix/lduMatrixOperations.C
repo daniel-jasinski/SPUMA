@@ -31,6 +31,8 @@ Description
 
 #include "lduMatrix.H"
 
+#include "cudalduExecutor.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::lduMatrix::sumDiag()
@@ -42,11 +44,45 @@ void Foam::lduMatrix::sumDiag()
     const labelUList& l = lduAddr().lowerAddr();
     const labelUList& u = lduAddr().upperAddr();
 
-    for (label face=0; face<l.size(); face++)
-    {
-        Diag[l[face]] += Lower[face];
-        Diag[u[face]] += Upper[face];
+    //for (label face=0; face<l.size(); face++)
+    //{
+    //    Diag[l[face]] += Lower[face];
+    //    Diag[u[face]] += Upper[face];
+    //}
+
+    /*
+    //Info << "standard Diag: \n" << Diag <<endl;
+    scalarField stdDiag = Diag;
+
+    Diag = 0;
+    //Info << "zero Diag" << Diag <<endl;
+    */
+    const lduAddressing& lduAddrRef = lduAddr();
+    auto exec = tmp<cudalduExecutor<Foam::exec::eqSumOp2<scalar,scalar>>>::New();
+    exec->ownNbrLoop
+    (
+        Diag.begin(),
+        Lower.begin(),
+        Upper.begin(),
+        Foam::exec::eqSumOp2<scalar,scalar>(),
+        lduAddrRef
+    );
+
+    //Info << "executor Diag: \n" << Diag <<endl;
+    /*scalar sum = 0;
+    for (size_t i = 0; i < Diag.size(); i++)
+    {   
+        scalar value = mag(mag(Diag[i])-mag(stdDiag[i]));
+        sum += value;
+        if(value >SMALL)
+        {
+            Info<<"index: "<< i<< " value: "<< value <<endl;
+        }
     }
+    
+    Info << "diff Diag: \n" << sumMag(Diag - stdDiag) <<" serial: "<<sum <<endl;
+    */
+
 }
 
 

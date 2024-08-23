@@ -55,6 +55,7 @@ void Foam::lduAddressing::calcLosort() const
     // Create temporary neighbour addressing
     labelListList cellNbrFaces(size());
 
+    //what if nNbrOfFace[celli] =0? 
     forAll(cellNbrFaces, celli)
     {
         cellNbrFaces[celli].setSize(nNbrOfFace[celli]);
@@ -71,8 +72,8 @@ void Foam::lduAddressing::calcLosort() const
         nNbrOfFace[nbr[nbrI]]++;
     }
 
-    // Gather the neighbours into the losort array
-    losortPtr_ = std::make_unique<labelList>(nbr.size(), -1);
+    // Gather the neighbours into the losort array //why fill whith -1? it means that that face has no neighbour
+    losortPtr_ = std::make_unique<labelList>(nbr.size(), -1,poolSwitch(1)); //to allocate on pool
     auto& lst = *losortPtr_;
 
     // Set counter for losort
@@ -102,7 +103,7 @@ void Foam::lduAddressing::calcOwnerStart() const
 
     const labelList& own = lowerAddr();
 
-    ownerStartPtr_ = std::make_unique<labelList>(size() + 1, own.size());
+    ownerStartPtr_ = std::make_unique<labelList>(size() + 1, own.size(),poolSwitch(1)); //to allocate on pool
     auto& ownStart = *ownerStartPtr_;
 
     // Set up first lookup by hand
@@ -136,7 +137,8 @@ void Foam::lduAddressing::calcLosortStart() const
             << abort(FatalError);
     }
 
-    losortStartPtr_ = std::make_unique<labelList>(size() + 1, Foam::zero{});
+
+    losortStartPtr_ = std::make_unique<labelList>(size() + 1, Foam::zero{},poolSwitch(1)); //to allocate on pool
     auto& lsrtStart = *losortStartPtr_;
 
     const labelList& nbr = upperAddr();
