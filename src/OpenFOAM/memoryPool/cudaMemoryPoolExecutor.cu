@@ -128,6 +128,7 @@ void Foam::cudaMemoryPoolExecutor::memSet(void* ptr, const size_t sizeInBytes, c
         (char*)ptr + sizeOfValue,
         (const char*) ptr
     );
+    deviceSync();
     CHECK_LAST_CUDA_ERROR();
 }
 
@@ -139,6 +140,7 @@ void Foam::cudaMemoryPoolExecutor::memSetScalarOne(void* ptr, const size_t sizeI
         sizeInBytes/sizeof(scalar),
         (scalar*)ptr
     );
+    deviceSync();
     CHECK_LAST_CUDA_ERROR();
 }
 
