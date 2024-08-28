@@ -228,7 +228,7 @@ void reductionSumKernel
 };
 
 
-//NOTE: global accumulator handled with a mutex
+//NOTE: global accumulator handled with a mutex-lock
 template <typename resultType, typename Type1,
 typename Op >
 __global__
@@ -237,7 +237,7 @@ void reductionSumKernel
     resultType* const __restrict__ result,
     const Type1* const __restrict__ f1p,
     Op op,
-    spinLock& lock,
+    int* mutex,
     const label loop_len
 )
 {
@@ -281,16 +281,16 @@ void reductionSumKernel
     // note for high number of block too much contention of the mutex!
     if(tid == 0)
     {
-        lock.lock();
+        spinLock::lock(mutex);
         __threadfence();
         *result += sdata[0];
         __threadfence();
-        lock.unlock();
+        spinLock::unlock(mutex);
     }
 
 };
 
-template <typename resultType, typename Type1,
+/*template <typename resultType, typename Type1,
 typename Op >
 __global__
 void reductionEqKernel
@@ -298,7 +298,7 @@ void reductionEqKernel
     resultType* const __restrict__ result,
     const Type1* const __restrict__ f1p,
     Op op,
-    spinLock& lock,
+    spinLock* lock,
     const label loop_len
 )
 {
@@ -358,14 +358,14 @@ void reductionEqKernel
     // note for high number of block too much contention of the mutex!
     if(tid == 0)
     {
-        lock.lock();
+        lock->lock();
         __threadfence();
         *result = op(sdata[0],*result);
         __threadfence();
-        lock.unlock();
+        lock->unlock();
     }
 
-};
+};*/
 
 
 };// end namespace cuda
@@ -715,10 +715,12 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
     const T1* const f1p = reinterpret_cast<const T1*>(field1Ptr);  
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(loop_len);
-    CHECK_CUDA_ERROR(cudaHostRegister(&resultRef,sizeof(resultT),cudaHostRegisterDefault));
-
-    // create lock
-    Foam::cuda::spinLock lock;
+    //CHECK_CUDA_ERROR(cudaHostRegister(&resultRef,sizeof(resultT),cudaHostRegisterDefault));
+    resultT* dPtrResult;
+    CHECK_CUDA_ERROR(cudaMalloc(&dPtrResult,sizeof(resultT)));
+    CHECK_CUDA_ERROR(cudaMemcpy(dPtrResult,&resultRef,sizeof(resultT),cudaMemcpyHostToDevice));
+    // create mutex
+    Foam::cuda::Mutex mutex;
 
     int maxbytes = MAX_SMEM; 
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
@@ -732,20 +734,22 @@ void Foam::cudaFieldExecutor<Op>::reductionSum
         )
     );
     
-    Foam::cuda::reductionSumKernel<resultType,T1,Op>
+    Foam::cuda::reductionSumKernel<resultT,T1,Op>
         <<<((numBlocks+ NUM_SM-1)/NUM_SM),NUM_THREADS_PER_BLOCK,maxbytes>>>
         (
-            &resultRef,
+            dPtrResult,
             f1p,
             op,
-            lock,
+            mutex.getMutex(),
             loop_len
         );
     deviceSync(); 
     CHECK_LAST_CUDA_ERROR();
 
 
-    CHECK_CUDA_ERROR(cudaHostUnregister(&resultRef));
+    //CHECK_CUDA_ERROR(cudaHostUnregister(&resultRef));
+    CHECK_CUDA_ERROR(cudaMemcpy(&resultRef,dPtrResult,sizeof(resultT),cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaFree(dPtrResult));
 }
 
 template<typename Op>
@@ -770,18 +774,18 @@ void Foam::cudaFieldExecutor<Op>::reductionEq
     // create lock
     Foam::cuda::spinLock lock;
 
-    Foam::cuda::reductionEqKernel<resultType,T1,Op>
+    /*Foam::cuda::reductionEqKernel<resultType,T1,Op>
         <<<((numBlocks+ NUM_SM-1)/NUM_SM), NUM_THREADS_PER_BLOCK>>>
         (
             &resultRef,
             f1p,
             op,
-            lock,
+            &lock,
             loop_len*op.nComponents
         );
     deviceSync(); 
     CHECK_LAST_CUDA_ERROR();
-
+    */
 
     CHECK_CUDA_ERROR(cudaHostUnregister(&resultRef));
 }
