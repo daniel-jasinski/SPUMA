@@ -172,9 +172,9 @@ UNARY_FUNCTION(complex, complex, atan)
 UNARY_FUNCTION(complex, complex, sinh)
 UNARY_FUNCTION(complex, complex, cosh)
 UNARY_FUNCTION(complex, complex, tanh)
-UNARY_FUNCTION(complex, complex, asinh)
-UNARY_FUNCTION(complex, complex, acosh)
-UNARY_FUNCTION(complex, complex, atanh)
+UNARY_FUNCTION_HOST(complex, complex, asinh)
+UNARY_FUNCTION_HOST(complex, complex, acosh)
+UNARY_FUNCTION_HOST(complex, complex, atanh)
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

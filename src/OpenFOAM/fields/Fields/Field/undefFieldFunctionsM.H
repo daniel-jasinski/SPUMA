@@ -27,6 +27,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #undef UNARY_FUNCTION
+#undef UNARY_FUNCTION_HOST
 #undef UNARY_FUNCTION_TRANSFORM
 #undef UNARY_FUNCTION_INTERFACE
 

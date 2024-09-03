@@ -104,16 +104,14 @@ float sumProd(const UList<float>& f1, const UList<float>& f2)
         // std::inner_product
         if(f1.usePool() && f2.usePool())
         {
-            auto exec = 
-                tmp<cudaFieldExecutor<Foam::exec::sumProdOp<double,floatScalar,floatScalar>>>::New();
-            exec->reductionSum
-            (
-                reinterpret_cast<double&>(result),
-                f1.begin(),
-                f2.begin(),
-                Foam::exec::sumProdOp<double,floatScalar,floatScalar>(),
-                f1.size()
-            );
+            auto f1p = f1.begin();
+            auto f2p = f2.cbegin();
+            const label size = f1.size();
+
+            auto sumProd = [=](label i){ return f1p[i]*f2p[i]; };
+
+            foamExecutor exec;
+            exec.reductionSum(sumProd, &result,size);
         }
         else
         {
@@ -132,16 +130,14 @@ double sumProd(const UList<double>& f1, const UList<double>& f2)
     {
         if(f1.usePool() && f2.usePool())
         {
-            auto exec = 
-                tmp<cudaFieldExecutor<Foam::exec::sumProdOp<scalar,scalar,scalar>>>::New();
-            exec->reductionSum
-            (
-                result,
-                f1.begin(),
-                f2.begin(),
-                Foam::exec::sumProdOp<scalar,scalar,scalar>(),
-                f1.size()
-            );
+            auto f1p = f1.begin();
+            auto f2p = f2.cbegin();
+            const label size = f1.size();
+
+            auto sumProd = [=](label i){ return f1p[i]*f2p[i]; };
+
+            foamExecutor exec;
+            exec.reductionSum(sumProd, &result,size);
         }
         else
         {
@@ -183,7 +179,8 @@ UNARY_FUNCTION(scalar, scalar, cbrt)
 UNARY_FUNCTION(scalar, scalar, sign)
 UNARY_FUNCTION(scalar, scalar, pos)
 UNARY_FUNCTION(scalar, scalar, pos0)
-UNARY_FUNCTION_EXEC(scalar, scalar, neg)
+//UNARY_FUNCTION_EXEC(scalar, scalar, neg)
+UNARY_FUNCTION(scalar, scalar, neg)
 UNARY_FUNCTION(scalar, scalar, neg0)
 UNARY_FUNCTION(scalar, scalar, posPart)
 UNARY_FUNCTION(scalar, scalar, negPart)

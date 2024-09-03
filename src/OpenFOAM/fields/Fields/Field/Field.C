@@ -601,13 +601,10 @@ void Foam::Field<Type>::negate()
 {  
     if (this->usePool())
     {
-        auto exec = tmp<cudaFieldExecutor<typename Foam::exec::negateOp2<Type,Type>>>::New();
-        exec->opF_OP_F
-        (
-            this->begin(),
-            Foam::exec::negateOp2<Type,Type>(),
-            this->size()
-        );
+        auto rp = this->begin();
+        auto negateOp = [=] (label i){rp[i] = - rp[i];};
+        foamExecutor exec;
+        exec.parallelFor(negateOp,this->size());
     }
     else
     {
@@ -644,14 +641,11 @@ void Foam::Field<Type>::replace
     if(this->usePool() && sf.usePool())
     {
         checkFields(*this, sf, "f1.replace(s, f2)");
-        auto exec = tmp<cudaFieldExecutor<Foam::exec::replaceOp<Type,cmptType>>>::New();
-        exec->opF_OP_F
-            (
-                this->begin(),
-                sf.begin(),
-                Foam::exec::replaceOp<Type,cmptType>(d),
-                this->size()
-            );
+        auto rp = this->begin();
+        auto sfp = sf.begin();
+        auto replaceOp = [=](label i){ rp[i].replace(d,sfp[i]); };
+        foamExecutor exec;
+        exec.parallelFor(replaceOp, this->size());
     }
     else
     {
@@ -682,14 +676,10 @@ void Foam::Field<Type>::replace
 {
     if(this->usePool())
     {
-        auto exec = tmp<cudaFieldExecutor<Foam::exec::replaceOp<Type,cmptType>>>::New();
-        exec->opF_OP_S
-            (
-                this->begin(),
-                c,
-                Foam::exec::replaceOp<Type,cmptType>(d),
-                this->size()
-            );
+        auto rp = this->begin();
+        auto replaceLambda = [=] (label i){ rp[i].replace(d,c);};
+        foamExecutor exec;
+        exec.parallelFor(replaceLambda,this->size());
     }
     else
     {
@@ -830,12 +820,11 @@ void Foam::Field<Type>::operator op(const UList<TYPE> &f)                       
     if (this->usePool() && f.usePool())                                               \
     {                                                                                 \
         checkFields(*this, f, "f1 " #op " f2");                                       \
-        auto exec = tmp<cudaFieldExecutor<Foam::exec::name##Op2<Type, TYPE>>>::New(); \
-        exec->opF_OP_F(                                                               \
-            this->begin(),                                                            \
-            f.begin(),                                                                \
-            Foam::exec::name##Op2<Type, TYPE>(),                                      \
-            f.size());                                                                \
+        auto rp =this->begin();\
+        auto fp = f.begin();\
+        auto opLambda = [=](label i){rp[i] op fp[i];};\
+        foamExecutor exec;\
+        exec.parallelFor(opLambda,f.size());\
     }                                                                                 \
     else                                                                              \
     {                                                                                 \
@@ -855,12 +844,10 @@ void Foam::Field<Type>::operator op(const TYPE & t)                             
 {                                                                                     \
     if (this->usePool())                                                              \
     {                                                                                 \
-        auto exec = tmp<cudaFieldExecutor<Foam::exec::name##Op2<Type, TYPE>>>::New(); \
-        exec->opF_OP_S(                                                               \
-            this->begin(),                                                            \
-            t,                                                                        \
-            Foam::exec::name##Op2<Type, TYPE>(),                                      \
-            this->size());                                                            \
+        auto rp =this->begin();\
+        auto opLambda = [=](label i){rp[i] op t;};\
+        foamExecutor exec;\
+        exec.parallelFor(opLambda,this->size());\
     }                                                                                 \
     else                                                                              \
     {                                                                                 \

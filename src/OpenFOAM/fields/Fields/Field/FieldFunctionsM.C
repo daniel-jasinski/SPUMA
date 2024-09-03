@@ -40,54 +40,15 @@ void Func                                                                      \
     const UList<Type1>& f1                                                     \
 )                                                                              \
 {                                                                              \
-    TFOR_ALL_F_OP_FUNC_F(ReturnType, result, =, ::Foam::Func, Type1, f1)       \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const UList<Type1>& f1                                                     \
-)                                                                              \
-{                                                                              \
-    auto tres = tmp<Field<ReturnType>>::New(f1.size());                        \
-    Func(tres.ref(), f1);                                                      \
-    return tres;                                                               \
-}                                                                              \
-                                                                               \
-TEMPLATE                                                                       \
-tmp<Field<ReturnType>> Func                                                    \
-(                                                                              \
-    const tmp<Field<Type1>>& tf1                                               \
-)                                                                              \
-{                                                                              \
-    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                         \
-    Func(tres.ref(), tf1());                                                   \
-    tf1.clear();                                                               \
-    return tres;                                                               \
-}
-
-#define UNARY_FUNCTION_EXEC(ReturnType, Type1, Func)                           \
-                                                                               \
-TEMPLATE                                                                       \
-void Func                                                                      \
-(                                                                              \
-    Field<ReturnType>& result,                                                 \
-    const UList<Type1>& f1                                                     \
-)                                                                              \
-{                                                                              \
     if (result.usePool() && f1.usePool())\
     {\
         /* Check fields have same size */                                      \
         checkFields(result, f1, "f1 = " #Func "(f2)");                         \
-        auto exec = tmp<\
-            cudaFieldExecutor<Foam::exec::Func##Op<ReturnType,Type1>>>::New();\
-        exec->opF_OP_F\
-        (\
-            result.begin(),\
-            f1.begin(),\
-            Foam::exec::Func##Op<ReturnType,Type1>(),\
-            f1.size()\
-        );\
+        auto rp = result.begin();\
+        auto f1p = f1.cbegin();\
+        auto Lambda = [=](label i){rp[i] = ::Foam::Func(f1p[i]);};\
+        foamExecutor exec;\
+        exec.parallelFor(Lambda,result.size());\
     }\
     else\
     {\
@@ -118,6 +79,41 @@ tmp<Field<ReturnType>> Func                                                    \
     return tres;                                                               \
 }
 
+#define UNARY_FUNCTION_HOST(ReturnType, Type1, Func)                           \
+                                                                               \
+TEMPLATE                                                                       \
+void Func##Host                                                                     \
+(                                                                             \
+    Field<ReturnType>& result,                                                 \
+    const UList<Type1>& f1                                                     \
+)                                                                              \
+{                                                                              \
+        TFOR_ALL_F_OP_FUNC_F(ReturnType, result, =, ::Foam::Func, Type1, f1)   \
+}                                                                              \
+                                                                               \
+TEMPLATE                                                                       \
+tmp<Field<ReturnType>> Func                                                    \
+(                                                                              \
+    const UList<Type1>& f1                                                     \
+)                                                                              \
+{                                                                              \
+    auto tres = tmp<Field<ReturnType>>::New(f1.size());                        \
+    Func##Host(tres.ref(), f1);                                                      \
+    return tres;                                                               \
+}                                                                              \
+                                                                               \
+TEMPLATE                                                                       \
+tmp<Field<ReturnType>> Func                                                    \
+(                                                                              \
+    const tmp<Field<Type1>>& tf1                                               \
+)                                                                              \
+{                                                                              \
+    auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                         \
+    Func##Host(tres.ref(), tf1());                                                   \
+    tf1.clear();                                                               \
+    return tres;                                                               \
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #define UNARY_OPERATOR(ReturnType, Type1, Op, OpFunc)                        \
@@ -131,16 +127,11 @@ void OpFunc(                                                                 \
     {                                                                        \
         /* Check fields have same size */                                    \
         checkFields(result, f1, "f1 = " #Op " f2");                          \
-        auto exec = \
-            tmp<\
-            cudaFieldExecutor<typename Foam::exec::OpFunc##Op2<ReturnType, Type1> \
-            > \
-            >::New(); \
-        exec->opF_OP_F(                                                      \
-            result.begin(),                                                  \
-            f1.begin(),                                                      \
-            Foam::exec::OpFunc##Op2<ReturnType, Type1>(),              \
-            result.size());                                                  \
+        auto rp = result.begin();\
+        auto f1p = f1.cbegin();\
+        foamExecutor exec;\
+        auto Lambda = [=] (label i){rp[i] = Op f1p[i];};\
+        exec.parallelFor(Lambda, result.size());\
     }                                                                        \
     else                                                                     \
     {                                                                        \
@@ -362,16 +353,12 @@ void OpFunc(                                                                    
     if (result.usePool() && f1.usePool() && f2.usePool())                                                    \
     {                                                                                                        \
         checkFields(result, f1, f2, "f1 = f2 " #Op " f3");                                                   \
-        /* this op cannot be dispatched per component*/                                                      \
-        auto exec =                                                                                          \
-            tmp<                                                                                             \
-                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>>>::New();       \
-        exec->opF_OP_F(                                                                                      \
-            result.begin(),                                                                                  \
-            f1.begin(),                                                                                      \
-            f2.begin(),                                                                                      \
-            Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>(),                                             \
-            result.size());                                                                                  \
+        auto rp = result.begin();\
+        auto f1p = f1.cbegin();\
+        auto f2p = f2.cbegin();\
+        auto Lambda = [=](label i){rp[i] = f1p[i] Op f2p[i];};\
+        foamExecutor exec;\
+        exec.parallelFor(Lambda,result.size());\
     }                                                                                                        \
     else                                                                                                     \
     {                                                                                                        \
@@ -437,15 +424,11 @@ void OpFunc(                                                                    
     {                                                                                                  \
         /* Check fields have same size */                                                              \
         checkFields(result, f2, "f1 = s " #Op " f2");                                                  \
-        auto exec =                                                                                    \
-            tmp<                                                                                       \
-                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>>>::New(); \
-        exec->opS_OP_F(                                                                                \
-            result.begin(),                                                                            \
-            s1,                                                                                        \
-            f2.begin(),                                                                                \
-            Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>(),                                       \
-            result.size());                                                                            \
+        auto rp = result.begin();\
+        auto f2p = f2.cbegin();\
+        auto Lambda = [=](label i){rp[i] = s1 Op f2p[i];};\
+        foamExecutor exec;\
+        exec.parallelFor(Lambda,result.size());\
     }                                                                                                  \
     else                                                                                               \
     {                                                                                                  \
@@ -485,16 +468,12 @@ void OpFunc(                                                                    
     if (result.usePool() && f1.usePool())                                                              \
     {                                                                                                  \
         /* Check fields have same size */                                                              \
-        checkFields(result, f1, "f1 = s " #Op " f2");                                                  \
-        auto exec =                                                                                    \
-            tmp<                                                                                       \
-                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>>>::New(); \
-        exec->opF_OP_S(                                                                                \
-            result.begin(),                                                                            \
-            f1.begin(),                                                                                \
-            s2,                                                                                        \
-            Foam::exec::OpFunc##Op3<ReturnType, Type1, Type2>(),                                       \
-            result.size());                                                                            \
+        checkFields(result, f1, "f1 = f2 " #Op " s");                                                  \
+        auto rp = result.begin();\
+        auto f1p = f1.cbegin();\
+        auto Lambda = [=](label i){rp[i] = f1p[i] Op s2;};\
+        foamExecutor exec;\
+        exec.parallelFor(Lambda,result.size());\
     }                                                                                                  \
     else                                                                                               \
     {                                                                                                  \
@@ -543,16 +522,13 @@ void Func(                                                                      
     {                                                                             \
         /* Check fields have same size */                                         \
         checkFields(result, f1, f2, f3, "f1 = " #Func "(f2, f3, f4)");            \
-        auto exec = tmp<                                                          \
-            cudaFieldExecutor<                                                    \
-                Foam::exec::Func##Op<ReturnType, Type1, Type2, Type3>>>::New();   \
-        exec->opF_OP_F_F(                                                         \
-            result.begin(),                                                       \
-            f1.begin(),                                                           \
-            f2.begin(),                                                           \
-            f3.begin(),                                                           \
-            Foam::exec::Func##Op<ReturnType, Type1, Type2, Type3>(),              \
-            result.size());                                                       \
+        auto rp = result.begin();\
+        auto f1p = f1.begin();\
+        auto f2p = f2.begin();\
+        auto f3p = f3.begin();\
+        auto Lambda = [=](label i){ rp[i] = Func(f1p[i],f2p[i],f3p[i]); };\
+        foamExecutor exec;\
+        exec.parallelFor(Lambda,result.size());\
     }                                                                             \
     else                                                                          \
     {                                                                             \
@@ -675,16 +651,12 @@ void Func(                                                                      
     {                                                                             \
         /* Check fields have same size */                                         \
         checkFields(result, f1, f2, "f1 = " #Func "(f2, f3, s)");                 \
-        auto exec = tmp<                                                          \
-            cudaFieldExecutor<                                                    \
-                Foam::exec::Func##Op<ReturnType, Type1, Type2, Type3>>>::New();   \
-        exec->opF_OP_F_S(                                                         \
-            result.begin(),                                                       \
-            f1.begin(),                                                           \
-            f2.begin(),                                                           \
-            s3,                                                                   \
-            Foam::exec::Func##Op<ReturnType, Type1, Type2, Type3>(),              \
-            result.size());                                                       \
+        auto rp = result.begin();\
+        auto f1p = result.cbegin();\
+        auto f2p = result.cbegin();\
+        auto Lambda = [=](label i){rp[i] = Func(f1p[i],f2p[i],s3);};\
+        foamExecutor exec;\
+        exec.parallelFor(Lambda,result.size());\
     }                                                                             \
     else                                                                          \
     {                                                                             \

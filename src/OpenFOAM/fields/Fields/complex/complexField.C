@@ -255,7 +255,18 @@ complex sumProd(const UList<complex>& f1, const UList<complex>& f2)
     if (f1.size() && (f1.size() == f2.size()))
     {
         // std::inner_product
-        TFOR_ALL_S_OP_F_OP_F(complex, result, +=, complex, f1, *, complex, f2)
+        if (f1.usePool() && f2.usePool())
+        {
+            auto f1p = f1.cbegin();
+            auto f2p = f2.cbegin();
+            auto sumProd = [=](label i){ return f1p[i]*f2p[i];};
+            foamExecutor exec;
+            exec.reductionSum(sumProd,&result,f1.size());
+        }
+        else
+        {
+            TFOR_ALL_S_OP_F_OP_F(complex, result, +=, complex, f1, *, complex, f2)
+        }
     }
     return result;
 }
@@ -290,9 +301,9 @@ UNARY_FUNCTION(complex, complex, atan)
 UNARY_FUNCTION(complex, complex, sinh)
 UNARY_FUNCTION(complex, complex, cosh)
 UNARY_FUNCTION(complex, complex, tanh)
-UNARY_FUNCTION(complex, complex, asinh)
-UNARY_FUNCTION(complex, complex, acosh)
-UNARY_FUNCTION(complex, complex, atanh)
+UNARY_FUNCTION_HOST(complex, complex, asinh)
+UNARY_FUNCTION_HOST(complex, complex, acosh)
+UNARY_FUNCTION_HOST(complex, complex, atanh)
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

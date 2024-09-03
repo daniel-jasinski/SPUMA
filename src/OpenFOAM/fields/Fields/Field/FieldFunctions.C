@@ -53,15 +53,11 @@ void component
     if (result.usePool() && f1.usePool())
     {
         checkFields(result, f1, "f1 = f2.component(s)");
-        auto exec = tmp<cudaFieldExecutor<Foam::exec::componentOp<resultType,Type>>>::New();
-        //auto exec = tmp<cudaFieldExecutor<Foam::exec::assignOp<resultType,Type>>>::New();
-        exec->opF_OP_F
-            (
-                result.begin(),
-                f1.begin(),
-                Foam::exec::componentOp<resultType,Type>(d),
-                f1.size()
-            );
+        auto rp = result.begin();
+        auto f1p = f1.cbegin();
+        auto Lambda = [=](label i){ rp[i] = f1p[i].component(d);};
+        foamExecutor exec;
+        exec.parallelFor(Lambda,result.size());
     }
     else
     {
@@ -76,7 +72,18 @@ void component
 template<class Type>
 void T(Field<Type>& result, const UList<Type>& f1)
 {
-    TFOR_ALL_F_OP_F_FUNC(Type, result, =, Type, f1, T)
+    if (result.usePool() && f1.usePool())
+    {
+        auto rp = result.begin();
+        auto f1p = f1.begin();
+        auto Lambda = [=](label i){ rp[i] = f1p[i].T(); };
+        foamExecutor exec;
+        exec.parallelFor(Lambda,result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_F_FUNC(Type, result, =, Type, f1, T)
+    }
 }
 
 
@@ -208,8 +215,11 @@ void mag
     {
         /* Check fields have same size */
         checkFields(result, f1, "f1 = mag(f2)");
-        auto exec = tmp<cudaFieldExecutor<Foam::exec::magOp<resultType,Type>>>::New();
-        exec->opF_OP_F(result.begin(),f1.begin(),Foam::exec::magOp<resultType,Type>(),f1.size());
+        auto rp = result.begin();
+        auto f1p = result.cbegin();
+        auto Lambda = [=](label i){rp[i] = mag(f1p[i]);};
+        foamExecutor exec;
+        exec.parallelFor(Lambda,result.size());
     }
     else
     {
@@ -436,8 +446,12 @@ Type sum(const UList<Type>& f1)
     {
         if(f1.usePool())
         {
-            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumOp<resultType,Type>>>::New();
-            exec->reductionSum(result,f1.begin(),Foam::exec::sumOp<resultType,Type>(),f1.size());
+            auto f1p = f1.begin();
+            const label size = f1.size();
+            //this is the thing being accumulated in result
+            auto sumOp = [=] (label i){return f1p[i];};
+            foamExecutor exec;
+            exec.reductionSum(sumOp, &result,size);
         }
         else
         {
@@ -520,8 +534,14 @@ sumProd(const UList<Type>& f1, const UList<Type>& f2)
     {
         if(f1.usePool() && f2.usePool())
         {
-            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumProdOp<resultType,Type,Type>>>::New();
-            exec->reductionSum(result,f1.begin(),f2.begin(),Foam::exec::sumProdOp<resultType,Type,Type>(),f1.size());
+            auto f1p = f1.begin();
+            auto f2p = f2.begin();
+            const label size = f1.size();
+
+            auto sumProd = [=](label i){ return f1p[i]&&f2p[i]; };
+
+            foamExecutor exec;
+            exec.reductionSum(sumProd, &result,size);
         }
         else
         {
@@ -565,8 +585,10 @@ sumSqr(const UList<Type>& f1)
     {
         if (f1.usePool())
         {
-            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumSqrOp<resultType,Type>>>::New();
-            exec->reductionSum(result,f1.begin(),Foam::exec::sumSqrOp<resultType,Type>(),f1.size());
+            auto f1p = f1.begin();
+            auto sumSqrOp = [=] (label i){return sqr(f1p[i]);};
+            foamExecutor exec;
+            exec.reductionSum(sumSqrOp, &result,f1.size());
         }
         else
         {
@@ -598,8 +620,10 @@ sumMag(const UList<Type>& f1)
     {
         if (f1.usePool())
         {
-            auto exec = tmp<cudaFieldExecutor<Foam::exec::sumMagOp<resultType,Type>>>::New();
-            exec->reductionSum(result,f1.begin(),Foam::exec::sumMagOp<resultType,Type>(),f1.size());
+            auto f1p = f1.begin();
+            auto sumMagOp = [=] (label i){return mag(f1p[i]);};
+            foamExecutor exec;
+            exec.reductionSum(sumMagOp, &result,f1.size());
         }
         else
         {
@@ -835,16 +859,13 @@ void OpFunc(                                                                    
     {                                                                                                  \
         /* Check fields have same size */                                                              \
         checkFields(result, f1, f2, "f1 = f2 " #Op " f3");                                             \
-        auto exec =                                                                                    \
-            tmp<                                                                                       \
-                cudaFieldExecutor<                                                                     \
-                    typename Foam::exec::OpFunc##Op3<resultType, Type1, Type2>>>::New();         \
-        exec->opF_OP_F(                                                                                \
-            result.begin(),                                                                            \
-            f1.begin(),                                                                                \
-            f2.begin(),                                                                                \
-            Foam::exec::OpFunc##Op3<resultType, Type1, Type2>(),                                 \
-            result.size());                                                                            \
+        auto rp = result.begin();\
+        auto f1p = f1.begin();\
+        auto f2p = f2.begin();\
+        const label size = result.size();\
+        auto OpFunc##Lambda = [=](label i){rp[i] = f1p[i] Op f2p[i];};\
+        foamExecutor exec;\
+        exec.parallelFor(OpFunc##Lambda,size);\
     }                                                                                                  \
     else                                                                                               \
     {                                                                                                  \
@@ -907,15 +928,13 @@ void OpFunc(                                                                    
     {                                                                                                  \
         /* Check fields have same size */                                                              \
         checkFields(result, f1, "f1 = f2 " #Op " s");                                                  \
-        auto exec =                                                                                    \
-            tmp<                                                                                       \
-                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3<resultType, Type, Form>>>::New();   \
-        exec->opF_OP_S(                                                                                \
-            result.begin(),                                                                            \
-            f1.begin(),                                                                                \
-            static_cast<const Form &>(vs),                                                             \
-            Foam::exec::OpFunc##Op3<resultType, Type, Form>(),                                         \
-            result.size());                                                                            \
+        auto rp = result.begin();\
+        auto f1p = f1.begin();\
+        auto v = static_cast<const Form &>(vs);\
+        const label size = result.size();\
+        auto OpFunc##Lambda = [=](label i){rp[i] = f1p[i] Op v;};\
+        foamExecutor exec;\
+        exec.parallelFor(OpFunc##Lambda,size);\
     }                                                                                                  \
     else                                                                                               \
     {                                                                                                  \
@@ -957,15 +976,13 @@ void OpFunc(                                                                    
     {                                                                                                  \
         /* Check fields have same size */                                                              \
         checkFields(result, f1, "f1 = s " #Op " f2");                                                  \
-        auto exec =                                                                                    \
-            tmp<                                                                                       \
-                cudaFieldExecutor<typename Foam::exec::OpFunc##Op3<resultType, Form, Type>>>::New();   \
-        exec->opS_OP_F(                                                                                \
-            result.begin(),                                                                            \
-            static_cast<const Form &>(vs),                                                             \
-            f1.begin(),                                                                                \
-            Foam::exec::OpFunc##Op3<resultType, Form, Type>(),                                         \
-            result.size());                                                                            \
+        auto rp = result.begin();\
+        auto f1p = f1.begin();\
+        auto v = static_cast<const Form &>(vs);\
+        const label size = result.size();\
+        auto OpFunc##Lambda = [=](label i){rp[i] = v Op f1p[i];};\
+        foamExecutor exec;\
+        exec.parallelFor(OpFunc##Lambda,size);\
     }                                                                                                  \
     else                                                                                               \
     {                                                                                                  \

@@ -76,10 +76,10 @@ tmp<tensorField> inv(const tmp<tensorField>& tf)
     return tres;
 }
 
-UNARY_FUNCTION(tensor, tensor, pinv)
+UNARY_FUNCTION_HOST(tensor, tensor, pinv)
 
-UNARY_FUNCTION(vector, symmTensor, eigenValues)
-UNARY_FUNCTION(tensor, symmTensor, eigenVectors)
+UNARY_FUNCTION_HOST(vector, symmTensor, eigenValues)
+UNARY_FUNCTION_HOST(tensor, symmTensor, eigenVectors)
 
 
 template<>

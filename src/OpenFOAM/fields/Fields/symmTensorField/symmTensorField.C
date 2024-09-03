@@ -73,7 +73,7 @@ tmp<symmTensorField> inv(const tmp<symmTensorField>& tf)
     return tresult;
 }
 
-UNARY_FUNCTION(symmTensor, symmTensor, pinv)
+UNARY_FUNCTION_HOST(symmTensor, symmTensor, pinv)
 
 
 template<>
