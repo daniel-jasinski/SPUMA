@@ -8,41 +8,6 @@ namespace Foam
 namespace cuda
 {
 
-//- naive spinLock implementation
-/*struct spinLock
-{
-    spinLock(){
-        CHECK_CUDA_ERROR(cudaMalloc(&mutex_,sizeof(int)));
-        CHECK_CUDA_ERROR(cudaMemset(mutex_,0,sizeof(int)));
-    }
-
-    ~spinLock(){
-        CHECK_CUDA_ERROR(cudaFree(mutex_)); 
-    }
-
-    __device__ inline void lock() {
-        while (atomicCAS((int*)mutex_, 0, 1) == 1) {};
-    }
-    
-    // __device__ inline void exp_backoff_lock() {
-    //     unsigned int ns = 8;
-    //     while (atomicCAS((int*)mutex_, 0, 1) == 1) {
-    //         __nanosleep(ns);
-    //         if (ns < 256) {
-    //            ns *= 2;
-    //         }
-    //     }
-    // }
-
-    __device__ inline void unlock() {
-        atomicExch((int*)mutex_, 0);
-    }
-
-private:
-    int* mutex_;
-};*/
-
-
 struct Mutex
 {
     Mutex(){
@@ -65,10 +30,10 @@ private:
 
 struct spinLock
 {
-    __device__ static inline void lock(int* mutex) {
+    __host__ __device__ static inline void lock(int* mutex) {
         while (atomicCAS(mutex, 0, 1) == 1) {};
     }
-    __device__ static inline void unlock(int* mutex){
+    __host__ __device__ static inline void unlock(int* mutex){
        atomicExch(mutex, 0); 
     } 
 };
