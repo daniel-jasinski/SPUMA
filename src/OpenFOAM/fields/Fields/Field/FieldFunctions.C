@@ -216,7 +216,7 @@ void mag
         /* Check fields have same size */
         checkFields(result, f1, "f1 = mag(f2)");
         auto rp = result.begin();
-        auto f1p = result.cbegin();
+        auto f1p = f1.cbegin();
         auto Lambda = [=](label i){rp[i] = mag(f1p[i]);};
         foamExecutor exec;
         exec.parallelFor(Lambda,result.size());
