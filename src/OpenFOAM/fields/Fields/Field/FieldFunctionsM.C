@@ -82,7 +82,7 @@ tmp<Field<ReturnType>> Func                                                    \
 #define UNARY_FUNCTION_HOST(ReturnType, Type1, Func)                           \
                                                                                \
 TEMPLATE                                                                       \
-void Func##Host                                                                     \
+void Func                                                                     \
 (                                                                             \
     Field<ReturnType>& result,                                                 \
     const UList<Type1>& f1                                                     \
@@ -98,7 +98,7 @@ tmp<Field<ReturnType>> Func                                                    \
 )                                                                              \
 {                                                                              \
     auto tres = tmp<Field<ReturnType>>::New(f1.size());                        \
-    Func##Host(tres.ref(), f1);                                                      \
+    Func(tres.ref(), f1);                                                      \
     return tres;                                                               \
 }                                                                              \
                                                                                \
@@ -109,7 +109,7 @@ tmp<Field<ReturnType>> Func                                                    \
 )                                                                              \
 {                                                                              \
     auto tres = reuseTmp<ReturnType, Type1>::New(tf1);                         \
-    Func##Host(tres.ref(), tf1());                                                   \
+    Func(tres.ref(), tf1());                                                   \
     tf1.clear();                                                               \
     return tres;                                                               \
 }
@@ -170,10 +170,22 @@ void Func                                                                      \
     const UList<Type2>& f2                                                     \
 )                                                                              \
 {                                                                              \
-    TFOR_ALL_F_OP_FUNC_F_F                                                     \
-    (                                                                          \
-        ReturnType, result, =, ::Foam::Func, Type1, f1, Type2, f2              \
-    )                                                                          \
+    if (result.usePool() && f1.usePool() && f2.usePool())\
+    {\
+        auto rp = result.begin();\
+        const auto f1p = f1.cbegin();\
+        const auto f2p = f2.cbegin();\
+        auto Lambda = [=](label i){rp[i] = ::Foam::Func(f1p[i],f2p[i]);};\
+        foamExecutor exec;\
+        exec.parallelFor(Lambda,result.size());\
+    }\
+    else\
+    {\
+        TFOR_ALL_F_OP_FUNC_F_F                                                     \
+        (                                                                          \
+            ReturnType, result, =, ::Foam::Func, Type1, f1, Type2, f2              \
+        )                                                                          \
+    };\
 }
 
 #define BINARY_FUNCTION_INTERFACE(ReturnType, Type1, Type2, Func)              \
@@ -247,6 +259,16 @@ void Func                                                                      \
     const UList<Type2>& f2                                                     \
 )                                                                              \
 {                                                                              \
+    if (result.usePool() && f2.usePool())\
+    {\
+        checkFields(result, f2, "f1 = "  #Func "(f2, s)");\
+        auto rp = result.begin();\
+        const auto f2p = f2.cbegin();\
+        auto Lambda = [=](label i){rp[i] = ::Foam::Func(s1,f2p[i]);};\
+        foamExecutor exec;\
+        exec.parallelFor(Lambda,result.size());\
+    }\
+    else\
     TFOR_ALL_F_OP_FUNC_S_F                                                     \
     (                                                                          \
         ReturnType, result, =, ::Foam::Func, Type1, s1, Type2, f2              \
@@ -295,10 +317,22 @@ void Func                                                                      \
     const Type2& s2                                                            \
 )                                                                              \
 {                                                                              \
-    TFOR_ALL_F_OP_FUNC_F_S                                                     \
-    (                                                                          \
-        ReturnType, result, =, ::Foam::Func, Type1, f1, Type2, s2              \
-    )                                                                          \
+    if (result.usePool() && f1.usePool())\
+    {\
+        checkFields(result, f1, "f1 = "  #Func "(f2, s)");\
+        auto rp = result.begin();\
+        const auto f1p = f1.cbegin();\
+        auto Lambda = [=](label i){rp[i] = ::Foam::Func(f1p[i],s2);};\
+        foamExecutor exec;\
+        exec.parallelFor(Lambda,result.size());\
+    }\
+    else\
+    {\
+        TFOR_ALL_F_OP_FUNC_F_S                                                     \
+        (                                                                          \
+            ReturnType, result, =, ::Foam::Func, Type1, f1, Type2, s2              \
+        )                                                                          \
+    };\
 }
 
 #define BINARY_FUNCTION_INTERFACE_FS(ReturnType, Type1, Type2, Func)           \
@@ -523,10 +557,10 @@ void Func(                                                                      
         /* Check fields have same size */                                         \
         checkFields(result, f1, f2, f3, "f1 = " #Func "(f2, f3, f4)");            \
         auto rp = result.begin();\
-        auto f1p = f1.begin();\
-        auto f2p = f2.begin();\
-        auto f3p = f3.begin();\
-        auto Lambda = [=](label i){ rp[i] = Func(f1p[i],f2p[i],f3p[i]); };\
+        auto f1p = f1.cbegin();\
+        auto f2p = f2.cbegin();\
+        auto f3p = f3.cbegin();\
+        auto Lambda = [=](label i){ rp[i] = ::Foam::Func(f1p[i],f2p[i],f3p[i]); };\
         foamExecutor exec;\
         exec.parallelFor(Lambda,result.size());\
     }                                                                             \
@@ -654,7 +688,7 @@ void Func(                                                                      
         auto rp = result.begin();\
         auto f1p = result.cbegin();\
         auto f2p = result.cbegin();\
-        auto Lambda = [=](label i){rp[i] = Func(f1p[i],f2p[i],s3);};\
+        auto Lambda = [=](label i){rp[i] = ::Foam::Func(f1p[i],f2p[i],s3);};\
         foamExecutor exec;\
         exec.parallelFor(Lambda,result.size());\
     }                                                                             \

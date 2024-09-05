@@ -812,7 +812,7 @@ void Foam::Field<Type>::operator=(const VectorSpace<Form,Cmpt,nCmpt>& vs)
     TFOR_ALL_F_OP_S(Type, *this, =, VSType, vs)
 }
 
-#define COMPUTED_ASSIGNMENT(TYPE, name, op)                                           \
+#define COMPUTED_ASSIGNMENT(TYPE, op)                                           \
                                                                                       \
 template <class Type>                                                                 \
 void Foam::Field<Type>::operator op(const UList<TYPE> &f)                             \
@@ -821,7 +821,7 @@ void Foam::Field<Type>::operator op(const UList<TYPE> &f)                       
     {                                                                                 \
         checkFields(*this, f, "f1 " #op " f2");                                       \
         auto rp =this->begin();\
-        auto fp = f.begin();\
+        auto fp = f.cbegin();\
         auto opLambda = [=](label i){rp[i] op fp[i];};\
         foamExecutor exec;\
         exec.parallelFor(opLambda,f.size());\
@@ -855,10 +855,10 @@ void Foam::Field<Type>::operator op(const TYPE & t)                             
     }                                                                                 \
 }
 
-COMPUTED_ASSIGNMENT(Type,eqSum, +=)
-COMPUTED_ASSIGNMENT(Type,eqMinus, -=)
-COMPUTED_ASSIGNMENT(scalar,eqProd, *=)
-COMPUTED_ASSIGNMENT(scalar,eqDivide, /=)
+COMPUTED_ASSIGNMENT(Type, +=)
+COMPUTED_ASSIGNMENT(Type, -=)
+COMPUTED_ASSIGNMENT(scalar, *=)
+COMPUTED_ASSIGNMENT(scalar, /=)
 
 #undef COMPUTED_ASSIGNMENT
 
