@@ -209,7 +209,8 @@ Foam::polyMesh::polyMesh(const IOobject& io, const bool doInit)
             *this,
             IOobject::READ_IF_PRESENT,
             IOobject::NO_WRITE
-        )
+        ),
+        poolSwitch(1)
     ),
     neighbour_
     (
@@ -221,7 +222,8 @@ Foam::polyMesh::polyMesh(const IOobject& io, const bool doInit)
             *this,
             IOobject::READ_IF_PRESENT,
             IOobject::NO_WRITE
-        )
+        ),
+        poolSwitch(1)
     ),
     clearedPrimitives_(false),
     boundary_

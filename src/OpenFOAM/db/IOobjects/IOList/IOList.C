@@ -57,6 +57,17 @@ Foam::IOList<T>::IOList(const IOobject& io)
     readIOcontents();
 }
 
+template<class T>
+Foam::IOList<T>::IOList(const IOobject& io, poolSwitch usePool)
+:
+    regIOobject(io)
+{
+    if(usePool) this->setPool(1);
+    // Check for MUST_READ_IF_MODIFIED
+    warnNoRereading<IOList<T>>();
+
+    readIOcontents();
+}
 
 template<class T>
 Foam::IOList<T>::IOList(const IOobject& io, Foam::zero)

@@ -105,6 +105,7 @@ protected:
 
     // Protected Member Functions
 
+            inline void setPool(bool flag) noexcept { usePool_ = flag; };
         //- Set addressed size to be inconsistent with allocated storage.
         //  Use with care
         inline void setAddressableSize(const label n) noexcept;
@@ -246,6 +247,7 @@ public:
     // Member Functions
         // Query memory management
             inline bool usePool() const noexcept { return usePool_; };
+            
         // Access
 
             //- The forward circular index. The next index in the list
