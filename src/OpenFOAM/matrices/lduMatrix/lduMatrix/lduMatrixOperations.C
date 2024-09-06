@@ -31,7 +31,6 @@ Description
 
 #include "lduMatrix.H"
 
-#include "cudalduExecutor.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -41,47 +40,32 @@ void Foam::lduMatrix::sumDiag()
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
     scalarField& Diag = diag();
 
-    const labelUList& l = lduAddr().lowerAddr();
-    const labelUList& u = lduAddr().upperAddr();
+    // const labelUList& l = lduAddr().lowerAddr();
+    // const labelUList& u = lduAddr().upperAddr();
 
-    //for (label face=0; face<l.size(); face++)
-    //{
+    //scalarField origDiag = Diag;
+
+    // for (label face=0; face<l.size(); face++)
+    // {
     //    Diag[l[face]] += Lower[face];
     //    Diag[u[face]] += Upper[face];
-    //}
+    // }
 
-    /*
-    //Info << "standard Diag: \n" << Diag <<endl;
-    scalarField stdDiag = Diag;
+    const auto ownStart = lduAddr().ownerStartAddr().begin();
+    const auto losortStart = lduAddr().losortStartAddr().begin();
+    const auto losort = lduAddr().losortAddr().begin();
+    scalar* diag = Diag.begin();
+    const scalar* lower = Lower.cbegin();
+    const scalar* upper = Upper.cbegin();
 
-    Diag = 0;
-    //Info << "zero Diag" << Diag <<endl;
-    */
-    const lduAddressing& lduAddrRef = lduAddr();
-    auto exec = tmp<cudalduExecutor<Foam::exec::eqSumOp2<scalar,scalar>>>::New();
-    exec->ownNbrLoop
-    (
-        Diag.begin(),
-        Lower.begin(),
-        Upper.begin(),
-        Foam::exec::eqSumOp2<scalar,scalar>(),
-        lduAddrRef
-    );
+    auto sumDiagOp = [=](label id){
+        forAllOwner(ownStart,id,i, diag[id] += lower[i];)
 
-    //Info << "executor Diag: \n" << Diag <<endl;
-    /*scalar sum = 0;
-    for (size_t i = 0; i < Diag.size(); i++)
-    {   
-        scalar value = mag(mag(Diag[i])-mag(stdDiag[i]));
-        sum += value;
-        if(value >SMALL)
-        {
-            Info<<"index: "<< i<< " value: "<< value <<endl;
-        }
-    }
-    
-    Info << "diff Diag: \n" << sumMag(Diag - stdDiag) <<" serial: "<<sum <<endl;
-    */
+        forAllNbr(losortStart,losort,id,j, diag[id] += upper[j];)
+    };
+
+    foamExecutor exec;
+    exec.parallelFor(sumDiagOp,lduAddr().size());
 
 }
 
@@ -92,14 +76,30 @@ void Foam::lduMatrix::negSumDiag()
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
     scalarField& Diag = diag();
 
-    const labelUList& l = lduAddr().lowerAddr();
-    const labelUList& u = lduAddr().upperAddr();
+    // const labelUList& l = lduAddr().lowerAddr();
+    // const labelUList& u = lduAddr().upperAddr();
 
-    for (label face=0; face<l.size(); face++)
-    {
-        Diag[l[face]] -= Lower[face];
-        Diag[u[face]] -= Upper[face];
-    }
+    // for (label face=0; face<l.size(); face++)
+    // {
+    //     Diag[l[face]] -= Lower[face];
+    //     Diag[u[face]] -= Upper[face];
+    // }
+
+    const auto ownStart = lduAddr().ownerStartAddr().begin();
+    const auto losortStart = lduAddr().losortStartAddr().begin();
+    const auto losort = lduAddr().losortAddr().begin();
+    
+    scalar* diag = Diag.begin();
+    const scalar* lower = Lower.cbegin();
+    const scalar* upper = Upper.cbegin();
+    auto Lambda = [=](label id){
+        forAllOwner(ownStart,id,i, diag[id] -= lower[i];)
+
+        forAllNbr(losortStart,losort,id,j, diag[id] -= upper[j];)
+    };
+
+    foamExecutor exec;
+    exec.parallelFor(Lambda,lduAddr().size());
 }
 
 
@@ -111,14 +111,30 @@ void Foam::lduMatrix::sumMagOffDiag
     const scalarField& Lower = const_cast<const lduMatrix&>(*this).lower();
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
 
-    const labelUList& l = lduAddr().lowerAddr();
-    const labelUList& u = lduAddr().upperAddr();
+    // const labelUList& l = lduAddr().lowerAddr();
+    // const labelUList& u = lduAddr().upperAddr();
 
-    for (label face = 0; face < l.size(); face++)
-    {
-        sumOff[u[face]] += mag(Lower[face]);
-        sumOff[l[face]] += mag(Upper[face]);
-    }
+    // for (label face = 0; face < l.size(); face++)
+    // {
+    //     sumOff[u[face]] += mag(Lower[face]);
+    //     sumOff[l[face]] += mag(Upper[face]);
+    // }
+
+    const auto ownStart = lduAddr().ownerStartAddr().begin();
+    const auto losortStart = lduAddr().losortStartAddr().begin();
+    const auto losort = lduAddr().losortAddr().begin();
+
+    auto sumoff = sumOff.begin();
+    const scalar* lower = Lower.cbegin();
+    const scalar* upper = Upper.cbegin();
+    auto Lambda = [=](label id){
+        forAllOwner(ownStart,id,i, sumoff[id] += mag(upper[i]);)
+
+        forAllNbr(losortStart,losort,id,j, sumoff[id] += mag(lower[j]);)
+    };
+
+    foamExecutor exec;
+    exec.parallelFor(Lambda,lduAddr().size());
 }
 
 
@@ -346,18 +362,35 @@ void Foam::lduMatrix::operator*=(const scalarField& sf)
         scalarField& upper = this->upper();
         scalarField& lower = this->lower();
 
-        const labelUList& l = lduAddr().lowerAddr();
-        const labelUList& u = lduAddr().upperAddr();
+        // const labelUList& l = lduAddr().lowerAddr();
+        // const labelUList& u = lduAddr().upperAddr();
 
-        for (label face=0; face<upper.size(); face++)
-        {
-            upper[face] *= sf[l[face]];
-        }
+        // for (label face=0; face<upper.size(); face++)
+        // {
+        //     upper[face] *= sf[l[face]];
+        // }
 
-        for (label face=0; face<lower.size(); face++)
-        {
-            lower[face] *= sf[u[face]];
-        }
+        // for (label face=0; face<lower.size(); face++)
+        // {
+        //     lower[face] *= sf[u[face]];
+        // }
+
+        const auto ownStart = lduAddr().ownerStartAddr().begin();
+        const auto losortStart = lduAddr().losortStartAddr().begin();
+        const auto losort = lduAddr().losortAddr().begin();
+        auto up = upper.begin();
+        auto lp = lower.begin();
+        const auto sfp = sf.cbegin();
+
+        //check correctness, maybe for this loop over faces
+        auto Lambda = [=](label id){
+            forAllOwner(ownStart,id,i, up[i] *= sfp[id];)
+
+            forAllNbr(losortStart,losort,id,j, lp[j] *= sfp[id];) 
+        };
+
+        foamExecutor exec;
+        exec.parallelFor(Lambda,lduAddr().size());
     }
 }
 

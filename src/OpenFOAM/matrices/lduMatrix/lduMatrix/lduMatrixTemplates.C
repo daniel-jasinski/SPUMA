@@ -46,16 +46,27 @@ Foam::tmp<Foam::Field<Type>> Foam::lduMatrix::H(const Field<Type>& psi) const
         const label* __restrict__ uPtr = lduAddr().upperAddr().begin();
         const label* __restrict__ lPtr = lduAddr().lowerAddr().begin();
 
+        const label* __restrict__ ownStart = lduAddr().ownerStartAddr().begin();
+        const label* __restrict__ losortStart = lduAddr().losortStartAddr().begin();
+        const label* __restrict__ losort = lduAddr().losortAddr().begin();
+        
         const scalar* __restrict__ lowerPtr = lower().begin();
         const scalar* __restrict__ upperPtr = upper().begin();
 
-        const label nFaces = upper().size();
+        // const label nFaces = upper().size();
 
-        for (label face=0; face<nFaces; face++)
-        {
-            HpsiPtr[uPtr[face]] -= lowerPtr[face]*psiPtr[lPtr[face]];
-            HpsiPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
-        }
+        // for (label face=0; face<nFaces; face++)
+        // {
+        //     HpsiPtr[uPtr[face]] -= lowerPtr[face]*psiPtr[lPtr[face]];
+        //     HpsiPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
+        // }
+
+        auto Lambda = [=](label cell){
+            forAllNbr(losortStart,losort,cell,face, HpsiPtr[cell] -= lowerPtr[face]*psiPtr[lPtr[face]];)
+            forAllOwner(ownStart,cell,face, HpsiPtr[cell] -= upperPtr[face]*psiPtr[uPtr[face]];)
+        };
+        foamExecutor exec;
+        exec.parallelFor(Lambda,lduAddr().size());
     }
 
     return tHpsi;
@@ -80,18 +91,32 @@ Foam::lduMatrix::faceH(const Field<Type>& psi) const
         const scalarField& Lower = const_cast<const lduMatrix&>(*this).lower();
         const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
 
-        const labelUList& l = lduAddr().lowerAddr();
-        const labelUList& u = lduAddr().upperAddr();
+        const label* l = lduAddr().lowerAddr().begin();
+        const label* u = lduAddr().upperAddr().begin();
 
         auto tfaceHpsi = tmp<Field<Type>>::New(Lower.size());
         auto& faceHpsi = tfaceHpsi.ref();
 
-        for (label face=0; face<l.size(); face++)
-        {
-            faceHpsi[face] =
-                Upper[face]*psi[u[face]]
-              - Lower[face]*psi[l[face]];
-        }
+        // for (label face=0; face<l.size(); face++)
+        // {
+        //     faceHpsi[face] =
+        //         Upper[face]*psi[u[face]]
+        //       - Lower[face]*psi[l[face]];
+        // }
+
+        auto faceHpsip = faceHpsi.begin();
+        const auto psip = psi.cbegin();
+        const auto Lp = Lower.cbegin();
+        const auto Up = Upper.begin();
+
+        auto Lambda = [=](label face){
+            faceHpsip[face] =
+                Up[face]*psip[u[face]]
+              - Lp[face]*psip[l[face]]; 
+        };
+
+        foamExecutor exec;
+        exec.parallelFor(Lambda,l.size());
 
         return tfaceHpsi;
     }

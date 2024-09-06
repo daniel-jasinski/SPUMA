@@ -55,11 +55,18 @@ void Foam::lduMatrix::Amul
     const label* const __restrict__ uPtr = addr.upperAddr().begin();
     const label* const __restrict__ lPtr = addr.lowerAddr().begin();
 
+    //pointers for matrix cell addressing
+    const auto ownStart = lduAddr().ownerStartAddr().begin();
+    const auto losortStart = lduAddr().losortStartAddr().begin();
+    const auto losort = lduAddr().losortAddr().begin();
+
     const scalar* const __restrict__ upperPtr = upper().begin();
     const scalar* const __restrict__ lowerPtr = lower().begin();
 
     const label startRequest = UPstream::nRequests();
 
+    //get executor
+    foamExecutor exec;
     // Initialise the update of interfaced interfaces
     initMatrixInterfaces
     (
@@ -121,22 +128,30 @@ void Foam::lduMatrix::Amul
     }
     else
     {
-        for (label cell=0; cell<nCells; cell++)
-        {
-            ApsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
-        }
+        // for (label cell=0; cell<nCells; cell++)
+        // {
+        //     ApsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
+        // }
+        auto LamdaDiag = [=](label cell){ApsiPtr[cell] = diagPtr[cell]*psiPtr[cell];};
+        exec.parallelFor(LamdaDiag,nCells);
 
+        // const label nFaces = upper().size();
 
-        const label nFaces = upper().size();
+        // for (label face=0; face<nFaces; face++)
+        // {
+        //     ApsiPtr[uPtr[face]] += lowerPtr[face]*psiPtr[lPtr[face]];
+        //     ApsiPtr[lPtr[face]] += upperPtr[face]*psiPtr[uPtr[face]];
+        // }
 
-        for (label face=0; face<nFaces; face++)
-        {
-            ApsiPtr[uPtr[face]] += lowerPtr[face]*psiPtr[lPtr[face]];
-            ApsiPtr[lPtr[face]] += upperPtr[face]*psiPtr[uPtr[face]];
-        }
+        //psiPtr is accessed in read-only => no data race
+        auto LambdaOffDiag = [=](label cell){
+            forAllNbr(losortStart,losort,cell,j, ApsiPtr[cell] += lowerPtr[j]*psiPtr[lPtr[j]];)
+            forAllOwner(ownStart,cell,i,ApsiPtr[cell] += upperPtr[i]*psiPtr[uPtr[i]];)
+        };
+        exec.parallelFor(LambdaOffDiag,nCells);
     }
 
-    // Update interface interfaces
+    //Update interface interfaces
     updateMatrixInterfaces
     (
         true,
@@ -170,10 +185,15 @@ void Foam::lduMatrix::Tmul
 
     const label* const __restrict__ uPtr = lduAddr().upperAddr().begin();
     const label* const __restrict__ lPtr = lduAddr().lowerAddr().begin();
-
+    
+    const auto ownStart = lduAddr().ownerStartAddr().begin();
+    const auto losortStart = lduAddr().losortStartAddr().begin();
+    const auto losort = lduAddr().losortAddr().begin();
+    
     const scalar* const __restrict__ lowerPtr = lower().begin();
     const scalar* const __restrict__ upperPtr = upper().begin();
 
+    foamExecutor exec;
     const label startRequest = UPstream::nRequests();
 
     // Initialise the update of interfaced interfaces
@@ -188,18 +208,26 @@ void Foam::lduMatrix::Tmul
     );
 
     const label nCells = diag().size();
-    for (label cell=0; cell<nCells; cell++)
-    {
-        TpsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
-    }
+    // for (label cell=0; cell<nCells; cell++)
+    // {
+    //     TpsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
+    // }
+    auto LambdaDiag = [=](label cell){TpsiPtr[cell] = diagPtr[cell]*psiPtr[cell];};
+    exec.parallelFor(LambdaDiag,nCells);
 
-    const label nFaces = upper().size();
-    for (label face=0; face<nFaces; face++)
-    {
-        TpsiPtr[uPtr[face]] += upperPtr[face]*psiPtr[lPtr[face]];
-        TpsiPtr[lPtr[face]] += lowerPtr[face]*psiPtr[uPtr[face]];
-    }
+    // const label nFaces = upper().size();
+    // for (label face=0; face<nFaces; face++)
+    // {
+    //     TpsiPtr[uPtr[face]] += upperPtr[face]*psiPtr[lPtr[face]];
+    //     TpsiPtr[lPtr[face]] += lowerPtr[face]*psiPtr[uPtr[face]];
+    // }
+    auto LambdaOffDiag = [=](label cell){
+        forAllNbr(losortStart,losort,cell,j,TpsiPtr[cell] += upperPtr[j]*psiPtr[lPtr[j]];)
 
+        forAllOwner(ownStart,cell,i,TpsiPtr[cell] += lowerPtr[i]*psiPtr[uPtr[i]];)
+    };
+    exec.parallelFor(LambdaOffDiag,nCells); 
+    
     // Update interface interfaces
     updateMatrixInterfaces
     (
@@ -227,26 +255,45 @@ void Foam::lduMatrix::sumA
 
     const scalar* __restrict__ diagPtr = diag().begin();
 
-    const label* __restrict__ uPtr = lduAddr().upperAddr().begin();
-    const label* __restrict__ lPtr = lduAddr().lowerAddr().begin();
+    //const label* __restrict__ uPtr = lduAddr().upperAddr().begin();
+    //const label* __restrict__ lPtr = lduAddr().lowerAddr().begin();
 
     const scalar* __restrict__ lowerPtr = lower().begin();
     const scalar* __restrict__ upperPtr = upper().begin();
 
     const label nCells = diag().size();
     const label nFaces = upper().size();
+    
+    foamExecutor exec;
+    
+    // for (label cell=0; cell<nCells; cell++)
+    // {
+    //     sumAPtr[cell] = diagPtr[cell];
+    // }
+    //diagonal
+    auto LambdaDiag = [=](label cell){sumAPtr[cell] = diagPtr[cell];};
+    exec.parallelFor(LambdaDiag,nCells);
 
-    for (label cell=0; cell<nCells; cell++)
-    {
-        sumAPtr[cell] = diagPtr[cell];
-    }
+    // for (label face=0; face<nFaces; face++)
+    // {
+    //     sumAPtr[uPtr[face]] += lowerPtr[face];
+    //     sumAPtr[lPtr[face]] += upperPtr[face];
+    // }
+    
+    //off diagonal
+    const auto ownStart = lduAddr().ownerStartAddr().begin();
+    const auto losortStart = lduAddr().losortStartAddr().begin();
+    const auto losort = lduAddr().losortAddr().begin();
 
-    for (label face=0; face<nFaces; face++)
-    {
-        sumAPtr[uPtr[face]] += lowerPtr[face];
-        sumAPtr[lPtr[face]] += upperPtr[face];
-    }
+    auto LambdaOffDiag = [=](label cell){
+        
+        forAllNbr(losortStart,losort,cell,j, sumAPtr[cell] += lowerPtr[j];)
 
+        forAllOwner(ownStart,cell,i, sumAPtr[cell] += upperPtr[i];)
+    };
+    exec.parallelFor(LambdaOffDiag,nCells);
+
+    //TODO executor for patch
     // Add the interface internal coefficients to diagonal
     // and the interface boundary coefficients to the sum-off-diagonal
     forAll(interfaces, patchi)
@@ -284,8 +331,14 @@ void Foam::lduMatrix::residual
     const label* const __restrict__ uPtr = lduAddr().upperAddr().begin();
     const label* const __restrict__ lPtr = lduAddr().lowerAddr().begin();
 
+    const auto ownStart = lduAddr().ownerStartAddr().begin();
+    const auto losortStart = lduAddr().losortStartAddr().begin();
+    const auto losort = lduAddr().losortAddr().begin();
+
     const scalar* const __restrict__ upperPtr = upper().begin();
     const scalar* const __restrict__ lowerPtr = lower().begin();
+
+    foamExecutor exec;
 
     // Parallel boundary initialisation.
     // Note: there is a change of sign in the coupled
@@ -312,19 +365,26 @@ void Foam::lduMatrix::residual
     );
 
     const label nCells = diag().size();
-    for (label cell=0; cell<nCells; cell++)
-    {
-        rAPtr[cell] = sourcePtr[cell] - diagPtr[cell]*psiPtr[cell];
-    }
+    // for (label cell=0; cell<nCells; cell++)
+    // {
+    //     rAPtr[cell] = sourcePtr[cell] - diagPtr[cell]*psiPtr[cell];
+    // }
+    auto LambdaDiag = [=](label cell){rAPtr[cell] = sourcePtr[cell] - diagPtr[cell]*psiPtr[cell];};
+    exec.parallelFor(LambdaDiag,nCells);
 
+    // const label nFaces = upper().size();
 
-    const label nFaces = upper().size();
+    // for (label face=0; face<nFaces; face++)
+    // {
+    //     rAPtr[uPtr[face]] -= lowerPtr[face]*psiPtr[lPtr[face]];
+    //     rAPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
+    // }
+    auto LambdaOffDiag = [=](label cell){
+        forAllNbr(losortStart,losort,cell,j, rAPtr[cell] -= lowerPtr[j]*psiPtr[lPtr[j]];)
 
-    for (label face=0; face<nFaces; face++)
-    {
-        rAPtr[uPtr[face]] -= lowerPtr[face]*psiPtr[lPtr[face]];
-        rAPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
-    }
+        forAllOwner(ownStart,cell,i, rAPtr[cell] -= upperPtr[i]*psiPtr[uPtr[i]];)
+    };
+    exec.parallelFor(LambdaOffDiag,nCells);
 
     // Update interface interfaces
     updateMatrixInterfaces
@@ -363,19 +423,32 @@ Foam::tmp<Foam::scalarField> Foam::lduMatrix::H1() const
     {
         scalar* __restrict__ H1Ptr = tH1.ref().begin();
 
-        const label* __restrict__ uPtr = lduAddr().upperAddr().begin();
-        const label* __restrict__ lPtr = lduAddr().lowerAddr().begin();
+        // const label* __restrict__ uPtr = lduAddr().upperAddr().begin();
+        // const label* __restrict__ lPtr = lduAddr().lowerAddr().begin();
 
         const scalar* __restrict__ lowerPtr = lower().begin();
         const scalar* __restrict__ upperPtr = upper().begin();
 
-        const label nFaces = upper().size();
+        //const label nFaces = upper().size();
 
-        for (label face=0; face<nFaces; face++)
-        {
-            H1Ptr[uPtr[face]] -= lowerPtr[face];
-            H1Ptr[lPtr[face]] -= upperPtr[face];
-        }
+        // for (label face=0; face<nFaces; face++)
+        // {
+        //     H1Ptr[uPtr[face]] -= lowerPtr[face];
+        //     H1Ptr[lPtr[face]] -= upperPtr[face];
+        // }
+
+        const auto ownStart = lduAddr().ownerStartAddr().begin();
+        const auto losortStart = lduAddr().losortStartAddr().begin();
+        const auto losort = lduAddr().losortAddr().begin();
+
+        auto Lambda = [=](label cell){ 
+            forAllNbr(losortStart,losort,cell,j, H1Ptr[cell] -= lowerPtr[j];)
+
+            forAllOwner(ownStart,cell,i, H1Ptr[cell] -= upperPtr[i];)
+        };
+
+        foamExecutor exec;
+        exec.parallelFor(Lambda,lduAddr().size());
     }
 
     return tH1;
