@@ -45,7 +45,7 @@ tmp<Field<ReturnType>> Func(const tmp<Field<Type1>>& tf1);
 #define UNARY_FUNCTION_HOST(ReturnType, Type1, Func)                                \
                                                                                \
 TEMPLATE                                                                       \
-void Func##Host(Field<ReturnType>& result, const UList<Type1>& f1);                  \
+void Func(Field<ReturnType>& result, const UList<Type1>& f1);                  \
                                                                                \
 TEMPLATE                                                                       \
 tmp<Field<ReturnType>> Func(const UList<Type1>& f1);                           \
