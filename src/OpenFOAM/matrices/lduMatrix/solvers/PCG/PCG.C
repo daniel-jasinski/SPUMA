@@ -93,6 +93,8 @@ Foam::solverPerformance Foam::PCG::scalarSolve
     solveScalar wArA = solverPerf.great_;
     solveScalar wArAold = wArA;
 
+    foamExecutor exec;
+
     // --- Calculate A.psi
     matrix_.Amul(wA, psi, interfaceBouCoeffs_, interfaces_, cmpt);
 
@@ -152,19 +154,23 @@ Foam::solverPerformance Foam::PCG::scalarSolve
 
             if (solverPerf.nIterations() == 0)
             {
-                for (label cell=0; cell<nCells; cell++)
-                {
-                    pAPtr[cell] = wAPtr[cell];
-                }
+                // for (label cell=0; cell<nCells; cell++)
+                // {
+                //     pAPtr[cell] = wAPtr[cell];
+                // }
+                auto Lamda1 = [=](label cell){pAPtr[cell] = wAPtr[cell];};
+                exec.parallelFor(Lamda1,nCells);
             }
             else
             {
                 const solveScalar beta = wArA/wArAold;
 
-                for (label cell=0; cell<nCells; cell++)
-                {
-                    pAPtr[cell] = wAPtr[cell] + beta*pAPtr[cell];
-                }
+                // for (label cell=0; cell<nCells; cell++)
+                // {
+                //     pAPtr[cell] = wAPtr[cell] + beta*pAPtr[cell];
+                // }
+                auto Lamda2 = [=](label cell){pAPtr[cell] = wAPtr[cell] + beta*pAPtr[cell];};
+                exec.parallelFor(Lamda2,nCells);
             }
 
 
@@ -181,11 +187,16 @@ Foam::solverPerformance Foam::PCG::scalarSolve
 
             const solveScalar alpha = wArA/wApA;
 
-            for (label cell=0; cell<nCells; cell++)
-            {
+            // for (label cell=0; cell<nCells; cell++)
+            // {
+            //     psiPtr[cell] += alpha*pAPtr[cell];
+            //     rAPtr[cell] -= alpha*wAPtr[cell];
+            // }
+            auto Lambda3 = [=](label cell){
                 psiPtr[cell] += alpha*pAPtr[cell];
-                rAPtr[cell] -= alpha*wAPtr[cell];
-            }
+                rAPtr[cell] -= alpha*wAPtr[cell]; 
+            };
+            exec.parallelFor(Lambda3,nCells);
 
             solverPerf.finalResidual() =
                 gSumMag(rA, matrix().mesh().comm())
