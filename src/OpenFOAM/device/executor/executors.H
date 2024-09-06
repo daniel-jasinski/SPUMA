@@ -17,17 +17,17 @@ namespace Foam
 //fwd declaraction
 
 // handy Macro
-#define forAllOwner(ownerStart,idCell,idFace,...) \
+#define forAllOwner(ownerStart,idCell,idFace,expression) \
     for (size_t idFace = ownStart[idCell]; idFace < ownStart[idCell+1]; idFace++)\
     {\
-        __VA_ARGS__\
+        expression\
     };
-#define forAllNbr(losortStart,losort,idCell,nbrFace,...)\
+#define forAllNbr(losortStart,losort,idCell,nbrFace,expression)\
     for (size_t idlosort = losortStart[idCell]; idlosort < losortStart[idCell+1]; idlosort++)\
     {\
         const label nbrFace = losort[idlosort];\
         if(nbrFace != -1){\
-            __VA_ARGS__\
+            expression\
         };\
     };
 
