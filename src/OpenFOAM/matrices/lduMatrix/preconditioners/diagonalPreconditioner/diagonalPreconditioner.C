@@ -60,10 +60,13 @@ Foam::diagonalPreconditioner::diagonalPreconditioner
     const label nCells = rD.size();
 
     // Generate reciprocal diagonal
-    for (label cell=0; cell<nCells; cell++)
-    {
-        rDPtr[cell] = 1.0/DPtr[cell];
-    }
+    // for (label cell=0; cell<nCells; cell++)
+    // {
+    //     rDPtr[cell] = 1.0/DPtr[cell];
+    // }
+    auto Lambda = [=](label cell){rDPtr[cell] = 1.0/DPtr[cell];};
+    foamExecutor exec;
+    exec.parallelFor(Lambda,nCells);
 }
 
 
@@ -82,10 +85,13 @@ void Foam::diagonalPreconditioner::precondition
 
     const label nCells = wA.size();
 
-    for (label cell=0; cell<nCells; cell++)
-    {
-        wAPtr[cell] = rDPtr[cell]*rAPtr[cell];
-    }
+    // for (label cell=0; cell<nCells; cell++)
+    // {
+    //     wAPtr[cell] = rDPtr[cell]*rAPtr[cell];
+    // }
+    auto Lambda = [=](label cell){wAPtr[cell] = rDPtr[cell]*rAPtr[cell];};
+    foamExecutor exec;
+    exec.parallelFor(Lambda,nCells);
 }
 
 
