@@ -804,12 +804,22 @@ void Foam::Field<Type>::operator=(const tmp<Field>& rhs)
     List<Type>::operator=(rhs());
 }
 
-//TODO executor
+
 template<class Type>
 template<class Form, class Cmpt, Foam::direction nCmpt>
 void Foam::Field<Type>::operator=(const VectorSpace<Form,Cmpt,nCmpt>& vs)
 {
-    TFOR_ALL_F_OP_S(Type, *this, =, VSType, vs)
+    if (this->usePool())
+    {
+        auto rp = this->begin();
+        auto Lambda = [=](label i){rp[i] = vs;};
+        foamExecutor exec;
+        exec.parallelFor(Lambda,rp.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_S(Type, *this, =, VSType, vs)
+    }
 }
 
 #define COMPUTED_ASSIGNMENT(TYPE, op)                                           \
@@ -821,7 +831,7 @@ void Foam::Field<Type>::operator op(const UList<TYPE> &f)                       
     {                                                                                 \
         checkFields(*this, f, "f1 " #op " f2");                                       \
         auto rp =this->begin();\
-        auto fp = f.cbegin();\
+        const auto fp = f.cbegin();\
         auto opLambda = [=](label i){rp[i] op fp[i];};\
         foamExecutor exec;\
         exec.parallelFor(opLambda,f.size());\
