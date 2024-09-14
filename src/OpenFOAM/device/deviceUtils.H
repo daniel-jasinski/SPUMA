@@ -30,10 +30,10 @@ private:
 
 struct spinLock
 {
-    __host__ __device__ static inline void lock(int* mutex) {
+    __device__ static inline void lock(int* mutex) {
         while (atomicCAS(mutex, 0, 1) == 1) {};
     }
-    __host__ __device__ static inline void unlock(int* mutex){
+    __device__ static inline void unlock(int* mutex){
        atomicExch(mutex, 0); 
     } 
 };
@@ -70,31 +70,32 @@ __device__
 void newWarpReduceNoVolatile( T* sdata, int tid)
 {   
     //cuda memory model do not guarantee that reads are perfomed before write: separate them
-    T temp(Zero);
-    __syncthreads();
+    
+    T temp(Zero); //error static init
+    //memset(temp.v_,0,sizeof(T));
     if (blockSize >= 64) {
-        temp += sdata[tid + 32]; __syncthreads();
-        sdata[tid] = temp; __syncthreads();
+        temp += sdata[tid + 32]; __syncwarp();
+        sdata[tid] = temp; __syncwarp();
     }
     if (blockSize >= 32) {
-        temp += sdata[tid + 16]; __syncthreads();
-        sdata[tid] = temp; __syncthreads();
+        temp += sdata[tid + 16]; __syncwarp();
+        sdata[tid] = temp; __syncwarp();
     }
     if (blockSize >= 16) {
-        temp += sdata[tid + 8]; __syncthreads();
-        sdata[tid] = temp; __syncthreads();
+        temp += sdata[tid + 8]; __syncwarp();
+        sdata[tid] = temp; __syncwarp();
     }
     if (blockSize >= 8) {
-        temp += sdata[tid + 4]; __syncthreads();
-        sdata[tid] = temp; __syncthreads();
+        temp += sdata[tid + 4]; __syncwarp();
+        sdata[tid] = temp; __syncwarp();
     }
     if (blockSize >= 4) {
-        temp += sdata[tid + 2]; __syncthreads();
-        sdata[tid] = temp; __syncthreads();
+        temp += sdata[tid + 2]; __syncwarp();
+        sdata[tid] = temp; __syncwarp();
     }
     if (blockSize >= 2) {
-        temp += sdata[tid + 1]; __syncthreads();
-        sdata[tid] = temp; __syncthreads();
+        temp += sdata[tid + 1]; __syncwarp();
+        sdata[tid] = temp; __syncwarp();
     }
 
 };
@@ -123,8 +124,8 @@ struct SharedMemory{
   }
 };
 
-}
+} // end namespace cuda
 
-}
+} //end namespace Foam
 
 #endif

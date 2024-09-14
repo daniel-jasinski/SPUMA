@@ -2,9 +2,6 @@
 #define Foam_executor_H
 
 #include "label.H"
-//#include "typeInfo.H"
-//#include "cudaExecutor.H"
-//#include "cpuExecutor.H"
 
 #define FOAM_BACKEND cudaExecutor
 

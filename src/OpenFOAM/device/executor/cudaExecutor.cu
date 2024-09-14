@@ -5,6 +5,7 @@
 #include "cudaExecutor.H"
 #include "deviceM.H"
 #include "deviceUtils.H"
+#include "Atomic.H"
 #include "cudaError.H"
 
 namespace Foam
@@ -75,14 +76,21 @@ namespace cuda
         }
 
         __syncthreads();
-        // note for high number of block too much contention of the mutex!
-        if(tid == 0)
-        {
-            spinLock::lock(mutex);
-            __threadfence();
-            *result += sdata[0];
-            __threadfence();
-            spinLock::unlock(mutex);
+        if constexpr(std::is_same<resultType,double>::value){
+            if(tid == 0)
+            {
+                atomicAdd(result,sdata[0]);
+            } 
+        }else{
+            // note for high number of block too much contention of the mutex!
+            if(tid == 0)
+            {
+                spinLock::lock(mutex);
+                __threadfence();
+                *result += sdata[0];
+                __threadfence();
+                spinLock::unlock(mutex);
+            }
         }
 
     };
@@ -99,7 +107,8 @@ void Foam::cudaExecutor::_backendFor(F& lambda, const label& size)
     const label numblocks = SET_NUM_BLOCKS(size);
 
     Foam::cuda::lambdaKernel<F>
-    <<<(numblocks + NUM_SM -1)/ NUM_SM,NUM_THREADS_PER_BLOCK>>>
+    //<<<(numblocks + NUM_SM -1)/ NUM_SM,NUM_THREADS_PER_BLOCK>>>
+    <<<numblocks,NUM_THREADS_PER_BLOCK>>>
     (lambda,size);
 
     deviceSync(); 
@@ -113,14 +122,13 @@ void Foam::cudaExecutor::_backendReductionSum(
     const label& size
 )
 {
-
-    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
-    //CHECK_CUDA_ERROR(cudaHostRegister(&resultRef,sizeof(resultT),cudaHostRegisterDefault));
     resultT* dPtrResult;
     CHECK_CUDA_ERROR(cudaMalloc(&dPtrResult,sizeof(resultT)));
-    CHECK_CUDA_ERROR(cudaMemcpy(dPtrResult,result,sizeof(resultT),cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(dPtrResult,result,sizeof(resultT),cudaMemcpyHostToDevice));
     // create mutex
     Foam::cuda::Mutex mutex;
+
+    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
     int maxbytes = MAX_SMEM; 
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
@@ -143,10 +151,10 @@ void Foam::cudaExecutor::_backendReductionSum(
         size
     );
 
-    deviceSync(); 
+    //deviceSync(); 
     CHECK_LAST_CUDA_ERROR();
 
-    CHECK_CUDA_ERROR(cudaMemcpy(result,dPtrResult,sizeof(resultT),cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(result,dPtrResult,sizeof(resultT),cudaMemcpyDeviceToHost));
     CHECK_CUDA_ERROR(cudaFree(dPtrResult));
 };
 

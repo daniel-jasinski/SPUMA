@@ -3,20 +3,32 @@
 
 #include "executor.H"
 #include "cpuExecutor.H"
-#include "cudaExecutor.H"
+
+#ifdef have_cuda
+    #include "cudaExecutor.H"
+#endif
+
+#include "Atomic.H"
 
 namespace Foam
 {
 
+//- choose backend
 #ifdef have_cuda
     typedef cudaExecutor foamExecutor;
 #else
     typedef cpuExecutor foamExecutor;
 #endif
 
+//- choose corresponding executor Atomic
+#ifdef have_cuda
+    typedef cudaAtomic foamAtomic;
+#else
+    typedef cpuAtomic foamAtomic;
+#endif
 //fwd declaraction
 
-// handy Macro
+// Macro for loops over cells with ldu addressing
 #define forAllOwner(ownerStart,idCell,idFace,expression) \
     for (size_t idFace = ownStart[idCell]; idFace < ownStart[idCell+1]; idFace++)\
     {\
