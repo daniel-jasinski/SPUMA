@@ -93,7 +93,16 @@ void Foam::cudaManagedMemoryPoolExecutor::clear(void* ptr) const
 
 void Foam::cudaManagedMemoryPoolExecutor::memCopy(void* dst, const void* src, uint64_t size, memCopyKind kind) const
 {
-    label err = CHECK_CUDA_ERROR(cudaMemcpy(dst, src, (size_t) size, cudaMemcpyDefault));
+    label err = 0;
+    if (kind == memCopyKind::memCopyHostToDevice)
+        err = CHECK_CUDA_ERROR(cudaMemcpy(dst, src, (size_t) size, cudaMemcpyHostToDevice));
+    else if (kind == memCopyKind::memCopyDeviceToHost)
+        err = CHECK_CUDA_ERROR(cudaMemcpy(dst, src, (size_t) size, cudaMemcpyDeviceToHost));
+    else if (kind == memCopyKind::memCopyDeviceToDevice)
+        err = CHECK_CUDA_ERROR(cudaMemcpy(dst, src, (size_t) size, cudaMemcpyDeviceToDevice));
+    else
+        FatalErrorInFunction << "ERROR: memCopyKind not found" << abort(FatalError);
+
     if (err != 0)
         FatalErrorInFunction << "ERROR: cudaMemcpy returned " << err << abort(FatalError);
 }
