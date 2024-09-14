@@ -224,6 +224,11 @@ public:
         //  Fatal for a null managed pointer or if the object is const.
         inline T& ref() const;
 
+        //- Return a rvalue reference to the contents of a non-null
+        //- managed pointer.
+        //  Fatal for a null managed pointer or if the object is non movable.
+        inline T&& move() const;
+
         //- Return non-const reference to the object or to the contents
         //- of a (non-null) managed pointer, with an additional const_cast.
         //  Fatal for a null pointer.

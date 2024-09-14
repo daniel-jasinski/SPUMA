@@ -258,6 +258,26 @@ inline T& Foam::tmp<T>::ref() const
     return *ptr_;  // non-const reference
 }
 
+template<class T>
+inline T&& Foam::tmp<T>::move() const
+{
+    if (!movable())
+    {
+        FatalErrorInFunction
+            << "Attempted rvalue-reference to non movable object: "
+            << this->typeName()
+            << abort(FatalError);
+    }
+    else if (!ptr_ && is_pointer())
+    {
+        FatalErrorInFunction
+            << this->typeName() << " deallocated"
+            << abort(FatalError);
+    }
+    T* ptr = ptr_;
+    ptr_ = nullptr;
+    return std::move(*ptr);  // rvalue reference
+}
 
 template<class T>
 inline T* Foam::tmp<T>::ptr() const
