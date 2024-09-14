@@ -40,7 +40,7 @@ License
 #include "cyclicACMIFvPatchField.H"
 
 #include "processorLduInterfaceField.H"
-
+#include "Atomic.H"
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
 template<class Type>
@@ -60,10 +60,19 @@ void Foam::fvMatrix<Type>::addToInternalField
             << abort(FatalError);
     }
 
-    forAll(addr, facei)
+    // forAll(addr, facei)
+    // {
+    //     intf[addr[facei]] += pf[facei];
+    // }
+    auto intfp = intf.begin();
+    const auto addrp = addr.cbegin();
+    const auto pfp = pf.cbegin();
+    auto Lambda = [=](label facei)
     {
-        intf[addr[facei]] += pf[facei];
-    }
+        foamAtomic::AtomicAdd(intfp[addrp[facei]], pfp[facei]);
+    };
+    foamExecutor exec;
+    exec.parallelFor(Lambda,addr.size());
 }
 
 
@@ -209,11 +218,21 @@ void Foam::fvMatrix<Type>::addBoundarySource
 
                     const labelUList& addr = lduAddr().patchAddr(patchi);
 
-                    forAll(addr, facei)
+                    // forAll(addr, facei)
+                    // {
+                    //     source[addr[facei]] +=
+                    //         cmptMultiply(pbc[facei], pnf[facei]);
+                    // }
+                    auto sourcep = source.begin();
+                    const auto addrp = addr.cbegin();
+                    const auto pbcp = pbc.cbegin();
+                    const auto pnfp = pnf.cbegin();
+                    auto Lambda = [=](label facei)
                     {
-                        source[addr[facei]] +=
-                            cmptMultiply(pbc[facei], pnf[facei]);
-                    }
+                        foamAtomic::AtomicAdd(sourcep[addrp[facei]],cmptMultiply(pbcp[facei], pnfp[facei])); 
+                    };
+                    foamExecutor exec;
+                    exec.parallelFor(Lambda,addr.size());
                 }
             }
         }
@@ -1119,6 +1138,9 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
     scalarField sumOff(D.size(), Zero);
     sumMagOffDiag(sumOff);
 
+    auto Dp = D.begin();
+    auto sumOffp = sumOff.begin();
+    foamExecutor exec;
     // Handle the boundary contributions to the diagonal
     forAll(psi_.boundaryField(), patchi)
     {
@@ -1127,28 +1149,42 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
         if (ptf.size())
         {
             const labelUList& pa = lduAddr().patchAddr(patchi);
+            const auto pap = pa.cbegin();
             Field<Type>& iCoeffs = internalCoeffs_[patchi];
+            const auto iCoeffsp = iCoeffs.cbegin();
 
             if (ptf.coupled())
             {
                 const Field<Type>& pCoeffs = boundaryCoeffs_[patchi];
 
+                const auto pCoeffsp = pCoeffs.cbegin();
                 // For coupled boundaries add the diagonal and
                 // off-diagonal contributions
-                forAll(pa, face)
+                // forAll(pa, face)
+                // {
+                //     D[pa[face]] += component(iCoeffs[face], 0);
+                //     sumOff[pa[face]] += mag(component(pCoeffs[face], 0));
+                // }
+                auto Lambda = [=](label face)
                 {
-                    D[pa[face]] += component(iCoeffs[face], 0);
-                    sumOff[pa[face]] += mag(component(pCoeffs[face], 0));
-                }
+                    foamAtomic::AtomicAdd(Dp[pap[face]],component(iCoeffsp[face], 0));
+                    foamAtomic::AtomicAdd(sumOffp[pap[face]], mag(component(pCoeffsp[face], 0))); 
+                };
+                exec.parallelFor(Lambda,pa.size());
             }
             else
             {
                 // For non-coupled boundaries add the maximum magnitude diagonal
                 // contribution to ensure stability
-                forAll(pa, face)
+                // forAll(pa, face)
+                // {
+                //     D[pa[face]] += cmptMax(cmptMag(iCoeffs[face]));
+                // }
+                auto Lambda = [=](label face)
                 {
-                    D[pa[face]] += cmptMax(cmptMag(iCoeffs[face]));
-                }
+                   foamAtomic::AtomicAdd(Dp[pap[face]], cmptMax(cmptMag(iCoeffsp[face]))); 
+                };
+                exec.parallelFor(Lambda,pa.size());
             }
         }
     }
@@ -1206,10 +1242,15 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
 
     // Ensure the matrix is diagonally dominant...
     // Assumes that the central coefficient is positive and ensures it is
-    forAll(D, celli)
+    // forAll(D, celli)
+    // {
+    //     D[celli] = max(mag(D[celli]), sumOff[celli]);
+    // }
+    auto LambdaDiag = [=](label celli)
     {
-        D[celli] = max(mag(D[celli]), sumOff[celli]);
-    }
+        Dp[celli] = max(mag(Dp[celli]), sumOffp[celli]);
+    };
+    exec.parallelFor(LambdaDiag,D.size());
 
     // ... then relax
     D /= alpha;
@@ -1222,21 +1263,33 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
         if (ptf.size())
         {
             const labelUList& pa = lduAddr().patchAddr(patchi);
+            const auto pap = pa.cbegin();
             Field<Type>& iCoeffs = internalCoeffs_[patchi];
-
+            const auto iCoeffsp = iCoeffs.cbegin();
+            
             if (ptf.coupled())
             {
-                forAll(pa, face)
+                // forAll(pa, face)
+                // {
+                //     D[pa[face]] -= component(iCoeffs[face], 0);
+                // }
+                auto Lambda = [=](label face)
                 {
-                    D[pa[face]] -= component(iCoeffs[face], 0);
-                }
+                    foamAtomic::AtomicAdd(Dp[pap[face]], -component(iCoeffsp[face], 0));
+                };
+                exec.parallelFor(Lambda,pa.size());
             }
             else
             {
-                forAll(pa, face)
+                // forAll(pa, face)
+                // {
+                //     D[pa[face]] -= cmptMin(iCoeffs[face]);
+                // }
+                auto Lambda = [=](label face)
                 {
-                    D[pa[face]] -= cmptMin(iCoeffs[face]);
-                }
+                    foamAtomic::AtomicAdd(Dp[pap[face]], -cmptMin(iCoeffsp[face]));
+                };
+                exec.parallelFor(Lambda,pa.size());
             }
         }
     }

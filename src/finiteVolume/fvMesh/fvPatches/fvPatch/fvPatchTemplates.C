@@ -42,10 +42,19 @@ void Foam::fvPatch::patchInternalField
 
     pfld.resize_nocopy(len);
 
-    for (label i = 0; i < len; ++i)
+    // for (label i = 0; i < len; ++i)
+    // {
+    //     pfld[i] = internalData[addressing[i]];
+    // }
+    auto pfldp = pfld.begin();
+    const auto internalDatap = internalData.cbegin();
+    const auto addressingp = addressing.cbegin();
+    auto Lambda = [=](label i)
     {
-        pfld[i] = internalData[addressing[i]];
-    }
+        pfldp[i] = internalDatap[addressingp[i]];
+    };
+    foamExecutor exec;
+    exec.parallelFor(Lambda,len);
 }
 
 

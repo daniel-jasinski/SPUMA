@@ -125,12 +125,23 @@ snGradScheme<Type>::snGrad
     const labelUList& owner = mesh.owner();
     const labelUList& neighbour = mesh.neighbour();
 
-    forAll(owner, facei)
-    {
-        ssf[facei] =
-            deltaCoeffs[facei]*(vf[neighbour[facei]] - vf[owner[facei]]);
-    }
-
+    // forAll(owner, facei)
+    // {
+    //     ssf[facei] =
+    //         deltaCoeffs[facei]*(vf[neighbour[facei]] - vf[owner[facei]]);
+    // }
+    const auto ownerp = owner.cbegin();
+    const auto neighbourp = owner.cbegin();
+    auto ssfp = ssf.begin();
+    const auto deltaCoeffsp = deltaCoeffs.cbegin();
+    const auto vfp = vf.cbegin();
+    auto Lambda = [=](label facei){
+        ssfp[facei] =
+            deltaCoeffsp[facei]*(vfp[neighbourp[facei]] - vfp[ownerp[facei]]);
+    };
+    foamExecutor exec;
+    exec.parallelFor(Lambda,owner.size());
+    
     typename GeometricField<Type, fvsPatchField, surfaceMesh>::
         Boundary& ssfbf = ssf.boundaryFieldRef();
 

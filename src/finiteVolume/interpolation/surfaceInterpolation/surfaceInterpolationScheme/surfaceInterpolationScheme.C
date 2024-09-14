@@ -168,10 +168,20 @@ Foam::surfaceInterpolationScheme<Type>::interpolate
 
     Field<Type>& sfi = sf.primitiveFieldRef();
 
-    for (label fi=0; fi<P.size(); fi++)
-    {
-        sfi[fi] = lambda[fi]*vfi[P[fi]] + y[fi]*vfi[N[fi]];
-    }
+    //TODO executor 
+    // for (label fi=0; fi<P.size(); fi++)
+    // {
+    //     sfi[fi] = lambda[fi]*vfi[P[fi]] + y[fi]*vfi[N[fi]];
+    // }
+    auto sfip = sfi.begin();
+    const auto lambdap = lambda.cbegin();
+    const auto yp = y.cbegin();
+    const auto vfip = vfi.cbegin();
+    const auto Pp = P.cbegin();
+    const auto Np = N.cbegin();
+    auto Lambda = [=](label fi){ sfip[fi] = lambdap[fi]*vfip[Pp[fi]] + yp[fi]*vfip[Np[fi]];};
+    foamExecutor exec;
+    exec.parallelFor(Lambda,P.size());
 
 
     // Interpolate across coupled patches using given lambdas and ys
@@ -262,19 +272,28 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
 
     const typename SFType::Internal& Sfi = Sf.internalField();
 
-    for (label fi=0; fi<P.size(); fi++)
-    {
-        // Same as:
-        // sfi[fi] = Sfi[fi] & lerp(vfi[N[fi]], vfi[P[fi]], lambda[fi]);
-        // but maybe the compiler notices the fused multiply add form
-        sfi[fi] = Sfi[fi] & (lambda[fi]*(vfi[P[fi]] - vfi[N[fi]]) + vfi[N[fi]]);
-    }
+    // TODO executor (owner and neighbour)
+    // for (label fi=0; fi<P.size(); fi++)
+    // {
+    //     // Same as:
+    //     // sfi[fi] = Sfi[fi] & lerp(vfi[N[fi]], vfi[P[fi]], lambda[fi]);
+    //     // but maybe the compiler notices the fused multiply add form
+    //     sfi[fi] = Sfi[fi] & (lambda[fi]*(vfi[P[fi]] - vfi[N[fi]]) + vfi[N[fi]]);
+    // }
+    auto sfip = sfi.begin();
+    const auto lambdap = lambda.cbegin();
+    const auto vfip = vfi.cbegin();
+    const auto Pp = P.cbegin();
+    const auto Np = N.cbegin();
+    auto Lambda = [=](label fi){ sfip[fi] = Sfi[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);};
+    foamExecutor exec;
+    exec.parallelFor(Lambda,P.size());
 
     // Interpolate across coupled patches using given lambdas
 
     typename GeometricField<RetType, fvsPatchField, surfaceMesh>::
         Boundary& sfbf = sf.boundaryFieldRef();
-
+    //TODO executor
     forAll(lambdas.boundaryField(), pi)
     {
         const fvsPatchScalarField& pLambda = lambdas.boundaryField()[pi];

@@ -286,7 +286,6 @@ void Foam::lduMatrix::sumA
     const auto losort = lduAddr().losortAddr().begin();
 
     auto LambdaOffDiag = [=](label cell){
-        
         forAllNbr(losortStart,losort,cell,j, sumAPtr[cell] += lowerPtr[j];)
 
         forAllOwner(ownStart,cell,i, sumAPtr[cell] += upperPtr[i];)
@@ -303,10 +302,14 @@ void Foam::lduMatrix::sumA
             const labelUList& pa = lduAddr().patchAddr(patchi);
             const scalarField& pCoeffs = interfaceBouCoeffs[patchi];
 
-            forAll(pa, face)
-            {
-                sumAPtr[pa[face]] -= pCoeffs[face];
-            }
+            // forAll(pa, face)
+            // {
+            //     sumAPtr[pa[face]] -= pCoeffs[face];
+            // }
+            const auto pap = pa.cbegin();
+            const auto pCoeffsp = pCoeffs.cbegin();
+            auto Lambda = [=](label face){foamAtomic::AtomicAdd(sumAPtr[pap[face]], -pCoeffsp[face]);};
+            exec.parallelFor(Lambda,pa.size());
         }
     }
 }

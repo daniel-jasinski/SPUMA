@@ -28,6 +28,7 @@ License
 
 #include "gaussGrad.H"
 #include "extrapolatedCalculatedFvPatchField.H"
+#include "Atomic.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -78,13 +79,26 @@ Foam::fv::gaussGrad<Type>::gradf
     Field<GradType>& igGrad = gGrad;
     const Field<Type>& issf = ssf;
 
-    forAll(owner, facei)
-    {
-        const GradType Sfssf = Sf[facei]*issf[facei];
+    // forAll(owner, facei)
+    // {
+    //     const GradType Sfssf = Sf[facei]*issf[facei];
 
-        igGrad[owner[facei]] += Sfssf;
-        igGrad[neighbour[facei]] -= Sfssf;
-    }
+    //     igGrad[owner[facei]] += Sfssf;
+    //     igGrad[neighbour[facei]] -= Sfssf;
+    // }
+    const auto ownStart = mesh.lduAddr().ownerStartAddr().cbegin();
+    const auto losortStart = mesh.lduAddr().losortStartAddr().cbegin();
+    const auto losort = mesh.lduAddr().losortAddr().cbegin();
+    
+    auto igGradp = igGrad.begin();
+    const auto Sfp = Sf.cbegin();
+    const auto issfp = issf.cbegin();
+    auto Lambda = [=](label cell){
+        forAllOwner(ownStart,cell,facei, igGradp[cell] += Sfp[facei]*issfp[facei];)
+        forAllNbr(losortStart,losort,cell,facei, igGradp[cell] -= Sfp[facei]*issfp[facei];)
+    };
+    foamExecutor exec;
+    exec.parallelFor(Lambda,mesh.lduAddr().size());
 
     forAll(mesh.boundary(), patchi)
     {
@@ -95,10 +109,21 @@ Foam::fv::gaussGrad<Type>::gradf
 
         const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
 
-        forAll(mesh.boundary()[patchi], facei)
+        //TODO executor
+        // forAll(mesh.boundary()[patchi], facei)
+        // {
+        //     igGrad[pFaceCells[facei]] += pSf[facei]*pssf[facei];
+        // }
+
+        const auto pSfp = pSf.cbegin();
+        const auto pssfp = pssf.cbegin();
+        const auto pFaceCellsp = pFaceCells.cbegin(); 
+        auto igGradp = igGrad.begin(); 
+        auto Lambda = [=](label facei)
         {
-            igGrad[pFaceCells[facei]] += pSf[facei]*pssf[facei];
-        }
+            foamAtomic::AtomicAdd(igGradp[pFaceCellsp[facei]], pSfp[facei]*pssfp[facei]);
+        };
+        exec.parallelFor(Lambda,mesh.boundary()[patchi].size());
     }
 
     igGrad /= mesh.V();
