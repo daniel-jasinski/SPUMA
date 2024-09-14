@@ -36,7 +36,7 @@ inline Foam::SubList<T>::SubList
     const UList<T>& list
 ) noexcept
 :
-    UList<T>(const_cast<T*>(list.cdata()), list.size())
+    UList<T>(const_cast<T*>(list.cdata()), list.size(),list.usePool())
 {}
 
 
@@ -58,7 +58,7 @@ inline Foam::SubList<T>::SubList
     const label len
 )
 :
-    UList<T>(const_cast<T*>(list.cdata()), len)
+    UList<T>(const_cast<T*>(list.cdata()), len,list.usePool())
 {
     #ifdef FULLDEBUG
     list.checkSize(len);
@@ -74,7 +74,7 @@ inline Foam::SubList<T>::SubList
     const label start
 )
 :
-    UList<T>(const_cast<T*>(list.cdata() + start), len)
+    UList<T>(const_cast<T*>(list.cdata() + start), len,list.usePool())
 {
     #ifdef FULLDEBUG
     list.checkRange(start, len);
