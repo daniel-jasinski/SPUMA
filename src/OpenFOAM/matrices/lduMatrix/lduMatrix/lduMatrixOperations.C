@@ -324,12 +324,13 @@ void Foam::lduMatrix::operator-=(const lduMatrix& A)
     {
         if (A.hasUpper())
         {
-            upper() = -A.upper();
+            // - unary operator return a tmp with unique ref in this case => safe to move
+            upper(false) = (-A.upper()).move();
         }
 
         if (A.hasLower())
         {
-            lower() = -A.lower();
+            lower(false) = (-A.lower()).move();
         }
     }
     else if (A.diagonal())
