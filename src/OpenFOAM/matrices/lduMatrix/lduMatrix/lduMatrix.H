@@ -667,8 +667,8 @@ public:
         const scalarField& lower() const;
 
         scalarField& diag();
-        scalarField& upper();
-        scalarField& lower();
+        scalarField& upper(bool init = true);
+        scalarField& lower(bool init = true);
 
         // Size with externally provided sizes
         // (for constructing with 'fake' mesh in GAMG)
