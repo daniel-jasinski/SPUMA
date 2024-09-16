@@ -814,7 +814,7 @@ void Foam::Field<Type>::operator=(const VectorSpace<Form,Cmpt,nCmpt>& vs)
         auto rp = this->begin();
         auto Lambda = [=](label i){rp[i] = vs;};
         foamExecutor exec;
-        exec.parallelFor(Lambda,rp.size());
+        exec.parallelFor(Lambda,this->size());
     }
     else
     {
