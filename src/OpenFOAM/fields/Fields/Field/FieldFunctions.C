@@ -323,8 +323,20 @@ void cmptAv
 )
 {
     typedef typename Field<Type>::cmptType resultType;
-
-    TFOR_ALL_F_OP_FUNC_F(resultType, result, =, cmptAv, Type, f1)
+    if(result.usePool() && f1.usePool())
+    {    
+        /* Check fields have same size */
+        checkFields(result, f1, "f1 = cmptAv(f2)");
+        auto rp = result.begin();
+        const auto f1p = f1.cbegin();
+        auto Lambda = [=](label i){rp[i]=cmptAv(f1p[i]);};
+        foamExecutor exec;
+        exec.parallelFor(Lambda,result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_F(resultType, result, =, cmptAv, Type, f1)
+    }
 }
 
 template<class Type>
@@ -411,7 +423,19 @@ Type max(const UList<Type>& f1)
     if (f1.size())
     {
         Type result(f1[0]);
-        TFOR_ALL_S_OP_FUNC_F_S(Type, result, =, max, Type, f1, Type, result)
+        if (f1.usePool())
+        {
+            const auto f1p = f1.cbegin();
+            foamExecutor exec;
+            auto Lambda = [=](label i){ return f1p[i];};
+            auto CompareOp = [](Type a, Type b){return max(a,b);};
+            exec.reductionCompare(Lambda,CompareOp,&result,f1.size());
+        }
+        else
+        {
+            TFOR_ALL_S_OP_FUNC_F_S(Type, result, =, max, Type, f1, Type, result)
+        }
+        
         return result;
     }
 

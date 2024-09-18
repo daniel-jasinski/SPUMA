@@ -32,13 +32,22 @@ public:
             lambda(i);
         }
     };
-    
+
     template<typename F, typename resultT>
     void _backendReductionSum(F& lambda, resultT* const __restrict__ result, const label& size)
     {
         for (label i = 0; i < size; i++)
         {
             *result += lambda(i);
+        }  
+    };
+
+    template<typename F,typename Op, typename resultT>
+    void _backendReductionCompare(F& lambda, Op& op, resultT* const __restrict__ result, const label& size)
+    {
+        for (label i = 0; i < size; i++)
+        {
+            *result = op(lambda(i),*result);
         }  
     };
 

@@ -42,27 +42,32 @@ template <typename T,int blockSize>
 __device__
 void warpReduceNoVolatile( T* sdata, int tid)
 {   
-    __threadfence_block();
-    if (blockSize >= 64) { sdata[tid] += sdata[tid + 32];  __threadfence_block(); }
-    if (blockSize >= 32) { sdata[tid] += sdata[tid + 16];  __threadfence_block(); }
-    if (blockSize >= 16) { sdata[tid] += sdata[tid + 8] ;  __threadfence_block();  }
-    if (blockSize >= 8)  { sdata[tid] += sdata[tid + 4] ;  __threadfence_block();  }
-    if (blockSize >= 4)  { sdata[tid] += sdata[tid + 2] ;   __threadfence_block(); }
-    if (blockSize >= 2)  { sdata[tid] += sdata[tid + 1] ;  __threadfence_block();  }
+    if (blockSize >= 64) { sdata[tid] += sdata[tid + 32];  __syncwarp(); }
+    if (blockSize >= 32) { sdata[tid] += sdata[tid + 16];  __syncwarp(); }
+    if (blockSize >= 16) { sdata[tid] += sdata[tid + 8] ;  __syncwarp();  }
+    if (blockSize >= 8)  { sdata[tid] += sdata[tid + 4] ;  __syncwarp();  }
+    if (blockSize >= 4)  { sdata[tid] += sdata[tid + 2] ;   __syncwarp(); }
+    if (blockSize >= 2)  { sdata[tid] += sdata[tid + 1] ;  __syncwarp();  }
 };
 
 
 template <typename T,typename Op,int blockSize>
 __device__
-void warpReduceNoVolatile( T* sdata, Op& op,int tid)
+void warpReduceCompareNoVolatile( T* sdata, Op& op,int tid)
 {   
-    __threadfence_block();
-    if (blockSize >= 64) { sdata[tid] = op(sdata[tid],sdata[tid + 32]);  __threadfence_block(); }
-    if (blockSize >= 32) { sdata[tid] = op(sdata[tid],sdata[tid + 16]);  __threadfence_block(); }
-    if (blockSize >= 16) { sdata[tid] = op(sdata[tid],sdata[tid + 8] );  __threadfence_block();  }
-    if (blockSize >= 8)  { sdata[tid] = op(sdata[tid],sdata[tid + 4] );  __threadfence_block();  }
-    if (blockSize >= 4)  { sdata[tid] = op(sdata[tid],sdata[tid + 2] );   __threadfence_block(); }
-    if (blockSize >= 2)  { sdata[tid] = op(sdata[tid],sdata[tid + 1] );  __threadfence_block();  }
+    T tmp;
+    if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__syncwarp(); 
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 32) { tmp = op(sdata[tid],sdata[tid + 16]);__syncwarp(); 
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 16) { tmp = op(sdata[tid],sdata[tid + 8] );__syncwarp(); 
+        sdata[tid]= tmp;   __syncwarp(); }
+    if (blockSize >= 8)  { tmp = op(sdata[tid],sdata[tid + 4] ); __syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 4)  { tmp = op(sdata[tid],sdata[tid + 2] ); __syncwarp();
+        sdata[tid]= tmp;   __syncwarp(); }
+    if (blockSize >= 2)  { tmp = op(sdata[tid],sdata[tid + 1] ); __syncwarp();
+        sdata[tid]= tmp;  __syncwarp();  }
 };
 
 template <typename T,int blockSize>

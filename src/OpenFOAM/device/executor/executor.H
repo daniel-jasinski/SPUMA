@@ -30,6 +30,10 @@ public:
         (static_cast<T*>(this))->_backendReductionSum(lambda, result, size);
     };
 
+    template<typename F,typename Op, typename resultT>
+    void reductionCompare(F& lambda,Op& op, resultT* result, const label& size){
+        (static_cast<T*>(this))->_backendReductionCompare(lambda,op, result, size);
+    };
     //operator
     void operator=(const executor<T> &) = delete;
 };
