@@ -394,10 +394,13 @@ void Foam::List<T>::transfer(List<T>& list)
     // Clear and swap
     clear();
     this->size_ = list.size_;
+
+    //if input list is not on pool trigger copy
     if (this->usePool() && !list.usePool())
     {
         doAlloc();
         MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+        list.clear();
     }
     else
     {
