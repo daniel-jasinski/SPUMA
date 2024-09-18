@@ -666,7 +666,7 @@ public:
         const scalarField& upper() const;
         const scalarField& lower() const;
 
-        scalarField& diag();
+        scalarField& diag(bool init = true);
         scalarField& upper(bool init = true);
         scalarField& lower(bool init = true);
 

@@ -116,7 +116,7 @@ Foam::lduMatrix::faceH(const Field<Type>& psi) const
         };
 
         foamExecutor exec;
-        exec.parallelFor(Lambda,l.size());
+        exec.parallelFor(Lambda,Lower.size());
 
         return tfaceHpsi;
     }

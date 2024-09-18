@@ -212,12 +212,20 @@ const Foam::scalarField& Foam::lduMatrix::diag() const
 }
 
 
-Foam::scalarField& Foam::lduMatrix::diag()
+Foam::scalarField& Foam::lduMatrix::diag(bool init)
 {
     if (!diagPtr_)
     {
-        diagPtr_ =
-            std::make_unique<scalarField>(lduAddr().size(), Foam::zero{});
+        if (init)
+        {
+            diagPtr_ =
+                std::make_unique<scalarField>(lduAddr().size(), Foam::zero{});
+        }
+        else
+        {
+            diagPtr_ =
+                std::make_unique<scalarField>(lduAddr().size()); 
+        }
     }
 
     return *diagPtr_;

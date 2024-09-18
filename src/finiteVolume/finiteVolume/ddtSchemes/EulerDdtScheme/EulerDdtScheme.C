@@ -380,7 +380,7 @@ EulerDdtScheme<Type>::fvmDdt
 
     scalar rDeltaT = 1.0/mesh().time().deltaTValue();
 
-    fvm.diag() = rDeltaT*mesh().Vsc();
+    fvm.diag(false) = rDeltaT*mesh().Vsc();
 
     if (mesh().moving())
     {
@@ -415,7 +415,7 @@ EulerDdtScheme<Type>::fvmDdt
 
     scalar rDeltaT = 1.0/mesh().time().deltaTValue();
 
-    fvm.diag() = rDeltaT*rho.value()*mesh().Vsc();
+    fvm.diag(false) = rDeltaT*rho.value()*mesh().Vsc();
 
     if (mesh().moving())
     {
@@ -452,7 +452,7 @@ EulerDdtScheme<Type>::fvmDdt
 
     scalar rDeltaT = 1.0/mesh().time().deltaTValue();
 
-    fvm.diag() = rDeltaT*rho.primitiveField()*mesh().Vsc();
+    fvm.diag(false) = rDeltaT*rho.primitiveField()*mesh().Vsc();
 
     if (mesh().moving())
     {
@@ -492,7 +492,7 @@ EulerDdtScheme<Type>::fvmDdt
 
     scalar rDeltaT = 1.0/mesh().time().deltaTValue();
 
-    fvm.diag() =
+    fvm.diag(false) =
         rDeltaT*alpha.primitiveField()*rho.primitiveField()*mesh().Vsc();
 
     if (mesh().moving())

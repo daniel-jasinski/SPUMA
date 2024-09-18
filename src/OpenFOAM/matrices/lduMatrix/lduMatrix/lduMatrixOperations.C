@@ -149,7 +149,7 @@ void Foam::lduMatrix::operator=(const lduMatrix& A)
 
     if (A.hasLower())
     {
-        lower() = A.lower();
+        lower(false) = A.lower();
     }
     else
     {
@@ -158,7 +158,7 @@ void Foam::lduMatrix::operator=(const lduMatrix& A)
 
     if (A.hasUpper())
     {
-        upper() = A.upper();
+        upper(false) = A.upper();
     }
     else
     {
@@ -167,7 +167,7 @@ void Foam::lduMatrix::operator=(const lduMatrix& A)
 
     if (A.hasDiag())
     {
-        diag() = A.diag();
+        diag(false) = A.diag();
     }
 }
 
@@ -252,12 +252,12 @@ void Foam::lduMatrix::operator+=(const lduMatrix& A)
     {
         if (A.hasUpper())
         {
-            upper() = A.upper();
+            upper(false) = A.upper();
         }
 
         if (A.hasLower())
         {
-            lower() = A.lower();
+            lower(false) = A.lower();
         }
     }
     else if (A.diagonal())
@@ -325,12 +325,12 @@ void Foam::lduMatrix::operator-=(const lduMatrix& A)
         if (A.hasUpper())
         {
             // - unary operator return a tmp with unique ref in this case => safe to move
-            upper(false) = (-A.upper()).move();
+            upper(false) = std::move((-A.upper()).ref());
         }
 
         if (A.hasLower())
         {
-            lower(false) = (-A.lower()).move();
+            lower(false) = std::move((-A.lower()).ref());
         }
     }
     else if (A.diagonal())
