@@ -800,8 +800,15 @@ void Foam::Field<Type>::operator=(const tmp<Field>& rhs)
     {
         return;  // Self-assignment is a no-op
     }
-
-    List<Type>::operator=(rhs());
+    //if movable: move instead of copying
+    if (rhs.movable())
+    {
+       Field<Type>::operator=(std::move(rhs.ref())); 
+    }
+    else
+    {
+        List<Type>::operator=(rhs());
+    }
 }
 
 
