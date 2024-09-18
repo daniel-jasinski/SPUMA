@@ -272,7 +272,6 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
 
     const typename SFType::Internal& Sfi = Sf.internalField();
 
-    // TODO executor (owner and neighbour)
     // for (label fi=0; fi<P.size(); fi++)
     // {
     //     // Same as:
@@ -280,20 +279,32 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
     //     // but maybe the compiler notices the fused multiply add form
     //     sfi[fi] = Sfi[fi] & (lambda[fi]*(vfi[P[fi]] - vfi[N[fi]]) + vfi[N[fi]]);
     // }
+    
     auto sfip = sfi.begin();
     const auto lambdap = lambda.cbegin();
     const auto vfip = vfi.cbegin();
     const auto Pp = P.cbegin();
     const auto Np = N.cbegin();
-    auto Lambda = [=](label fi){ sfip[fi] = Sfi[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);};
+    
     foamExecutor exec;
-    exec.parallelFor(Lambda,P.size());
+    //handle oneGeometricField without triggering a copy in the lambda for other cases
+    if constexpr(std::is_same<typename SFType::value_type,one>::value)
+    {
+
+        auto Lambda = [=](label fi){ sfip[fi] = Sfi[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);};
+        exec.parallelFor(Lambda,P.size());
+    }
+    else
+    {    
+        const auto Sfip = Sfi.cbegin();
+        auto Lambda = [=](label fi){ sfip[fi] = Sfip[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);};
+        exec.parallelFor(Lambda,P.size());
+    }
 
     // Interpolate across coupled patches using given lambdas
 
     typename GeometricField<RetType, fvsPatchField, surfaceMesh>::
         Boundary& sfbf = sf.boundaryFieldRef();
-    //TODO executor
     forAll(lambdas.boundaryField(), pi)
     {
         const fvsPatchScalarField& pLambda = lambdas.boundaryField()[pi];
