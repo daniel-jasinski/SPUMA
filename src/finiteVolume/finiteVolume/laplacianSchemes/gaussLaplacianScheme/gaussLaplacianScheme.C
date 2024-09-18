@@ -62,7 +62,7 @@ gaussLaplacianScheme<Type, GType>::fvmLaplacianUncorrected
     );
     fvMatrix<Type>& fvm = tfvm.ref();
 
-    fvm.upper(false) = (deltaCoeffs.primitiveField()*gammaMagSf.primitiveField()).move();
+    fvm.upper(false) = deltaCoeffs.primitiveField()*gammaMagSf.primitiveField();
     fvm.negSumDiag();
 
     forAll(vf.boundaryField(), patchi)
