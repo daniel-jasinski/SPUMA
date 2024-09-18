@@ -106,11 +106,16 @@ void Foam::fvMatrix<Type>::subtractFromInternalField
             << ") and field (" << pf.size() << ") are different sizes" << endl
             << abort(FatalError);
     }
-
-    forAll(addr, facei)
-    {
-        intf[addr[facei]] -= pf[facei];
-    }
+    auto intfp = intf.begin();
+    const auto addrp = addr.cbegin();
+    const auto pfp = pf.cbegin();
+    // forAll(addr, facei)
+    // {
+    //     intf[addr[facei]] -= pf[facei];
+    // }
+    auto Lambda = [=](label facei){intfp[addrp[facei]] -= pfp[facei];};
+    foamExecutor exec;
+    exec.parallelFor(Lambda,addr.size());
 }
 
 
