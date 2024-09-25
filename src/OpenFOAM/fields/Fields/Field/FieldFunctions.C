@@ -95,12 +95,26 @@ void pow
 )
 {
     typedef typename powProduct<Type, r>::type resultType;
-
-    TFOR_ALL_F_OP_FUNC_F_S
-    (
-        resultType, result, =, pow, Type, f1, resultType,
-        pTraits<resultType>::zero
-    )
+    if (result.usePool() && f1.usePool())
+    {
+        checkFields(result, f1, "f1 = pow(f2, s)");
+        foamExecutor exec;
+        auto rp = result.begin();
+        const auto f1p = f1.cbegin();
+        auto zerop = pTraits<resultType>::zero;
+        auto Lambda = [=](label i){
+            rp[i] = pow(f1p[i],zerop);
+        };
+        exec.parallelFor(Lambda,result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_F_S
+        (
+            resultType, result, =, pow, Type, f1, resultType,
+            pTraits<resultType>::zero
+        )
+    }
 }
 
 template<class Type, direction r>
@@ -141,8 +155,21 @@ void sqr
 )
 {
     typedef typename outerProduct<Type, Type>::type resultType;
-
-    TFOR_ALL_F_OP_FUNC_F(resultType, result, =, sqr, Type, f1)
+    if(result.usePool() && f1.usePool())
+    {
+        checkFields(result, f1, "f1 = sqr(f2, s)");
+        foamExecutor exec;
+        auto rp = result.begin();
+        const auto f1p = f1.cbegin();
+        auto Lambda = [=](label i){
+            rp[i] = sqr(f1p[i]);
+        };
+        exec.parallelFor(Lambda,result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_F(resultType, result, =, sqr, Type, f1)
+    }
 }
 
 template<class Type>
@@ -175,8 +202,21 @@ void magSqr
 )
 {
     typedef typename typeOfMag<Type>::type resultType;
-
-    TFOR_ALL_F_OP_FUNC_F(resultType, result, =, magSqr, Type, f1)
+    if(result.usePool() && f1.usePool())
+    {
+        checkFields(result, f1, "f1 = magSqr(f2, s)");
+        foamExecutor exec;
+        auto rp = result.begin();
+        const auto f1p = f1.cbegin();
+        auto Lambda = [=](label i){
+            rp[i] = magSqr(f1p[i]);
+        };
+        exec.parallelFor(Lambda,result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_F(resultType, result, =, magSqr, Type, f1)
+    }
 }
 
 template<class Type>
