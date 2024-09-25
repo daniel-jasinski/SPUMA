@@ -44,6 +44,11 @@ SourceFiles
 
 #include <map>
 
+//- macro to raise poolptr errors
+#define raisePoolValidError(poolPtr)\
+    FatalErrorInFunction\
+        << "MEMPOOL: pointer " << reinterpret_cast<uint64_t>(poolPtr)\
+        << "is not valid" << abort(FatalError);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 namespace Foam
@@ -135,7 +140,10 @@ public:
 
     // check if pool pointer is valid
     virtual inline bool isValid(void* poolPtr) = 0;
-
+    
+    // check if ptr is in allocated blocks
+    virtual inline bool isInBlockRange(void* ptr) = 0;
+    
     // Returns size of array (in bytes if type not specified)
     virtual uint64_t arraySizeInBytes(void* poolPtr) = 0;
 

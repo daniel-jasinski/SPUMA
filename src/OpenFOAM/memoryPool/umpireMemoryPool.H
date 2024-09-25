@@ -93,6 +93,12 @@ public:
     // check if pool pointer is valid
     inline bool isValid(void* poolPtr);
 
+    // check if ptr is in allocated blocks
+    virtual inline bool isInRange(void* ptr)
+    {
+        NotImplemented;
+    };
+    
     // Returns size of array (in bytes if type not specified)
     uint64_t arraySizeInBytes(void* poolPtr);
 

@@ -38,7 +38,6 @@ SourceFiles
 
 #include <iostream>
 #include "MemoryPool.H"
-#include "memoryPoolExecutor.H"
 
 namespace Foam
 {
@@ -48,9 +47,6 @@ class dummyMemoryPool:
 {
 
 private:
-
-    // Executor associated with the memory Pool. (CPU, GPU, openMP, etc.)
-    const memoryPoolExecutor exec_;
 
     // Private constructor to prevent instancing
 
@@ -77,6 +73,9 @@ public:
 
     // check if pool pointer is valid
     inline bool isValid(void* poolPtr);
+
+    //- check if ptr is in allocated blocks
+    inline bool isInBlockRange(void* ptr);
 
     // Returns size of array (in bytes if type not specified)
     uint64_t arraySizeInBytes(void* poolPtr);
@@ -167,13 +166,29 @@ inline bool Foam::dummyMemoryPool::isValid(void* poolPtr)
 
     blockList::iterator block = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
     bool valid = block == this->usedBlockList_.end() ? false : true;
-    if (!valid)
-    {
-        FatalErrorInFunction
-            << "MEMPOOL: pointer " << reinterpret_cast<uint64_t>(poolPtr)
-            << "is not valid" << abort(FatalError);
-    }
+
     return valid;
+}
+
+inline bool Foam::dummyMemoryPool::isInBlockRange(void* ptr)
+{
+    // case when ptr is null
+    if (!ptr) return false;
+
+    bool inRange = false;
+    
+    uint64_t Ptr = reinterpret_cast<uint64_t>(ptr);
+    // loop trough allocated records;
+    // use reverse iterator, likely the last allocated element will be the searched element
+    for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
+    {
+        uint64_t poolptr = reinterpret_cast<uint64_t>(block->first); 
+        inRange = (Ptr > poolptr) && (Ptr < (poolptr + block->second));
+        if(inRange)
+            break;
+    };
+
+    return inRange;
 }
 
 #endif

@@ -279,6 +279,7 @@ void Foam::umpireMemoryPool::memCopy(
     //check if allocation record associated with an tgtPtr and srcPtr exist
     if(!this->isValid(tgtPtr) && !this->isValid(srcPtr))
         return;
+    //TODO add in range check
 
     uint64_t srcSizeInBytes = this->allocator_.getSize(srcPtr) - srcOffsetInBytes;
     const uint64_t tgtSizeInBytes = this->allocator_.getSize(tgtPtr) -  tgtOffsetInBytes;

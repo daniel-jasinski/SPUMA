@@ -22,7 +22,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include <cstring>
-#include "memCopyKind.H"
+#include "memoryExecutors.H"
 #include "fixedSizeMemoryPool.H"
 #include "error.H"
 #include "dictionary.H"
@@ -37,23 +37,11 @@ namespace Foam
 
 Foam::fixedSizeMemoryPool::fixedSizeMemoryPool(const uint64_t size):
     Foam::MemoryPool::MemoryPool(),
-    v_(nullptr),
-#ifdef have_cuda
-    #ifdef have_managed
-    exec_(Foam::cudaManagedMemoryPoolExecutor())
-    #else
-    exec_(Foam::cudaMemoryPoolExecutor())
-    #endif
-#else
-    exec_(Foam::cpuMemoryPoolExecutor())
-#endif
+    v_(nullptr)
 {
     if (size > 0)
     {
-        void* ptr = nullptr;
-        std::visit([this, &ptr, size](const auto& exec)
-                   { ptr = exec.alloc(size); },
-                   exec_);
+        void* ptr = foamMemoryExecutor::alloc(size);
         this->v_ = static_cast<char*>(ptr);
         this->size_ = size;
     }
@@ -70,25 +58,13 @@ Foam::fixedSizeMemoryPool::fixedSizeMemoryPool(const uint64_t size):
 
 Foam::fixedSizeMemoryPool::fixedSizeMemoryPool(const Foam::dictionary& dict):
     Foam::MemoryPool::MemoryPool(dict),
-    v_(nullptr),
-#ifdef have_cuda
-    #ifdef have_managed
-    exec_(Foam::cudaManagedMemoryPoolExecutor())
-    #else
-    exec_(Foam::cudaMemoryPoolExecutor())
-    #endif
-#else
-    exec_(Foam::cpuMemoryPoolExecutor())
-#endif
+    v_(nullptr)
 {
     this->readProperties(dict.subDict(this->type()));
 
     if (size_ > 0)
-    {
-        void* ptr = nullptr;
-        std::visit([this, &ptr](const auto& exec)
-                   { ptr = exec.alloc(size_); },
-                   exec_);
+    { 
+        void* ptr = foamMemoryExecutor::alloc(size_);
         v_ = static_cast<char*>(ptr);
     }
 
@@ -101,9 +77,7 @@ Foam::fixedSizeMemoryPool::fixedSizeMemoryPool(const Foam::dictionary& dict):
 Foam::fixedSizeMemoryPool::~fixedSizeMemoryPool()
 {
     if (this->v_)
-        std::visit([this](const auto& exec)
-                   { exec.clear(this->v_); },
-                   exec_);
+        foamMemoryExecutor::clear(this->v_);
 };
 
 // * * * * * * * * * * * * * Public Member Functions  * * * * * * * * * * * //
@@ -112,10 +86,7 @@ void* Foam::fixedSizeMemoryPool::allocate(uint64_t size)
 {
     uint64_t sizeAvailable;
 
-    label memAlignBytes;
-    std::visit([this, &memAlignBytes](const auto& exec)
-                   { memAlignBytes = exec.memAlignBytes(); },
-                   exec_);
+    label memAlignBytes = foamMemoryExecutor::memAlignBytes();
 
     uint64_t sizeAligned = memAlignBytes*((size + memAlignBytes - 1)/memAlignBytes);
 
@@ -169,15 +140,13 @@ void Foam::fixedSizeMemoryPool::free(void* ptr)
     //if ptr is null do nothing
     if (ptr == nullptr) return;
     //check if pointer was allocated with pool
-    if (!this->isValid(ptr))
-        return;
+    if (!this->isValid(ptr)){
+        raisePoolValidError(ptr)
+    }
 
     blockList::iterator block = this->usedBlockList_.find(reinterpret_cast<char*>(ptr));
 
-    label memAlignBytes;
-    std::visit([this, &memAlignBytes](const auto& exec)
-                   { memAlignBytes = exec.memAlignBytes(); },
-                   exec_);
+    label memAlignBytes = foamMemoryExecutor::memAlignBytes();
 
     uint64_t sizeAligned = memAlignBytes*((block->second + memAlignBytes - 1)/memAlignBytes);
 
@@ -226,8 +195,9 @@ void Foam::fixedSizeMemoryPool::free(void* ptr)
 uint64_t Foam::fixedSizeMemoryPool::arraySizeInBytes(void* poolPtr)
 {
     //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return 0;
+    if (!this->isValid(poolPtr)){
+        raisePoolValidError(poolPtr)
+    }
 
     blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
     return mapElement->second;
@@ -236,8 +206,9 @@ uint64_t Foam::fixedSizeMemoryPool::arraySizeInBytes(void* poolPtr)
 void Foam::fixedSizeMemoryPool::copyIn(void* poolPtr, void* ptr, uint64_t nElementsInBytes, uint64_t offsetInBytes)
 {
     //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    if (!this->isValid(poolPtr)){
+        raisePoolValidError(poolPtr)
+    }
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
@@ -247,16 +218,15 @@ void Foam::fixedSizeMemoryPool::copyIn(void* poolPtr, void* ptr, uint64_t nEleme
     if (nElementsInBytes != 0 && nElementsInBytes <= sizeInBytes)
         sizeInBytes = nElementsInBytes;
 
-    std::visit([this, poolPtr, ptr, sizeInBytes](const auto& exec)
-                { exec.memCopy(poolPtr, ptr, sizeInBytes, memCopyKind::memCopyHostToDevice); },
-                exec_);
+    foamMemoryExecutor::memCopy(poolPtr, ptr, sizeInBytes, memCopyKind::memCopyHostToDevice);
 };
 
 void Foam::fixedSizeMemoryPool::copyOut(void* poolPtr, void* ptr, uint64_t nElementsInBytes, uint64_t offsetInBytes)
 {
     //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    if (!this->isValid(poolPtr)){
+        raisePoolValidError(poolPtr)
+    }
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
@@ -266,9 +236,7 @@ void Foam::fixedSizeMemoryPool::copyOut(void* poolPtr, void* ptr, uint64_t nElem
     if (nElementsInBytes != 0 && nElementsInBytes <= sizeInBytes)
         sizeInBytes = nElementsInBytes;
 
-    std::visit([this, ptr, poolPtr, sizeInBytes](const auto& exec)
-                { exec.memCopy(ptr, poolPtr, sizeInBytes, memCopyKind::memCopyDeviceToHost); },
-                exec_);
+    foamMemoryExecutor::memCopy(ptr, poolPtr, sizeInBytes, memCopyKind::memCopyDeviceToHost);
 };
 
 void Foam::fixedSizeMemoryPool::memSet
@@ -281,8 +249,9 @@ void Foam::fixedSizeMemoryPool::memSet
 )
 {
     //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    if (!this->isValid(poolPtr)){
+        raisePoolValidError(poolPtr)
+    }
 
     blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
     poolPtr = (char*)poolPtr + offsetInBytes;
@@ -290,9 +259,7 @@ void Foam::fixedSizeMemoryPool::memSet
     if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(sizeInBytes))
         sizeInBytes = nElementsInBytes;
 
-    std::visit([this, poolPtr, sizeInBytes, value, sizeOfValue](const auto& exec)
-                { exec.memSet(poolPtr, sizeInBytes, value, sizeOfValue); },
-                exec_);
+    foamMemoryExecutor::memSet(poolPtr, sizeInBytes, value, sizeOfValue);
 }
 
 void Foam::fixedSizeMemoryPool::memSetScalarOne
@@ -303,17 +270,16 @@ void Foam::fixedSizeMemoryPool::memSetScalarOne
 )
 {
     //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    if (!this->isValid(poolPtr)){
+        raisePoolValidError(poolPtr)
+    }
     blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
     poolPtr = (char*)poolPtr + offsetInBytes;
     uint64_t sizeInBytes = mapElement->second - offsetInBytes;
     if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(sizeInBytes))
         sizeInBytes = nElementsInBytes;
 
-    std::visit([this, poolPtr, sizeInBytes](const auto& exec)
-                { exec.memSetScalarOne(poolPtr, sizeInBytes); },
-                exec_);
+    foamMemoryExecutor::memSetScalarOne(poolPtr, sizeInBytes);
 }
 
 void Foam::fixedSizeMemoryPool::memSet
@@ -325,8 +291,9 @@ void Foam::fixedSizeMemoryPool::memSet
 )
 {
     //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    if (!this->isValid(poolPtr)){
+        raisePoolValidError(poolPtr)
+    }
 
     blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
     poolPtr = (char*)poolPtr + offsetInBytes;
@@ -334,9 +301,7 @@ void Foam::fixedSizeMemoryPool::memSet
     if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(sizeInBytes))
         sizeInBytes = nElementsInBytes;
 
-    std::visit([this, poolPtr, sizeInBytes, value](const auto& exec)
-                { exec.memSet(poolPtr, sizeInBytes, value); },
-                exec_);
+    foamMemoryExecutor::memSet(poolPtr, sizeInBytes, value);
 }
 
 
@@ -349,13 +314,33 @@ void Foam::fixedSizeMemoryPool::memCopy
     uint64_t srcOffsetInBytes
 )
 {
-    if (!this->isValid(tgtPtr))
+
+    if (!this->isValid(tgtPtr)){
+        raisePoolValidError(tgtPtr)
         return;
+    }
     blockList::iterator tgtElement = this->usedBlockList_.find(reinterpret_cast<char*>(tgtPtr));
 
-    if (!this->isValid(srcPtr))
-        return;
-    blockList::iterator srcElement = this->usedBlockList_.find(reinterpret_cast<char*>(srcPtr));
+    void* allocatedSrcPtr = srcPtr;
+    if (!this->isValid(srcPtr)){
+        //find nearest valid pointer
+        if(!this->isInBlockRange(srcPtr)){
+            FatalErrorInFunction
+                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(srcPtr)
+                << "is not valid and not in range" << abort(FatalError);
+        }
+        uint64_t ptr = reinterpret_cast<uint64_t>(srcPtr);    
+        
+        for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
+        {
+            uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
+            if ( (ptr>allocatedPtr) && (ptr < allocatedPtr + block->second) ){
+                allocatedSrcPtr = reinterpret_cast<void*>(allocatedPtr);
+                break;
+            }
+        }
+    }
+    blockList::iterator srcElement = this->usedBlockList_.find(reinterpret_cast<char*>(allocatedSrcPtr));
 
     srcPtr = (char*)srcPtr + srcOffsetInBytes;
     tgtPtr = (char*)tgtPtr + tgtOffsetInBytes;
@@ -371,9 +356,7 @@ void Foam::fixedSizeMemoryPool::memCopy
         return;
     }
 
-    std::visit([this, tgtPtr, srcPtr, srcSizeInBytes](const auto& exec)
-               { exec.memCopy(tgtPtr, srcPtr, srcSizeInBytes, memCopyKind::memCopyDeviceToDevice); },
-               exec_);
+    foamMemoryExecutor::memCopy(tgtPtr, srcPtr, srcSizeInBytes, memCopyKind::memCopyDeviceToDevice);
 }
 
 void Foam::fixedSizeMemoryPool::showAllocated(bool relative)
