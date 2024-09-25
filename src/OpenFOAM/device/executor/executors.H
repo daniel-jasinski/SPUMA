@@ -10,6 +10,8 @@
 
 #include "Atomic.H"
 
+#include "deviceInit.H"
+
 namespace Foam
 {
 
@@ -25,6 +27,13 @@ namespace Foam
     typedef cudaAtomic foamAtomic;
 #else
     typedef cpuAtomic foamAtomic;
+#endif
+
+// - choose corresponding init class
+#ifdef have_cuda
+    typedef cudaDeviceInit foamDeviceInit;
+#else
+    typedef cpuDeviceInit foamDeviceInit;
 #endif
 //fwd declaraction
 
@@ -42,6 +51,11 @@ namespace Foam
             expression\
         };\
     };
+
+#define parallelForAll(size,index,expression)\
+    foamExecutor exec;\
+    auto Lambda = [=](label index){expression};\
+    exec.parallelFor(Lambda,size);
 
 }; // namespace foam
 

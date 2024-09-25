@@ -102,10 +102,16 @@ void Foam::lduCalculatedProcessorField<Type>::initInterfaceMatrixUpdate
     const labelList& fc = lduAddr.patchAddr(patchId);
 
     scalarSendBuf_.resize_nocopy(fc.size());
-    forAll(fc, i)
-    {
-        scalarSendBuf_[i] = psiInternal[fc[i]];
-    }
+    foamExecutor exec;
+    auto sSendBufp = scalarSendBuf_.begin();
+    const auto psiInternalp = psiInternal.cbegin();
+    const auto fcp = fc.cbegin();
+    auto Lambda = [=](label i){sSendBufp[i] = psiInternalp[fcp[i]];};
+    // forAll(fc, i)
+    // {
+    //     scalarSendBuf_[i] = psiInternal[fc[i]];
+    // }
+    exec.parallelFor(Lambda, fc.size());
 
     scalarRecvBuf_.resize_nocopy(scalarSendBuf_.size());
 
@@ -146,19 +152,33 @@ void Foam::lduCalculatedProcessorField<Type>::addToInternalField
 {
     const labelUList& faceCells = this->procInterface_.faceCells();
 
+    foamExecutor exec;
+    auto resultp = result.begin();
+    const auto faceCellsp=faceCells.cbegin();
+    const auto coeffsp = coeffs.cbegin();
+    const auto valsp = vals.cbegin();
+
     if (add)
     {
-        forAll(faceCells, elemI)
-        {
-            result[faceCells[elemI]] += coeffs[elemI]*vals[elemI];
-        }
+        // forAll(faceCells, elemI)
+        // {
+        //     result[faceCells[elemI]] += coeffs[elemI]*vals[elemI];
+        // }
+        auto Lambda = [=](label elemI){
+            foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], coeffsp[elemI]*valsp[elemI]);
+        };
+        exec.parallelFor(Lambda,faceCells.size());
     }
     else
     {
-        forAll(faceCells, elemI)
-        {
-            result[faceCells[elemI]] -= coeffs[elemI]*vals[elemI];
-        }
+        // forAll(faceCells, elemI)
+        // {
+        //     result[faceCells[elemI]] -= coeffs[elemI]*vals[elemI];
+        // }
+        auto Lambda = [=](label elemI){
+            foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], -coeffsp[elemI]*valsp[elemI]);
+        };
+        exec.parallelFor(Lambda,faceCells.size());
     }
 }
 

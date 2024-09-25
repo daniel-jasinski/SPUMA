@@ -66,11 +66,12 @@ int main(int argc, char *argv[])
     (
         "Laplace equation solver for a scalar quantity."
     );
-
     #include "postProcess.H"
 
     #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
+    foamDeviceInit::Init();
+    #include "createMemoryPool.H"
     #include "createTime.H"
     #include "createMesh.H"
 
@@ -91,16 +92,17 @@ int main(int argc, char *argv[])
             fvScalarMatrix TEqn
             (
                 fvm::ddt(T) - fvm::laplacian(DT, T)
-             ==
-                fvOptions(T)
+             //==
+               //fvOptions(T)
             );
 
-            fvOptions.constrain(TEqn);
+            //Info<< TEqn.diag() << endl;
+            //fvOptions.constrain(TEqn);
             TEqn.solve();
-            fvOptions.correct(T);
+            //fvOptions.correct(T);
         }
 
-        #include "write.H"
+        // #include "write.H"
 
         runTime.printExecutionTime(Info);
     }

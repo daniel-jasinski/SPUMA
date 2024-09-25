@@ -37,20 +37,35 @@ void Foam::lduInterfaceField::addToInternalField
     const Field<Type>& vals
 ) const
 {
+    foamExecutor exec;
+    const auto faceCellsp=faceCells.cbegin();
+    auto resultp = result.begin();
+    const auto coeffsp = coeffs.cbegin();
+    const auto valsp = vals.cbegin();
+
     if (add)
     {
-        forAll(faceCells, elemi)
-        {
-            result[faceCells[elemi]] += coeffs[elemi]*vals[elemi];
-        }
+        // forAll(faceCells, elemI)
+        // {
+        //     result[faceCells[elemI]] += coeffs[elemI]*vals[elemI];
+        // }
+        auto Lambda = [=](label elemI){
+            foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], coeffsp[elemI]*valsp[elemI]);
+        };
+        exec.parallelFor(Lambda,faceCells.size());
     }
     else
     {
-        forAll(faceCells, elemi)
-        {
-            result[faceCells[elemi]] -= coeffs[elemi]*vals[elemi];
-        }
+        // forAll(faceCells, elemI)
+        // {
+        //     result[faceCells[elemI]] -= coeffs[elemI]*vals[elemI];
+        // }
+        auto Lambda = [=](label elemI){
+            foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], -coeffsp[elemI]*valsp[elemI]);
+        };
+        exec.parallelFor(Lambda,faceCells.size());
     }
+
 }
 
 

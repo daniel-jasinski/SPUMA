@@ -327,10 +327,17 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
     const labelUList& faceCells = lduAddr.patchAddr(patchId);
 
     scalarSendBuf_.resize_nocopy(this->patch().size());
-    forAll(scalarSendBuf_, facei)
-    {
-        scalarSendBuf_[facei] = psiInternal[faceCells[facei]];
-    }
+
+    foamExecutor exec;
+    auto sSendBufp = scalarSendBuf_.begin();
+    const auto psiInternalp = psiInternal.cbegin();
+    const auto faceCellsp = faceCells.cbegin();
+    auto Lambda = [=](label facei){sSendBufp[facei] = psiInternalp[faceCellsp[facei]];};
+    // forAll(scalarSendBuf_, facei)
+    // {
+    //     scalarSendBuf_[facei] = psiInternal[faceCells[facei]];
+    // }
+    exec.parallelFor(Lambda,scalarSendBuf_.size());
 
     if
     (
@@ -447,11 +454,17 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
     sendBuf_.resize_nocopy(this->patch().size());
 
     const labelUList& faceCells = lduAddr.patchAddr(patchId);
-
-    forAll(sendBuf_, facei)
-    {
-        sendBuf_[facei] = psiInternal[faceCells[facei]];
-    }
+    //TODO: executor
+    // forAll(sendBuf_, facei)
+    // {
+    //     sendBuf_[facei] = psiInternal[faceCells[facei]];
+    // }
+    foamExecutor exec;
+    auto sendBufp = sendBuf_.begin();
+    const auto psiInternalp = psiInternal.cbegin();
+    const auto faceCellsp = faceCells.cbegin();
+    auto Lambda = [=](label facei){sendBufp[facei] = psiInternalp[faceCellsp[facei]];};
+    exec.parallelFor(Lambda,sendBuf_.size());
 
     if
     (

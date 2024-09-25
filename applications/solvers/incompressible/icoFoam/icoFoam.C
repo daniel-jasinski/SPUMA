@@ -76,11 +76,12 @@ int main(int argc, char *argv[])
         " of Newtonian fluids."
     );
 
-    #include "createMemoryPool.H"
     #include "postProcess.H"
 
     #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
+    foamDeviceInit::Init();
+    #include "createMemoryPool.H"
     #include "createTime.H"
     #include "createMesh.H"
 
@@ -160,7 +161,12 @@ int main(int argc, char *argv[])
         //runTime.write();
 
         runTime.printExecutionTime(Info);
+        Info << "device Pool occupancy: " << memPool->occupancy() << nl << nl;
     }
+    
+    Info
+        << "device Pool Max Occupancy: " << memPool->maxOccupancy()
+        << " / " << memPool->size() << " [bytes]" << nl;
 
     Info<< "End\n" << endl;
 
