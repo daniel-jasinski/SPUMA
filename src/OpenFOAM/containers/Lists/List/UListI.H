@@ -134,6 +134,21 @@ inline void Foam::UList<T>::fill_uniform(const Foam::zero)
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class T>
+inline bool Foam::UList<T>::usePool() const
+{
+    #ifdef FULLDEBUG
+    if(this->usePool_)
+    {
+        if(!MemoryPool::getInstance()->isValid(v_))
+            FatalErrorInFunction
+                <<"Ulist use Pool but pointer is not allocated with pool"
+                <<abort(FatalError);
+    }
+    #endif
+    return usePool_;
+}
+
+template<class T>
 inline Foam::label Foam::UList<T>::fcIndex(const label i) const noexcept
 {
     return (i == size()-1 ? 0 : i+1);
@@ -374,6 +389,28 @@ inline void Foam::UList<T>::shallowCopy(std::nullptr_t) noexcept
 template<class T>
 inline void Foam::UList<T>::shallowCopy(const UList<T>& list) noexcept
 {
+    #ifdef FULLDEBUG
+    if(this->usePool_){
+        if (!list.usePool())
+        {
+            DebugInFunction<<"Error shallow copy from non-pool to pool"<<endl;
+        }
+    }else{
+        if (list.usePool())
+        {
+            DebugInFunction<<"Error shallow copy from pool to non-pool"<<endl;
+        } 
+    }
+    if
+    (
+        !MemoryPool::getInstance()->isValid(list.v_) &&
+        !MemoryPool::getInstance()->isInBlockRange(list.v_)
+    )
+    {
+        FatalErrorInFunction<<"Error shallow copy of non valid ptr"<<abort(FatalError);
+    }
+    #endif
+
     size_ = list.size_;
     v_ = list.v_;
 }

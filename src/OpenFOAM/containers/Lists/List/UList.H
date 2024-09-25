@@ -105,7 +105,9 @@ protected:
 
     // Protected Member Functions
 
-            inline void setPool(bool flag) noexcept { usePool_ = flag; };
+        //- set memory management flag
+        // Use with care
+        inline void setPool(bool flag) noexcept { usePool_ = flag; };
         //- Set addressed size to be inconsistent with allocated storage.
         //  Use with care
         inline void setAddressableSize(const label n) noexcept;
@@ -246,7 +248,7 @@ public:
 
     // Member Functions
         // Query memory management
-            inline bool usePool() const noexcept { return usePool_; };
+            inline bool usePool() const;
             
         // Access
 
