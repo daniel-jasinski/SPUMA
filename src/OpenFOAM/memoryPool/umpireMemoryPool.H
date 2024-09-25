@@ -37,7 +37,6 @@ SourceFiles
 
 #include <iostream>
 #include "MemoryPool.H"
-#include "memoryPoolExecutor.H"
 #include <umpire/ResourceManager.hpp>
 #include <umpire/Allocator.hpp>
 #include <umpire/strategy/DynamicPoolList.hpp>
