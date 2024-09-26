@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     {
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-        #include "CourantNo.H"
+        //#include "CourantNo.H"
 
         // Momentum predictor
 
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            #include "continuityErrs.H"
+            //#include "continuityErrs.H"
 
             U = HbyA - rAU*fvc::grad(p);
             U.correctBoundaryConditions();
