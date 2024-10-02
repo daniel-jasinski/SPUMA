@@ -211,7 +211,7 @@ void Foam::calculatedProcessorFvPatchField<Type>::initInterfaceMatrixUpdate
     auto sSendBufp = scalarSendBuf_.begin();
     const auto psiInternalp = psiInternal.cbegin();
     const auto fcp = fc.cbegin();
-    auto Lamda = [=](label i ){sSendBufp[i] = psiInternalp[fcp[i]];};
+    auto Lambda = [=](label i ){sSendBufp[i] = psiInternalp[fcp[i]];};
     // forAll(fc, i)
     // {
     //     scalarSendBuf_[i] = psiInternal[fc[i]];

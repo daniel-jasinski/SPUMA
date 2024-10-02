@@ -494,7 +494,7 @@ backwardDdtScheme<Type>::fvmDdt
     scalar coefft00 = deltaT*deltaT/(deltaT0*(deltaT + deltaT0));
     scalar coefft0  = coefft + coefft00;
 
-    fvm.diag() = (coefft*rDeltaT)*mesh().V();
+    fvm.diag(false) = (coefft*rDeltaT)*mesh().V();
 
     if (mesh().moving())
     {
@@ -545,7 +545,7 @@ backwardDdtScheme<Type>::fvmDdt
     scalar coefft00 = deltaT*deltaT/(deltaT0*(deltaT + deltaT0));
     scalar coefft0  = coefft + coefft00;
 
-    fvm.diag() = (coefft*rDeltaT*rho.value())*mesh().V();
+    fvm.diag(false) = (coefft*rDeltaT*rho.value())*mesh().V();
 
     if (mesh().moving())
     {
@@ -596,7 +596,7 @@ backwardDdtScheme<Type>::fvmDdt
     scalar coefft00 = deltaT*deltaT/(deltaT0*(deltaT + deltaT0));
     scalar coefft0  = coefft + coefft00;
 
-    fvm.diag() = (coefft*rDeltaT)*rho.primitiveField()*mesh().V();
+    fvm.diag(false) = (coefft*rDeltaT)*rho.primitiveField()*mesh().V();
 
     if (mesh().moving())
     {
@@ -651,7 +651,7 @@ backwardDdtScheme<Type>::fvmDdt
     scalar coefft00 = deltaT*deltaT/(deltaT0*(deltaT + deltaT0));
     scalar coefft0  = coefft + coefft00;
 
-    fvm.diag() =
+    fvm.diag(false) =
         (coefft*rDeltaT)*alpha.primitiveField()*rho.primitiveField()*mesh().V();
 
     if (mesh().moving())
