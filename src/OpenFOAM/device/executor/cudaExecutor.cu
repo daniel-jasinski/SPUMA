@@ -177,7 +177,11 @@ namespace cuda
 template<typename F>
 void Foam::cudaExecutor::_backendFor(F& lambda, const label& size)
 {
-    const label numblocks = SET_NUM_BLOCKS(size);
+    if (size <= 0)
+        return;
+
+    label numblocks = SET_NUM_BLOCKS(size);
+    //numblocks = numblocks == 0 ? 1 : numblocks;
 
     Foam::cuda::lambdaKernel<F>
     //<<<(numblocks + NUM_SM -1)/ NUM_SM,NUM_THREADS_PER_BLOCK>>>
