@@ -194,6 +194,8 @@ void Foam::fixedSizeMemoryPool::free(void* ptr)
 // Returns size of array (in bytes if type not specified)
 uint64_t Foam::fixedSizeMemoryPool::arraySizeInBytes(void* poolPtr)
 {
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return 0;
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr)){
         raisePoolValidError(poolPtr)
@@ -205,6 +207,8 @@ uint64_t Foam::fixedSizeMemoryPool::arraySizeInBytes(void* poolPtr)
 
 void Foam::fixedSizeMemoryPool::copyIn(void* poolPtr, void* ptr, uint64_t nElementsInBytes, uint64_t offsetInBytes)
 {
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr)){
         raisePoolValidError(poolPtr)
@@ -223,6 +227,8 @@ void Foam::fixedSizeMemoryPool::copyIn(void* poolPtr, void* ptr, uint64_t nEleme
 
 void Foam::fixedSizeMemoryPool::copyOut(void* poolPtr, void* ptr, uint64_t nElementsInBytes, uint64_t offsetInBytes)
 {
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr)){
         raisePoolValidError(poolPtr)
@@ -248,6 +254,8 @@ void Foam::fixedSizeMemoryPool::memSet
     uint64_t offsetInBytes
 )
 {
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr)){
         raisePoolValidError(poolPtr)
@@ -269,6 +277,8 @@ void Foam::fixedSizeMemoryPool::memSetScalarOne
     uint64_t offsetInBytes
 )
 {
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr)){
         raisePoolValidError(poolPtr)
@@ -290,6 +300,8 @@ void Foam::fixedSizeMemoryPool::memSet
     uint64_t offsetInBytes
 )
 {
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr)){
         raisePoolValidError(poolPtr)
@@ -314,12 +326,29 @@ void Foam::fixedSizeMemoryPool::memCopy
     uint64_t srcOffsetInBytes
 )
 {
+    //if ptr is null do nothing
+    if (tgtPtr == nullptr) return;
 
+    void* allocatedTgtPtr = tgtPtr;
     if (!this->isValid(tgtPtr)){
-        raisePoolValidError(tgtPtr)
-        return;
+        //find nearest valid pointer
+        if(!this->isInBlockRange(tgtPtr)){
+            FatalErrorInFunction
+                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(tgtPtr)
+                << "is not valid and not in range" << abort(FatalError);
+        }
+        uint64_t ptr = reinterpret_cast<uint64_t>(tgtPtr);    
+        
+        for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
+        {
+            uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
+            if ( (ptr>allocatedPtr) && (ptr < allocatedPtr + block->second) ){
+                allocatedTgtPtr = reinterpret_cast<void*>(allocatedPtr);
+                break;
+            }
+        }
     }
-    blockList::iterator tgtElement = this->usedBlockList_.find(reinterpret_cast<char*>(tgtPtr));
+    blockList::iterator tgtElement = this->usedBlockList_.find(reinterpret_cast<char*>(allocatedTgtPtr));
 
     void* allocatedSrcPtr = srcPtr;
     if (!this->isValid(srcPtr)){
