@@ -129,7 +129,8 @@ Foam::solverPerformance Foam::PBiCG::solve
      || !solverPerf.checkConvergence(tolerance_, relTol_, log_)
     )
     {
-        solveScalarField pT(nCells, 0);
+        //solveScalarField pT(nCells, 0);
+        solveScalarField pT(nCells);
         solveScalar* __restrict__ pTPtr = pT.begin();
 
         solveScalarField wT(nCells);
