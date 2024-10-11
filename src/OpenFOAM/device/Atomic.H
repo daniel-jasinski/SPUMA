@@ -18,7 +18,6 @@ struct Atomic
     {
         T::_backendAtomicAdd(x,y);
     };
-
     
     template<class Form, class Cmpt, direction Ncmpts>
     static void AtomicAdd
@@ -29,6 +28,12 @@ struct Atomic
     {
         T::_backendAtomicAdd(vs1,vs2);
     };
+
+    static void AtomicCAS(label& x,const label& compare, const label& y)
+    {
+        T::_backendAtomicCAS(x,compare,y);
+    };
+
 };
 
 //dummy host atomics
@@ -50,7 +55,13 @@ struct cpuAtomic
     )
     {
         vs1 += vs2;
-    }
+    };
+
+    static void _backendAtomicCAS(label& x,const label& compare, const label& y)
+    {
+        x = (x == compare ? y : x);
+    };
+
 };
 
 #ifdef have_cuda
@@ -92,7 +103,12 @@ struct cudaAtomic
     )
     {
         VectorSpaceOps<Ncmpts,0>::eqOp(vs1, vs2, atomicPlusEqOp<Cmpt>());
-    }
+    };
+
+    static void _backendAtomicCAS(label& x,const label& compare, const label& y)
+    {
+        atomicCAS(&x,compare,y);
+    };
 
 };
 #endif
