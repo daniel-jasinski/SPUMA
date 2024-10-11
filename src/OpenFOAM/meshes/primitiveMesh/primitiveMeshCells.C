@@ -119,7 +119,7 @@ void Foam::primitiveMesh::calcCells() const
     else
     {
         // Create the storage
-        cfPtr_ = new cellList(nCells());
+        cfPtr_ = new cellList(nCells(),poolSwitch(1));
         cellList& cellFaceAddr = *cfPtr_;
 
         calcCells
