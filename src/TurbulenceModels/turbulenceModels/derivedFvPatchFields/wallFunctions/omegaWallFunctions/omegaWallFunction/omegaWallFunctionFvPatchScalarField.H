@@ -116,7 +116,7 @@ protected:
         scalarField omega_;
 
         //- List of averaging corner weights
-        List<List<scalar>> cornerWeights_;
+        List<Field<scalar>> cornerWeights_;
 
 
     // Protected Member Functions
