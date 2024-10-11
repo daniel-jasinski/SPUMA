@@ -402,7 +402,20 @@ tmp<Field<typename Field<Type>::cmptType>> cmptAv(const tmp<Field<Type>>& tf1)
 template<class Type>
 void cmptMag(Field<Type>& result, const UList<Type>& f1)
 {
-    TFOR_ALL_F_OP_FUNC_F(Type, result, =, cmptMag, Type, f1)
+    if(result.usePool() && f1.usePool())
+    {
+        // Check fields have same size
+        checkFields(result, f1, "f1 = cmptMag(f2)");
+        auto rp = result.begin();
+        const auto f1p = f1.cbegin();
+        auto Lambda = [=](label i){ rp[i] = cmptMag(f1p[i]);};
+        foamExecutor exec;
+        exec.parallelFor(Lambda,result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_F(Type, result, =, cmptMag, Type, f1)
+    }
 }
 
 template<class Type>
@@ -490,10 +503,21 @@ Type min(const UList<Type>& f1)
     if (f1.size())
     {
         Type result(f1[0]);
-        TFOR_ALL_S_OP_FUNC_F_S(Type, result, =, min, Type, f1, Type, result)
+        if (f1.usePool())
+        {
+            const auto f1p = f1.cbegin();
+            foamExecutor exec;
+            auto Lambda = [=](label i){ return f1p[i];};
+            auto CompareOp = [](Type a, Type b){return min(a,b);};
+            exec.reductionCompare(Lambda,CompareOp,&result,f1.size());
+        }
+        else
+        {
+            TFOR_ALL_S_OP_FUNC_F_S(Type, result, =, min, Type, f1, Type, result)
+        }
+        
         return result;
     }
-
     return pTraits<Type>::max;
 }
 
