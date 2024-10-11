@@ -59,20 +59,26 @@ int checkCudaError
 );
 #define CHECK_CUDA_ERROR(val) checkCudaError((val), #val, __FILE__, __LINE__)
 
-template<typename T>
-int checkCusparse(T f, const char* const func, const char* const file, const int line)
-{
-    const cusparseStatus_t __s = f;
+// template<typename T>
+// int checkCusparse(T f, const char* const func, const char* const file, const int line)
+// {
+//     const cusparseStatus_t __s = f;
 
-    if(__s != CUSPARSE_STATUS_SUCCESS)
-    {
-        std::cerr << "CUDA status in: " << f << " [" << __FILE__ << ","
-            << __LINE__ << "], " << std::endl;
-        exit(1);
-    }
-    return static_cast<int>(__s);
-}
-#define CHECK_CUSPARSE(val) checkCusparse((val), #val, __FILE__, __LINE__)
+//     if(__s != CUSPARSE_STATUS_SUCCESS)
+//     {
+//         std::cerr << "CUDA status in: " << f << " [" << __FILE__ << ","
+//             << __LINE__ << "], " << std::endl;
+//         exit(1);
+//     }
+//     return static_cast<int>(__s);
+// }
+// #define CHECK_CUSPARSE(val) checkCusparse((val), #val, __FILE__, __LINE__)
+
+// check if a pointer is a valid gpu pointer;
+bool isDeviceValid(const void * ptr);
+
+#define PrintDeviceValid(ptr)\
+    std::cout<< #ptr " device valid: "<<isDeviceValid(ptr)<<std::endl;
 
 #endif
 

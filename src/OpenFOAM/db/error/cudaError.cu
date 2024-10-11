@@ -61,6 +61,18 @@ int checkLastCudaError
     return static_cast<int>(err);
 }
 
+bool isDeviceValid(const void * ptr)
+{
+    bool valid = false;
+
+    cudaPointerAttributes attr;
+    CHECK_CUDA_ERROR(cudaPointerGetAttributes(&attr,(void*)ptr));
+    if(attr.devicePointer)
+        valid = true;
+
+    return valid;
+}
+
 template int checkCudaError<cudaError_t>(cudaError_t err, const char* const func,
                                           const char* const file, const int line);
 
