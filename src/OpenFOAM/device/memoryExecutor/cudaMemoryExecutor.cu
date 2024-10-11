@@ -58,7 +58,7 @@ void Foam::cudaMemoryExecutor::_backendMemSet(void* ptr, const size_t sizeInByte
 {
     label err = CHECK_CUDA_ERROR
     (
-        cudaMemcpy
+        cudaMemcpyAsync
         (
             ptr,
             value,
