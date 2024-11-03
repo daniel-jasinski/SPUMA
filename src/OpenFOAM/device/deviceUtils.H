@@ -5,8 +5,7 @@
 
 namespace Foam
 {
-namespace cuda
-{
+
 
 struct Mutex
 {
@@ -38,23 +37,27 @@ struct spinLock
     } 
 };
 
+namespace cuda
+{
+
 template <typename T,int blockSize>
 __device__
 void warpReduceNoVolatile( T* sdata, int tid)
-{   
-    if (blockSize >= 64) { sdata[tid] += sdata[tid + 32];  __syncwarp(); }
-    if (blockSize >= 32) { sdata[tid] += sdata[tid + 16];  __syncwarp(); }
-    if (blockSize >= 16) { sdata[tid] += sdata[tid + 8] ;  __syncwarp();  }
-    if (blockSize >= 8)  { sdata[tid] += sdata[tid + 4] ;  __syncwarp();  }
-    if (blockSize >= 4)  { sdata[tid] += sdata[tid + 2] ;   __syncwarp(); }
-    if (blockSize >= 2)  { sdata[tid] += sdata[tid + 1] ;  __syncwarp();  }
+{
+    T tmp;
+    if (blockSize >= 64) { tmp = sdata[tid + 32];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >= 32) { tmp = sdata[tid + 16];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >= 16) { tmp = sdata[tid +  8];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  8) { tmp = sdata[tid +  4];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  4) { tmp = sdata[tid +  2];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  2) { tmp = sdata[tid +  1];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
 };
 
 
 template <typename T,typename Op,int blockSize>
 __device__
 void warpReduceCompareNoVolatile( T* sdata, Op& op,int tid)
-{   
+{
     T tmp;
     if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__syncwarp(); 
         sdata[tid]= tmp;  __syncwarp(); }

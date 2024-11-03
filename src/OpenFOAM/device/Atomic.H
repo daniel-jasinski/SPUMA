@@ -29,9 +29,9 @@ struct Atomic
         T::_backendAtomicAdd(vs1,vs2);
     };
 
-    static void AtomicCAS(label& x,const label& compare, const label& y)
+    static label AtomicCAS(label& x,const label& compare, const label& y)
     {
-        T::_backendAtomicCAS(x,compare,y);
+        return T::_backendAtomicCAS(x,compare,y);
     };
 
 };
@@ -57,9 +57,10 @@ struct cpuAtomic
         vs1 += vs2;
     };
 
-    static void _backendAtomicCAS(label& x,const label& compare, const label& y)
+    static label _backendAtomicCAS(label& x,const label& compare, const label& y)
     {
         x = (x == compare ? y : x);
+        return x;
     };
 
 };
@@ -105,9 +106,9 @@ struct cudaAtomic
         VectorSpaceOps<Ncmpts,0>::eqOp(vs1, vs2, atomicPlusEqOp<Cmpt>());
     };
 
-    static void _backendAtomicCAS(label& x,const label& compare, const label& y)
+    static label _backendAtomicCAS(label& x,const label& compare, const label& y)
     {
-        atomicCAS(&x,compare,y);
+        return atomicCAS(&x,compare,y);
     };
 
 };

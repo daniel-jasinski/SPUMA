@@ -132,7 +132,7 @@ namespace cuda
             id += gridSize;
         }
         __syncthreads();
-        
+
         //block wise reduction steps
         if (blockSize >= 512) { if (tid < 256) {
             tmp = op(sdata[tid],sdata[tid + 256]); __threadfence_block();
@@ -146,7 +146,7 @@ namespace cuda
             tmp = op(sdata[tid],sdata[tid + 64]); __threadfence_block();
             sdata[tid] = tmp;
         } __syncthreads(); }
-        
+
         //warp wise reduction step
         if (tid < 32)
         {
@@ -199,11 +199,13 @@ void Foam::cudaExecutor::_backendReductionSum(
     const label& size
 )
 {
+    if (size <= 0) return;
+
     resultT* dPtrResult;
     CHECK_CUDA_ERROR(cudaMalloc(&dPtrResult,sizeof(resultT)));
     CHECK_CUDA_ERROR(cudaMemcpyAsync(dPtrResult,result,sizeof(resultT),cudaMemcpyHostToDevice));
     // create mutex
-    Foam::cuda::Mutex mutex;
+    Foam::Mutex mutex;
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
@@ -243,11 +245,13 @@ void Foam::cudaExecutor::_backendReductionCompare(
     const label& size
 )
 {
+    if (size <= 0) return;
+
     resultT* dPtrResult;
     CHECK_CUDA_ERROR(cudaMalloc(&dPtrResult,sizeof(resultT)));
     CHECK_CUDA_ERROR(cudaMemcpyAsync(dPtrResult,result,sizeof(resultT),cudaMemcpyHostToDevice));
     // create mutex
-    Foam::cuda::Mutex mutex;
+    Foam::Mutex mutex;
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
