@@ -83,8 +83,9 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcNut() const
         foamExecutor exec;
         auto nutwp = nutw.begin();
         const auto errp = err.cbegin();
+        const scalar tolerance = tolerance_;
         auto Lambda = [=](label facei){
-            if (errp[facei] < tolerance_)
+            if (errp[facei] < tolerance)
             {
                 nutwp[facei] = this->operator[](facei);
             } 
@@ -162,6 +163,8 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
     auto nutwp = nutw.begin();
     auto yp = y.begin();
 
+    const scalar tolerance = tolerance_; //allow lambda to copy class member
+
     auto Lambda = [=](label facei)
     {
         scalar ut = sqrt((nutwp[facei] + nuwp[facei])*magGradUp[facei]);
@@ -202,7 +205,7 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
             } while
             (
                 ut > ROOTVSMALL
-             && errp[facei] > tolerance_
+             && errp[facei] > tolerance
              && ++iter < maxIter
             );
 
@@ -211,7 +214,7 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
 
     };
 
-    // exec.parallelFor(Lambda,uTau.size());
+    exec.parallelFor(Lambda,uTau.size());
 
 
     // forAll(uTau, facei)
