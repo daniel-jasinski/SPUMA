@@ -67,13 +67,13 @@ void Foam::LimitedScheme<Type, Limiter, LimitFunc>::calcLimiter
           auto pLimp = pLim.begin();
     const auto ownp = owner.cbegin();
     const auto neighp = neighbour.cbegin();
-    
+
     const auto CDweightsp = CDweights.cbegin();
     const auto faceFluxp = this->faceFlux_.cbegin();
     const auto lPhip = lPhi.cbegin();
     const auto gradcp = gradc.cbegin();
     const auto Cp = C.cbegin();
-            
+
     Limiter localLimiter(*this);
 
     auto Lambda = [=](label face){

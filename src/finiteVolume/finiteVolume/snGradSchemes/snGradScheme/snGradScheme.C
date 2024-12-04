@@ -131,7 +131,7 @@ snGradScheme<Type>::snGrad
     //         deltaCoeffs[facei]*(vf[neighbour[facei]] - vf[owner[facei]]);
     // }
     const auto ownerp = owner.cbegin();
-    const auto neighbourp = owner.cbegin();
+    const auto neighbourp = neighbour.cbegin();
     auto ssfp = ssf.begin();
     const auto deltaCoeffsp = deltaCoeffs.cbegin();
     const auto vfp = vf.cbegin();
@@ -141,7 +141,7 @@ snGradScheme<Type>::snGrad
     };
     foamExecutor exec;
     exec.parallelFor(Lambda,owner.size());
-    
+
     typename GeometricField<Type, fvsPatchField, surfaceMesh>::
         Boundary& ssfbf = ssf.boundaryFieldRef();
 
