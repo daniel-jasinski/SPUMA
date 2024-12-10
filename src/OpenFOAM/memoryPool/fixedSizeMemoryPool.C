@@ -257,11 +257,29 @@ void Foam::fixedSizeMemoryPool::memSet
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
     //check if pointer was allocated with pool
+    //if (!this->isValid(poolPtr)){
+        //raisePoolValidError(poolPtr)
+    //}
+    void* allocatedPoolPtr = poolPtr;
     if (!this->isValid(poolPtr)){
-        raisePoolValidError(poolPtr)
-    }
+        //find nearest valid pointer
+        if(!this->isInBlockRange(poolPtr)){
+            FatalErrorInFunction
+                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(poolPtr)
+                << "is not valid and not in range" << abort(FatalError);
+        }
+        uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);
 
-    blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
+        for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
+        {
+            uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
+            if ( (ptr>allocatedPtr) && (ptr < allocatedPtr + block->second) ){
+                allocatedPoolPtr = reinterpret_cast<void*>(allocatedPtr);
+                break;
+            }
+        }
+    }
+    blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(allocatedPoolPtr));
     poolPtr = (char*)poolPtr + offsetInBytes;
     uint64_t sizeInBytes = mapElement->second - offsetInBytes;
     if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(sizeInBytes))
@@ -280,10 +298,29 @@ void Foam::fixedSizeMemoryPool::memSetScalarOne
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
     //check if pointer was allocated with pool
+    //if (!this->isValid(poolPtr)){
+        //raisePoolValidError(poolPtr)
+    //}
+    void* allocatedPoolPtr = poolPtr;
     if (!this->isValid(poolPtr)){
-        raisePoolValidError(poolPtr)
+        //find nearest valid pointer
+        if(!this->isInBlockRange(poolPtr)){
+            FatalErrorInFunction
+                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(poolPtr)
+                << "is not valid and not in range" << abort(FatalError);
+        }
+        uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);
+
+        for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
+        {
+            uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
+            if ( (ptr>allocatedPtr) && (ptr < allocatedPtr + block->second) ){
+                allocatedPoolPtr = reinterpret_cast<void*>(allocatedPtr);
+                break;
+            }
+        }
     }
-    blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
+    blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(allocatedPoolPtr));
     poolPtr = (char*)poolPtr + offsetInBytes;
     uint64_t sizeInBytes = mapElement->second - offsetInBytes;
     if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(sizeInBytes))
@@ -303,11 +340,29 @@ void Foam::fixedSizeMemoryPool::memSet
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
     //check if pointer was allocated with pool
+    //if (!this->isValid(poolPtr)){
+        //raisePoolValidError(poolPtr)
+    //}
+    void* allocatedPoolPtr = poolPtr;
     if (!this->isValid(poolPtr)){
-        raisePoolValidError(poolPtr)
-    }
+        //find nearest valid pointer
+        if(!this->isInBlockRange(poolPtr)){
+            FatalErrorInFunction
+                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(poolPtr)
+                << "is not valid and not in range" << abort(FatalError);
+        }
+        uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);
 
-    blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
+        for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
+        {
+            uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
+            if ( (ptr>allocatedPtr) && (ptr < allocatedPtr + block->second) ){
+                allocatedPoolPtr = reinterpret_cast<void*>(allocatedPtr);
+                break;
+            }
+        }
+    }
+    blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(allocatedPoolPtr));
     poolPtr = (char*)poolPtr + offsetInBytes;
     uint64_t sizeInBytes = mapElement->second - offsetInBytes;
     if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(sizeInBytes))
