@@ -134,6 +134,12 @@ class primitiveMesh
             //- Cell-faces
             mutable cellList* cfPtr_;
 
+            //- cell-face start
+            mutable labelList* cellFaceStartPtr_;
+
+            //- face index using cell face start
+            mutable labelList* facePtr_;
+
             //- Edge-faces
             mutable labelListList* efPtr_;
 
@@ -543,7 +549,17 @@ public:
                     cellList&,
                     const labelUList& own,
                     const labelUList& nei,
-                    const label nCells = -1
+                    const label inNCells = -1
+                );
+
+                static void calcCells
+                (
+                    cellList& cellFaceAddr,
+                    labelList& cellFaceStartAddr,
+                    labelList& facesortAddr,
+                    const labelUList& own,
+                    const labelUList& nei,
+                    const label inNCells = -1
                 );
 
                 //- Helper function to calculate point ordering. Returns true
@@ -567,6 +583,8 @@ public:
                 const labelListList& pointCells() const;
 
                 const cellList& cells() const;
+                const labelList& cellsFaceStart() const;
+                const labelList& cellsFaces() const;
                 // faceFaces considered unnecessary
                 const labelListList& edgeFaces() const;
                 const labelListList& pointFaces() const;
