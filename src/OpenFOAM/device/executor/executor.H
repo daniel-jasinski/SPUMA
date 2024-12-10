@@ -24,7 +24,12 @@ public:
     void parallelFor(F& lambda, const label& size){
         (static_cast<T*>(this))->_backendFor(lambda, size);
     };
-    
+
+    template<typename F> 
+    void serialFor(F& lambda, const label& size){
+        (static_cast<T*>(this))->_backendSerialFor(lambda, size);
+    };
+
     template<typename F, typename resultT>
     void reductionSum(F& lambda, resultT* result, const label& size){
         (static_cast<T*>(this))->_backendReductionSum(lambda, result, size);

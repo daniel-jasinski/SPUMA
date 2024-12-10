@@ -22,7 +22,10 @@ public:
 
     template<typename F>
     void _backendFor(F& lambda, const label& size);
-    
+
+    template<typename F>
+    void _backendSerialFor(F& lambda, const label& size);
+
     template<typename F, typename resultT>
     void _backendReductionSum(F& lambda, resultT* const __restrict__ result, const label& size);
 

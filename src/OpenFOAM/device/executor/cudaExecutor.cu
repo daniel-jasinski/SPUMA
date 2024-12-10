@@ -192,6 +192,18 @@ void Foam::cudaExecutor::_backendFor(F& lambda, const label& size)
     CHECK_LAST_CUDA_ERROR();
 };
 
+template<typename F>
+void Foam::cudaExecutor::_backendSerialFor(F& lambda, const label& size)
+{
+    if (size <= 0)
+        return;
+
+    Foam::cuda::lambdaKernel<F><<<1,1>>>(lambda,size);
+
+    deviceSync(); 
+    CHECK_LAST_CUDA_ERROR();
+};
+
 template <typename F,typename resultT>
 void Foam::cudaExecutor::_backendReductionSum(
     F& lambda,
