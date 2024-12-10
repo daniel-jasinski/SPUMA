@@ -2,7 +2,7 @@
     volScalarField rAU(1.0/UEqn.A());
     volVectorField HbyA(constrainHbyA(rAU*UEqn.H(), U, p));
     surfaceScalarField phiHbyA("phiHbyA", fvc::flux(HbyA));
-    MRF.makeRelative(phiHbyA);
+    //MRF.makeRelative(phiHbyA);
     adjustPhi(phiHbyA, U, p);
 
     tmp<volScalarField> rAtU(rAU);
@@ -18,7 +18,8 @@
     tUEqn.clear();
 
     // Update the pressure BCs to ensure flux consistency
-    constrainPressure(p, U, phiHbyA, rAtU(), MRF);
+    //constrainPressure(p, U, phiHbyA, rAtU(), MRF);
+    constrainPressure(p, U, phiHbyA, rAtU());
 
     // Non-orthogonal pressure corrector loop
     while (simple.correctNonOrthogonal())
@@ -46,5 +47,5 @@
     // Momentum corrector
     U = HbyA - rAtU()*fvc::grad(p);
     U.correctBoundaryConditions();
-    fvOptions.correct(U);
+    //fvOptions.correct(U);
 }
