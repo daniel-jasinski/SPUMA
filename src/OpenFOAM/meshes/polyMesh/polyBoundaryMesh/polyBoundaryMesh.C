@@ -528,7 +528,7 @@ const Foam::labelList& Foam::polyBoundaryMesh::patchID() const
 {
     if (!patchIDPtr_)
     {
-        patchIDPtr_.emplace(mesh_.nBoundaryFaces());
+        patchIDPtr_.emplace(mesh_.nBoundaryFaces(),poolSwitch(1)); // add memorypool
         auto& list = *patchIDPtr_;
 
         const polyPatchList& patches = *this;

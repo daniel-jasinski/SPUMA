@@ -275,6 +275,106 @@ void Foam::fvMatrix<Type>::setValuesFromList
     //      - cut connections to neighbours
     // - make (on non-adjusted cells) contribution explicit
 
+    if constexpr(std::is_same<UList<Type>,ListType<Type>>())
+    {
+    // define ptr to pass to lambda
+    foamExecutor exec;
+    const auto cellLabelsPtr = cellLabels.cbegin();
+    const auto cellsPtr = cells.cbegin();
+    const auto valuesPtr = values.cbegin();
+    const auto ownPtr = own.cbegin();
+    const auto neiPtr = nei.cbegin();
+    auto upperPtr = upper().begin();
+    auto lowerPtr = lower().begin();
+    auto srcPtr = source_.begin();
+
+
+    const auto cfStartPtr = mesh.cellsFaceStart().cbegin();
+    const auto cfPtr = mesh.cellsFaces().cbegin();
+    labelField cellCounter(cells.size(),Zero);
+    auto cellCounterPtr = cellCounter.begin();
+
+    const label nInternalFaces = mesh.nInternalFaces();
+
+    //probably usless branch for symm and asymm
+    if (symmetric() || asymmetric()){
+
+        auto Lambda = [=](label i){
+            const label celli = cellLabelsPtr[i];
+            const Type value = valuesPtr[i];
+
+            label old = foamAtomic::AtomicCAS(cellCounterPtr[celli],0,1);
+            if(!old){
+                for (label id = cfStartPtr[celli]; id < cfStartPtr[celli+1]; id++ ){
+                    label facei = cfPtr[id];
+                    if((facei >= 0) && (facei < nInternalFaces))
+                    {
+                        if (celli == ownPtr[facei])
+                        {
+                            if(lowerPtr[facei])
+                            foamAtomic::AtomicAdd(srcPtr[neiPtr[facei]], -lowerPtr[facei] * value);
+                        }
+                        else
+                        {
+                            if(upperPtr[facei])
+                            foamAtomic::AtomicAdd(srcPtr[ownPtr[facei]], -upperPtr[facei] * value);
+                        }
+
+                        upperPtr[facei] = 0.0;
+                        lowerPtr[facei] = 0.0;
+
+                    }
+                } // for loop
+            }// cas if
+        };
+        exec.parallelFor(Lambda,cellLabels.size());
+    }
+
+    // boundary fields on cpu
+    if (symmetric() || asymmetric())
+    {
+        const auto& bmesh = mesh.boundaryMesh();
+        const auto patchID_p = bmesh.patchID().cbegin();
+        const label nBndFaces = mesh.nBoundaryFaces();
+        forAll(bmesh, patchi)
+        {
+            if(internalCoeffs_[patchi].size())
+            {
+                auto internalCoeffs_p = internalCoeffs_[patchi].begin();
+                auto boundaryCoeffs_p = boundaryCoeffs_[patchi].begin();
+                const label patchFaceStart = bmesh[patchi].start();
+                auto Lambda = [=](label i){
+                    const label celli = cellLabelsPtr[i];
+                    for (label id = cfStartPtr[celli]; id < cfStartPtr[celli+1]; id++ ){
+                        const label facei = cfPtr[id];
+                        const label bndfacei = facei - nInternalFaces;
+                        //check if is a boundary face and is the right patch
+                        if((bndfacei >= 0) && (bndfacei < nBndFaces) && (patchID_p[bndfacei] == patchi) ){
+                                const label pfacei = facei - patchFaceStart;
+                                internalCoeffs_p[pfacei] = Zero;
+                                boundaryCoeffs_p[pfacei] = Zero;
+                        }
+                    };
+                };
+                exec.parallelFor(Lambda,cellLabels.size());
+            }
+        }
+    }
+
+    auto psiPtr = psi.begin();
+    const auto diagPtr = Diag.begin();
+
+    auto Lambda = [=](label i){
+        const label celli = cellLabelsPtr[i];
+        const Type value = valuesPtr[i];
+        psiPtr[celli] = value;
+        srcPtr[celli] = value*diagPtr[celli];
+    };
+    exec.parallelFor(Lambda,cellLabels.size());
+
+    }else{ //handle other list types non supported on memorypool
+
+
     if (symmetric() || asymmetric())
     {
         forAll(cellLabels, i)
@@ -318,6 +418,8 @@ void Foam::fvMatrix<Type>::setValuesFromList
                 }
                 else
                 {
+                    const label patchi = mesh.boundaryMesh().whichPatch(facei); //only cpu
+
                     if (internalCoeffs_[patchi].size())
                     {
                         const label patchFacei =
@@ -331,8 +433,8 @@ void Foam::fvMatrix<Type>::setValuesFromList
         }
     }
 
-    // Note: above loop might have affected source terms on adjusted cells
-    // so make sure to adjust them afterwards
+    //Note: above loop might have affected source terms on adjusted cells
+    //so make sure to adjust them afterwards
     forAll(cellLabels, i)
     {
         const label celli = cellLabels[i];
@@ -341,6 +443,10 @@ void Foam::fvMatrix<Type>::setValuesFromList
         psi[celli] = value;
         source_[celli] = value*Diag[celli];
     }
+
+    }//end if else  on list type
+
+
 }
 
 
@@ -1007,7 +1113,7 @@ void Foam::fvMatrix<Type>::setValues
     const Type& value
 )
 {
-    this->setValuesFromList(cellLabels, UniformList<Type>(value));
+    this->setValuesFromList(cellLabels, List<Type>(cellLabels.size(), value, poolSwitch(1)));
 }
 
 
