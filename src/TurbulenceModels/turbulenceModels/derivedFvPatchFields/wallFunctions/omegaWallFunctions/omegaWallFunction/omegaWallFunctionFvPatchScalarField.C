@@ -105,10 +105,18 @@ void Foam::omegaWallFunctionFvPatchScalarField::createAveragingWeights()
             omegaPatches.append(patchi);
 
             const labelUList& faceCells = bf[patchi].patch().faceCells();
-            for (const auto& celli : faceCells)
-            {
-                ++weights[celli];
-            }
+            foamExecutor exec;
+            const auto faceCellsp = faceCells.cbegin();
+            auto weightsp = weights.begin();
+            auto Lambda = [=](label id){
+                const label celli = faceCellsp[id];
+                foamAtomic::AtomicAdd(weightsp[celli],1.0);
+            };
+            exec.parallelFor(Lambda,faceCells.size());
+            //for (const auto& celli : faceCells)
+            //{
+            //    ++weights[celli];
+            //}
         }
     }
 
