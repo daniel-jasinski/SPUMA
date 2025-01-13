@@ -46,14 +46,10 @@ Foam::tmp<Foam::Field<Type>> Foam::lduMatrix::H(const Field<Type>& psi) const
         const label* __restrict__ uPtr = lduAddr().upperAddr().begin();
         const label* __restrict__ lPtr = lduAddr().lowerAddr().begin();
 
-        const label* __restrict__ ownStart = lduAddr().ownerStartAddr().begin();
-        const label* __restrict__ losortStart = lduAddr().losortStartAddr().begin();
-        const label* __restrict__ losort = lduAddr().losortAddr().begin();
-        
         const scalar* __restrict__ lowerPtr = lower().begin();
         const scalar* __restrict__ upperPtr = upper().begin();
 
-        // const label nFaces = upper().size();
+        const label nFaces = upper().size();
 
         // for (label face=0; face<nFaces; face++)
         // {
@@ -61,12 +57,12 @@ Foam::tmp<Foam::Field<Type>> Foam::lduMatrix::H(const Field<Type>& psi) const
         //     HpsiPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
         // }
 
-        auto Lambda = [=](label cell){
-            forAllNbr(losortStart,losort,cell,face, HpsiPtr[cell] -= lowerPtr[face]*psiPtr[lPtr[face]];)
-            forAllOwner(ownStart,cell,face, HpsiPtr[cell] -= upperPtr[face]*psiPtr[uPtr[face]];)
+        auto Lambda = [=](label face){
+            foamAtomic::AtomicAdd(HpsiPtr[uPtr[face]], -lowerPtr[face]*psiPtr[lPtr[face]]);
+            foamAtomic::AtomicAdd(HpsiPtr[lPtr[face]], -upperPtr[face]*psiPtr[uPtr[face]]);
         };
         foamExecutor exec;
-        exec.parallelFor(Lambda,lduAddr().size());
+        exec.parallelFor(Lambda,nFaces);
     }
 
     return tHpsi;

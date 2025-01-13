@@ -86,19 +86,20 @@ Foam::fv::gaussGrad<Type>::gradf
     //     igGrad[owner[facei]] += Sfssf;
     //     igGrad[neighbour[facei]] -= Sfssf;
     // }
-    const auto ownStart = mesh.lduAddr().ownerStartAddr().cbegin();
-    const auto losortStart = mesh.lduAddr().losortStartAddr().cbegin();
-    const auto losort = mesh.lduAddr().losortAddr().cbegin();
-    
+
     auto igGradp = igGrad.begin();
     const auto Sfp = Sf.cbegin();
     const auto issfp = issf.cbegin();
-    auto Lambda = [=](label cell){
-        forAllOwner(ownStart,cell,facei, igGradp[cell] += Sfp[facei]*issfp[facei];)
-        forAllNbr(losortStart,losort,cell,facei, igGradp[cell] -= Sfp[facei]*issfp[facei];)
+    const auto ownerp = owner.cbegin();
+    const auto neighbourp = neighbour.cbegin();
+    auto Lambda = [=](label facei){
+        const GradType Sfssf = Sfp[facei]*issfp[facei];
+
+        foamAtomic::AtomicAdd(igGradp[ownerp[facei]], Sfssf);
+        foamAtomic::AtomicAdd(igGradp[neighbourp[facei]], - Sfssf);
     };
     foamExecutor exec;
-    exec.parallelFor(Lambda,mesh.lduAddr().size());
+    exec.parallelFor(Lambda,owner.size());
 
     forAll(mesh.boundary(), patchi)
     {

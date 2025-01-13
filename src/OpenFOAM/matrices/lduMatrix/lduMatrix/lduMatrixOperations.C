@@ -43,29 +43,25 @@ void Foam::lduMatrix::sumDiag()
     // const labelUList& l = lduAddr().lowerAddr();
     // const labelUList& u = lduAddr().upperAddr();
 
-    //scalarField origDiag = Diag;
-
     // for (label face=0; face<l.size(); face++)
     // {
     //    Diag[l[face]] += Lower[face];
     //    Diag[u[face]] += Upper[face];
     // }
 
-    const auto ownStart = lduAddr().ownerStartAddr().begin();
-    const auto losortStart = lduAddr().losortStartAddr().begin();
-    const auto losort = lduAddr().losortAddr().begin();
     scalar* diag = Diag.begin();
     const scalar* lower = Lower.cbegin();
     const scalar* upper = Upper.cbegin();
+    const auto l = lduAddr().lowerAddr().cbegin();
+    const auto u = lduAddr().upperAddr().cbegin();
 
-    auto sumDiagOp = [=](label id){
-        forAllOwner(ownStart,id,i, diag[id] += lower[i];)
-
-        forAllNbr(losortStart,losort,id,j, diag[id] += upper[j];)
+    auto sumDiagOp = [=](label face){
+       foamAtomic::AtomicAdd(diag[l[face]], lower[face]);
+       foamAtomic::AtomicAdd(diag[u[face]], upper[face]);
     };
 
     foamExecutor exec;
-    exec.parallelFor(sumDiagOp,lduAddr().size());
+    exec.parallelFor(sumDiagOp,lduAddr().lowerAddr().size());
 
 }
 
@@ -85,21 +81,18 @@ void Foam::lduMatrix::negSumDiag()
     //     Diag[u[face]] -= Upper[face];
     // }
 
-    const auto ownStart = lduAddr().ownerStartAddr().begin();
-    const auto losortStart = lduAddr().losortStartAddr().begin();
-    const auto losort = lduAddr().losortAddr().begin();
-    
     scalar* diag = Diag.begin();
     const scalar* lower = Lower.cbegin();
     const scalar* upper = Upper.cbegin();
-    auto Lambda = [=](label id){
-        forAllOwner(ownStart,id,i, diag[id] -= lower[i];)
-
-        forAllNbr(losortStart,losort,id,j, diag[id] -= upper[j];)
+    const auto l = lduAddr().lowerAddr().cbegin();
+    const auto u = lduAddr().upperAddr().cbegin();
+    auto Lambda = [=](label face){
+       foamAtomic::AtomicAdd(diag[l[face]], -lower[face]);
+       foamAtomic::AtomicAdd(diag[u[face]], -upper[face]);
     };
 
     foamExecutor exec;
-    exec.parallelFor(Lambda,lduAddr().size());
+    exec.parallelFor(Lambda,lduAddr().lowerAddr().size());
 }
 
 
@@ -111,8 +104,8 @@ void Foam::lduMatrix::sumMagOffDiag
     const scalarField& Lower = const_cast<const lduMatrix&>(*this).lower();
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
 
-    // const labelUList& l = lduAddr().lowerAddr();
-    // const labelUList& u = lduAddr().upperAddr();
+    //const labelUList& l = lduAddr().lowerAddr();
+    //const labelUList& u = lduAddr().upperAddr();
 
     // for (label face = 0; face < l.size(); face++)
     // {
@@ -120,21 +113,19 @@ void Foam::lduMatrix::sumMagOffDiag
     //     sumOff[l[face]] += mag(Upper[face]);
     // }
 
-    const auto ownStart = lduAddr().ownerStartAddr().begin();
-    const auto losortStart = lduAddr().losortStartAddr().begin();
-    const auto losort = lduAddr().losortAddr().begin();
-
     auto sumoff = sumOff.begin();
     const scalar* lower = Lower.cbegin();
     const scalar* upper = Upper.cbegin();
-    auto Lambda = [=](label id){
-        forAllOwner(ownStart,id,i, sumoff[id] += mag(upper[i]);)
+    const auto l = lduAddr().lowerAddr().cbegin();
+    const auto u = lduAddr().upperAddr().cbegin();
 
-        forAllNbr(losortStart,losort,id,j, sumoff[id] += mag(lower[j]);)
+    auto Lambda = [=](label face){
+        foamAtomic::AtomicAdd(sumoff[u[face]], mag(lower[face]));
+        foamAtomic::AtomicAdd(sumoff[l[face]], mag(upper[face]));
     };
 
     foamExecutor exec;
-    exec.parallelFor(Lambda,lduAddr().size());
+    exec.parallelFor(Lambda,lduAddr().lowerAddr().size());
 }
 
 
@@ -363,8 +354,8 @@ void Foam::lduMatrix::operator*=(const scalarField& sf)
         scalarField& upper = this->upper();
         scalarField& lower = this->lower();
 
-        // const labelUList& l = lduAddr().lowerAddr();
-        // const labelUList& u = lduAddr().upperAddr();
+        const labelUList& l = lduAddr().lowerAddr();
+        const labelUList& u = lduAddr().upperAddr();
 
         // for (label face=0; face<upper.size(); face++)
         // {
@@ -376,22 +367,21 @@ void Foam::lduMatrix::operator*=(const scalarField& sf)
         //     lower[face] *= sf[u[face]];
         // }
 
-        const auto ownStart = lduAddr().ownerStartAddr().begin();
-        const auto losortStart = lduAddr().losortStartAddr().begin();
-        const auto losort = lduAddr().losortAddr().begin();
-        auto up = upper.begin();
-        auto lp = lower.begin();
+        foamExecutor exec;
+        const auto lp = l.cbegin();
+        const auto up = u.cbegin();
+        auto upperp = upper.begin();
+        auto lowerp = lower.begin();
         const auto sfp = sf.cbegin();
 
-        //check correctness, maybe for this loop over faces
-        auto Lambda = [=](label id){
-            forAllOwner(ownStart,id,i, up[i] *= sfp[id];)
-
-            forAllNbr(losortStart,losort,id,j, lp[j] *= sfp[id];) 
+        auto LambdaNeigh = [=](label face){
+            upperp[face] *= sfp[lp[face]];
         };
-
-        foamExecutor exec;
-        exec.parallelFor(Lambda,lduAddr().size());
+        auto LambdaOwn = [=](label face){
+            lowerp[face] *= sfp[up[face]];
+        };
+        exec.parallelFor(LambdaNeigh,upper.size());
+        exec.parallelFor(LambdaOwn,lower.size());
     }
 }
 
