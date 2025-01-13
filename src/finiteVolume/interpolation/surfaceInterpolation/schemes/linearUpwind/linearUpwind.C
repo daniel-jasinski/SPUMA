@@ -76,21 +76,39 @@ Foam::linearUpwind<Type>::correction
         )
     );
 
+    foamExecutor exec;
+    const auto faceFluxp = faceFlux.cbegin();
+    const auto ownerp = owner.cbegin();
+    const auto neighbourp = neighbour.cbegin();
+    const auto Cfp = Cf.cbegin();
+    const auto Cp = C.cbegin();
+          auto sfCorrp = sfCorr.begin();
+
     for (direction cmpt = 0; cmpt < pTraits<Type>::nComponents; cmpt++)
     {
         tmp<volVectorField> tgradVf =
             gradScheme_().grad(vf.component(cmpt), gradSchemeName_);
 
         const volVectorField& gradVf = tgradVf();
+        const auto gradVfp = gradVf.cbegin();
 
-        forAll(faceFlux, facei)
-        {
+        auto Lambda = [=](label facei){
             const label celli =
-                (faceFlux[facei] > 0) ? owner[facei] : neighbour[facei];
+                (faceFluxp[facei] > 0) ? ownerp[facei] : neighbourp[facei];
 
-            setComponent(sfCorr[facei], cmpt) =
-                (Cf[facei] - C[celli]) & gradVf[celli];
-        }
+            setComponent(sfCorrp[facei], cmpt) =
+                (Cfp[facei] - Cp[celli]) & gradVfp[celli];
+        };
+        exec.parallelFor(Lambda,faceFlux.size());
+
+        // forAll(faceFlux, facei)
+        // {
+        //     const label celli =
+        //         (faceFlux[facei] > 0) ? owner[facei] : neighbour[facei];
+
+        //     setComponent(sfCorr[facei], cmpt) =
+        //         (Cf[facei] - C[celli]) & gradVf[celli];
+        // }
 
         typename GeometricField<Type, fvsPatchField, surfaceMesh>::
             Boundary& bSfCorr = sfCorr.boundaryFieldRef();
@@ -98,6 +116,7 @@ Foam::linearUpwind<Type>::correction
         forAll(bSfCorr, patchi)
         {
             fvsPatchField<Type>& pSfCorr = bSfCorr[patchi];
+                 auto pSfCorrp = pSfCorr.begin();
 
             if (pSfCorr.coupled())
             {
@@ -116,23 +135,47 @@ Foam::linearUpwind<Type>::correction
                     Cf.boundaryField()[patchi].patch().delta()
                 );
 
-                forAll(pOwner, facei)
-                {
-                    label own = pOwner[facei];
+                //define executor pointers
+                const auto pFaceFluxp = pFaceFlux.cbegin();
+                const auto pOwnerp = pOwner.cbegin();
+                const auto pCfp = pCf.cbegin();
+                const auto pdp = pd.cbegin();
+                const auto pGradVfNeip = pGradVfNei.cbegin();
 
-                    if (pFaceFlux[facei] > 0)
+                auto Lambda = [=](label facei){
+                    label own = pOwnerp[facei];
+
+                    if (pFaceFluxp[facei] > 0)
                     {
-                        setComponent(pSfCorr[facei], cmpt) =
-                            (pCf[facei] - C[own])
-                          & gradVf[own];
+                        setComponent(pSfCorrp[facei], cmpt) =
+                            (pCfp[facei] - Cp[own])
+                          & gradVfp[own];
                     }
                     else
                     {
-                        setComponent(pSfCorr[facei], cmpt) =
-                            (pCf[facei] - pd[facei] - C[own])
-                          & pGradVfNei[facei];
+                        setComponent(pSfCorrp[facei], cmpt) =
+                            (pCfp[facei] - pdp[facei] - Cp[own])
+                          & pGradVfNeip[facei];
                     }
-                }
+                };
+                exec.parallelFor(Lambda,pOwner.size());
+                // forAll(pOwner, facei)
+                // {
+                //     label own = pOwner[facei];
+
+                //     if (pFaceFlux[facei] > 0)
+                //     {
+                //         setComponent(pSfCorr[facei], cmpt) =
+                //             (pCf[facei] - C[own])
+                //           & gradVf[own];
+                //     }
+                //     else
+                //     {
+                //         setComponent(pSfCorr[facei], cmpt) =
+                //             (pCf[facei] - pd[facei] - C[own])
+                //           & pGradVfNei[facei];
+                //     }
+                // }
             }
         }
     }
@@ -190,12 +233,28 @@ Foam::linearUpwind<Foam::vector>::correction
     tmp<volTensorField> tgradVf = gradScheme_().grad(vf, gradSchemeName_);
     const volTensorField& gradVf = tgradVf();
 
-    forAll(faceFlux, facei)
-    {
+    foamExecutor exec;
+    const auto gradVfp = gradVf.cbegin();
+    const auto faceFluxp = faceFlux.cbegin();
+    const auto ownerp = owner.cbegin();
+    const auto neighbourp = neighbour.cbegin();
+    const auto Cfp = Cf.cbegin();
+    const auto Cp = C.cbegin();
+          auto sfCorrp = sfCorr.begin();
+
+    auto Lambda = [=](label facei){
         const label celli =
-            (faceFlux[facei] > 0) ? owner[facei] : neighbour[facei];
-        sfCorr[facei] = (Cf[facei] - C[celli]) & gradVf[celli];
-    }
+            (faceFluxp[facei] > 0) ? ownerp[facei] : neighbourp[facei];
+        sfCorrp[facei] = (Cfp[facei] - Cp[celli]) & gradVfp[celli];
+    };
+    exec.parallelFor(Lambda,faceFlux.size());
+
+    // forAll(faceFlux, facei)
+    // {
+    //     const label celli =
+    //         (faceFlux[facei] > 0) ? owner[facei] : neighbour[facei];
+    //     sfCorr[facei] = (Cf[facei] - C[celli]) & gradVf[celli];
+    // }
 
 
     typename surfaceVectorField::Boundary& bSfCorr = sfCorr.boundaryFieldRef();
@@ -218,20 +277,42 @@ Foam::linearUpwind<Foam::vector>::correction
             // Build the d-vectors
             vectorField pd(Cf.boundaryField()[patchi].patch().delta());
 
-            forAll(pOwner, facei)
-            {
-                label own = pOwner[facei];
+            //define executor pointers
+            const auto pFaceFluxp = pFaceFlux.cbegin();
+            const auto pOwnerp = pOwner.cbegin();
+            const auto pCfp = pCf.cbegin();
+            const auto pdp = pd.cbegin();
+            const auto pGradVfNeip = pGradVfNei.cbegin();
+                  auto pSfCorrp = pSfCorr.begin();
 
-                if (pFaceFlux[facei] > 0)
+            auto Lambda = [=](label facei){
+                label own = pOwnerp[facei];
+
+                if (pFaceFluxp[facei] > 0)
                 {
-                    pSfCorr[facei] = (pCf[facei] - C[own]) & gradVf[own];
+                    pSfCorrp[facei] = (pCfp[facei] - Cp[own]) & gradVfp[own];
                 }
                 else
                 {
-                    pSfCorr[facei] =
-                        (pCf[facei] - pd[facei] - C[own]) & pGradVfNei[facei];
+                    pSfCorrp[facei] =
+                        (pCfp[facei] - pdp[facei] - Cp[own]) & pGradVfNeip[facei];
                 }
-            }
+            };
+            exec.parallelFor(Lambda,pOwner.size());
+            // forAll(pOwner, facei)
+            // {
+            //     label own = pOwner[facei];
+
+            //     if (pFaceFlux[facei] > 0)
+            //     {
+            //         pSfCorr[facei] = (pCf[facei] - C[own]) & gradVf[own];
+            //     }
+            //     else
+            //     {
+            //         pSfCorr[facei] =
+            //             (pCf[facei] - pd[facei] - C[own]) & pGradVfNei[facei];
+            //     }
+            // }
         }
     }
 
