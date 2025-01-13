@@ -131,12 +131,31 @@ public:
             const scalar extrapolate
         ) const;
 
+        inline void limitFaceCmpt
+        (
+            scalar& limiter,
+            const scalar maxDelta,
+            const scalar minDelta,
+            const scalar extrapolate,
+            const Limiter& limitObj
+        ) const;
+
         inline void limitFace
         (
             Type& limiter,
             const Type& maxDelta,
             const Type& minDelta,
             const Type& extrapolate
+        ) const;
+
+        inline void limitFace
+        (
+            Type& limiter,
+            const Type& maxDelta,
+            const Type& minDelta,
+            const Type& extrapolate,
+            const Limiter& limiterObj,
+            const label nComponents
         ) const;
 
         //- Return the gradient of the given field to the gradScheme::grad
@@ -204,7 +223,59 @@ inline void cellLimitedGrad<Type, Limiter>::limitFace
     }
 }
 
+template<class Type, class Limiter>
+inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
+(
+    scalar& limiter,
+    const scalar maxDelta,
+    const scalar minDelta,
+    const scalar extrapolate,
+    const Limiter& limitObj
+) const
+{
+    scalar r = 1;
 
+    if (extrapolate > SMALL)
+    {
+        r = maxDelta/extrapolate;
+    }
+    else if (extrapolate < -SMALL)
+    {
+        r = minDelta/extrapolate;
+    }
+    else
+    {
+        return;
+    }
+
+    //limiter = min(limiter, limitObj.limiter(r));
+    foamAtomic::AtomicMin(limiter, limitObj.limiter(r));
+}
+
+
+template<class Type, class Limiter>
+inline void cellLimitedGrad<Type, Limiter>::limitFace
+(
+    Type& limiter,
+    const Type& maxDelta,
+    const Type& minDelta,
+    const Type& extrapolate,
+    const Limiter& limiterObj,
+    const label nComponents
+) const
+{
+    for (direction cmpt=0; cmpt < nComponents; ++cmpt)
+    {
+        limitFaceCmpt
+        (
+            setComponent(limiter, cmpt),
+            component(maxDelta, cmpt),
+            component(minDelta, cmpt),
+            component(extrapolate, cmpt),
+            limiterObj
+        );
+    }
+}
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace fv
