@@ -38,7 +38,7 @@ namespace Foam
 //fwd declaraction
 
 // Macro for loops over cells with ldu addressing
-#define forAllOwner(ownerStart,idCell,idFace,expression) \
+#define forAllOwner(ownStart,idCell,idFace,expression) \
     for (size_t idFace = ownStart[idCell]; idFace < ownStart[idCell+1]; idFace++)\
     {\
         expression\
