@@ -132,8 +132,8 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
     const auto gp = g.cbegin();
 
     auto Lambda = [=](label facei){
-        const label own = owner[facei];
-        const label nei = neighbour[facei];
+        const label own = ownerp[facei];
+        const label nei = neighbourp[facei];
 
         const Type& vsfOwn = vsf[own];
         const Type& vsfNei = vsf[nei];
