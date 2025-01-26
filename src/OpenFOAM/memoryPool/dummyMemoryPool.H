@@ -52,8 +52,6 @@ private:
 
     dummyMemoryPool(const uint64_t size = 0);
 
-    dummyMemoryPool(const dictionary& dict);
-
 public:
 
     //declare interface as friend
@@ -146,8 +144,6 @@ public:
     // Prints list of unallocated blocks
     void showUnallocated(bool relative = false);
 
-    // read memory Pool properties
-    void readProperties(const dictionary &typeDict);
 };
 
 
@@ -176,14 +172,13 @@ inline bool Foam::dummyMemoryPool::isInBlockRange(void* ptr)
     if (!ptr) return false;
 
     bool inRange = false;
-    
     uint64_t Ptr = reinterpret_cast<uint64_t>(ptr);
     // loop trough allocated records;
     // use reverse iterator, likely the last allocated element will be the searched element
     for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
     {
         uint64_t poolptr = reinterpret_cast<uint64_t>(block->first); 
-        inRange = (Ptr > poolptr) && (Ptr < (poolptr + block->second));
+        inRange = (Ptr >= poolptr) && (Ptr <= (poolptr + block->second));
         if(inRange)
             break;
     };

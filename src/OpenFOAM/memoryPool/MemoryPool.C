@@ -23,7 +23,6 @@ License
 
 #include "MemoryPool.H"
 #include "error.H"
-#include "dictionary.H"
 #ifdef have_umpire
     #include "umpireMemoryPool.H"
 #endif
@@ -33,8 +32,6 @@ License
 namespace Foam
 {
     defineTypeNameAndDebug(MemoryPool,  0);
-    defineRunTimeSelectionTable(MemoryPool,dictionary);
-    defineRunTimeSelectionTable(MemoryPool,word);
 }
 /* Null, because instance will be initialized on demand. */
 Foam::MemoryPool* Foam::MemoryPool::instance = nullptr;
@@ -49,43 +46,12 @@ Foam::MemoryPool::MemoryPool(const dictionary& dict):
     //this->readProperties(dict);
 };
 
-// Selector
-Foam::MemoryPool* Foam::MemoryPool::New
-(
-    const dictionary& dict
-)
+// Destructors
+Foam::MemoryPool::~MemoryPool()
 {
-    if (!instance)
-    {
-        const word poolType(dict.get<word>("type"));
-
-        auto* ctroPtr = dictionaryConstructorTable(poolType);
-
-        if (!ctroPtr)
-        {
-            FatalIOErrorInFunction(dict)
-                << "Unknown memory pool type " << poolType << nl
-                << "Valid memory pool types are : "<< nl << nl
-                << dictionaryConstructorTablePtr_->sortedToc()
-                << exit(FatalIOError);
-        };
-
-        instance = autoPtr<MemoryPool>(ctroPtr(dict)).release();
-
-        const bool printProperties(dict.getOrDefault("printProperties", 1));
-        /*if (printProperties)
-        {
-            Info
-                << "created memory pool of type : "
-                << instance->type() << nl
-                << "memoryResource : " << instance->memoryResource_ << nl << nl
-                << instance->type()
-                << instance->properties_ << endl;
-        }*/
-    }
-
-    return instance;
+    delete instance;
 }
+// Selector
 
 Foam::MemoryPool* Foam::MemoryPool::New
 (
@@ -95,17 +61,20 @@ Foam::MemoryPool* Foam::MemoryPool::New
 {
     if (!instance)
     {
-        auto* ctroPtr = wordConstructorTable(type);
-        if (!ctroPtr)
+        if(type == "fixedSizeMemoryPool")
+        {
+            instance = new fixedSizeMemoryPool(size);
+        }
+        else if (type == "dummyMemoryPool")
+        {
+            instance = new  dummyMemoryPool(size);
+        }
+        else
         {
             FatalErrorInFunction
-                << "Unknown memory pool type " << type << nl
-                << "Valid memory pool types are : "<< nl << nl
-                << wordConstructorTablePtr_->sortedToc()
-                << exit(FatalError);
-        };
-
-        instance = autoPtr<MemoryPool>(ctroPtr(size)).release();
+            << "wrong memory pool type" << nl
+            << abort(FatalError);
+        }
     }
 
     return instance;

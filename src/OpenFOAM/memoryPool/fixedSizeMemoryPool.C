@@ -25,13 +25,11 @@ License
 #include "memoryExecutors.H"
 #include "fixedSizeMemoryPool.H"
 #include "error.H"
-#include "dictionary.H"
+
 
 namespace Foam
 {
     defineTypeNameAndDebug(fixedSizeMemoryPool, 0);
-    addToRunTimeSelectionTable(MemoryPool,fixedSizeMemoryPool,dictionary);
-    addToRunTimeSelectionTable(MemoryPool,fixedSizeMemoryPool,word);
 }
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
 
@@ -54,22 +52,6 @@ Foam::fixedSizeMemoryPool::fixedSizeMemoryPool(const uint64_t size):
 
     this->unusedBlockList_.insert(blockPair(this->v_, this->size_));
     this->unallocatedSize_ = this->size_;
-};
-
-Foam::fixedSizeMemoryPool::fixedSizeMemoryPool(const Foam::dictionary& dict):
-    Foam::MemoryPool::MemoryPool(dict),
-    v_(nullptr)
-{
-    this->readProperties(dict.subDict(this->type()));
-
-    if (size_ > 0)
-    { 
-        void* ptr = foamMemoryExecutor::alloc(size_);
-        v_ = static_cast<char*>(ptr);
-    }
-
-    unusedBlockList_.insert(blockPair(v_, size_));
-    unallocatedSize_ = size_;
 };
 
 // * * * * * * * * * * * * * * * Destructors  * * * * * * * * * * * * * * * //
@@ -465,9 +447,3 @@ void Foam::fixedSizeMemoryPool::showUnallocated(bool relative)
             << " allocated block of size " << ii->second << " bytes." << nl;
 };
 
-// read memory pool properties
-void Foam::fixedSizeMemoryPool::readProperties(const dictionary &typeDict)
-{
-    constexpr uint64_t MB = 1024*1024ul;
-    size_ = typeDict.get<uint64_t>("size")*MB;
-}

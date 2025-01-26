@@ -28,8 +28,6 @@ License
 namespace Foam
 {
     defineTypeNameAndDebug(dummyMemoryPool, 0);
-    addToRunTimeSelectionTable(MemoryPool,dummyMemoryPool,dictionary);
-    addToRunTimeSelectionTable(MemoryPool,dummyMemoryPool,word);
 }
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
 
@@ -39,11 +37,6 @@ Foam::dummyMemoryPool::dummyMemoryPool(const uint64_t size):
     DebugInFunction << "MEMPOOL: using dummy memory Pool " << nl;
 };
 
-Foam::dummyMemoryPool::dummyMemoryPool(const Foam::dictionary& dict):
-    Foam::MemoryPool::MemoryPool(dict)
-{
-    DebugInFunction << "MEMPOOL: using dummy memory Pool" << nl;
-}
 // * * * * * * * * * * * * * * * Destructors  * * * * * * * * * * * * * * * //
 
 Foam::dummyMemoryPool::~dummyMemoryPool()
@@ -377,7 +370,3 @@ void Foam::dummyMemoryPool::showUnallocated(bool relative)
             << " allocated block of size " << ii->second << " bytes." << nl;
 
 };
-
-// read memory pool properties dictionary
-void Foam::dummyMemoryPool::readProperties(const dictionary &typeDict)
-{};

@@ -25,13 +25,11 @@ License
 #include "memCopyKind.H"
 #include "umpireMemoryPool.H"
 #include "error.H"
-#include "dictionary.H"
+
 
 namespace Foam
 {
     defineTypeNameAndDebug(umpireMemoryPool,  0);
-    addToRunTimeSelectionTable(MemoryPool, umpireMemoryPool, dictionary);
-    addToRunTimeSelectionTable(MemoryPool, umpireMemoryPool, word);
 }
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
 
@@ -65,32 +63,6 @@ Foam::umpireMemoryPool::umpireMemoryPool(const uint64_t size):
 
 };
 
-Foam::umpireMemoryPool::umpireMemoryPool(const dictionary& dict):
-    Foam::MemoryPool::MemoryPool(dict),
-    rm_(umpire::ResourceManager::getInstance()),
-    inspector_()
-{
-#ifdef have_cuda
-        #ifdef have_managed
-        auto allocator = rm_.getAllocator("UM");
-        #else
-        auto allocator = rm_.getAllocator("DEVICE");
-        #endif
-#else
-        auto allocator = rm_.getAllocator("HOST");
-#endif
-
-    this->readProperties(dict.subDict(this->type()));
-
-    auto hostAllocator = rm_.getAllocator("HOST");
-    allocator_ = rm_.makeAllocator<umpire::strategy::DynamicPoolList>("dynamic_pool",allocator,
-                                                                        initialSize_, /*default 512 Mb*/
-                                                                        minBlockSize_); /*default 1Mb*/
-
-    tmpAllocator_ = rm_.makeAllocator<umpire::strategy::DynamicPoolList>("tmp_dynamic_pool", hostAllocator);
-    st_ = new umpire::strategy::DynamicPoolList("strategy",hostAllocator.getId(),hostAllocator);
-
-};
 // * * * * * * * * * * * * * * * Destructors  * * * * * * * * * * * * * * * //
 
 Foam::umpireMemoryPool::~umpireMemoryPool()
@@ -296,11 +268,4 @@ void Foam::umpireMemoryPool::memCopy(
     }
 
     rm_.copy(tgtPtr,srcPtr,srcSizeInBytes);
-}
-
-void Foam::umpireMemoryPool::readProperties(const dictionary& typeDict)
-{
-    constexpr uint64_t MB = 1024*1024ul;
-    initialSize_ = typeDict.get<uint64_t>("initialSize")*MB;
-    minBlockSize_ = typeDict.get<uint64_t>("minBlockSize")*MB;
 }

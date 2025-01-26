@@ -70,8 +70,6 @@ private:
     // Private constructor to prevent instancing
     umpireMemoryPool(const uint64_t size);
 
-    umpireMemoryPool(const dictionary& dict);
-
 public:
 
     //declare interface as friend
@@ -97,7 +95,7 @@ public:
     {
         NotImplemented;
     };
-    
+
     // Returns size of array (in bytes if type not specified)
     uint64_t arraySizeInBytes(void* poolPtr);
 
@@ -181,8 +179,6 @@ public:
         NotImplemented;
     };
 
-    // read memory pool properties
-    void readProperties(const dictionary &typeDict);
 };
 
 

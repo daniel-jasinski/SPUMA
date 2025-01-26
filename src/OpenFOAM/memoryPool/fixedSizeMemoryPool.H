@@ -53,7 +53,6 @@ private:
     // Private constructor to prevent instancing
     fixedSizeMemoryPool(const uint64_t size);
 
-    fixedSizeMemoryPool(const dictionary& dict);
 
 public:
 
@@ -148,8 +147,6 @@ public:
     // Prints list of unallocated blocks
     void showUnallocated(bool relative = false);
 
-    // read memory pool properties
-    void readProperties(const dictionary &typeDict);
 };
 
 
@@ -184,7 +181,7 @@ inline bool Foam::fixedSizeMemoryPool::isInBlockRange(void* ptr)
     for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
     {
         uint64_t poolptr = reinterpret_cast<uint64_t>(block->first); 
-        inRange = (Ptr > poolptr) && (Ptr < (poolptr + block->second));
+        inRange = (Ptr >= poolptr) && (Ptr <= (poolptr + block->second));
         if(inRange)
             break;
     };

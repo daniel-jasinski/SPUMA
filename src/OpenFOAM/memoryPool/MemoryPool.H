@@ -38,10 +38,6 @@ SourceFiles
 #include "scalar.H"
 #include "typeInfo.H"
 
-#include "autoPtr.H"
-#include "runTimeSelectionTables.H"
-#include "addToRunTimeSelectionTable.H"
-
 #include <map>
 
 //- macro to raise poolptr errors
@@ -54,7 +50,6 @@ SourceFiles
 namespace Foam
 {
     class MemoryPool;
-    class dictionary;
 
 /*---------------------------------------------------------------------------*\
                            Class MemoryPool Declaration
@@ -79,29 +74,9 @@ protected:
     blockList unusedBlockList_;
     blockList usedBlockList_;
 
-    virtual void readProperties(const dictionary &typeDict) = 0;
-
 public:
     // Static Data
     TypeName("MemoryPool");
-
-    declareRunTimeSelectionTable
-    (
-        autoPtr,
-        MemoryPool,
-        dictionary,
-        (const dictionary& dict),
-        (dict)
-    );
-
-    declareRunTimeSelectionTable
-    (
-        autoPtr,
-        MemoryPool,
-        word,
-        (const uint64_t size),
-        (size)
-    );
 
     // Constructor
     MemoryPool():
@@ -119,18 +94,13 @@ public:
     // Selectors
     static MemoryPool* New
     (
-        const dictionary& dict
-    );
-
-    static MemoryPool* New
-    (
         const word& type,
         const uint64_t size
     );
 
 
     // Destructor
-    virtual ~MemoryPool() {};
+    virtual ~MemoryPool();
 
     // new function
     virtual void* allocate(uint64_t size) = 0;
@@ -140,10 +110,10 @@ public:
 
     // check if pool pointer is valid
     virtual inline bool isValid(void* poolPtr) = 0;
-    
+
     // check if ptr is in allocated blocks
     virtual inline bool isInBlockRange(void* ptr) = 0;
-    
+
     // Returns size of array (in bytes if type not specified)
     virtual uint64_t arraySizeInBytes(void* poolPtr) = 0;
 
