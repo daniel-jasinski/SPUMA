@@ -152,18 +152,22 @@ void Foam::umpireMemoryPool::memSet
     void* poolPtr,
     const void* value,
     size_t sizeOfValue,
-    uint64_t nElementsInBytes,
-    uint64_t offsetInBytes
+    uint64_t nElementsInBytes
 )
 {
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return;
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
 
-    uint64_t size = allocator_.getSize(poolPtr) - offsetInBytes;
-    poolPtr = (char*)poolPtr + offsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(size))
-        size = nElementsInBytes;
+    uint64_t size = allocator_.getSize(poolPtr);
+    if (nElementsInBytes > size)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
     /*
     T* tmpPtr =(T*)tmpAllocator_.allocate(sizeof(T));
     *tmPtr= value;
@@ -190,18 +194,23 @@ void Foam::umpireMemoryPool::memSet
 void Foam::umpireMemoryPool::memSetScalarOne
 (
     void* poolPtr,
-    uint64_t nElementsInBytes,
-    uint64_t offsetInBytes
+    uint64_t nElementsInBytes
 )
 {
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return;
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
 
-    uint64_t size = allocator_.getSize(poolPtr) - offsetInBytes;
-    poolPtr = (char*)poolPtr + offsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(size))
-        size = nElementsInBytes;
+    uint64_t size = allocator_.getSize(poolPtr);
+    if (nElementsInBytes > size)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
+
     /*
     T* tmpPtr =(T*)tmpAllocator_.allocate(sizeof(T));
     *tmPtr= value;
@@ -224,20 +233,24 @@ void Foam::umpireMemoryPool::memSet
 (
     void* poolPtr,
     const int value,
-    uint64_t nElementsInBytes,
-    uint64_t offsetInBytes
+    uint64_t nElementsInBytes
 )
 {
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return;
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
 
-    uint64_t size = allocator_.getSize(poolPtr) - offsetInBytes;
-    poolPtr = (char*)poolPtr + offsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(size))
-        size = nElementsInBytes;
+    uint64_t size = allocator_.getSize(poolPtr);
+    if (nElementsInBytes > size)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
 
-    rm_.memset(poolPtr,value,size); // does not work with anything but int
+    rm_.memset(poolPtr,value,nElementsInBytes); // does not work with anything but int
 };
 
 void Foam::umpireMemoryPool::memCopy(

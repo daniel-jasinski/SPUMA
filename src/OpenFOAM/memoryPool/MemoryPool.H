@@ -129,16 +129,14 @@ public:
         void* poolPtr,
         const void* value,
         size_t sizeOfValue,
-        uint64_t nElementsInBytes = 0,
-        uint64_t offsetInBytes = 0
+        uint64_t nElementsInBytes
     ) = 0;
 
     // Set the memory to a value of one fo a scalar type for each byte of specified memory
     virtual void memSetScalarOne
     (
         void* poolPtr,
-        uint64_t nElementsInBytes = 0,
-        uint64_t offsetInBytes = 0
+        uint64_t nElementsInBytes
     ) = 0;
 
     // Set the memory to an int value using built-in memset function
@@ -146,8 +144,7 @@ public:
     (
         void* poolPtr,
         const int value,
-        uint64_t nElementsInBytes = 0,
-        uint64_t offsetInBytes = 0
+        uint64_t nElementsInBytes
     ) = 0;
 
     // Copy from one block of the memory pool to another

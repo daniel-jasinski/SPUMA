@@ -157,16 +157,14 @@ void Foam::dummyMemoryPool::memSet
     void* poolPtr,
     const void* value,
     size_t sizeOfValue,
-    uint64_t nElementsInBytes,
-    uint64_t offsetInBytes
+    uint64_t nElementsInBytes
 )
 {
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    //check if pointer was allocated with pool
-    //if (!this->isValid(poolPtr)){
-        //raisePoolValidError(poolPtr)
-    //}
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
+
     void* allocatedPoolPtr = poolPtr;
     if (!this->isValid(poolPtr)){
         //find nearest valid pointer
@@ -187,28 +185,28 @@ void Foam::dummyMemoryPool::memSet
         }
     }
     blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(allocatedPoolPtr));
-    poolPtr = (char*)poolPtr + offsetInBytes;
-    uint64_t sizeInBytes = mapElement->second - offsetInBytes;
 
-    if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(sizeInBytes))
-        sizeInBytes = nElementsInBytes;
+    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes > reinterpret_cast<uint64_t>(allocatedPoolPtr) + mapElement->second)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
 
-    foamMemoryExecutor::memSet(poolPtr, sizeInBytes, value, sizeOfValue);
+    foamMemoryExecutor::memSet(poolPtr, nElementsInBytes, value, sizeOfValue);
 }
 
 void Foam::dummyMemoryPool::memSetScalarOne
 (
     void* poolPtr,
-    uint64_t nElementsInBytes,
-    uint64_t offsetInBytes
+    uint64_t nElementsInBytes
 )
 {
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    //check if pointer was allocated with pool
-    //if (!this->isValid(poolPtr)){
-        //raisePoolValidError(poolPtr)
-    //}
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
+
     void* allocatedPoolPtr = poolPtr;
     if (!this->isValid(poolPtr)){
         //find nearest valid pointer
@@ -229,13 +227,15 @@ void Foam::dummyMemoryPool::memSetScalarOne
         }
     }
     blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(allocatedPoolPtr));
-    poolPtr = (char*)poolPtr + offsetInBytes;
-    uint64_t sizeInBytes = mapElement->second - offsetInBytes;
 
-    if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(sizeInBytes))
-        sizeInBytes = nElementsInBytes;
+    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes > reinterpret_cast<uint64_t>(allocatedPoolPtr) + mapElement->second)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
 
-    foamMemoryExecutor::memSetScalarOne(poolPtr, sizeInBytes);
+    foamMemoryExecutor::memSetScalarOne(poolPtr, nElementsInBytes);
 
 }
 
@@ -243,16 +243,14 @@ void Foam::dummyMemoryPool::memSet
 (
     void* poolPtr,
     const int value,
-    uint64_t nElementsInBytes,
-    uint64_t offsetInBytes
+    uint64_t nElementsInBytes
 )
 {
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    //check if pointer was allocated with pool
-    //if (!this->isValid(poolPtr)){
-        //raisePoolValidError(poolPtr)
-    //}
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
+
     void* allocatedPoolPtr = poolPtr;
     if (!this->isValid(poolPtr)){
         //find nearest valid pointer
@@ -273,12 +271,14 @@ void Foam::dummyMemoryPool::memSet
         }
     }
     blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(allocatedPoolPtr));
-    poolPtr = (char*)poolPtr + offsetInBytes;
-    uint64_t sizeInBytes = mapElement->second - offsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= static_cast<uint64_t>(sizeInBytes))
-        sizeInBytes = nElementsInBytes;
+    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes > reinterpret_cast<uint64_t>(allocatedPoolPtr) + mapElement->second)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
 
-    foamMemoryExecutor::memSet(poolPtr, sizeInBytes, value);
+    foamMemoryExecutor::memSet(poolPtr, nElementsInBytes, value);
 }
 
 
