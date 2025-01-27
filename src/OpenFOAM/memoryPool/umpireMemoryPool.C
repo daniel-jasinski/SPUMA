@@ -108,42 +108,66 @@ uint64_t Foam::umpireMemoryPool::arraySizeInBytes(void* poolPtr)
     return allocator_.getSize(poolPtr);
 };
 
-void Foam::umpireMemoryPool::copyIn(void* poolPtr, void* ptr, uint64_t nElementsInBytes, uint64_t offsetInBytes)
+void Foam::umpireMemoryPool::copyIn
+(
+    void* poolPtr,
+    void* ptr,
+    uint64_t nElementsInBytes
+)
 {
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
     //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    if (!this->isValid(poolPtr)){
+        raisePoolValidError(poolPtr)
+    }
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
-    uint64_t sizeInBytes = allocator_.getSize(poolPtr);
-    poolPtr =  (char*) poolPtr + offsetInBytes;
-    sizeInBytes -= offsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= sizeInBytes)
-        sizeInBytes = nElementsInBytes;
+    uint64_t size = allocator_.getSize(poolPtr);
+    if (nElementsInBytes > size)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
 
     // workaround: umpire does not support copies between non umpire pointers
-    inspector_.registerAllocation(ptr, sizeInBytes, st_);
-    rm_.copy(poolPtr, ptr, sizeInBytes);
+    inspector_.registerAllocation(ptr, nElementsInBytes, st_);
+    rm_.copy(poolPtr, ptr, nElementsInBytes);
     inspector_.deregisterAllocation(ptr, st_);
 };
 
-void Foam::umpireMemoryPool::copyOut(void* poolPtr, void* ptr, uint64_t nElementsInBytes, uint64_t offsetInBytes)
+void Foam::umpireMemoryPool::copyOut
+(
+    void* poolPtr,
+    void* ptr,
+    uint64_t nElementsInBytes
+)
 {
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
     //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    if (!this->isValid(poolPtr)){
+        raisePoolValidError(poolPtr)
+    }
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
-    uint64_t sizeInBytes = allocator_.getSize(poolPtr);
-    poolPtr = (char*)poolPtr + offsetInBytes;
-    sizeInBytes -= offsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= sizeInBytes)
-        sizeInBytes = nElementsInBytes;
+    uint64_t size = allocator_.getSize(poolPtr);
+    if (nElementsInBytes > size)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
 
-    inspector_.registerAllocation(ptr, sizeInBytes, st_);
-    rm_.copy(ptr, poolPtr, sizeInBytes);
+    inspector_.registerAllocation(ptr, nElementsInBytes, st_);
+    rm_.copy(ptr, poolPtr, nElementsInBytes);
     inspector_.deregisterAllocation(ptr, st_);
 };
 

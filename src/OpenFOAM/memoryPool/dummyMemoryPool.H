@@ -79,10 +79,20 @@ public:
     uint64_t arraySizeInBytes(void* poolPtr);
 
     // Copies data in pool
-    void copyIn(void* poolPtr, void* ptr, uint64_t nElementsInBytes = 0, uint64_t offsetInBytes = 0);
+    void copyIn
+    (
+        void* poolPtr,
+        void* ptr,
+        uint64_t nElementsInBytes
+    );
 
     // Copies data from pool
-    void copyOut(void* poolPtr, void* ptr, uint64_t nElementsInBytes = 0, uint64_t offsetInBytes = 0);
+    void copyOut
+    (
+        void* poolPtr,
+        void* ptr,
+        uint64_t nElementsInBytes
+    );
 
     // Set the memory to a value for each byte of specified memory
     void memSet

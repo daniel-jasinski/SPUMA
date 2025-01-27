@@ -187,10 +187,17 @@ uint64_t Foam::fixedSizeMemoryPool::arraySizeInBytes(void* poolPtr)
     return mapElement->second;
 };
 
-void Foam::fixedSizeMemoryPool::copyIn(void* poolPtr, void* ptr, uint64_t nElementsInBytes, uint64_t offsetInBytes)
+void Foam::fixedSizeMemoryPool::copyIn
+(
+    void* poolPtr,
+    void* ptr,
+    uint64_t nElementsInBytes
+)
 {
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr)){
         raisePoolValidError(poolPtr)
@@ -199,18 +206,27 @@ void Foam::fixedSizeMemoryPool::copyIn(void* poolPtr, void* ptr, uint64_t nEleme
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
     blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
-    poolPtr = (char*)poolPtr + offsetInBytes;
-    uint64_t sizeInBytes = mapElement->second - offsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= sizeInBytes)
-        sizeInBytes = nElementsInBytes;
+    if (nElementsInBytes > mapElement->second)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
 
-    foamMemoryExecutor::memCopy(poolPtr, ptr, sizeInBytes, memCopyKind::memCopyHostToDevice);
+    foamMemoryExecutor::memCopy(poolPtr, ptr, nElementsInBytes, memCopyKind::memCopyHostToDevice);
 };
 
-void Foam::fixedSizeMemoryPool::copyOut(void* poolPtr, void* ptr, uint64_t nElementsInBytes, uint64_t offsetInBytes)
+void Foam::fixedSizeMemoryPool::copyOut
+(
+    void* poolPtr,
+    void* ptr,
+    uint64_t nElementsInBytes
+)
 {
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr)){
         raisePoolValidError(poolPtr)
@@ -219,12 +235,14 @@ void Foam::fixedSizeMemoryPool::copyOut(void* poolPtr, void* ptr, uint64_t nElem
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
     blockList::iterator mapElement = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
-    poolPtr = (char*)poolPtr + offsetInBytes;
-    uint64_t sizeInBytes = mapElement->second - offsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= sizeInBytes)
-        sizeInBytes = nElementsInBytes;
+    if (nElementsInBytes > mapElement->second)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in block"
+            <<abort(FatalError);
+    }
 
-    foamMemoryExecutor::memCopy(ptr, poolPtr, sizeInBytes, memCopyKind::memCopyDeviceToHost);
+    foamMemoryExecutor::memCopy(ptr, poolPtr, nElementsInBytes, memCopyKind::memCopyDeviceToHost);
 };
 
 void Foam::fixedSizeMemoryPool::memSet

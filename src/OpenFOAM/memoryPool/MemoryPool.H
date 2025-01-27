@@ -118,10 +118,20 @@ public:
     virtual uint64_t arraySizeInBytes(void* poolPtr) = 0;
 
     // Copies data in pool
-    virtual void copyIn(void* poolPtr, void* ptr, uint64_t nElementsInBytes = 0, uint64_t offsetInBytes = 0) = 0;
+    virtual void copyIn
+    (
+        void* poolPtr,
+        void* ptr,
+        uint64_t nElementsInBytes
+    ) = 0;
 
     // Copies data from pool
-    virtual void copyOut(void* poolPtr, void* ptr, uint64_t nElementsInBytes = 0, uint64_t offsetInBytes = 0) = 0;
+    virtual void copyOut
+    (
+        void* poolPtr,
+        void* ptr,
+        uint64_t nElementsInBytes
+    ) = 0;
 
     // Set the memory to a value for each byte of specified memory
     virtual void memSet
