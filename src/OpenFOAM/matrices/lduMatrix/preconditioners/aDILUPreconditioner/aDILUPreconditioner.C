@@ -75,11 +75,11 @@ void Foam::aDILUPreconditioner::calcReciprocalD
     scalarField& rDtmp = rDTmp.ref();
     solveScalar* __restrict__ rDtmpPtr = rDtmp.begin();
 
-    const label* const __restrict__ uPtr = matrix.lduAddr().upperAddr().begin();
-    const label* const __restrict__ lPtr = matrix.lduAddr().lowerAddr().begin();
+    const label* const __restrict__ uPtr = matrix.lduAddr().upperAddr().cbegin();
+    const label* const __restrict__ lPtr = matrix.lduAddr().lowerAddr().cbegin();
 
-    const scalar* const __restrict__ upperPtr = matrix.upper().begin();
-    const scalar* const __restrict__ lowerPtr = matrix.lower().begin();
+    const scalar* const __restrict__ upperPtr = matrix.upper().cbegin();
+    const scalar* const __restrict__ lowerPtr = matrix.lower().cbegin();
 
     label nFaces = matrix.upper().size();
 
@@ -113,20 +113,20 @@ void Foam::aDILUPreconditioner::precondition
 ) const
 {
     solveScalar* __restrict__ wAPtr = wA.begin();
-    const solveScalar* __restrict__ rAPtr = rA.begin();
-    const solveScalar* __restrict__ rDPtr = rD_.begin();
+    const solveScalar* __restrict__ rAPtr = rA.cbegin();
+    const solveScalar* __restrict__ rDPtr = rD_.cbegin();
 
     const label* const __restrict__ uPtr =
-        solver_.matrix().lduAddr().upperAddr().begin();
+        solver_.matrix().lduAddr().upperAddr().cbegin();
     const label* const __restrict__ lPtr =
-        solver_.matrix().lduAddr().lowerAddr().begin();
+        solver_.matrix().lduAddr().lowerAddr().cbegin();
     const label* const __restrict__ losortPtr =
-        solver_.matrix().lduAddr().losortAddr().begin();
+        solver_.matrix().lduAddr().losortAddr().cbegin();
 
     const scalar* const __restrict__ upperPtr =
-        solver_.matrix().upper().begin();
+        solver_.matrix().upper().cbegin();
     const scalar* const __restrict__ lowerPtr =
-        solver_.matrix().lower().begin();
+        solver_.matrix().lower().cbegin();
 
     const label nCells = wA.size();
     const label nFaces = solver_.matrix().upper().size();
@@ -177,20 +177,20 @@ void Foam::aDILUPreconditioner::preconditionT
 ) const
 {
     solveScalar* __restrict__ wTPtr = wT.begin();
-    const solveScalar* __restrict__ rTPtr = rT.begin();
-    const solveScalar* __restrict__ rDPtr = rD_.begin();
+    const solveScalar* __restrict__ rTPtr = rT.cbegin();
+    const solveScalar* __restrict__ rDPtr = rD_.cbegin();
 
     const label* const __restrict__ uPtr =
-        solver_.matrix().lduAddr().upperAddr().begin();
+        solver_.matrix().lduAddr().upperAddr().cbegin();
     const label* const __restrict__ lPtr =
-        solver_.matrix().lduAddr().lowerAddr().begin();
+        solver_.matrix().lduAddr().lowerAddr().cbegin();
     const label* const __restrict__ losortPtr =
-        solver_.matrix().lduAddr().losortAddr().begin();
+        solver_.matrix().lduAddr().losortAddr().cbegin();
 
     const scalar* const __restrict__ upperPtr =
-        solver_.matrix().upper().begin();
+        solver_.matrix().upper().cbegin();
     const scalar* const __restrict__ lowerPtr =
-        solver_.matrix().lower().begin();
+        solver_.matrix().lower().cbegin();
 
     const label nCells = wT.size();
     const label nFaces = solver_.matrix().upper().size();
