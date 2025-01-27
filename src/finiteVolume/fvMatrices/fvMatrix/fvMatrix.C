@@ -114,7 +114,7 @@ void Foam::fvMatrix<Type>::subtractFromInternalField
     //     intf[addr[facei]] -= pf[facei];
     // }
     auto Lambda = [=](label facei){
-        foamAtomic::AtomicAdd(intfp[addrp[facei]], -pfp[facei])
+        foamAtomic::AtomicAdd(intfp[addrp[facei]], -pfp[facei]);
     };
     foamExecutor exec;
     exec.parallelFor(Lambda,addr.size());
