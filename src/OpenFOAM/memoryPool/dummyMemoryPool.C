@@ -302,13 +302,13 @@ void Foam::dummyMemoryPool::memCopy
 (
     void* tgtPtr,
     void* srcPtr,
-    uint64_t nElementsInBytes,
-    uint64_t tgtOffsetInBytes,
-    uint64_t srcOffsetInBytes
+    uint64_t nElementsInBytes
 )
 {
     //if ptr is null do nothing
     if (tgtPtr == nullptr) return;
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
 
     void* allocatedTgtPtr = tgtPtr;
     if (!this->isValid(tgtPtr)){
@@ -318,7 +318,7 @@ void Foam::dummyMemoryPool::memCopy
                 << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(tgtPtr)
                 << "is not valid and not in range" << abort(FatalError);
         }
-        uint64_t ptr = reinterpret_cast<uint64_t>(tgtPtr);    
+        uint64_t ptr = reinterpret_cast<uint64_t>(tgtPtr);
 
         for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
         {
@@ -338,7 +338,7 @@ void Foam::dummyMemoryPool::memCopy
                 << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(srcPtr)
                 << "is not valid and not in range" << abort(FatalError);
         }
-        uint64_t ptr = reinterpret_cast<uint64_t>(srcPtr);    
+        uint64_t ptr = reinterpret_cast<uint64_t>(srcPtr);
         //search for the reference pointer of the block
         for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
         {
@@ -352,21 +352,20 @@ void Foam::dummyMemoryPool::memCopy
 
     blockList::iterator srcElement = this->usedBlockList_.find(reinterpret_cast<char*>(allocatedSrcPtr));
 
-    srcPtr = (char*)srcPtr + srcOffsetInBytes;
-    tgtPtr = (char*)tgtPtr + tgtOffsetInBytes;
-    uint64_t srcSizeInBytes = srcElement->second - srcOffsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= srcSizeInBytes)
-        srcSizeInBytes = nElementsInBytes;
-
-    const uint64_t tgtSizeInBytes = tgtElement->second - tgtOffsetInBytes;
-    if (tgtSizeInBytes < srcSizeInBytes)
+    if (reinterpret_cast<uint64_t>(srcPtr) + nElementsInBytes > reinterpret_cast<uint64_t>(allocatedSrcPtr) + srcElement->second)
     {
         FatalErrorInFunction
-            << " Not enough space in target block " << nl;
-        return;
+            << "Trying to read more bytes than available in src block"
+            <<abort(FatalError);
+    }
+    if (reinterpret_cast<uint64_t>(tgtPtr) + nElementsInBytes > reinterpret_cast<uint64_t>(allocatedTgtPtr) + tgtElement->second)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in tgt block"
+            <<abort(FatalError);
     }
 
-    foamMemoryExecutor::memCopy(tgtPtr, srcPtr, srcSizeInBytes, memCopyKind::memCopyDeviceToDevice);
+    foamMemoryExecutor::memCopy(tgtPtr, srcPtr, nElementsInBytes, memCopyKind::memCopyDeviceToDevice);
 }
 
 void Foam::dummyMemoryPool::showAllocated(bool relative)

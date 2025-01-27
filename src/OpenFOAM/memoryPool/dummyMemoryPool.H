@@ -122,9 +122,7 @@ public:
     (
         void* tgtPtr,
         void* srcPtr,
-        uint64_t nElementsInBytes = 0,
-        uint64_t tgtOffsetInBytes = 0,
-        uint64_t srcOffsetInBytes = 0
+        uint64_t nElementsInBytes
     );
 
     // Returns pool size

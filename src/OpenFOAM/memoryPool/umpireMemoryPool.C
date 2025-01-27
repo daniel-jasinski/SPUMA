@@ -277,32 +277,38 @@ void Foam::umpireMemoryPool::memSet
     rm_.memset(poolPtr,value,nElementsInBytes); // does not work with anything but int
 };
 
-void Foam::umpireMemoryPool::memCopy(
+void Foam::umpireMemoryPool::memCopy
+(
     void* tgtPtr,
     void* srcPtr,
-    uint64_t nElementsInBytes,
-    uint64_t tgtOffsetInBytes,
-    uint64_t srcOffsetInBytes
+    uint64_t nElementsInBytes
 )
 {
     //check if allocation record associated with an tgtPtr and srcPtr exist
-    if(!this->isValid(tgtPtr) && !this->isValid(srcPtr))
-        return;
+    //if ptr is null do nothing
+    if (tgtPtr == nullptr) return;
+    //if nElementsInBytes = 0 do nothing
+    if (nElementsInBytes == 0) return;
+    if(!this->isValid(tgtPtr) || !this->isValid(srcPtr))
+        raisePoolValidError(poolPtr);
     //TODO add in range check
 
-    uint64_t srcSizeInBytes = this->allocator_.getSize(srcPtr) - srcOffsetInBytes;
-    const uint64_t tgtSizeInBytes = this->allocator_.getSize(tgtPtr) -  tgtOffsetInBytes;
-    srcPtr = (char*)srcPtr + srcOffsetInBytes;
-    tgtPtr = (char*)tgtPtr + tgtOffsetInBytes;
-    if (nElementsInBytes != 0 && nElementsInBytes <= srcSizeInBytes)
-        srcSizeInBytes = nElementsInBytes;
+    uint64_t srcSizeInBytes = this->allocator_.getSize(srcPtr);
+    const uint64_t tgtSizeInBytes = this->allocator_.getSize(tgtPtr);
 
-    if (tgtSizeInBytes < srcSizeInBytes)
+    if (nElementsInBytes > srcSizeInBytes)
     {
         FatalErrorInFunction
-            <<" Not enough space in target block "<< nl;
-        return;
+            << "Trying to read more bytes than available in src block"
+            <<abort(FatalError);
     }
 
-    rm_.copy(tgtPtr,srcPtr,srcSizeInBytes);
+    if (nElementsInBytes > tgtSizeInBytes)
+    {
+        FatalErrorInFunction
+            << "Trying to assign more bytes than available in target block"
+            <<abort(FatalError);
+    }
+
+    rm_.copy(tgtPtr,srcPtr,nElementsInBytes);
 }
