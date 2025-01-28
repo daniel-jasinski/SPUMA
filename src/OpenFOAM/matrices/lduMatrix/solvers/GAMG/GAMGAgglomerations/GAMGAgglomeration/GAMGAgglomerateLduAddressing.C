@@ -172,9 +172,9 @@ void Foam::GAMGAgglomeration::agglomerateLduAddressing
     // Renumber into upper-triangular order
 
     // All coarse owner-neighbour storage
-    labelList coarseOwner(nCoarseFaces);
-    labelList coarseNeighbour(nCoarseFaces);
-    labelList coarseFaceMap(nCoarseFaces);
+    labelList coarseOwner(nCoarseFaces, poolSwitch(1));
+    labelList coarseNeighbour(nCoarseFaces, poolSwitch(1));
+    labelList coarseFaceMap(nCoarseFaces, poolSwitch(1));
 
     label coarseFacei = 0;
 
