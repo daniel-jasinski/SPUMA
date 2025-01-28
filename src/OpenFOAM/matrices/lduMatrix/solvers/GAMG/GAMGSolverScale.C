@@ -51,20 +51,26 @@ void Foam::GAMGSolver::scale
         cmpt
     );
 
-
     const label nCells = field.size();
     solveScalar* __restrict__ fieldPtr = field.begin();
     const solveScalar* const __restrict__ sourcePtr = source.begin();
     const solveScalar* const __restrict__ AcfPtr = Acf.begin();
 
-
     FixedList<solveScalar, 2> scalingFactor(Zero);
 
-    for (label i=0; i<nCells; i++)
+    foamExecutor exec;
+    auto sumOp0 = [=] (label i)
     {
-        scalingFactor[0] += fieldPtr[i]*sourcePtr[i];
-        scalingFactor[1] += fieldPtr[i]*AcfPtr[i];
-    }
+        return fieldPtr[i]*sourcePtr[i];
+    };
+
+    auto sumOp1 = [=] (label i)
+    {
+        return fieldPtr[i]*AcfPtr[i];
+    };
+
+    exec.reductionSum(sumOp0, &scalingFactor[0], nCells);
+    exec.reductionSum(sumOp1, &scalingFactor[1], nCells);
 
     A.mesh().reduce(scalingFactor, sumOp<solveScalar>());
 
@@ -82,10 +88,11 @@ void Foam::GAMGSolver::scale
     const scalarField& D = A.diag();
     const scalar* const __restrict__ DPtr = D.begin();
 
-    for (label i=0; i<nCells; i++)
+    auto Lambda = [=](label cell)
     {
-        fieldPtr[i] = sf*fieldPtr[i] + (sourcePtr[i] - sf*AcfPtr[i])/DPtr[i];
-    }
+        fieldPtr[cell] = sf*fieldPtr[cell] + (sourcePtr[cell] - sf*AcfPtr[cell])/DPtr[cell];
+    };
+    exec.parallelFor(Lambda, nCells);
 }
 
 
