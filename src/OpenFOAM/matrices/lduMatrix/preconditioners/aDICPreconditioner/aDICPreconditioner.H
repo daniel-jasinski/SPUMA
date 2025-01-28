@@ -26,7 +26,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::aDILUPreconditioner
+    Foam::aDICPreconditioner
 
 Group
     grpLduMatrixPreconditioners
@@ -37,12 +37,12 @@ Description
     diagonal is calculated and stored.
 
 SourceFiles
-    aDILUPreconditioner.C
+    aDICPreconditioner.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef aDILUPreconditioner_H
-#define aDILUPreconditioner_H
+#ifndef aDICPreconditioner_H
+#define aDICPreconditioner_H
 
 #include "lduMatrix.H"
 
@@ -52,10 +52,10 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class aDILUPreconditioner Declaration
+                           Class aDICPreconditioner Declaration
 \*---------------------------------------------------------------------------*/
 
-class aDILUPreconditioner
+class aDICPreconditioner
 :
     public lduMatrix::preconditioner
 {
@@ -68,13 +68,13 @@ class aDILUPreconditioner
 public:
 
     //- Runtime type information
-    TypeName("aDILU");
+    TypeName("aDIC");
 
 
     // Constructors
 
         //- Construct from matrix components and preconditioner solver controls
-        aDILUPreconditioner
+        aDICPreconditioner
         (
             const lduMatrix::solver&,
             const dictionary& solverControlsUnused
@@ -82,7 +82,7 @@ public:
 
 
     //- Destructor
-    virtual ~aDILUPreconditioner() = default;
+    virtual ~aDICPreconditioner() = default;
 
 
     // Member Functions

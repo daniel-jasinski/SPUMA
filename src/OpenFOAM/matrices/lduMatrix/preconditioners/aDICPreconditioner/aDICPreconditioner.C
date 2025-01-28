@@ -27,7 +27,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "aDILUPreconditioner.H"
+#include "aDICPreconditioner.H"
 #include "tmp.H"
 #include <algorithm>
 
@@ -35,17 +35,17 @@ License
 
 namespace Foam
 {
-    defineTypeNameAndDebug(aDILUPreconditioner, 0);
+    defineTypeNameAndDebug(aDICPreconditioner, 0);
 
     lduMatrix::preconditioner::
-        addasymMatrixConstructorToTable<aDILUPreconditioner>
-        addaDILUPreconditionerAsymMatrixConstructorToTable_;
+        addsymMatrixConstructorToTable<aDICPreconditioner>
+        addaDICPreconditionerSymMatrixConstructorToTable_;
 }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::aDILUPreconditioner::aDILUPreconditioner
+Foam::aDICPreconditioner::aDICPreconditioner
 (
     const lduMatrix::solver& sol,
     const dictionary&
@@ -63,7 +63,7 @@ Foam::aDILUPreconditioner::aDILUPreconditioner
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::aDILUPreconditioner::calcReciprocalD
+void Foam::aDICPreconditioner::calcReciprocalD
 (
     solveScalarField& rD,
     const lduMatrix& matrix
@@ -79,7 +79,6 @@ void Foam::aDILUPreconditioner::calcReciprocalD
     const label* const __restrict__ lPtr = matrix.lduAddr().lowerAddr().cbegin();
 
     const scalar* const __restrict__ upperPtr = matrix.upper().cbegin();
-    const scalar* const __restrict__ lowerPtr = matrix.lower().cbegin();
 
     label nFaces = matrix.upper().size();
 
@@ -89,7 +88,7 @@ void Foam::aDILUPreconditioner::calcReciprocalD
         foamAtomic::AtomicAdd
 	(
 	    rDtmpPtr[uPtr[face]], 
-           -upperPtr[face]*lowerPtr[face]/rDPtr[lPtr[face]]
+           -upperPtr[face]*upperPtr[face]/rDPtr[lPtr[face]]
 	);
     };
     exec.parallelFor(Lambda1, nFaces);
@@ -105,7 +104,7 @@ void Foam::aDILUPreconditioner::calcReciprocalD
 }
 
 
-void Foam::aDILUPreconditioner::precondition
+void Foam::aDICPreconditioner::precondition
 (
     solveScalarField& wA,
     const solveScalarField& rA,
@@ -123,8 +122,6 @@ void Foam::aDILUPreconditioner::precondition
 
     const scalar* const __restrict__ upperPtr =
         solver_.matrix().upper().cbegin();
-    const scalar* const __restrict__ lowerPtr =
-        solver_.matrix().lower().cbegin();
 
     const label nCells = wA.size();
     const label nFaces = solver_.matrix().upper().size();
@@ -145,7 +142,7 @@ void Foam::aDILUPreconditioner::precondition
         foamAtomic::AtomicAdd
         (
             wAtmpPtr[uPtr[face]],
-           -rDPtr[uPtr[face]]*lowerPtr[face]*wAPtr[lPtr[face]]
+           -rDPtr[uPtr[face]]*upperPtr[face]*wAPtr[lPtr[face]]
         );
     };
     exec.parallelFor(Lambda2, nFaces);
@@ -166,7 +163,7 @@ void Foam::aDILUPreconditioner::precondition
 }
 
 
-void Foam::aDILUPreconditioner::preconditionT
+void Foam::aDICPreconditioner::preconditionT
 (
     solveScalarField& wT,
     const solveScalarField& rT,
@@ -184,8 +181,6 @@ void Foam::aDILUPreconditioner::preconditionT
 
     const scalar* const __restrict__ upperPtr =
         solver_.matrix().upper().cbegin();
-    const scalar* const __restrict__ lowerPtr =
-        solver_.matrix().lower().cbegin();
 
     const label nCells = wT.size();
     const label nFaces = solver_.matrix().upper().size();
@@ -218,7 +213,7 @@ void Foam::aDILUPreconditioner::preconditionT
         foamAtomic::AtomicAdd
         (
             wTtmpPtr[lPtr[face]],
-           -rDPtr[lPtr[face]]*lowerPtr[face]*wTPtr[uPtr[face]]
+           -rDPtr[lPtr[face]]*upperPtr[face]*wTPtr[uPtr[face]]
         );
     };
     exec.parallelFor(Lambda3, nFaces);

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011 OpenFOAM Foundation
+    Copyright (C) 2011-2013 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
     Copyright (C) 2025 CINECA
 -------------------------------------------------------------------------------
@@ -26,23 +26,22 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::aDILUPreconditioner
+    Foam::aDILUSmoother
 
 Group
-    grpLduMatrixPreconditioners
+    grpLduMatrixSmoothers
 
 Description
-    Approximated simplified diagonal-based incomplete LU preconditioner for 
-    asymmetric matrices good for GPUs. The reciprocal of the preconditioned 
-    diagonal is calculated and stored.
+    Approximated simplified diagonal-based incomplete LU smoother 
+    for asymmetric matrices running on GPUs.
 
 SourceFiles
-    aDILUPreconditioner.C
+    aDILUSmoother.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef aDILUPreconditioner_H
-#define aDILUPreconditioner_H
+#ifndef aDILUSmoother_H
+#define aDILUSmoother_H
 
 #include "lduMatrix.H"
 
@@ -52,12 +51,12 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class aDILUPreconditioner Declaration
+                        Class aDILUSmoother Declaration
 \*---------------------------------------------------------------------------*/
 
-class aDILUPreconditioner
+class aDILUSmoother
 :
-    public lduMatrix::preconditioner
+    public lduMatrix::smoother
 {
     // Private data
 
@@ -73,37 +72,35 @@ public:
 
     // Constructors
 
-        //- Construct from matrix components and preconditioner solver controls
-        aDILUPreconditioner
+        //- Construct from matrix components
+        aDILUSmoother
         (
-            const lduMatrix::solver&,
-            const dictionary& solverControlsUnused
+            const word& fieldName,
+            const lduMatrix& matrix,
+            const FieldField<Field, scalar>& interfaceBouCoeffs,
+            const FieldField<Field, scalar>& interfaceIntCoeffs,
+            const lduInterfaceFieldPtrsList& interfaces
         );
-
-
-    //- Destructor
-    virtual ~aDILUPreconditioner() = default;
 
 
     // Member Functions
 
-        //- Calculate the reciprocal of the preconditioned diagonal
-        static void calcReciprocalD(solveScalarField&, const lduMatrix&);
-
-        //- Return wA the preconditioned form of residual rA
-        virtual void precondition
+        //- Smooth the solution for a given number of sweeps
+        void smooth
         (
-            solveScalarField& wA,
-            const solveScalarField& rA,
-            const direction cmpt=0
+            solveScalarField& psi,
+            const scalarField& source,
+            const direction cmpt,
+            const label nSweeps
         ) const;
 
-        //- Return wT the transpose-matrix preconditioned form of residual rT.
-        virtual void preconditionT
+        //- Smooth the solution for a given number of sweeps
+        void scalarSmooth
         (
-            solveScalarField& wT,
-            const solveScalarField& rT,
-            const direction cmpt=0
+            solveScalarField& psi,
+            const solveScalarField& source,
+            const direction cmpt,
+            const label nSweeps
         ) const;
 };
 
