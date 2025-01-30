@@ -81,7 +81,7 @@ void Foam::GAMGAgglomeration::agglomerateLduAddressing
     labelList cCellFaces(maxNnbrs*nCoarseCells);
 
     // Create face-restriction addressing
-    faceRestrictAddressing_.set(fineLevelIndex, new labelList(nFineFaces));
+    faceRestrictAddressing_.set(fineLevelIndex, new labelList(nFineFaces, poolSwitch(1)));
     labelList& faceRestrictAddr = faceRestrictAddressing_[fineLevelIndex];
 
     // Initial neighbour array (not in upper-triangle order)

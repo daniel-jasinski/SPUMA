@@ -42,10 +42,20 @@ void Foam::GAMGAgglomeration::restrictField
 {
     cf = Zero;
 
-    forAll(ff, i)
+    const Type* const __restrict__ ffPtr = ff.cbegin();
+    Type* __restrict__ cfPtr = cf.begin(); 
+    const label size = ff.size();
+    foamExecutor exec; 
+    auto Lambda = [=](label i)
+    {
+        foamAtomic::AtomicAdd(cfPtr[fineToCoarse[i]], ffPtr[i]);
+    };
+    exec.parallelFor(Lambda, size);
+    
+    /* forAll(ff, i)
     {
         cf[fineToCoarse[i]] += ff[i];
-    }
+    }*/
 }
 
 
@@ -115,7 +125,22 @@ void Foam::GAMGAgglomeration::restrictFaceField
 
     cf = Zero;
 
-    forAll(fineToCoarse, ffacei)
+    const Type* const __restrict__ ffPtr = ff.cbegin();
+    Type* __restrict__ cfPtr = cf.begin();
+    const label size = fineToCoarse.size();
+    
+    foamExecutor exec;
+    auto Lambda = [=](label ffacei)
+    {
+	label cFace = fineToCoarse[ffacei];
+	if (cFace >= 0)
+        {
+            foamAtomic::AtomicAdd(cfPtr[cFace], ffPtr[ffacei]);
+	}
+    };
+    exec.parallelFor(Lambda, size);
+
+    /* forAll(fineToCoarse, ffacei)
     {
         label cFace = fineToCoarse[ffacei];
 
@@ -123,7 +148,7 @@ void Foam::GAMGAgglomeration::restrictFaceField
         {
             cf[cFace] += ff[ffacei];
         }
-    }
+    }*/
 }
 
 
@@ -139,6 +164,12 @@ void Foam::GAMGAgglomeration::prolongField
     const labelList& fineToCoarse = restrictAddressing_[levelIndex];
 
     const label coarseLevelIndex = levelIndex+1;
+
+    foamExecutor exec;
+
+    Type* __restrict__ ffPtr = ff.begin();
+    const Type* const __restrict__ cfPtr = cf.cbegin();
+    const label size = fineToCoarse.size();
 
     if (procAgglom && hasProcMesh(coarseLevelIndex))
     {
@@ -162,17 +193,31 @@ void Foam::GAMGAgglomeration::prolongField
             Pstream::commsTypes::nonBlocking    //Pstream::commsTypes::scheduled
         );
 
-        forAll(fineToCoarse, i)
+	const Type* const __restrict__ allCfPtr = allCf.cbegin();
+
+        auto Lambda = [=](label i)
+        {
+	    ffPtr[i] = allCfPtr[fineToCoarse[i]];
+        };
+        exec.parallelFor(Lambda, size);
+
+        /* forAll(fineToCoarse, i)
         {
             ff[i] = allCf[fineToCoarse[i]];
-        }
+        }*/
     }
     else
     {
-        forAll(fineToCoarse, i)
+        auto Lambda = [=](label i)
+        {
+            ffPtr[i] = cfPtr[fineToCoarse[i]];
+        };
+        exec.parallelFor(Lambda, size);
+
+        /* forAll(fineToCoarse, i)
         {
             ff[i] = cf[fineToCoarse[i]];
-        }
+        }*/
     }
 }
 
@@ -189,6 +234,12 @@ const Foam::Field<Type>& Foam::GAMGAgglomeration::prolongField
     const labelList& fineToCoarse = restrictAddressing_[levelIndex];
 
     const label coarseLevelIndex = levelIndex+1;
+
+    foamExecutor exec;
+
+    Type* __restrict__ ffPtr = ff.begin();
+    const Type* const __restrict__ cfPtr = cf.cbegin();
+    const label size = fineToCoarse.size();
 
     if (hasProcMesh(coarseLevelIndex))
     {
@@ -212,18 +263,32 @@ const Foam::Field<Type>& Foam::GAMGAgglomeration::prolongField
             Pstream::commsTypes::nonBlocking    //Pstream::commsTypes::scheduled
         );
 
-        forAll(fineToCoarse, i)
+        const Type* const __restrict__ allCfPtr = allCf.cbegin();
+
+        auto Lambda = [=](label i)
+        {
+            ffPtr[i] = allCfPtr[fineToCoarse[i]];
+        };
+        exec.parallelFor(Lambda, size);
+
+        /* forAll(fineToCoarse, i)
         {
             ff[i] = allCf[fineToCoarse[i]];
-        }
+        }*/
         return allCf;
     }
     else
     {
-        forAll(fineToCoarse, i)
+        auto Lambda = [=](label i)
+        {
+            ffPtr[i] = cfPtr[fineToCoarse[i]];
+        };
+        exec.parallelFor(Lambda, size);
+
+        /* forAll(fineToCoarse, i)
         {
             ff[i] = cf[fineToCoarse[i]];
-        }
+        }*/
         return cf;
     }
 }
