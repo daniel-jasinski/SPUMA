@@ -449,10 +449,14 @@ void Foam::GAMGSolver::Vcycle
         );
     }
 
-    forAll(psi, i)
+    solveScalar* __restrict__ psiPtr = psi.begin();
+    const label nCells = psi.size();
+    foamExecutor exec;
+    auto Lambda = [=](label celli)
     {
-        psi[i] += finestCorrection[i];
-    }
+        psiPtr[celli] += finestCorrection[celli];
+    };
+    exec.parallelFor(Lambda, nCells);
 
     smoothers[0].smooth
     (
