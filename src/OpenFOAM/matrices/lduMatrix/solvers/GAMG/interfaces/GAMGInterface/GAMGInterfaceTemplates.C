@@ -52,10 +52,21 @@ Foam::tmp<Foam::Field<Type>> Foam::GAMGInterface::interfaceInternalField
     auto tresult = tmp<Field<Type>>::New(faceCells.size());
     auto& result = tresult.ref();
 
-    forAll(result, elemi)
+    const label size = result.size();
+    Type* __restrict__ resultPtr = result.begin();
+    const Type* const __restrict__ iFPtr = iF.begin();
+
+    foamExecutor exec;
+    auto Lambda = [=](label elemi)
+    {
+        resultPtr[elemi] = iFPtr[faceCells[elemi]];
+    };
+    exec.parallelFor(Lambda, size);
+
+    /* forAll(result, elemi)
     {
         result[elemi] = iF[faceCells[elemi]];
-    }
+    }*/
     return tresult;
 }
 
@@ -69,10 +80,21 @@ void Foam::GAMGInterface::interfaceInternalField
 {
     result.resize(size());
 
-    forAll(result, elemi)
+    const label size = result.size();
+    Type* __restrict__ resultPtr = result.begin();
+    const Type* const __restrict__ iFPtr = iF.begin();
+
+    foamExecutor exec;
+    auto Lambda = [=](label elemi)
+    {
+        resultPtr[elemi] = iFPtr[faceCells_[elemi]];
+    };
+    exec.parallelFor(Lambda, size);
+
+    /* forAll(result, elemi)
     {
         result[elemi] = iF[faceCells_[elemi]];
-    }
+    }*/
 }
 
 
