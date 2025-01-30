@@ -64,12 +64,20 @@ void Foam::GAMGSolver::interpolate
         cmpt
     );
 
+    foamExecutor exec;
     const label nFaces = m.upper().size();
-    for (label face=0; face<nFaces; face++)
+    auto LambdaOffDiag = [=](label face)
+    {
+        foamAtomic::AtomicAdd(ApsiPtr[uPtr[face]], lowerPtr[face]*psiPtr[lPtr[face]]);
+        foamAtomic::AtomicAdd(ApsiPtr[lPtr[face]], upperPtr[face]*psiPtr[uPtr[face]]);
+    };
+    exec.parallelFor(LambdaOffDiag, nFaces);
+
+    /*for (label face=0; face<nFaces; face++)
     {
         ApsiPtr[uPtr[face]] += lowerPtr[face]*psiPtr[lPtr[face]];
         ApsiPtr[lPtr[face]] += upperPtr[face]*psiPtr[uPtr[face]];
-    }
+    }*/
 
     m.updateMatrixInterfaces
     (
@@ -83,10 +91,16 @@ void Foam::GAMGSolver::interpolate
     );
 
     const label nCells = m.diag().size();
-    for (label celli=0; celli<nCells; celli++)
+    auto LambdaDiag = [=](label celli)
     {
         psiPtr[celli] = -ApsiPtr[celli]/(diagPtr[celli]);
-    }
+    };
+    exec.parallelFor(LambdaDiag, nCells);
+    
+    /* for (label celli=0; celli<nCells; celli++)
+    {
+        psiPtr[celli] = -ApsiPtr[celli]/(diagPtr[celli]);
+    }*/
 }
 
 
@@ -125,21 +139,41 @@ void Foam::GAMGSolver::interpolate
     solveScalarField diagC(nCCells, 0);
     solveScalar* __restrict__ diagCPtr = diagC.begin();
 
-    for (label celli=0; celli<nCells; celli++)
+    foamExecutor exec;
+    auto Lambda1 = [=](label celli)
+    {
+        foamAtomic::AtomicAdd(corrCPtr[restrictAddressing[celli]], diagPtr[celli]*psiPtr[celli]);
+        foamAtomic::AtomicAdd(diagCPtr[restrictAddressing[celli]], diagPtr[celli]);
+    };
+    exec.parallelFor(Lambda1, nCells);
+
+    /* for (label celli=0; celli<nCells; celli++)
     {
         corrCPtr[restrictAddressing[celli]] += diagPtr[celli]*psiPtr[celli];
         diagCPtr[restrictAddressing[celli]] += diagPtr[celli];
-    }
+    }*/
 
-    for (label ccelli=0; ccelli<nCCells; ccelli++)
+    auto Lambda2 = [=](label ccelli)
     {
         corrCPtr[ccelli] = psiCPtr[ccelli] - corrCPtr[ccelli]/diagCPtr[ccelli];
-    }
+    };
+    exec.parallelFor(Lambda2, nCCells);
 
-    for (label celli=0; celli<nCells; celli++)
+    /*for (label ccelli=0; ccelli<nCCells; ccelli++)
+    {
+        corrCPtr[ccelli] = psiCPtr[ccelli] - corrCPtr[ccelli]/diagCPtr[ccelli];
+    }*/
+
+    auto Lambda3 = [=](label celli)
     {
         psiPtr[celli] += corrCPtr[restrictAddressing[celli]];
-    }
+    };
+    exec.parallelFor(Lambda3, nCells);
+
+    /* for (label celli=0; celli<nCells; celli++)
+    {
+        psiPtr[celli] += corrCPtr[restrictAddressing[celli]];
+    }*/
 }
 
 
