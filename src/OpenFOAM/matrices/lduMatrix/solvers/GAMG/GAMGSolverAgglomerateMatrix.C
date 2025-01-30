@@ -177,7 +177,30 @@ void Foam::GAMGSolver::agglomerateMatrix
             // Coarse matrix upper coefficients
             scalarField& coarseUpper = coarseMatrix.upper(nCoarseFaces);
 
-            forAll(faceRestrictAddr, fineFacei)
+            const scalar* const __restrict__ fineUpperPtr = fineUpper.cbegin();
+            scalar* __restrict__ coarseUpperPtr = coarseUpper.begin();
+	    scalar* __restrict__ coarseDiagPtr = coarseDiag.begin();
+
+            const label size = faceRestrictAddr.size();
+            foamExecutor exec;
+
+	    auto Lambda = [=](label fineFacei)
+            {
+	        label cFace = faceRestrictAddr[fineFacei];
+
+	        if (cFace >= 0)
+                {
+                    foamAtomic::AtomicAdd(coarseUpperPtr[cFace], fineUpperPtr[fineFacei]);
+		}
+		else
+		{
+                    foamAtomic::AtomicAdd(coarseDiagPtr[-1 - cFace], 2*fineUpperPtr[fineFacei]);
+                }
+            };
+
+            exec.parallelFor(Lambda, size);
+
+            /* forAll(faceRestrictAddr, fineFacei)
             {
                 label cFace = faceRestrictAddr[fineFacei];
 
@@ -190,7 +213,7 @@ void Foam::GAMGSolver::agglomerateMatrix
                     // Add the fine face coefficient into the diagonal.
                     coarseDiag[-1 - cFace] += 2*fineUpper[fineFacei];
                 }
-            }
+            }*/
         }
     }
 }
