@@ -37,5 +37,25 @@
     / (2*NUM_THREADS_PER_BLOCK)
 
 
+// Macro for loops over cells with ldu addressing
+#define forAllOwner(ownStart,idCell,idFace,expression) \
+    for (size_t idFace = ownStart[idCell]; idFace < ownStart[idCell+1]; idFace++)\
+    {\
+        expression\
+    };
+#define forAllNbr(losortStart,losort,idCell,nbrFace,expression)\
+    for (size_t idlosort = losortStart[idCell]; idlosort < losortStart[idCell+1]; idlosort++)\
+    {\
+        const Foam::label nbrFace = losort[idlosort];\
+        if(nbrFace != -1){\
+            expression\
+        };\
+    };
+
+#define parallelForAll(size,index,expression)\
+    Foam::foamExecutor exec;\
+    auto Lambda = [=](label index){expression};\
+    exec.parallelFor(Lambda,size);
+
 #endif
 

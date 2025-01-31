@@ -27,7 +27,7 @@ License
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
-#include <cusparse.h>
+//#include <cusparse.h>
 
 #define NUM_THREADS_PER_BLOCK 128
 #define CUDA_MEM_ALIGN_BYTES 16

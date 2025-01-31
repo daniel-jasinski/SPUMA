@@ -1,8 +1,8 @@
 #ifndef Foam_Device_Utils_H
 #define Foam_Device_Utils_H
-#include "cudaError.H"
-#include <cuda_runtime_api.h>
 
+#include "cudaError.cuh"
+#include <cuda_runtime_api.h>
 
 __device__ __forceinline__
 double atomicMin(double *address, double val)
@@ -189,5 +189,6 @@ struct SharedMemory{
 } // end namespace cuda
 
 } //end namespace Foam
+
 
 #endif

@@ -2,11 +2,10 @@
 #define Foam_cuda_executor_cu
 
 
-#include "cudaExecutor.H"
+#include "cudaExecutor.cuh"
 #include "deviceM.H"
 #include "deviceUtils.H"
-#include "Atomic.H"
-#include "cudaError.H"
+#include "cudaError.cuh"
 
 namespace Foam
 {

@@ -5,7 +5,7 @@
 
 #include "cpuMemoryExecutor.H"
 #ifdef have_cuda
-    #include "cudaMemoryExecutor.H"
+    #include "cudaMemoryExecutor.cuh"
 #endif
 
 namespace Foam

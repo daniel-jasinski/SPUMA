@@ -3,8 +3,6 @@
 
 #include "label.H"
 
-#define FOAM_BACKEND cudaExecutor
-
 namespace Foam
 {
 //fwd declaration

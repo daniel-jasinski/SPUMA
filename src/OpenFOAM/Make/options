@@ -27,8 +27,11 @@ else
     LIB_LIBS += -L$(FOAM_LIBBIN)/dummy -lPstream
 endif
 
-LIB_LIBS += -lcudart -lcusparse
+/*platform specific source files*/
+include $(WM_PROJECT_DIR)/src/OpenFOAM/Make/deviceFiles
+
 ifneq (,$(findstring true,$(have_cuda)))
+    LIB_LIBS += -lcudart -lcusparse
     EXE_INC += -Dhave_cuda
 
     ifneq (,$(findstring true,$(have_managed)))

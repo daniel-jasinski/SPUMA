@@ -21,7 +21,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include <cudaError.H>
+#include "cudaError.cuh"
 
 template <typename T>
 int checkCudaError

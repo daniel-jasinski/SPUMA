@@ -1,0 +1,12 @@
+
+if [ -z "$have_cuda" ]
+then 
+
+export WM_EXCLUDE_HEADERS="-icudaError.cuh \
+    -icudaExecutor.cuh \
+    -icudaAtomic.cuh \
+    -icudaDeviceInit.cuh \
+    -icudaMemoryExecutor.cuh"
+
+fi
+

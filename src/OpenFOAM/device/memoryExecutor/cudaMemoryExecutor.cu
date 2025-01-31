@@ -1,9 +1,9 @@
 //#include <cuda.h>
 #include <cuda_runtime_api.h>
-#include "cudaMemoryExecutor.H"
+#include "cudaMemoryExecutor.cuh"
 #include "memoryKernels.H"
 #include "error.H"
-#include "cudaError.H"
+#include "cudaError.cuh"
 
 
 

@@ -1,0 +1,8 @@
+
+DEVICE_SOURCE =
+
+ifneq (,$(findstring true,$(have_cuda)))
+    DEVICE_SOURCE += \
+        db/error/cudaError.cu \
+        device/memoryExecutor/cudaMemoryExecutor.cu
+endif

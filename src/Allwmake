@@ -21,6 +21,8 @@ echo ========================================
 
 #------------------------------------------------------------------------------
 
+source "$WM_PROJECT_DIR/src/IgnoreHeaders"
+
 wmakeLnInclude -u OpenFOAM
 wmakeLnInclude -u OSspecific/"${WM_OSTYPE:-POSIX}"
 

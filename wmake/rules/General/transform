@@ -28,6 +28,9 @@ else
     endef
 endif
 
+
+WMKDEP_FLAGS += $(WM_EXCLUDE_HEADERS)
+
 define DEFINE_TRANSFORM
 $(OBJECTS_DIR)/%.o : %$1
 	$(call QUIET_MESSAGE,$(subst .,,$(1))too,$(value <F))
