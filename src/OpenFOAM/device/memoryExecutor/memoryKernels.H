@@ -6,9 +6,9 @@
 
 namespace Foam
 {
-namespace cuda
+namespace device
 {
-    
+
 
 __global__
 void memSetKernel(uint64_t nElementsInBytes, int dataSize, char *target, const char *source)
@@ -34,7 +34,7 @@ void memSetOneKernel(uint64_t nElements, scalar *target)
     }
 }
 
-} // namespace cuda
+} // namespace device
 
 } // namespace Foam
 

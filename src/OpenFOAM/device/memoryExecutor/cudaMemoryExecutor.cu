@@ -71,7 +71,7 @@ void Foam::cudaMemoryExecutor::_backendMemSet(void* ptr, const size_t sizeInByte
 
     int numBlocks = SET_NUM_BLOCKS(sizeInBytes - sizeOfValue);
     numBlocks = numBlocks == 0 ? 1 : numBlocks;
-    Foam::cuda::memSetKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+    Foam::device::memSetKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
     (
         sizeInBytes - sizeOfValue,
         (int) sizeOfValue,
@@ -85,7 +85,7 @@ void Foam::cudaMemoryExecutor::_backendMemSet(void* ptr, const size_t sizeInByte
 void Foam::cudaMemoryExecutor::_backendMemSetScalarOne(void* ptr, const size_t sizeInBytes)
 {
     const int numBlocks = SET_NUM_BLOCKS(sizeInBytes);
-    Foam::cuda::memSetOneKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+    Foam::device::memSetOneKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
     (
         sizeInBytes/sizeof(scalar),
         (scalar*)ptr
