@@ -28,7 +28,6 @@ License
 
 #include "gaussGrad.H"
 #include "extrapolatedCalculatedFvPatchField.H"
-#include "Atomic.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
