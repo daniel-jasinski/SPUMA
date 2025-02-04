@@ -209,6 +209,9 @@ class primitiveMesh
             //- Calculate cell-face addressing
             void calcCells() const;
 
+            //- Calculate plain cell face addressing
+            void calcFaceStart() const;
+
             //- Calculate edge list
             void calcCellEdges() const;
 
@@ -552,16 +555,14 @@ public:
                     const label inNCells = -1
                 );
 
-                static void calcCells
+                static void calcFaceStart
                 (
-                    cellList& cellFaceAddr,
                     labelList& cellFaceStartAddr,
                     labelList& facesortAddr,
                     const labelUList& own,
                     const labelUList& nei,
                     const label inNCells = -1
                 );
-
                 //- Helper function to calculate point ordering. Returns true
                 //  if points already ordered, false and fills pointMap (old to
                 //  new). Map splits points into those not used by any boundary

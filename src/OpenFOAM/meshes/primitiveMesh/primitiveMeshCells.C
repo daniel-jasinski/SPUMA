@@ -97,9 +97,8 @@ void Foam::primitiveMesh::calcCells
     }
 }
 
-void Foam::primitiveMesh::calcCells
+void Foam::primitiveMesh::calcFaceStart
 (
-    cellList& cellFaceAddr,
     labelList& cellFaceStartAddr,
     labelList& faceAddr,
     const labelUList& own,
@@ -138,24 +137,18 @@ void Foam::primitiveMesh::calcCells
     }
 
     // Create the storage
-    cellFaceAddr.setSize(ncf.size());
     cellFaceStartAddr.setSize(nCells+1);
 
     // calc face start addr
     cellFaceStartAddr[0]=0;
     for(label celli = 0; celli < ncf.size(); celli++)
     {
-        cellFaceStartAddr[celli + 1] = ncf[celli] +  cellFaceStartAddr[celli];  
+        cellFaceStartAddr[celli + 1] = ncf[celli] +  cellFaceStartAddr[celli];
     }
     faceAddr.setSize(cellFaceStartAddr[nCells]);
 
 
     // 2. Size and fill cellFaceAddr
-
-    forAll(cellFaceAddr, celli)
-    {
-        cellFaceAddr[celli].setSize(ncf[celli]);
-    }
     ncf = 0;
 
     forAll(own, facei)
@@ -163,7 +156,6 @@ void Foam::primitiveMesh::calcCells
         label celli = own[facei];
 
         const label tmp = ncf[celli];
-        cellFaceAddr[celli][tmp] = facei;
         faceAddr[cellFaceStartAddr[celli] + tmp] = facei;
         ncf[celli]++;
     }
@@ -175,11 +167,11 @@ void Foam::primitiveMesh::calcCells
         if (celli >= 0)
         {
             const label tmp = ncf[celli];
-            cellFaceAddr[celli][tmp] = facei;
             faceAddr[cellFaceStartAddr[celli] + tmp] = facei;
             ncf[celli]++;
         }
     }
+
 }
 
 void Foam::primitiveMesh::calcCells() const
@@ -204,17 +196,53 @@ void Foam::primitiveMesh::calcCells() const
     {
         // Create the storage
         //cfPtr_ = new cellList(nCells(),cell(1),poolSwitch(1));
-        cfPtr_ = new cellList(nCells(),poolSwitch(1));
-        cellFaceStartPtr_ = new labelList(nCells(),poolSwitch(1));
-        facePtr_ = new labelList(nFaces(),-1,poolSwitch(1));
+        cfPtr_ = new cellList(nCells());
 
         cellList& cellFaceAddr = *cfPtr_;
-        labelList& cellFaceStartAddr = * cellFaceStartPtr_;
-        labelList& faceAddr = * facePtr_;
 
         calcCells
         (
             cellFaceAddr,
+            faceOwner(),
+            faceNeighbour(),
+            nCells()
+        );
+    }
+}
+
+
+
+void Foam::primitiveMesh::calcFaceStart() const
+{
+    // Loop through faceCells and mark up neighbours
+
+    if (debug)
+    {
+        Pout<< "primitiveMesh::calcCellFaceStart() : calculating cells"
+            << endl;
+    }
+
+    // It is an error to attempt to recalculate cells
+    // if the pointer is already set
+    if (cellFaceStartPtr_ && facePtr_)
+    {
+        FatalErrorInFunction
+            << "cellFaceStart and facePtr already calculated"
+            << abort(FatalError);
+    }
+    else
+    {
+        // Create the storage
+        if(!cellFaceStartPtr_)
+            cellFaceStartPtr_ = new labelList(nCells()+1,poolSwitch(1));
+        if(!facePtr_)
+            facePtr_ = new labelList(nFaces(),-1,poolSwitch(1));
+
+        labelList& cellFaceStartAddr = *cellFaceStartPtr_;
+        labelList& faceAddr = *facePtr_;
+
+        calcFaceStart
+        (
             cellFaceStartAddr,
             faceAddr,
             faceOwner(),
@@ -223,7 +251,6 @@ void Foam::primitiveMesh::calcCells() const
         );
     }
 }
-
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -241,7 +268,7 @@ const Foam::labelList& Foam::primitiveMesh::cellsFaceStart() const
 {
     if (!cellFaceStartPtr_)
     {
-        calcCells();
+        calcFaceStart();
     }
 
     return *cellFaceStartPtr_;
@@ -251,7 +278,7 @@ const Foam::labelList& Foam::primitiveMesh::cellsFaces() const
 {
     if (!facePtr_)
     {
-        calcCells();
+        calcFaceStart();
     }
 
     return *facePtr_;

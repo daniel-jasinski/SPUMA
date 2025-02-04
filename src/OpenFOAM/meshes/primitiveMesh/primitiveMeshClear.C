@@ -171,6 +171,8 @@ void Foam::primitiveMesh::clearAddressing()
     deleteDemandDrivenData(pcPtr_);
 
     deleteDemandDrivenData(cfPtr_);
+    deleteDemandDrivenData(cellFaceStartPtr_);
+    deleteDemandDrivenData(facePtr_);
     deleteDemandDrivenData(efPtr_);
     deleteDemandDrivenData(pfPtr_);
 

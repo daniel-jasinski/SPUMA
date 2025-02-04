@@ -57,6 +57,8 @@ Foam::primitiveMesh::primitiveMesh()
     pcPtr_(nullptr),
 
     cfPtr_(nullptr),
+    cellFaceStartPtr_(nullptr),
+    facePtr_(nullptr),
     efPtr_(nullptr),
     pfPtr_(nullptr),
 
@@ -97,6 +99,8 @@ Foam::primitiveMesh::primitiveMesh
     pcPtr_(nullptr),
 
     cfPtr_(nullptr),
+    cellFaceStartPtr_(nullptr),
+    facePtr_(nullptr),
     efPtr_(nullptr),
     pfPtr_(nullptr),
 

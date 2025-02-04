@@ -40,7 +40,7 @@ License
 #include "cyclicACMIFvPatchField.H"
 
 #include "processorLduInterfaceField.H"
-#include "Atomic.H"
+
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
 template<class Type>
@@ -280,7 +280,7 @@ void Foam::fvMatrix<Type>::setValuesFromList
     // define ptr to pass to lambda
     foamExecutor exec;
     const auto cellLabelsPtr = cellLabels.cbegin();
-    const auto cellsPtr = cells.cbegin();
+    //const auto cellsPtr = cells.cbegin();
     const auto valuesPtr = values.cbegin();
     const auto ownPtr = own.cbegin();
     const auto neiPtr = nei.cbegin();
