@@ -48,6 +48,11 @@ Foam::dummyMemoryPool::~dummyMemoryPool()
 
 void* Foam::dummyMemoryPool::allocate(uint64_t size)
 {
+    if (!size)
+    {
+        WarningInFunction<< "Trying to allocate a block of zero size." << nl;
+        return nullptr;
+    }
     void* head = foamMemoryExecutor::alloc(size);
 
     usedBlockList_.insert(blockPair(static_cast<char*>(head),size));
