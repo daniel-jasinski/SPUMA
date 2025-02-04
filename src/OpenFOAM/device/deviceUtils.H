@@ -1,6 +1,6 @@
 #ifndef Foam_Device_Utils_H
 #define Foam_Device_Utils_H
-
+#ifdef have_cuda
 #include "cudaError.cuh"
 #include <cuda_runtime_api.h>
 
@@ -190,5 +190,6 @@ struct SharedMemory{
 
 } //end namespace Foam
 
+#endif
 
 #endif
