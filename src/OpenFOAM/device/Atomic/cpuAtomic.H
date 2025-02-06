@@ -63,8 +63,9 @@ struct cpuAtomic
 
     static label _backendAtomicCAS(label& x,const label& compare, const label& y)
     {
+        label old = x;
         x = (x == compare ? y : x);
-        return x;
+        return old;
     };
 
 };
