@@ -450,11 +450,12 @@ void Foam::GAMGSolver::Vcycle
     }
 
     solveScalar* __restrict__ psiPtr = psi.begin();
+    const solveScalar* const __restrict__ finestCorrectionPtr = finestCorrection.begin();
     const label nCells = psi.size();
     foamExecutor exec;
     auto Lambda = [=](label celli)
     {
-        psiPtr[celli] += finestCorrection[celli];
+        psiPtr[celli] += finestCorrectionPtr[celli];
     };
     exec.parallelFor(Lambda, nCells);
 

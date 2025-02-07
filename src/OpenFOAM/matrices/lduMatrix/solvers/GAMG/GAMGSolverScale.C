@@ -53,8 +53,8 @@ void Foam::GAMGSolver::scale
 
     const label nCells = field.size();
     solveScalar* __restrict__ fieldPtr = field.begin();
-    const solveScalar* const __restrict__ sourcePtr = source.begin();
-    const solveScalar* const __restrict__ AcfPtr = Acf.begin();
+    const solveScalar* const __restrict__ sourcePtr = source.cbegin();
+    const solveScalar* const __restrict__ AcfPtr = Acf.cbegin();
 
     FixedList<solveScalar, 2> scalingFactor(Zero);
 
@@ -86,7 +86,7 @@ void Foam::GAMGSolver::scale
     }
 
     const scalarField& D = A.diag();
-    const scalar* const __restrict__ DPtr = D.begin();
+    const scalar* const __restrict__ DPtr = D.cbegin();
 
     auto Lambda = [=](label cell)
     {
