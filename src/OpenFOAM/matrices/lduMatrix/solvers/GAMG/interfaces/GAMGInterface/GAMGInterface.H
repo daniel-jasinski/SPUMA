@@ -169,7 +169,8 @@ public:
         )
         :
             index_(index),
-            coarseInterfaces_(coarseInterfaces)
+            coarseInterfaces_(coarseInterfaces),
+            faceCells_(poolSwitch(1))
         {}
 
 
