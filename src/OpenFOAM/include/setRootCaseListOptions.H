@@ -25,6 +25,9 @@ argList::addBoolOption
     true // advanced
 );
 
+// memoryPoolOptions
+#include "addMemoryPoolOptions.H"
+
 #ifdef Foam_fvPatchField_H
 argList::addBoolOption
 (
