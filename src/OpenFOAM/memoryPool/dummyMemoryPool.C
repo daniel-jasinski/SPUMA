@@ -59,14 +59,8 @@ void* Foam::dummyMemoryPool::allocate(uint64_t size)
     this->size_ += size;
     this->allocatedSize_ += size;
 
-    uint64_t totOccupancy = 0;
-    for (auto &&block : usedBlockList_)
-    {
-        totOccupancy += block.second;
-    }
-
     this->maxOccupancy_ =
-        totOccupancy > this->maxOccupancy_ ? totOccupancy : this->maxOccupancy_;
+        size > this->maxOccupancy_ ? size : this->maxOccupancy_;
 
     return head;
 
