@@ -33,7 +33,7 @@ c++LESSWARN = \
 include $(GENERAL_RULES)/hip
 
 ifneq (,$(findstring true,$(have_hip)))
-    CC += -x hip --offload-arch=$(AMDARCH) -isystem "$(ROCM_PATH)/include" -D__HIP_PLATFORM_AMD__ -Dhave_hip
+    CC := hipcc$(COMPILER_VERSION) -std=c++17 --offload-arch=$(AMDARCH) -Dhave_hip
 
     ifneq (,$(findstring true,$(have_managed)))
         CC += -Dhave_managed
