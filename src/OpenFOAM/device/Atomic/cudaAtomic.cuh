@@ -2,7 +2,7 @@
 #define Foam_cuda_Atomic_H
 
 #include "Atomic.H"
-#include "deviceUtils.H"
+#include "cudaDeviceUtils.cuh"
 
 namespace Foam
 {

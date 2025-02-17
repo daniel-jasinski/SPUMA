@@ -1,5 +1,5 @@
-#ifndef Foam_Device_Utils_H
-#define Foam_Device_Utils_H
+#ifndef Foam_cuda_Device_Utils_H
+#define Foam_cuda_Device_Utils_H
 #ifdef have_cuda
 #include "cudaError.cuh"
 #include <cuda_runtime_api.h>

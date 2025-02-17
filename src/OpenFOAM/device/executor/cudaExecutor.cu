@@ -4,7 +4,7 @@
 
 #include "cudaExecutor.cuh"
 #include "deviceM.H"
-#include "deviceUtils.H"
+#include "cudaDeviceUtils.cuh"
 #include "cudaError.cuh"
 
 namespace Foam
