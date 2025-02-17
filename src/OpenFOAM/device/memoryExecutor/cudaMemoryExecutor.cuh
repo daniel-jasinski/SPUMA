@@ -1,5 +1,5 @@
-#ifndef Foam_cuda_Memory__Executor_H
-#define Foam_cuda__Executor_H
+#ifndef Foam_cuda_Memory_Executor_H
+#define Foam_cuda_Memory_Executor_H
 
 #include "memoryExecutor.H"
 
