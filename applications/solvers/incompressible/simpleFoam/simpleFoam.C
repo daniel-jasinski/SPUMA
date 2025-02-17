@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
         /* if (mesh.changing())
         {
             MRF.update();
-        }*/
+        } */// MRF currently unsupported in openfoam-um
 
         // --- Pressure-velocity SIMPLE corrector
         {
