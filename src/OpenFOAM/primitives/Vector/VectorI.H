@@ -29,7 +29,7 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt>::Vector(const Foam::zero)
+FOAM_DEVICE inline Foam::Vector<Cmpt>::Vector(const Foam::zero)
 :
     Vector::vsType(Zero)
 {}
@@ -37,7 +37,7 @@ inline Foam::Vector<Cmpt>::Vector(const Foam::zero)
 
 template<class Cmpt>
 template<class Cmpt2>
-inline Foam::Vector<Cmpt>::Vector
+FOAM_DEVICE inline Foam::Vector<Cmpt>::Vector
 (
     const VectorSpace<Vector<Cmpt2>, Cmpt2, 3>& vs
 )
@@ -47,7 +47,7 @@ inline Foam::Vector<Cmpt>::Vector
 
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt>::Vector
+FOAM_DEVICE inline Foam::Vector<Cmpt>::Vector
 (
     const Cmpt& vx,
     const Cmpt& vy,

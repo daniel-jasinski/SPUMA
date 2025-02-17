@@ -43,7 +43,7 @@ FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace(const Foam
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
+FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -54,7 +54,7 @@ inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
 template<class Form2, class Cmpt2>
-inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
+FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
 (
     const VectorSpace<Form2, Cmpt2, Ncmpts>& vs
 )
@@ -500,7 +500,7 @@ inline VectorSpace<Form, Cmpt, Ncmpts> normalised
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline VectorSpace<Form, Cmpt, Ncmpts> cmptMultiply
+FOAM_DEVICE inline VectorSpace<Form, Cmpt, Ncmpts> cmptMultiply
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -622,7 +622,7 @@ inline Form cmptSqr
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form cmptMag
+FOAM_DEVICE inline Form cmptMag
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -646,7 +646,7 @@ inline Form cmptMagSqr
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form max
+FOAM_DEVICE inline Form max
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -659,7 +659,7 @@ inline Form max
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form min
+FOAM_DEVICE inline Form min
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2

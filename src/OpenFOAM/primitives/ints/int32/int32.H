@@ -43,6 +43,7 @@ SourceFiles
 #include <climits>
 #include <cstdlib>
 
+#include "deviceM.H"
 #include "direction.H"
 #include "pTraits.H"
 #include "word.H"
@@ -72,7 +73,7 @@ struct nameOp<int32_t>
 };
 
 
-inline int32_t mag(const int32_t val)
+FOAM_DEVICE inline int32_t mag(const int32_t val)
 {
     return ::abs(val);
 }

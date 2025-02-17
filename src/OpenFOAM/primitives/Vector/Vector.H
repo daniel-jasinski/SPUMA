@@ -85,26 +85,26 @@ public:
     // Generated Methods
 
         //- Default construct
-        Vector() = default;
+        FOAM_DEVICE Vector() = default;
 
         //- Copy construct
-        Vector(const Vector&) = default;
+        FOAM_DEVICE Vector(const Vector&) = default;
 
         //- Copy assignment
-        Vector& operator=(const Vector&) = default;
+        FOAM_DEVICE Vector& operator=(const Vector&) = default;
 
 
     // Constructors
 
         //- Construct initialized to zero
-        inline Vector(const Foam::zero);
+        FOAM_DEVICE inline Vector(const Foam::zero);
 
         //- Copy construct from VectorSpace of the same rank
         template<class Cmpt2>
-        inline Vector(const VectorSpace<Vector<Cmpt2>, Cmpt2, 3>& vs);
+        FOAM_DEVICE inline Vector(const VectorSpace<Vector<Cmpt2>, Cmpt2, 3>& vs);
 
         //- Construct from three components
-        inline Vector(const Cmpt& vx, const Cmpt& vy, const Cmpt& vz);
+        FOAM_DEVICE inline Vector(const Cmpt& vx, const Cmpt& vy, const Cmpt& vz);
 
         //- Construct from Istream
         inline explicit Vector(Istream& is);
@@ -115,13 +115,13 @@ public:
     // Component Access
 
         //- Access to the vector x component
-        const Cmpt& x() const noexcept { return this->v_[X]; }
+        FOAM_DEVICE const Cmpt& x() const noexcept { return this->v_[X]; }
 
         //- Access to the vector y component
-        const Cmpt& y() const noexcept { return this->v_[Y]; }
+        FOAM_DEVICE const Cmpt& y() const noexcept { return this->v_[Y]; }
 
         //- Access to the vector z component
-        const Cmpt& z() const noexcept { return this->v_[Z]; }
+        FOAM_DEVICE const Cmpt& z() const noexcept { return this->v_[Z]; }
 
         //- Access to the vector x component
         Cmpt& x() noexcept { return this->v_[X]; }

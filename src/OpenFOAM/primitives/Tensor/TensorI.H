@@ -111,7 +111,7 @@ inline Foam::Tensor<Cmpt>::Tensor
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt>::Tensor
+FOAM_DEVICE inline Foam::Tensor<Cmpt>::Tensor
 (
     const Cmpt txx, const Cmpt txy, const Cmpt txz,
     const Cmpt tyx, const Cmpt tyy, const Cmpt tyz,
@@ -468,7 +468,7 @@ inline Cmpt Foam::Tensor<Cmpt>::det2D(const direction excludeCmpt) const
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct() const
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct() const
 {
     return Tensor<Cmpt>
     (
@@ -480,7 +480,7 @@ inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct() const
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::cof() const
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::cof() const
 {
     return this->adjunct().T();
 }
@@ -542,7 +542,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Foam::Tensor<Cmpt>
+FOAM_DEVICE inline Foam::Tensor<Cmpt>
 Foam::Tensor<Cmpt>::inner(const Tensor<Cmpt>& t2) const
 {
     const Tensor<Cmpt>& t1 = *this;
@@ -585,7 +585,7 @@ Foam::Tensor<Cmpt>::schur(const Tensor<Cmpt>& t2) const
 
 // Invert without much error handling
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv() const
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv() const
 {
     const Cmpt detval = this->det();
 
@@ -672,7 +672,7 @@ inline void Foam::Tensor<Cmpt>::operator&=(const Tensor<Cmpt>& t)
 
 template<class Cmpt>
 template<class Cmpt2>
-inline void Foam::Tensor<Cmpt>::operator=
+FOAM_DEVICE inline void Foam::Tensor<Cmpt>::operator=
 (
     const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>& vs
 )
@@ -871,7 +871,7 @@ inline Tensor<Cmpt> inv(const Tensor<Cmpt>& t, const Cmpt detval)
 
 //- Return the inverse of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> inv(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> inv(const Tensor<Cmpt>& t)
 {
     return t.inv();
 }
@@ -935,7 +935,7 @@ FOAM_DEVICE inline Tensor<Cmpt> lerp
 
 //- Sum of a SphericalTensor and a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator+(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -949,7 +949,7 @@ operator+(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Sum of a Tensor and a SphericalTensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator+(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -963,7 +963,7 @@ operator+(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 
 //- Sum of a SymmTensor and a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator+(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -977,7 +977,7 @@ operator+(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Sum of a Tensor and a SymmTensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator+(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -991,7 +991,7 @@ operator+(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 
 //- Subtract a Tensor from a SphericalTensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator-(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -1005,7 +1005,7 @@ operator-(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Subtract a SphericalTensor from a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator-(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -1019,7 +1019,7 @@ operator-(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 
 //- Subtract a Tensor from a SymmTensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator-(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -1033,7 +1033,7 @@ operator-(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Subtract a SymmTensor from a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator-(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -1069,7 +1069,7 @@ FOAM_DEVICE inline Tensor<Cmpt> operator*(const Vector<Cmpt>& v)
 //- Division of a Vector by a Tensor
 template<class Cmpt>
 inline typename innerProduct<Vector<Cmpt>, Tensor<Cmpt>>::type
-operator/(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
+FOAM_DEVICE operator/(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
 {
     return inv(t) & v;
 }
@@ -1078,7 +1078,7 @@ operator/(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
 //- Division of a Tensor by a Cmpt
 template<class Cmpt>
 inline Tensor<Cmpt>
-operator/(const Tensor<Cmpt>& t, const Cmpt s)
+FOAM_DEVICE operator/(const Tensor<Cmpt>& t, const Cmpt s)
 {
     #ifdef FULLDEBUG
     if (mag(s) < VSMALL)
@@ -1115,7 +1115,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator&(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -1133,7 +1133,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator&(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -1151,7 +1151,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator&(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -1177,7 +1177,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator&(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -1281,7 +1281,7 @@ operator&&(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 
 //- Outer-product of a Vector and a Vector
 template<class Cmpt>
-inline typename outerProduct<Vector<Cmpt>, Vector<Cmpt>>::type
+FOAM_DEVICE inline typename outerProduct<Vector<Cmpt>, Vector<Cmpt>>::type
 operator*(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
 {
     return Tensor<Cmpt>

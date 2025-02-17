@@ -13,13 +13,13 @@ template <typename T>
 struct Atomic
 {
     template<typename Type>
-    static void AtomicAdd(Type& x,const Type& y)
+    FOAM_DEVICE static void AtomicAdd(Type& x,const Type& y)
     {
         T::_backendAtomicAdd(x,y);
     };
 
     template<class Form, class Cmpt, direction Ncmpts>
-    static void AtomicAdd
+    FOAM_DEVICE static void AtomicAdd
     (
         VectorSpace<Form, Cmpt, Ncmpts>& vs1,
         const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -29,13 +29,13 @@ struct Atomic
     };
 
     template<typename Type>
-    static void AtomicMax(Type& x, const Type& y)
+    FOAM_DEVICE static void AtomicMax(Type& x, const Type& y)
     {
         T::_backendAtomicMax(x,y);
     }
 
     template<class Form, class Cmpt, direction Ncmpts>
-    static void AtomicMax
+    FOAM_DEVICE static void AtomicMax
     (
         VectorSpace<Form, Cmpt, Ncmpts>& vs1,
         const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -45,13 +45,13 @@ struct Atomic
     };
 
     template<typename Type>
-    static void AtomicMin(Type& x, const Type& y)
+    FOAM_DEVICE static void AtomicMin(Type& x, const Type& y)
     {
         T::_backendAtomicMin(x,y);
     }
 
     template<class Form, class Cmpt, direction Ncmpts>
-    static void AtomicMin
+    FOAM_DEVICE static void AtomicMin
     (
         VectorSpace<Form, Cmpt, Ncmpts>& vs1,
         const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -60,7 +60,7 @@ struct Atomic
         T::_backendAtomicMin(vs1,vs2);
     };
 
-    static label AtomicCAS(label& x,const label& compare, const label& y)
+    FOAM_DEVICE static label AtomicCAS(label& x,const label& compare, const label& y)
     {
         return T::_backendAtomicCAS(x,compare,y);
     };

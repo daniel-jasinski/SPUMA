@@ -154,7 +154,7 @@ public:
     // Generated Methods
 
         //- Default construct
-        VectorSpace() = default;
+        FOAM_DEVICE VectorSpace() = default;
 
 
     // Constructors
@@ -163,11 +163,11 @@ public:
         FOAM_DEVICE inline VectorSpace(const Foam::zero);
 
         //- Copy construct
-        inline VectorSpace(const VectorSpace<Form, Cmpt, Ncmpts>& vs);
+        FOAM_DEVICE inline VectorSpace(const VectorSpace<Form, Cmpt, Ncmpts>& vs);
 
         //- Copy construct of a VectorSpace with the same size
         template<class Form2, class Cmpt2>
-        inline explicit VectorSpace(const VectorSpace<Form2, Cmpt2, Ncmpts>&);
+        FOAM_DEVICE inline explicit VectorSpace(const VectorSpace<Form2, Cmpt2, Ncmpts>&);
 
         //- Construct from Istream
         explicit VectorSpace(Istream& is);

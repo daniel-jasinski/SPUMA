@@ -46,6 +46,7 @@ namespace Foam
 MAXMIN(RetType, Type1, Type2)                           \
                                                         \
 /*! \brief Raise base to the power expon */             \
+FOAM_DEVICE                                             \
 inline double pow(const Type1 base, const Type2 expon)  \
 {                                                       \
     return ::pow(double(base), double(expon));          \

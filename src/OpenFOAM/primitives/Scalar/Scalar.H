@@ -185,38 +185,38 @@ Ostream& operator<<(Ostream& os, const Scalar val);
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // Standard C++ transcendental functions
-transFunc(sqrt)
+FOAM_DEVICE transFunc(sqrt)
 
-transFunc(cbrt)
-transFunc(exp)
-transFunc(log)
-transFunc(log10)
-transFunc(sin)
-transFunc(cos)
-transFunc(tan)
-transFunc(asin)
-transFunc(acos)
-transFunc(atan)
-transFunc(sinh)
-transFunc(cosh)
-transFunc(tanh)
-transFunc(asinh)
-transFunc(acosh)
-transFunc(atanh)
+FOAM_DEVICE transFunc(cbrt)
+FOAM_DEVICE transFunc(exp)
+FOAM_DEVICE transFunc(log)
+FOAM_DEVICE transFunc(log10)
+FOAM_DEVICE transFunc(sin)
+FOAM_DEVICE transFunc(cos)
+FOAM_DEVICE transFunc(tan)
+FOAM_DEVICE transFunc(asin)
+FOAM_DEVICE transFunc(acos)
+FOAM_DEVICE transFunc(atan)
+FOAM_DEVICE transFunc(sinh)
+FOAM_DEVICE transFunc(cosh)
+FOAM_DEVICE transFunc(tanh)
+FOAM_DEVICE transFunc(asinh)
+FOAM_DEVICE transFunc(acosh)
+FOAM_DEVICE transFunc(atanh)
 
 // Standard ANSI-C (but not in <cmath>) transcendental functions
 
-transFunc(erf)
-transFunc(erfc)
-transFunc(lgamma)
-transFunc(tgamma)
+FOAM_DEVICE transFunc(erf)
+FOAM_DEVICE transFunc(erfc)
+FOAM_DEVICE transFunc(lgamma)
+FOAM_DEVICE transFunc(tgamma)
 
-besselFunc(j0)
-besselFunc(j1)
-besselFunc(y0)
-besselFunc(y1)
-besselFunc2(jn)
-besselFunc2(yn)
+FOAM_DEVICE besselFunc(j0)
+FOAM_DEVICE besselFunc(j1)
+FOAM_DEVICE besselFunc(y0)
+FOAM_DEVICE besselFunc(y1)
+FOAM_DEVICE besselFunc2(jn)
+FOAM_DEVICE besselFunc2(yn)
 
 
 //- Non-const access to scalar-type (has no components)
@@ -234,21 +234,21 @@ inline constexpr Scalar component(const Scalar val, const direction) noexcept
 
 
 //- Return 1 if s is greater_equal zero, or otherwise -1
-inline Scalar sign(const Scalar s) noexcept
+FOAM_DEVICE inline Scalar sign(const Scalar s) noexcept
 {
     return (s >= 0)? 1: -1;
 }
 
 
 //- Return 1 if s is greater than zero, otherwise 0
-inline Scalar pos(const Scalar s) noexcept
+FOAM_DEVICE inline Scalar pos(const Scalar s) noexcept
 {
     return (s > 0)? 1: 0;
 }
 
 
 //- Return 1 if s is greater_equal zero, or otherwise 0
-inline Scalar pos0(const Scalar s) noexcept
+FOAM_DEVICE inline Scalar pos0(const Scalar s) noexcept
 {
     return (s >= 0)? 1: 0;
 }
@@ -262,14 +262,14 @@ FOAM_DEVICE inline Scalar neg(const Scalar s) noexcept
 
 
 //- Return 1 if s is less_equal zero, or otherwise 0
-inline Scalar neg0(const Scalar s) noexcept
+FOAM_DEVICE inline Scalar neg0(const Scalar s) noexcept
 {
     return (s <= 0)? 1: 0;
 }
 
 
 //- Return the positive part of s, otherwise zero. Same as max(0, s).
-inline Scalar posPart(const Scalar s) noexcept
+FOAM_DEVICE inline Scalar posPart(const Scalar s) noexcept
 {
     return (s > 0)? s: 0;
 }
@@ -277,7 +277,7 @@ inline Scalar posPart(const Scalar s) noexcept
 
 //- Return the negative part of s, otherwise zero. Same as min(0, s).
 //  Does not change the sign
-inline Scalar negPart(const Scalar s) noexcept
+FOAM_DEVICE inline Scalar negPart(const Scalar s) noexcept
 {
     return (s < 0)? s: 0;
 }
@@ -330,43 +330,43 @@ inline constexpr Scalar lerp(const Scalar a, const Scalar b, const Scalar t)
 }
 
 
-inline Scalar magSqr(const Scalar s)
+FOAM_DEVICE inline Scalar magSqr(const Scalar s)
 {
     return s*s;
 }
 
 
-inline Scalar sqr(const Scalar s)
+FOAM_DEVICE inline Scalar sqr(const Scalar s)
 {
     return s*s;
 }
 
 
-inline Scalar pow3(const Scalar s)
+FOAM_DEVICE inline Scalar pow3(const Scalar s)
 {
     return s*sqr(s);
 }
 
 
-inline Scalar pow4(const Scalar s)
+FOAM_DEVICE inline Scalar pow4(const Scalar s)
 {
     return sqr(sqr(s));
 }
 
 
-inline Scalar pow5(const Scalar s)
+FOAM_DEVICE inline Scalar pow5(const Scalar s)
 {
     return s*pow4(s);
 }
 
 
-inline Scalar pow6(const Scalar s)
+FOAM_DEVICE inline Scalar pow6(const Scalar s)
 {
     return pow3(sqr(s));
 }
 
 
-inline Scalar pow025(const Scalar s)
+FOAM_DEVICE inline Scalar pow025(const Scalar s)
 {
     return sqrt(sqrt(s));
 }
@@ -384,7 +384,7 @@ inline Scalar dot(const Scalar s1, const Scalar s2)
 }
 
 
-inline Scalar cmptMultiply(const Scalar s1, const Scalar s2)
+FOAM_DEVICE inline Scalar cmptMultiply(const Scalar s1, const Scalar s2)
 {
     return s1*s2;
 }
@@ -426,7 +426,7 @@ inline Scalar cmptSqr(const Scalar s)
 }
 
 
-inline Scalar cmptMag(const Scalar s)
+FOAM_DEVICE inline Scalar cmptMag(const Scalar s)
 {
     return mag(s);
 }
