@@ -6,3 +6,9 @@ ifneq (,$(findstring true,$(have_cuda)))
         db/error/cudaError.cu \
         device/memoryExecutor/cudaMemoryExecutor.cu
 endif
+
+ifneq (,$(findstring true,$(have_hip)))
+    DEVICE_SOURCE += \
+        db/error/hipError.hip \
+        device/memoryExecutor/hipMemoryExecutor.hip
+endif

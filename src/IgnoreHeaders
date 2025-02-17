@@ -10,4 +10,14 @@ then
 
 fi
 
+if [ -z "$have_hip" ]
+then
 
+    export WM_EXCLUDE_HEADERS="$WM_EXCLUDE_HEADERS -ihipError.hpp \
+    -ihipExecutor.hpp \
+    -ihipAtomic.hpp \
+    -ihipDeviceInit.hpp \
+    -ihipMemoryExecutor.hpp \
+    -ihipDeviceUtils.hpp"
+
+fi

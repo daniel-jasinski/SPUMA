@@ -38,7 +38,7 @@ Foam::umpireMemoryPool::umpireMemoryPool(const uint64_t size):
     rm_(umpire::ResourceManager::getInstance()),
     inspector_()
 {
-#ifdef have_cuda
+#if defined(have_cuda) || defined(have_hip)
         #ifdef have_managed
         auto allocator = rm_.getAllocator("UM");
         #else

@@ -7,6 +7,8 @@
 
 #ifdef have_cuda
     #include "cudaExecutor.cuh"
+#elif have_hip
+    #include "hipExecutor.hpp"
 #endif
 
 #include "Atomics.H"
@@ -19,6 +21,8 @@ namespace Foam
 //- choose backend
 #ifdef have_cuda
     typedef cudaExecutor foamExecutor;
+#elif have_hip
+    typedef hipExecutor foamExecutor;
 #else
     typedef cpuExecutor foamExecutor;
 #endif

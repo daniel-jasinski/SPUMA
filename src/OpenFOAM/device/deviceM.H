@@ -1,21 +1,24 @@
 #ifndef Foam_device_M_H
 #define Foam_device_M_H
 
-#ifdef have_cuda
+#if defined(have_cuda) || defined(have_hip)
     #define FOAM_DEVICE __host__ __device__
     #define FOAM_DEVICE_I __host__ __device__ __forceinline__
 #else
     #define FOAM_DEVICE
     #define FOAM_DEVICE_I inline
-#endif 
+#endif
 
 
 // utility
 #ifdef have_cuda
     #include <cuda_runtime_api.h>
     #define deviceSync() cudaDeviceSynchronize()
-#else 
-    #define deviceSync() 
+#elif have_hip
+    #include <hip/hip_runtime.h>
+    #define deviceSync() hipDeviceSynchronize()
+#else
+    #define deviceSync()
 #endif
 
 // number of thread per block

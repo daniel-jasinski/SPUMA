@@ -6,6 +6,8 @@
 
 #ifdef have_cuda
     #include "cudaAtomic.cuh"
+#elif have_hip
+    #include "hipAtomic.hpp"
 #endif
 
 namespace Foam
@@ -14,6 +16,8 @@ namespace Foam
 //- choose corresponding executor Atomic
 #ifdef have_cuda
     typedef cudaAtomic foamAtomic;
+#elif have_hip
+    typedef hipAtomic foamAtomic;
 #else
     typedef cpuAtomic foamAtomic;
 #endif
