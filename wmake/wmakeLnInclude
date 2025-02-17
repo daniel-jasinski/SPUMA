@@ -250,6 +250,8 @@ do
                 -o -name '*.[ht]xx' ${opt_extra:+-o -name '*.cxx'} \
                 ${have_cuda:+-o -name '*.cu'} \
                 ${have_cuda:+-o -name '*.cuh'} \
+                ${have_hip:+-o -name '*.hip'} \
+                ${have_hip:+-o -name '*.hpp'} \
             \)  \
             -exec ln "$link_option" {} . \;
     )

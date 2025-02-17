@@ -1,0 +1,9 @@
+#------------------------------------------------------------------------------
+
+LINK_LIBS   = $(cDBUG)
+
+LINKLIBSO   = $(cc) $(cARCH) -shared
+
+LINKEXE     = $(cc) $(cARCH) -fuse-ld=bfd -Xlinker --add-needed -Xlinker -z -Xlinker nodefs
+
+#------------------------------------------------------------------------------
