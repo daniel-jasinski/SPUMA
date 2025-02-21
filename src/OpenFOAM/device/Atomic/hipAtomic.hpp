@@ -66,12 +66,12 @@ struct hipAtomic
 
     FOAM_DEVICE static void  _backendAtomicMax(solveScalar& x, const solveScalar& y)
     {
-        atomicMax(&x,y);
+        hipAtomicMaxDouble(&x,y);
     };
 
     FOAM_DEVICE static void  _backendAtomicMax(label& x, const label& y)
     {
-        atomicMax(&x,y);
+        atomicMax(&x, y);
     };
 
     template<class T>
@@ -85,12 +85,12 @@ struct hipAtomic
 
     FOAM_DEVICE static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
     {
-        atomicMin(&x,y);
+        hipAtomicMinDouble(&x,y);
     };
 
     FOAM_DEVICE static void  _backendAtomicMin(label& x, const label& y)
     {
-        atomicMin(&x,y);
+        atomicMin(&x, y);
     };
 
     template<class T>
