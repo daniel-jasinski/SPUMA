@@ -45,6 +45,7 @@ SourceFiles
 #ifndef cellLimitedGrad_H
 #define cellLimitedGrad_H
 
+#include "Atomics.H"
 #include "gradScheme.H"
 #include "Field.H"
 
