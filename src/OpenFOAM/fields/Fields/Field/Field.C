@@ -321,11 +321,9 @@ void Foam::Field<Type>::map
 
     if (mapF.size() > 0)
     {
-        Info << "Field constructor from map" << nl;
-
         auto fPtr = f.begin();
         auto mapFPtr = mapF.cbegin();
-	    auto mapAddressingPtr = mapAddressing.cbegin();
+        auto mapAddressingPtr = mapAddressing.cbegin();
 
         foamExecutor exec;
 	auto mapAddr = [=] (label i)
@@ -337,16 +335,6 @@ void Foam::Field<Type>::map
             }
 	};
 	exec.parallelFor(mapAddr, f.size());
-
-        /* forAll(f, i)
-        {
-            const label mapI = mapAddressing[i];
-
-            if (mapI >= 0)
-            {
-                f[i] = mapF[mapI];
-            }
-        }*/
     }
 }
 
