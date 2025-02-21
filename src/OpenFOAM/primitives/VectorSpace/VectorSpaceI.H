@@ -513,7 +513,7 @@ FOAM_DEVICE inline VectorSpace<Form, Cmpt, Ncmpts> cmptMultiply
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline VectorSpace<Form, Cmpt, Ncmpts> cmptPow
+FOAM_DEVICE inline VectorSpace<Form, Cmpt, Ncmpts> cmptPow
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -526,7 +526,7 @@ inline VectorSpace<Form, Cmpt, Ncmpts> cmptPow
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline VectorSpace<Form, Cmpt, Ncmpts> cmptDivide
+FOAM_DEVICE inline VectorSpace<Form, Cmpt, Ncmpts> cmptDivide
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -539,7 +539,7 @@ inline VectorSpace<Form, Cmpt, Ncmpts> cmptDivide
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline VectorSpace<Form, Cmpt, Ncmpts> stabilise
+FOAM_DEVICE inline VectorSpace<Form, Cmpt, Ncmpts> stabilise
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs,
     const Cmpt& small
@@ -552,7 +552,7 @@ inline VectorSpace<Form, Cmpt, Ncmpts> stabilise
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptMax
+FOAM_DEVICE inline Cmpt cmptMax
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -564,7 +564,7 @@ inline Cmpt cmptMax
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptMin
+FOAM_DEVICE inline Cmpt cmptMin
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -576,7 +576,7 @@ inline Cmpt cmptMin
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptSum
+FOAM_DEVICE inline Cmpt cmptSum
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -588,7 +588,7 @@ inline Cmpt cmptSum
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptAv
+FOAM_DEVICE inline Cmpt cmptAv
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -598,7 +598,7 @@ inline Cmpt cmptAv
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptProduct
+FOAM_DEVICE inline Cmpt cmptProduct
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -610,7 +610,7 @@ inline Cmpt cmptProduct
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form cmptSqr
+FOAM_DEVICE inline Form cmptSqr
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )

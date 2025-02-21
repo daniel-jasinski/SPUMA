@@ -316,7 +316,7 @@ operator()(const direction i, const direction j)
 
 
 template<class Form, class Cmpt, Foam::direction Mrows, Foam::direction Ncols>
-inline void Foam::MatrixSpace<Form, Cmpt, Mrows, Ncols>::operator=
+FOAM_DEVICE inline void Foam::MatrixSpace<Form, Cmpt, Mrows, Ncols>::operator=
 (
     const Foam::zero
 )

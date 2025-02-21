@@ -127,7 +127,7 @@ public:
 
         //- Construct given the three row vectors,
         //- optionally treated as transposed (ie, column vectors)
-        inline Tensor
+        FOAM_DEVICE inline Tensor
         (
             const Vector<Cmpt>& x,
             const Vector<Cmpt>& y,
@@ -210,7 +210,7 @@ public:
         inline void col(const direction c, const Vector<Cmpt>& v);
 
         //- Set column values
-        inline void cols
+        FOAM_DEVICE inline void cols
         (
             const Vector<Cmpt>& x,
             const Vector<Cmpt>& y,
@@ -221,13 +221,13 @@ public:
     // Row-vector access
 
         //- Extract vector for row 0
-        inline Vector<Cmpt> x() const;
+        FOAM_DEVICE inline Vector<Cmpt> x() const;
 
         //- Extract vector for row 1
-        inline Vector<Cmpt> y() const;
+        FOAM_DEVICE inline Vector<Cmpt> y() const;
 
         //- Extract vector for row 2
-        inline Vector<Cmpt> z() const;
+        FOAM_DEVICE inline Vector<Cmpt> z() const;
 
         //- Extract vector for given row: compile-time check of index
         template<direction Idx>
@@ -244,7 +244,7 @@ public:
         inline void row(const direction r, const Vector<Cmpt>& v);
 
         //- Set row values
-        inline void rows
+        FOAM_DEVICE inline void rows
         (
             const Vector<Cmpt>& x,
             const Vector<Cmpt>& y,

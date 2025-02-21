@@ -220,7 +220,7 @@ FOAM_DEVICE besselFunc2(yn)
 
 
 //- Non-const access to scalar-type (has no components)
-inline Scalar& setComponent(Scalar& val, const direction) noexcept
+FOAM_DEVICE inline Scalar& setComponent(Scalar& val, const direction) noexcept
 {
     return val;
 }
@@ -296,14 +296,14 @@ inline bool notEqual(const Scalar a, const Scalar b)
 
 
 //- Clamp scalar value to a 0-1 range
-inline Scalar clamp(const Scalar val, const Foam::zero_one)
+FOAM_DEVICE inline Scalar clamp(const Scalar val, const Foam::zero_one)
 {
     return (val < 0) ? 0 : (1 < val) ? 1 : val;
 }
 
 
 // Fast implementation, and with scalar promotion of upper/lower limits
-inline Scalar clamp(const Scalar val, const Scalar lower, const Scalar upper)
+FOAM_DEVICE inline Scalar clamp(const Scalar val, const Scalar lower, const Scalar upper)
 {
     return (val < lower) ? lower : (upper < val) ? upper : val;
 }
@@ -396,19 +396,19 @@ inline Scalar cmptPow(const Scalar s1, const Scalar s2)
 }
 
 
-inline Scalar cmptDivide(const Scalar s1, const Scalar s2)
+FOAM_DEVICE inline Scalar cmptDivide(const Scalar s1, const Scalar s2)
 {
     return s1/s2;
 }
 
 
-inline Scalar cmptMax(const Scalar s)
+FOAM_DEVICE inline Scalar cmptMax(const Scalar s)
 {
     return s;
 }
 
 
-inline Scalar cmptMin(const Scalar s)
+FOAM_DEVICE inline Scalar cmptMin(const Scalar s)
 {
     return s;
 }
@@ -455,7 +455,7 @@ inline Scalar sqrtSumSqr(const Scalar a, const Scalar b)
 
 
 //- Stabilisation around zero for division
-inline Scalar stabilise(const Scalar s, const Scalar tol)
+FOAM_DEVICE inline Scalar stabilise(const Scalar s, const Scalar tol)
 {
     if (s >= 0)
     {

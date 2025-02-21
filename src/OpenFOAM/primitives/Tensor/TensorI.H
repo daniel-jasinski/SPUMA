@@ -91,7 +91,7 @@ inline Foam::Tensor<Cmpt>::Tensor
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt>::Tensor
+FOAM_DEVICE inline Foam::Tensor<Cmpt>::Tensor
 (
     const Vector<Cmpt>& x,
     const Vector<Cmpt>& y,
@@ -150,21 +150,21 @@ inline Foam::Tensor<Cmpt>::Tensor(Istream& is)
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::x() const
+FOAM_DEVICE inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::x() const
 {
     return Vector<Cmpt>(this->v_[XX], this->v_[XY], this->v_[XZ]);
 }
 
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::y() const
+FOAM_DEVICE inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::y() const
 {
     return Vector<Cmpt>(this->v_[YX], this->v_[YY], this->v_[YZ]);
 }
 
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::z() const
+FOAM_DEVICE inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::z() const
 {
     return Vector<Cmpt>(this->v_[ZX], this->v_[ZY], this->v_[ZZ]);
 }
@@ -300,7 +300,7 @@ inline void Foam::Tensor<Cmpt>::row(const Vector<Cmpt>& v)
 
 
 template<class Cmpt>
-inline void Foam::Tensor<Cmpt>::cols
+FOAM_DEVICE inline void Foam::Tensor<Cmpt>::cols
 (
     const Vector<Cmpt>& x,
     const Vector<Cmpt>& y,
@@ -314,7 +314,7 @@ inline void Foam::Tensor<Cmpt>::cols
 
 
 template<class Cmpt>
-inline void Foam::Tensor<Cmpt>::rows
+FOAM_DEVICE inline void Foam::Tensor<Cmpt>::rows
 (
     const Vector<Cmpt>& x,
     const Vector<Cmpt>& y,

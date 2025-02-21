@@ -82,7 +82,7 @@ public:
     constexpr operator double() const noexcept { return 1; }
 
     //- Component-wise or element-wise access returns one
-    one operator[](const label) const noexcept { return one{}; }
+    FOAM_DEVICE one operator[](const label) const noexcept { return one{}; }
 };
 
 

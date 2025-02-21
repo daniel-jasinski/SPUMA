@@ -300,7 +300,7 @@ public:
     // Member Operators
 
         //- Assignment to zero
-        inline void operator=(const Foam::zero);
+        FOAM_DEVICE inline void operator=(const Foam::zero);
 
         //- Assignment to a block of another matrix space
         template
