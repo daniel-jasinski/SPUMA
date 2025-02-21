@@ -109,7 +109,11 @@ void writeOBJ
     const auto& constraints = ppp.constraints();
     forAll(constraints, i)
     {
+	#ifndef have_cuda
         maxConstraint = max(maxConstraint, constraints[i].first());
+        #else
+	NotImplemented;
+        #endif
     }
     reduce(maxConstraint, maxOp<label>());
 

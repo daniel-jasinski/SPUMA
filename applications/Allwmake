@@ -40,37 +40,7 @@ wmake -all $targetType utilities/miscellaneous
 wmake -all $targetType utilities/preProcessing
 wmake -all $targetType utilities/postProcessing
 wmake -all $targetType utilities/parallelProcessing
-
-wmake -all $targetType utilities/surface/surfaceAdd
-wmake -all $targetType utilities/surface/surfaceBooleanFeatures
-wmake -all $targetType utilities/surface/surfaceCheck
-wmake -all $targetType utilities/surface/surfaceClean
-wmake -all $targetType utilities/surface/surfaceCoarsen
-wmake -all $targetType utilities/surface/surfaceConvert
-wmake -all $targetType utilities/surface/surfaceFeatureConvert
-wmake -all $targetType utilities/surface/surfaceFeatureExtract
-wmake -all $targetType utilities/surface/surfaceFind
-wmake -all $targetType utilities/surface/surfaceHookUp
-wmake -all $targetType utilities/surface/surfaceInertia
-wmake -all $targetType utilities/surface/surfaceInflate
-wmake -all $targetType utilities/surface/surfaceLambdaMuSmooth
-wmake -all $targetType utilities/surface/surfaceMeshConvert
-wmake -all $targetType utilities/surface/surfaceMeshExport
-# wmake -all $targetType utilities/surface/surfaceMeshExtract #error
-wmake -all $targetType utilities/surface/surfaceMeshImport
-wmake -all $targetType utilities/surface/surfaceMeshInfo
-wmake -all $targetType utilities/surface/surfaceOrient
-wmake -all $targetType utilities/surface/surfacePatch
-wmake -all $targetType utilities/surface/surfacePointMerge
-wmake -all $targetType utilities/surface/surfaceRedistributePar
-wmake -all $targetType utilities/surface/surfaceRefineRedGreen
-wmake -all $targetType utilities/surface/surfaceSplitByPatch
-wmake -all $targetType utilities/surface/surfaceSplitByTopology
-wmake -all $targetType utilities/surface/surfaceSplitNonManifolds
-wmake -all $targetType utilities/surface/surfaceSubset
-wmake -all $targetType utilities/surface/surfaceToPatch
-wmake -all $targetType utilities/surface/surfaceTransformPoints
-
+wmake -all $targetType utilities/surface
 wmake -all $targetType utilities/thermophysical
 
 # Solvers
