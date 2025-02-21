@@ -27,7 +27,7 @@ Class
     Foam::hipExecutor
 
 Description
-    Defines backend executors for hip.
+    Defines backend executors for hip (AMD ROCm).
 
 SourceFiles
     hipExecutor.hpp

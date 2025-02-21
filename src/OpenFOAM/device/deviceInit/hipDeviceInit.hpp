@@ -27,7 +27,7 @@ Class
     Foam::hipDeviceInit
 
 Description
-    Class handling initialization of accelerator device in hip
+    Class handling initialization of accelerator device in hip (AMD ROCm)
 
 SourceFiles
     hipDeviceInit.hpp

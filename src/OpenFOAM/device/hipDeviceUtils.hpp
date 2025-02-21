@@ -24,7 +24,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Description
-    Contains utilities for hip device kernels.
+    Contains utilities for hip (AMD ROCm) device kernels.
 
 SourceFiles
     hipDevicUtils.hpp

@@ -27,7 +27,7 @@ Struct
     Foam::hipAtomic
 
 Description
-    Class handling atomic operations in hip
+    Class handling atomic operations in hip (AMD ROCm)
 
 SourceFiles
     hipAtomic.hpp
