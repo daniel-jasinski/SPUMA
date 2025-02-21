@@ -106,7 +106,7 @@ public:
         l_ += 1.0;
     }
 
-    scalar limiter
+    FOAM_DEVICE scalar limiter
     (
         const scalar cdWeight,
         const scalar faceFlux,

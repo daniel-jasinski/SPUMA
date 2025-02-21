@@ -65,7 +65,7 @@ public:
     UMISTLimiter(Istream&)
     {}
 
-    scalar limiter
+    FOAM_DEVICE scalar limiter
     (
         const scalar cdWeight,
         const scalar faceFlux,

@@ -93,7 +93,7 @@ public:
 
     // Member Functions
 
-        inline scalar limiter(const scalar r) const
+        FOAM_DEVICE inline scalar limiter(const scalar r) const
         {
             return (sqr(r) + 2*r)/(sqr(r) + r + 2);
         }

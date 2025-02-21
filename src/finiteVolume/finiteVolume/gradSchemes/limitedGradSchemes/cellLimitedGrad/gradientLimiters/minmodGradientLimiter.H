@@ -79,7 +79,7 @@ public:
 
     // Member Functions
 
-        inline scalar limiter(const scalar r) const
+        FOAM_DEVICE inline scalar limiter(const scalar r) const
         {
             return min(r, 1);
         }

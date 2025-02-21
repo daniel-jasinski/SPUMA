@@ -81,7 +81,7 @@ public:
         k_ = max(k_/2.0, SMALL);
     }
 
-    scalar limiter
+    FOAM_DEVICE scalar limiter
     (
         const scalar cdWeight,
         const scalar faceFlux,

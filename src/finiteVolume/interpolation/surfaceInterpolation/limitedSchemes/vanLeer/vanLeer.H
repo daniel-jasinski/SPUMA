@@ -66,7 +66,7 @@ public:
     vanLeerLimiter(Istream&)
     {}
 
-    scalar limiter
+    FOAM_DEVICE scalar limiter
     (
         const scalar,
         const scalar faceFlux,

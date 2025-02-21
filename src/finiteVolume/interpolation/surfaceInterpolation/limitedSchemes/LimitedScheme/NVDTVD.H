@@ -60,7 +60,7 @@ public:
 
     // Member Functions
 
-        scalar phict
+        FOAM_DEVICE scalar phict
         (
             const scalar faceFlux,
             const scalar phiP,
@@ -94,7 +94,7 @@ public:
         }
 
 
-        scalar r
+        FOAM_DEVICE scalar r
         (
             const scalar faceFlux,
             const scalar phiP,

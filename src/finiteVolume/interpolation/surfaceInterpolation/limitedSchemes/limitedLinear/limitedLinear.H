@@ -81,7 +81,7 @@ public:
         twoByk_ = 2.0/max(k_, SMALL);
     }
 
-    scalar limiter
+    FOAM_DEVICE scalar limiter
     (
         const scalar cdWeight,
         const scalar faceFlux,

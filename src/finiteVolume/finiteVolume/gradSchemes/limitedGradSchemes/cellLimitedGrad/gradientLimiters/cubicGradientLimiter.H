@@ -120,7 +120,7 @@ public:
 
     // Member Functions
 
-        inline scalar limiter(const scalar r) const
+        FOAM_DEVICE inline scalar limiter(const scalar r) const
         {
             if (r < rt_)
             {

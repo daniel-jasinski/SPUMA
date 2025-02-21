@@ -124,7 +124,7 @@ public:
 
     // Member Functions
 
-        inline void limitFaceCmpt
+        FOAM_DEVICE inline void limitFaceCmpt
         (
             scalar& limiter,
             const scalar maxDelta,
@@ -132,7 +132,7 @@ public:
             const scalar extrapolate
         ) const;
 
-        inline void limitFaceCmpt
+        FOAM_DEVICE inline void limitFaceCmpt
         (
             scalar& limiter,
             const scalar maxDelta,
@@ -141,7 +141,7 @@ public:
             const Limiter& limitObj
         ) const;
 
-        inline void limitFace
+        FOAM_DEVICE inline void limitFace
         (
             Type& limiter,
             const Type& maxDelta,
@@ -149,7 +149,7 @@ public:
             const Type& extrapolate
         ) const;
 
-        inline void limitFace
+        FOAM_DEVICE inline void limitFace
         (
             Type& limiter,
             const Type& maxDelta,
@@ -176,7 +176,7 @@ public:
 // * * * * * * * * * * * * Inline Member Function  * * * * * * * * * * * * * //
 
 template<class Type, class Limiter>
-inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
+FOAM_DEVICE inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
 (
     scalar& limiter,
     const scalar maxDelta,
@@ -204,7 +204,7 @@ inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
 
 
 template<class Type, class Limiter>
-inline void cellLimitedGrad<Type, Limiter>::limitFace
+FOAM_DEVICE inline void cellLimitedGrad<Type, Limiter>::limitFace
 (
     Type& limiter,
     const Type& maxDelta,
@@ -225,7 +225,7 @@ inline void cellLimitedGrad<Type, Limiter>::limitFace
 }
 
 template<class Type, class Limiter>
-inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
+FOAM_DEVICE inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
 (
     scalar& limiter,
     const scalar maxDelta,
@@ -255,7 +255,7 @@ inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
 
 
 template<class Type, class Limiter>
-inline void cellLimitedGrad<Type, Limiter>::limitFace
+FOAM_DEVICE inline void cellLimitedGrad<Type, Limiter>::limitFace
 (
     Type& limiter,
     const Type& maxDelta,
