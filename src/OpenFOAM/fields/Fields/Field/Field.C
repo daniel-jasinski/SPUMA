@@ -41,7 +41,7 @@ Foam::Field<Type>::Field
     const labelUList& mapAddressing
 )
 :
-    List<Type>(mapAddressing.size())
+    List<Type>(mapAddressing.size(),poolSwitch(1))
 {
     map(mapF, mapAddressing);
 }
@@ -54,7 +54,7 @@ Foam::Field<Type>::Field
     const labelUList& mapAddressing
 )
 :
-    List<Type>(mapAddressing.size())
+    List<Type>(mapAddressing.size(),poolSwitch(1))
 {
     map(tmapF, mapAddressing);
 }
@@ -325,7 +325,7 @@ void Foam::Field<Type>::map
 
         auto fPtr = f.begin();
         auto mapFPtr = mapF.cbegin();
-	auto mapAddressingPtr = mapAddressing.cbegin();
+	    auto mapAddressingPtr = mapAddressing.cbegin();
 
         foamExecutor exec;
 	auto mapAddr = [=] (label i)
