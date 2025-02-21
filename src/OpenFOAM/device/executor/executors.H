@@ -11,8 +11,6 @@
     #include "hipExecutor.hpp"
 #endif
 
-#include "Atomics.H"
-
 #include "deviceInits.H"
 
 namespace Foam

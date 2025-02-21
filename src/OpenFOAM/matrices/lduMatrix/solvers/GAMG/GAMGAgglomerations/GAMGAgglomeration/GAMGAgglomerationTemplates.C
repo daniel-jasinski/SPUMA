@@ -26,6 +26,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+#include "Atomics.H"
 #include "GAMGAgglomeration.H"
 #include "mapDistribute.H"
 #include "globalIndex.H"

@@ -66,6 +66,7 @@ SourceFiles
 #include "profilingTrigger.H"
 #include "executors.H"
 #include <functional>  // For reference_wrapper
+#include "Atomics.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

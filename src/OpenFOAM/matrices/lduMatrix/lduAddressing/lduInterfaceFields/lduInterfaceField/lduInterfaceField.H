@@ -43,6 +43,7 @@ SourceFiles
 #include "lduAddressing.H"
 #include "primitiveFieldsFwd.H"
 #include "Pstream.H"
+#include "Atomics.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
