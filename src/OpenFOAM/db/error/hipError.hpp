@@ -24,7 +24,8 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Description
-    Defines macros for kernel launch setup and error handling in hip.
+    Defines macros for kernel launch setup and error handling in hip
+    (AMD ROCm).
 
 \*---------------------------------------------------------------------------*/
 
