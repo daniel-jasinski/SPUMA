@@ -112,7 +112,11 @@ void Foam::lagrangianFieldDecomposer::decomposeFieldFields
 
     for (const GeoField& fld : fields)
     {
+	#ifndef have_cuda
         decomposeFieldField(cloudName, fld)().write(existsOnProc);
+        #else
+	NotImplemented;
+        #endif
     }
 }
 
