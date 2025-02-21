@@ -131,11 +131,10 @@ wmake $targetType sixDoFRigidBodyState
 wmake $targetType rigidBodyDynamics
 wmake $targetType rigidBodyMeshMotion
 wmake $targetType atmosphericModels
-# wmake $targetType optimisation/adjointOptimisation/adjoint
-
+wmake $targetType optimisation/adjointOptimisation/adjoint
 
 # interfaceTracking libs
-# dynamicFaMesh/Allwmake $targetType $*
+dynamicFaMesh/Allwmake $targetType $*
 
 
 #------------------------------------------------------------------------------

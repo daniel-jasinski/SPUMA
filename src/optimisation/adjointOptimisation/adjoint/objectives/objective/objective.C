@@ -513,10 +513,15 @@ void objective::nullify()
         }
         if (hasBoundaryEdgeContribution())
         {
+	    #ifndef have_cuda 
             for (Field<vectorField>& field : bEdgeContribution_())
             {
                 field = vector::zero;
             }
+            #else 
+	    // TODO: Nvcc++ compiler error (or bug?)
+	    NotImplemented;
+            #endif
         }
         if (hasDivDxDbMult())
         {
