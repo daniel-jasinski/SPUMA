@@ -133,7 +133,7 @@ wmake -all $targetType solvers/finiteArea
 wmake -all $targetType solvers/combustion
 wmake -all $targetType solvers/discreteMethods
 wmake -all $targetType solvers/lagrangian
-# wmake -all $targetType solvers/multiphase
+wmake -all $targetType solvers/multiphase
 
 # Extra tools (optional)
 wmake -all $targetType tools

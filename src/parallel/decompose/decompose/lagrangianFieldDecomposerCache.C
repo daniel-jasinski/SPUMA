@@ -76,12 +76,12 @@ public:
             Type##FieldFields_.resize(len);                           \
         }
 
-        doLocalCode(label);
+        /* doLocalCode(label);
         doLocalCode(scalar);
         doLocalCode(vector);
         doLocalCode(sphericalTensor);
         doLocalCode(symmTensor);
-        doLocalCode(tensor);
+        doLocalCode(tensor);*/
 
         #undef doLocalCode
     }
@@ -105,12 +105,12 @@ public:
             );                                                        \
         }
 
-        doLocalCode(label);
+        /* doLocalCode(label);
         doLocalCode(scalar);
         doLocalCode(vector);
         doLocalCode(sphericalTensor);
         doLocalCode(symmTensor);
-        doLocalCode(tensor);
+        doLocalCode(tensor);*/
 
         #undef doLocalCode
     }
@@ -138,12 +138,12 @@ public:
             );                                                        \
         }
 
-        doLocalCode(label);
+        /* doLocalCode(label);
         doLocalCode(scalar);
         doLocalCode(vector);
         doLocalCode(sphericalTensor);
         doLocalCode(symmTensor);
-        doLocalCode(tensor);
+        doLocalCode(tensor);*/
 
         #undef doLocalCode
     }
@@ -167,7 +167,7 @@ Foam::lagrangianFieldDecomposer::fieldsCache::fieldsCache
 :
     cache_(new privateCache)
 {
-    cache_->resize(nClouds);
+    // cache_->resize(nClouds);
 }
 
 
@@ -194,7 +194,7 @@ Foam::label Foam::lagrangianFieldDecomposer::fieldsCache::size() const
 
 void Foam::lagrangianFieldDecomposer::fieldsCache::clear()
 {
-    cache_.reset(new privateCache);
+    // cache_.reset(new privateCache);
 }
 
 
@@ -203,10 +203,10 @@ void Foam::lagrangianFieldDecomposer::fieldsCache::resize
     const label nClouds
 )
 {
-    if (cache_)
+    /*if (cache_)
     {
         cache_->resize(nClouds);
-    }
+    }*/
 }
 
 
@@ -216,10 +216,10 @@ void Foam::lagrangianFieldDecomposer::fieldsCache::readAllFields
     const IOobjectList& lagrangianObjects
 )
 {
-    if (cache_)
+    /*if (cache_)
     {
         cache_->readAll(cloudi, lagrangianObjects);
-    }
+    }*/
 }
 
 
@@ -231,10 +231,10 @@ void Foam::lagrangianFieldDecomposer::fieldsCache::decomposeAllFields
     bool report
 ) const
 {
-    if (cache_)
+    /* if (cache_)
     {
         cache_->decomposeAll(cloudi, cloudDir, decomposer, report);
-    }
+    }*/
 }
 
 
