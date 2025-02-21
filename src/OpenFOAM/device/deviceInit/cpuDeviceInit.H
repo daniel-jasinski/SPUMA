@@ -13,7 +13,13 @@ private:
     /* data */
 public:
 
-    static void _backendInit(){};
+    static void _backendInit()
+    {
+        if(!initDeviceFlag_)
+        {
+            initDeviceFlag_ = true;
+        }
+    };
 };
 
 } // namespace Foam

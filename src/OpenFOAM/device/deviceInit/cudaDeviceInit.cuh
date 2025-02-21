@@ -21,13 +21,18 @@ public:
 
     static void _backendInit()
     {
-        Info << "Initializing CUDA devices..." << nl << nl;
+        if (!initDeviceFlag_)
+        {
+            Info << "Initializing CUDA devices..." << nl << nl;
 
-        label nDevs;
-        cudaGetDeviceCount(&nDevs);
+            label nDevs;
+            cudaGetDeviceCount(&nDevs);
 
-        label devID = Pstream::myProcNo() % nDevs;
-        cudaSetDevice(devID);
+            label devID = Pstream::myProcNo() % nDevs;
+            cudaSetDevice(devID);
+
+            initDeviceFlag_ = true;
+        }
     }
 };
 

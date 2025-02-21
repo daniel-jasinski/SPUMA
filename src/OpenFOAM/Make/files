@@ -33,6 +33,7 @@ $(fileOps)/collatedFileOperation/OFstreamCollator.C
 
 $(DEVICE_SOURCE)
 
+device/deviceInit/deviceInit.C
 pool = memoryPool
 $(pool)/MemoryPool.C
 $(pool)/fixedSizeMemoryPool.C

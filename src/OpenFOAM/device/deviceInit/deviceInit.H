@@ -4,8 +4,15 @@
 namespace Foam
 {
 
+class deviceInitBase
+{
+protected:
+    static bool initDeviceFlag_;
+};
+
 template <typename T>
 class deviceInit
+: public deviceInitBase
 {
 public:
 
