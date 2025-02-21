@@ -104,10 +104,10 @@ int main(int argc, char *argv[])
         // Do any mesh changes
         mesh.controlledUpdate();
 
-        if (mesh.changing())
+        /* if (mesh.changing())
         {
             MRF.update();
-        }
+        }*/
 
         // --- Pressure-velocity SIMPLE corrector
         {

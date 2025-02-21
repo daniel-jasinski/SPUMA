@@ -21,11 +21,122 @@ echo ========================================
 
 #------------------------------------------------------------------------------
 
-wmake -all $targetType utilities
-wmake -all $targetType solvers
+# wmake -all $targetType utilities
+wmake -all $targetType utilities/finiteArea
+wmake -all $targetType utilities/doc
+
+wmake -all $targetType utilities/mesh/advanced
+wmake -all $targetType utilities/mesh/conversion
+wmake -all $targetType utilities/mesh/doc
+wmake -all $targetType utilities/mesh/generation/PDRblockMesh
+wmake -all $targetType utilities/mesh/generation/blockMesh
+# wmake -all $targetType utilities/mesh/generation/extrude # error
+wmake -all $targetType utilities/mesh/generation/extrude2DMesh
+wmake -all $targetType utilities/mesh/generation/foamyMesh
+wmake -all $targetType utilities/mesh/generation/snappyHexMesh
+wmake -all $targetType utilities/mesh/manipulation
+
+wmake -all $targetType utilities/miscellaneous
+wmake -all $targetType utilities/preProcessing/PDR
+wmake -all $targetType utilities/preProcessing/applyBoundaryLayer
+wmake -all $targetType utilities/preProcessing/boxTurb
+wmake -all $targetType utilities/preProcessing/changeDictionary
+wmake -all $targetType utilities/preProcessing/createBoxTurb
+wmake -all $targetType utilities/preProcessing/createExternalCoupledPatchGeometry
+wmake -all $targetType utilities/preProcessing/createViewFactors
+wmake -all $targetType utilities/preProcessing/createZeroDirectory
+wmake -all $targetType utilities/preProcessing/dsmcInitialise
+wmake -all $targetType utilities/preProcessing/engineSwirl
+wmake -all $targetType utilities/preProcessing/faceAgglomerate
+wmake -all $targetType utilities/preProcessing/foamUpgradeCyclics
+wmake -all $targetType utilities/preProcessing/mapFields
+wmake -all $targetType utilities/preProcessing/mapFieldsPar
+wmake -all $targetType utilities/preProcessing/mdInitialise
+# wmake -all $targetType utilities/preProcessing/optimisation/writeMorpherCPs # missing
+wmake -all $targetType utilities/preProcessing/setAlphaField
+wmake -all $targetType utilities/preProcessing/setExprBoundaryFields
+wmake -all $targetType utilities/preProcessing/setExprFields
+wmake -all $targetType utilities/preProcessing/setFields
+wmake -all $targetType utilities/preProcessing/setTurbulenceFields
+wmake -all $targetType utilities/preProcessing/smoothSurfaceData
+wmake -all $targetType utilities/preProcessing/viewFactorsGen
+wmake -all $targetType utilities/preProcessing/wallFunctionTable
+
+wmake -all $targetType utilities/postProcessing/dataConversion
+wmake -all $targetType utilities/postProcessing/lagrangian
+wmake -all $targetType utilities/postProcessing/lumped
+wmake -all $targetType utilities/postProcessing/miscellaneous
+wmake -all $targetType utilities/postProcessing/noise
+# wmake -all $targetType utilities/postProcessing/optimisation # missing
+wmake -all $targetType utilities/postProcessing/postProcess
+
+wmake -all $targetType utilities/parallelProcessing
+
+wmake -all $targetType utilities/surface/surfaceAdd
+wmake -all $targetType utilities/surface/surfaceBooleanFeatures
+wmake -all $targetType utilities/surface/surfaceCheck
+wmake -all $targetType utilities/surface/surfaceClean
+wmake -all $targetType utilities/surface/surfaceCoarsen
+wmake -all $targetType utilities/surface/surfaceConvert
+wmake -all $targetType utilities/surface/surfaceFeatureConvert
+wmake -all $targetType utilities/surface/surfaceFeatureExtract
+wmake -all $targetType utilities/surface/surfaceFind
+wmake -all $targetType utilities/surface/surfaceHookUp
+wmake -all $targetType utilities/surface/surfaceInertia
+wmake -all $targetType utilities/surface/surfaceInflate
+wmake -all $targetType utilities/surface/surfaceLambdaMuSmooth
+wmake -all $targetType utilities/surface/surfaceMeshConvert
+wmake -all $targetType utilities/surface/surfaceMeshExport
+# wmake -all $targetType utilities/surface/surfaceMeshExtract #error
+wmake -all $targetType utilities/surface/surfaceMeshImport
+wmake -all $targetType utilities/surface/surfaceMeshInfo
+wmake -all $targetType utilities/surface/surfaceOrient
+wmake -all $targetType utilities/surface/surfacePatch
+wmake -all $targetType utilities/surface/surfacePointMerge
+wmake -all $targetType utilities/surface/surfaceRedistributePar
+wmake -all $targetType utilities/surface/surfaceRefineRedGreen
+wmake -all $targetType utilities/surface/surfaceSplitByPatch
+wmake -all $targetType utilities/surface/surfaceSplitByTopology
+wmake -all $targetType utilities/surface/surfaceSplitNonManifolds
+wmake -all $targetType utilities/surface/surfaceSubset
+wmake -all $targetType utilities/surface/surfaceToPatch
+wmake -all $targetType utilities/surface/surfaceTransformPoints
+
+wmake -all $targetType utilities/thermophysical
+
+# wmake -all $targetType solvers
+# basic solvers
+wmake -all $targetType solvers/basic
+
+# incompressible solvers
+wmake -all $targetType solvers/incompressible/icoFoam
+wmake -all $targetType solvers/incompressible/boundaryFoam
+wmake -all $targetType solvers/incompressible/nonNewtonianIcoFoam
+wmake -all $targetType solvers/incompressible/pisoFoam
+wmake -all $targetType solvers/incompressible/pimpleFoam
+wmake -all $targetType solvers/incompressible/shallowWaterFoam
+wmake -all $targetType solvers/incompressible/simpleFoam
+# wmake -all $targetType solvers/incompressible/adjointOptimisationFoam # missing
+# wmake -all $targetType solvers/incompressible/adjointShapeOptimisationFoam # missing
+
+# compressible solvers 
+wmake -all $targetType solvers/compressible
+
+wmake -all $targetType solvers/doc
+wmake -all $targetType solvers/DNS
+wmake -all $targetType solvers/heatTransfer
+wmake -all $targetType solvers/acoustic
+wmake -all $targetType solvers/financial
+wmake -all $targetType solvers/electromagnetics
+wmake -all $targetType solvers/stressAnalysis
+wmake -all $targetType solvers/finiteArea
+wmake -all $targetType solvers/combustion
+wmake -all $targetType solvers/discreteMethods
+wmake -all $targetType solvers/lagrangian
+# wmake -all $targetType solvers/multiphase
 
 # Extra tools (optional)
-## wmake -all $targetType tools
+wmake -all $targetType tools
 
 #------------------------------------------------------------------------------
 
