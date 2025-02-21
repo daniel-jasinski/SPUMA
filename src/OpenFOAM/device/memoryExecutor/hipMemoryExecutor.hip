@@ -39,11 +39,7 @@ void* Foam::hipMemoryExecutor::_backendAlloc(uint64_t size)
 {
 
     void* ptr;
-    #ifdef have_managed
-        label err = CHECK_HIP_ERROR(hipMallocManaged((void**)&ptr, size));
-    #else
-        label err = CHECK_HIP_ERROR(hipMalloc((void**)&ptr, size));
-    #endif
+    label err = CHECK_HIP_ERROR(hipMallocManaged((void**)&ptr, size));
 
     if (err != 0)
     {
