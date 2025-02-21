@@ -53,7 +53,7 @@ Foam::lagrangianFieldDecomposer::decomposeField
             IOobject::NO_REGISTER
         ),
         // Mapping internal field values
-        Field<Type>(field, particleIndices_)
+	Field<Type>(field, particleIndices_)
     );
 }
 
@@ -67,7 +67,7 @@ Foam::lagrangianFieldDecomposer::decomposeFieldField
 ) const
 {
     // Create the field for the processor
-    return tmp<CompactIOField<Field<Type>, Type>>::New
+    auto tcfield = tmp<CompactIOField<Field<Type>, Type>>::New
     (
         IOobject
         (
@@ -80,8 +80,25 @@ Foam::lagrangianFieldDecomposer::decomposeFieldField
             IOobject::NO_REGISTER
         ),
         // Mapping internal field values
-        Field<Field<Type>>(field, particleIndices_)
+        // Workaround for NVC++
+        #ifdef have_cuda
+	Field<Field<Type>>()
+        #else
+	Field<Field<Type>>(field, particleIndices_)
+        #endif
     );
+
+    #ifdef have_cuda
+    auto& cfield = tcfield.ref();
+
+    for (label i=0; i<field.size(); ++i)
+    {
+        Field<Type> localField(field[i], particleIndices_);
+	cfield[i].transfer(localField);
+    }
+    #endif
+
+    return tcfield;
 }
 
 
@@ -112,11 +129,7 @@ void Foam::lagrangianFieldDecomposer::decomposeFieldFields
 
     for (const GeoField& fld : fields)
     {
-	#ifndef have_cuda
         decomposeFieldField(cloudName, fld)().write(existsOnProc);
-        #else
-	NotImplemented;
-        #endif
     }
 }
 
