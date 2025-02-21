@@ -67,6 +67,14 @@ double atomicMin(double *address, double val)
 }
 
 __device__ __forceinline__
+double atomicMin(int *address, int val)
+{
+    // Dummy function
+    __builtin_trap(); // Abort execution if called
+    return 0;
+}
+
+__device__ __forceinline__
 double atomicMax(double *address, double val)
 {
     unsigned long long ret = __double_as_longlong(*address);
@@ -92,6 +100,13 @@ double atomicMax(double *address, double val)
     return __longlong_as_double(ret);
 }
 
+__device__ __forceinline__
+double atomicMax(int *address, int val)
+{
+    // Dummy function
+    __builtin_trap(); // Abort execution if called
+    return 0;
+}
 
 struct Mutex
 {
