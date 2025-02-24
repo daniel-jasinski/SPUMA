@@ -261,17 +261,17 @@ void Foam::hipExecutor::_backendReductionSum(
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    // int maxbytes = MAX_SMEM;
+    int maxbytes = MAX_SMEM;
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
-    // CHECK_HIP_ERROR
-    // (
-    //     hipFuncSetAttribute
-    //     (
-    //         Foam::hip::reductionLambdaSumKernel<resultT,F>,
-    //         hipFuncAttributeMaxDynamicSharedMemorySize,
-    //         maxbytes
-    //     )
-    // );
+    CHECK_HIP_ERROR
+    (
+        hipFuncSetAttribute
+        (
+            reinterpret_cast<const void*>(Foam::hip::reductionLambdaSumKernel<resultT,F>),
+            hipFuncAttributeMaxDynamicSharedMemorySize,
+            maxbytes
+        )
+    );
 
     // NOTE: for multiple template arguments in the kernel use parentheses or the
     //       preprocessor cannot parse the hipLaunchKernelGGL macro correctly
@@ -280,7 +280,7 @@ void Foam::hipExecutor::_backendReductionSum(
         (Foam::hip::reductionLambdaSumKernel<resultT,F>),
         (numBlocks + NUM_SM -1)/NUM_SM,
         NUM_THREADS_PER_BLOCK,
-        0, // maxbytes,
+        maxbytes,
         0,
         dPtrResult,
         lambda,
@@ -313,17 +313,17 @@ void Foam::hipExecutor::_backendReductionCompare(
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    // int maxbytes = MAX_SMEM;
+    int maxbytes = MAX_SMEM;
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
-    // CHECK_HIP_ERROR
-    // (
-    //     hipFuncSetAttribute
-    //     (
-    //         Foam::hip::reductionLambdaCompareKernel<resultT,F,Op>,
-    //         hipFuncAttributeMaxDynamicSharedMemorySize,
-    //         maxbytes
-    //     )
-    // );
+    CHECK_HIP_ERROR
+    (
+        hipFuncSetAttribute
+        (
+            reinterpret_cast<const void*>(Foam::hip::reductionLambdaCompareKernel<resultT,F,Op>),
+            hipFuncAttributeMaxDynamicSharedMemorySize,
+            maxbytes
+        )
+    );
 
     // NOTE: for multiple template arguments in the kernel use parentheses or the
     //       preprocessor cannot parse the hipLaunchKernelGGL macro correctly
@@ -332,7 +332,7 @@ void Foam::hipExecutor::_backendReductionCompare(
         (Foam::hip::reductionLambdaCompareKernel<resultT,F,Op>),
         (numBlocks + NUM_SM -1)/NUM_SM,
         NUM_THREADS_PER_BLOCK,
-        0, // maxbytes,
+        maxbytes,
         0,
         dPtrResult,
         lambda,
