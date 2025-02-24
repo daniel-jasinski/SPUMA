@@ -63,7 +63,7 @@ namespace hip
         const label size
     )
     {
-            unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x; // global id
+        unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x; // global id
         const unsigned int tid = threadIdx.x; //block local thread id
         const label gsize = size;
         const unsigned int blockSize = NUM_THREADS_PER_BLOCK;
@@ -278,7 +278,7 @@ void Foam::hipExecutor::_backendReductionSum(
     hipLaunchKernelGGL
     (
         (Foam::hip::reductionLambdaSumKernel<resultT,F>),
-        (numBlocks + NUM_SM -1)/NUM_SM,
+        (numBlocks + NUM_SM - 1)/NUM_SM,
         NUM_THREADS_PER_BLOCK,
         maxbytes,
         0,
@@ -330,7 +330,7 @@ void Foam::hipExecutor::_backendReductionCompare(
     hipLaunchKernelGGL
     (
         (Foam::hip::reductionLambdaCompareKernel<resultT,F,Op>),
-        (numBlocks + NUM_SM -1)/NUM_SM,
+        (numBlocks + NUM_SM - 1)/NUM_SM,
         NUM_THREADS_PER_BLOCK,
         maxbytes,
         0,

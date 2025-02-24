@@ -94,12 +94,14 @@ double hipAtomicMaxDouble(double *address, double val)
 
 struct Mutex
 {
-    Mutex(){
+    Mutex()
+    {
         CHECK_HIP_ERROR(hipMalloc(&mutex_,sizeof(int)));
         CHECK_HIP_ERROR(hipMemset(mutex_,0,sizeof(int)));
     }
 
-    ~Mutex(){
+    ~Mutex()
+    {
         CHECK_HIP_ERROR(hipFree(mutex_));
     }
 
@@ -114,11 +116,13 @@ private:
 
 struct spinLock
 {
-    __device__ static inline void lock(int* mutex) {
+    __device__ static inline void lock(int* mutex)
+    {
         while (atomicCAS(mutex, 0, 1) == 1) {};
     }
-    __device__ static inline void unlock(int* mutex){
-       atomicExch(mutex, 0);
+    __device__ static inline void unlock(int* mutex)
+    {
+        atomicExch(mutex, 0);
     }
 };
 
@@ -206,15 +210,16 @@ void warpReduce(volatile T* sdata, int tid) // volataile to ensure visibility of
 };
 
 
-//- simple wrapper to allow use of extern linked shared memory by simply
-// casting the same pointer to the desired type. This prevent multiple definition
-// of the same shared pointer of different type.
+// Simple wrapper to allow the use of extern linked shared memory by
+// casting the same pointer to the desired type. This prevents multiple
+// definitions of the same shared pointer for different types.
 template <typename T>
 struct SharedMemory{
-  __device__ inline T *getPointer(){
-    extern __shared__ __align__(8) char smem[];
-    return reinterpret_cast<T*>(smem);
-  }
+    __device__ inline T *getPointer()
+    {
+        extern __shared__ __align__(8) char smem[];
+        return reinterpret_cast<T*>(smem);
+    }
 };
 
 } // end namespace hip

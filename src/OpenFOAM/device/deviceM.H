@@ -24,12 +24,13 @@
 
 #ifdef have_cuda
 
-// number of thread per block
+// Number of threads per block
 #define NUM_THREADS_PER_BLOCK 128
-//number of streaming multiprocessor per device (124 on A100)
+
+// Number of streaming multiprocessor per device (124 on A100)
 #define NUM_SM 124
 
-// max shared memory addressable by a block on c.u 8.0, 132 kB
+// Max shared memory addressable by a block on c.u 8.0, 132 kB
 #define MAX_SMEM 135168
 
 #elif have_hip
