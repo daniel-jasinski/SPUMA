@@ -63,13 +63,15 @@ namespace Foam
 
 struct Mutex
 {
-    Mutex(){
-        CHECK_CUDA_ERROR(cudaMalloc(&mutex_,sizeof(int)));
-        CHECK_CUDA_ERROR(cudaMemset(mutex_,0,sizeof(int)));
+    Mutex()
+    {
+        mutex_ = static_cast<int*>(MemoryPool::getInstance()->allocate(sizeof(int)));
+        Foam::MemoryPool::getInstance()->memSet(mutex_, 0, sizeof(int));
     }
 
-    ~Mutex(){
-        CHECK_CUDA_ERROR(cudaFree(mutex_));
+    ~Mutex()
+    {
+	MemoryPool::getInstance()->free(mutex_); 
     }
 
     __host__ __device__ inline int* getMutex()

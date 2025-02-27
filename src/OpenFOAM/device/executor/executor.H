@@ -14,29 +14,36 @@ class executor
 
 public:
     executor() = default;
+    
     ~executor() = default;
+    
     // No copy constructor
     executor(executor<T> &other) = delete;
 
     template<typename F> 
-    void parallelFor(F& lambda, const label& size){
+    void parallelFor(F& lambda, const label& size)
+    {
         (static_cast<T*>(this))->_backendFor(lambda, size);
     };
 
     template<typename F> 
-    void serialFor(F& lambda, const label& size){
+    void serialFor(F& lambda, const label& size)
+    {
         (static_cast<T*>(this))->_backendSerialFor(lambda, size);
     };
 
     template<typename F, typename resultT>
-    void reductionSum(F& lambda, resultT* result, const label& size){
+    void reductionSum(F& lambda, resultT* result, const label& size)
+    {
         (static_cast<T*>(this))->_backendReductionSum(lambda, result, size);
     };
 
     template<typename F,typename Op, typename resultT>
-    void reductionCompare(F& lambda,Op& op, resultT* result, const label& size){
-        (static_cast<T*>(this))->_backendReductionCompare(lambda,op, result, size);
+    void reductionCompare(F& lambda,Op& op, resultT* result, const label& size)
+    {
+        (static_cast<T*>(this))->_backendReductionCompare(lambda, op, result, size);
     };
+    
     //operator
     void operator=(const executor<T> &) = delete;
 };

@@ -180,10 +180,8 @@ void Foam::cudaExecutor::_backendFor(F& lambda, const label& size)
         return;
 
     label numblocks = SET_NUM_BLOCKS(size);
-    //numblocks = numblocks == 0 ? 1 : numblocks;
 
     Foam::cuda::lambdaKernel<F>
-    //<<<(numblocks + NUM_SM -1)/ NUM_SM,NUM_THREADS_PER_BLOCK>>>
     <<<numblocks,NUM_THREADS_PER_BLOCK>>>
     (lambda,size);
 
@@ -204,7 +202,8 @@ void Foam::cudaExecutor::_backendSerialFor(F& lambda, const label& size)
 };
 
 template <typename F,typename resultT>
-void Foam::cudaExecutor::_backendReductionSum(
+void Foam::cudaExecutor::_backendReductionSum
+(
     F& lambda,
     resultT* const __restrict__ result,
     const label& size
@@ -212,9 +211,19 @@ void Foam::cudaExecutor::_backendReductionSum(
 {
     if (size <= 0) return;
 
-    resultT* dPtrResult;
-    CHECK_CUDA_ERROR(cudaMalloc(&dPtrResult,sizeof(resultT)));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(dPtrResult,result,sizeof(resultT),cudaMemcpyHostToDevice));
+    resultT* dPtrResult = static_cast<resultT*>
+    (
+        MemoryPool::getInstance()->allocate(sizeof(resultT))
+    );
+    
+    MemoryPool::getInstance()->memSet
+    (
+        (void*) dPtrResult,
+        (const void*) result,
+        sizeof(resultT),
+        sizeof(resultT)
+    );
+
     // create mutex
     Foam::Mutex mutex;
 
@@ -241,15 +250,19 @@ void Foam::cudaExecutor::_backendReductionSum(
         size
     );
 
-    //deviceSync(); 
     CHECK_LAST_CUDA_ERROR();
 
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(result,dPtrResult,sizeof(resultT),cudaMemcpyDeviceToHost));
-    CHECK_CUDA_ERROR(cudaFree(dPtrResult));
+    MemoryPool::getInstance()->copyOut
+    (
+        (void*) dPtrResult,
+        (void*) result,
+        sizeof(resultT)
+    );
 };
 
 template <typename F,typename Op,typename resultT>
-void Foam::cudaExecutor::_backendReductionCompare(
+void Foam::cudaExecutor::_backendReductionCompare
+(
     F& lambda,
     Op& op,
     resultT* const __restrict__ result,
@@ -258,9 +271,19 @@ void Foam::cudaExecutor::_backendReductionCompare(
 {
     if (size <= 0) return;
 
-    resultT* dPtrResult;
-    CHECK_CUDA_ERROR(cudaMalloc(&dPtrResult,sizeof(resultT)));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(dPtrResult,result,sizeof(resultT),cudaMemcpyHostToDevice));
+    resultT* dPtrResult = static_cast<resultT*>
+    (
+        MemoryPool::getInstance()->allocate(sizeof(resultT))
+    );
+    
+    MemoryPool::getInstance()->memSet
+    (
+        (void*) dPtrResult,
+        (const void*) result,
+        sizeof(resultT),
+        sizeof(resultT)
+    );
+    
     // create mutex
     Foam::Mutex mutex;
 
@@ -288,11 +311,14 @@ void Foam::cudaExecutor::_backendReductionCompare(
         size
     );
 
-    //deviceSync(); 
     CHECK_LAST_CUDA_ERROR();
 
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(result,dPtrResult,sizeof(resultT),cudaMemcpyDeviceToHost));
-    CHECK_CUDA_ERROR(cudaFree(dPtrResult));
+    MemoryPool::getInstance()->copyOut
+    (
+        (void*) dPtrResult,
+        (void*) result,
+        sizeof(resultT)
+    );
 };
 
 
