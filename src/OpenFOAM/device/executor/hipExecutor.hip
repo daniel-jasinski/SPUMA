@@ -180,7 +180,7 @@ namespace hip
             {
                 tmp = op(sdata[tid],sdata[tid + 256]);
                 __threadfence_block();
-            sdata[tid] = tmp;
+                sdata[tid] = tmp;
             }
             __syncthreads();
         }
@@ -190,7 +190,7 @@ namespace hip
             {
                 tmp = op(sdata[tid],sdata[tid + 128]);
                 __threadfence_block();
-            sdata[tid] = tmp;
+                sdata[tid] = tmp;
             }
             __syncthreads();
         }
@@ -200,7 +200,7 @@ namespace hip
             {
                 tmp = op(sdata[tid],sdata[tid + 64]);
                 __threadfence_block();
-            sdata[tid] = tmp;
+                sdata[tid] = tmp;
             }
             __syncthreads();
         }
@@ -286,9 +286,15 @@ void Foam::hipExecutor::_backendReductionSum(
 {
     if (size <= 0) return;
 
-    resultT* dPtrResult;
-    CHECK_HIP_ERROR(hipMalloc(&dPtrResult,sizeof(resultT)));
-    CHECK_HIP_ERROR(hipMemcpyAsync(dPtrResult,result,sizeof(resultT),hipMemcpyHostToDevice));
+    resultT* dPtrResult = static_cast<resultT*>(MemoryPool::getInstance()->allocate(sizeof(resultT)));
+    MemoryPool::getInstance()->memSet
+    (
+        (void*) dPtrResult,
+        (const void*) result,
+        sizeof(resultT),
+        sizeof(resultT)
+    );
+
     // create mutex
     Foam::Mutex mutex;
 
@@ -324,8 +330,8 @@ void Foam::hipExecutor::_backendReductionSum(
     //deviceSync();
     CHECK_LAST_HIP_ERROR();
 
-    CHECK_HIP_ERROR(hipMemcpyAsync(result,dPtrResult,sizeof(resultT),hipMemcpyDeviceToHost));
-    CHECK_HIP_ERROR(hipFree(dPtrResult));
+    MemoryPool::getInstance()->copyOut(dPtrResult,result,sizeof(resultT));
+    MemoryPool::getInstance()->free(dPtrResult);
 };
 
 template <typename F,typename Op,typename resultT>
@@ -338,9 +344,15 @@ void Foam::hipExecutor::_backendReductionCompare(
 {
     if (size <= 0) return;
 
-    resultT* dPtrResult;
-    CHECK_HIP_ERROR(hipMalloc(&dPtrResult,sizeof(resultT)));
-    CHECK_HIP_ERROR(hipMemcpyAsync(dPtrResult,result,sizeof(resultT),hipMemcpyHostToDevice));
+    resultT* dPtrResult = static_cast<resultT*>(MemoryPool::getInstance()->allocate(sizeof(resultT)));
+    MemoryPool::getInstance()->memSet
+    (
+        (void*) dPtrResult,
+        (const void*) result,
+        sizeof(resultT),
+        sizeof(resultT)
+    );
+
     // create mutex
     Foam::Mutex mutex;
 
@@ -377,8 +389,8 @@ void Foam::hipExecutor::_backendReductionCompare(
     //deviceSync();
     CHECK_LAST_HIP_ERROR();
 
-    CHECK_HIP_ERROR(hipMemcpyAsync(result,dPtrResult,sizeof(resultT),hipMemcpyDeviceToHost));
-    CHECK_HIP_ERROR(hipFree(dPtrResult));
+    MemoryPool::getInstance()->copyOut(dPtrResult,result,sizeof(resultT));
+    MemoryPool::getInstance()->free(dPtrResult);
 };
 
 

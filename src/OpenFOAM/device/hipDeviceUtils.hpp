@@ -33,6 +33,7 @@ SourceFiles
 #ifndef Foam_hip_Device_Utils_H
 #define Foam_hip_Device_Utils_H
 #ifdef have_hip
+#include "MemoryPool.H"
 #include "hipError.hpp"
 #include <hip/hip_runtime.h>
 
@@ -96,13 +97,13 @@ struct Mutex
 {
     Mutex()
     {
-        CHECK_HIP_ERROR(hipMalloc(&mutex_,sizeof(int)));
-        CHECK_HIP_ERROR(hipMemset(mutex_,0,sizeof(int)));
+        mutex_ = static_cast<int*>(MemoryPool::getInstance()->allocate(sizeof(int)));
+        Foam::MemoryPool::getInstance()->memSet(mutex_,0,sizeof(int));
     }
 
     ~Mutex()
     {
-        CHECK_HIP_ERROR(hipFree(mutex_));
+        MemoryPool::getInstance()->free(mutex_);;
     }
 
     __host__ __device__ inline int* getMutex()
