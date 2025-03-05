@@ -146,11 +146,15 @@ namespace hip
         __syncthreads();
         //grid-wise reduction step
         //load from gloabl memory + gsize/gridSize step of reduction
-        while (id < gsize){
+        while (id < gsize)
+        {
             //handle loop_len not multiple of blockSize
-            if (id+blockSize < gsize){
+            if (id+blockSize < gsize)
+            {
                 tmp = op(lambda(id),lambda(id+blockSize));
-            }else{
+            }
+            else
+            {
                 tmp = lambda(id);
             }
             sdata[tid]=op(tmp,sdata[tid]);
@@ -159,18 +163,36 @@ namespace hip
         __syncthreads();
 
         //block wise reduction steps
-        if (blockSize >= 512) { if (tid < 256) {
-            tmp = op(sdata[tid],sdata[tid + 256]); __threadfence_block();
+        if (blockSize >= 512)
+        {
+            if (tid < 256)
+            {
+                tmp = op(sdata[tid],sdata[tid + 256]);
+                __threadfence_block();
             sdata[tid] = tmp;
-        } __syncthreads(); }
-        if (blockSize >= 256) { if (tid < 128) {
-            tmp = op(sdata[tid],sdata[tid + 128]); __threadfence_block();
+            }
+            __syncthreads();
+        }
+        if (blockSize >= 256)
+        {
+            if (tid < 128)
+            {
+                tmp = op(sdata[tid],sdata[tid + 128]);
+                __threadfence_block();
             sdata[tid] = tmp;
-        } __syncthreads(); }
-        if (blockSize >= 128) { if (tid < 64)  {
-            tmp = op(sdata[tid],sdata[tid + 64]); __threadfence_block();
+            }
+            __syncthreads();
+        }
+        if (blockSize >= 128)
+        {
+            if (tid < 64)
+            {
+                tmp = op(sdata[tid],sdata[tid + 64]);
+                __threadfence_block();
             sdata[tid] = tmp;
-        } __syncthreads(); }
+            }
+            __syncthreads();
+        }
 
         //warp wise reduction step
         if (tid < 32)
