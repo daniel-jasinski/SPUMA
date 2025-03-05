@@ -9,7 +9,7 @@ endif
 
 HIPCC      := hipcc$(COMPILER_VERSION) -std=c++17 -fPIC
 
-hipARCH    := -m64 --offload-arch=$(AMDARCH)
+hipARCH    := -m64 --offload-arch=$(AMDARCH):xnack+ -Dhave_hip
 hipDBUG    :=
 hipOPT     := -O2
 ptFLAGS   := -DNoRepository
