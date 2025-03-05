@@ -135,8 +135,8 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
         const label own = ownerp[facei];
         const label nei = neighbourp[facei];
 
-        const Type& vsfOwn = vsf[own];
-        const Type& vsfNei = vsf[nei];
+        const Type& vsfOwn = vsfp[own];
+        const Type& vsfNei = vsfp[nei];
 
         foamAtomic::AtomicMax(maxVsfp[own], vsfNei);
         foamAtomic::AtomicMin(minVsfp[own], vsfNei);

@@ -83,11 +83,12 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcNut() const
         foamExecutor exec;
         auto nutwp = nutw.begin();
         const auto errp = err.cbegin();
+        const auto thisp = this->cbegin();
         const scalar tolerance = tolerance_;
         auto Lambda = [=](label facei){
             if (errp[facei] < tolerance)
             {
-                nutwp[facei] = this->operator[](facei);
+                nutwp[facei] = thisp[facei];
             } 
         };
         exec.parallelFor(Lambda,err.size());
