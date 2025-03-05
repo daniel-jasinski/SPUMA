@@ -89,9 +89,10 @@ namespace hip
         __syncthreads();
 
         //block wise reduction steps
-        if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
-        if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
-        if (blockSize >= 128) { if (tid < 64)  { sdata[tid] += sdata[tid + 64];  } __syncthreads(); }
+        if (blockSize >= 1024) { if (tid < 512) { sdata[tid] += sdata[tid + 512]; } __syncthreads(); }
+        if (blockSize >= 512)  { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+        if (blockSize >= 256)  { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+        if (blockSize >= 128)  { if (tid < 64)  { sdata[tid] += sdata[tid + 64];  } __syncthreads(); }
 
         //warp wise reduction step
         //in warp: syncthread guaranteed
@@ -163,6 +164,16 @@ namespace hip
         __syncthreads();
 
         //block wise reduction steps
+        if (blockSize >= 1024)
+        {
+            if (tid < 512)
+            {
+                tmp = op(sdata[tid],sdata[tid + 512]);
+                __threadfence_block();
+                sdata[tid] = tmp;
+            }
+            __syncthreads();
+        }
         if (blockSize >= 512)
         {
             if (tid < 256)
