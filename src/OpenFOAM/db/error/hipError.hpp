@@ -35,17 +35,6 @@ Description
 #include <iostream>
 #include <hip/hip_runtime.h>
 
-#define NUM_THREADS_PER_BLOCK 128
-#define HIP_MEM_ALIGN_BYTES 16
-
-#define SET_NUM_BLOCKS(size)           \
-    (size + NUM_THREADS_PER_BLOCK - 1) \
-    / NUM_THREADS_PER_BLOCK
-
-#define SET_NUM_BLOCKS_MULTI(size, multiple)    \
-    (size + multiple*NUM_THREADS_PER_BLOCK - 1) \
-    / (multiple*NUM_THREADS_PER_BLOCK)
-
 int checkLastHipError
 (
     const char* const file,

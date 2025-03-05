@@ -28,10 +28,10 @@ License
 
 #include <hip/hip_runtime.h>
 #include "hipMemoryExecutor.hpp"
+#include "deviceM.H"
 #include "memoryKernels.H"
 #include "error.H"
 #include "hipError.hpp"
-
 
 // * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * * //
 

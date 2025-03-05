@@ -36,21 +36,13 @@
 #elif have_hip
 
 // Number of threads per block
-#define NUM_THREADS_PER_BLOCK 128
+#define NUM_THREADS_PER_BLOCK 1024
 
 // Number of streaming multiprocessor per device
-// TODO: check optimal values of this parameter for AMD
-#define NUM_SM 1
+#define NUM_SM 110
 
 // Max shared memory addressable by a block
-// TODO: check optimal values of this parameter for AMD
 #define MAX_SMEM 65536
-
-#else
-
-#define NUM_THREADS_PER_BLOCK
-#define NUM_SM
-#define MAX_SMEM
 
 #endif
 
