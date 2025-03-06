@@ -40,6 +40,9 @@ void* Foam::hipMemoryExecutor::_backendAlloc(uint64_t size)
 
     void* ptr;
     label err = CHECK_HIP_ERROR(hipMallocManaged((void**)&ptr, size));
+    int deviceId;
+    CHECK_HIP_ERROR(hipGetDevice(&deviceId));
+    CHECK_HIP_ERROR(hipMemAdvise(ptr, size, hipMemAdviseSetCoarseGrain, deviceId)); 
 
     if (err != 0)
     {

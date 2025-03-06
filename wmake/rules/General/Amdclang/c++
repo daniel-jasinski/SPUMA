@@ -33,7 +33,7 @@ c++LESSWARN = \
 include $(GENERAL_RULES)/hip
 
 ifneq (,$(findstring true,$(have_hip)))
-    CC := hipcc$(COMPILER_VERSION) -std=c++17 --offload-arch=$(AMDARCH):xnack+ -Dhave_hip
+    CC := hipcc$(COMPILER_VERSION) -std=c++17 --offload-arch=$(AMDARCH):xnack+ -Dhave_hip -munsafe-fp-atomics
 endif
 
 # Tuning
