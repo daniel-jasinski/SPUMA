@@ -1235,7 +1235,7 @@ operator&(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
 
 //- Double-inner-product of a SphericalTensor and a Tensor
 template<class Cmpt>
-inline Cmpt
+FOAM_DEVICE inline Cmpt
 operator&&(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return (st1.ii()*t2.xx() + st1.ii()*t2.yy() + st1.ii()*t2.zz());
@@ -1244,7 +1244,7 @@ operator&&(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Double-inner-product of a Tensor and a SphericalTensor
 template<class Cmpt>
-inline Cmpt
+FOAM_DEVICE inline Cmpt
 operator&&(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 {
     return (t1.xx()*st2.ii() + t1.yy()*st2.ii() + t1.zz()*st2.ii());
@@ -1253,7 +1253,7 @@ operator&&(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 
 //- Double-inner-product of a SymmTensor and a Tensor
 template<class Cmpt>
-inline Cmpt
+FOAM_DEVICE inline Cmpt
 operator&&(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return
@@ -1267,7 +1267,7 @@ operator&&(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Double-inner-product of a Tensor and a SymmTensor
 template<class Cmpt>
-inline Cmpt
+FOAM_DEVICE inline Cmpt
 operator&&(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 {
     return
