@@ -53,7 +53,7 @@ Foam::lagrangianFieldDecomposer::decomposeField
             IOobject::NO_REGISTER
         ),
         // Mapping internal field values
-	Field<Type>(field, particleIndices_)
+        Field<Type>(field, particleIndices_)
     );
 }
 
@@ -81,20 +81,20 @@ Foam::lagrangianFieldDecomposer::decomposeFieldField
         ),
         // Mapping internal field values
         // Workaround for NVC++
-        #ifdef have_cuda
-	Field<Field<Type>>()
+        #if defined(have_cuda) || defined(have_hip)
+        Field<Field<Type>>()
         #else
-	Field<Field<Type>>(field, particleIndices_)
+        Field<Field<Type>>(field, particleIndices_)
         #endif
     );
 
-    #ifdef have_cuda
+    #if defined(have_cuda) || defined(have_hip)
     auto& cfield = tcfield.ref();
 
     for (label i=0; i<field.size(); ++i)
     {
         Field<Type> localField(field[i], particleIndices_);
-	cfield[i].transfer(localField);
+        cfield[i].transfer(localField);
     }
     #endif
 

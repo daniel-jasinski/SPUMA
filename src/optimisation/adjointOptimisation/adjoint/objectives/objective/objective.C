@@ -514,20 +514,20 @@ void objective::nullify()
         if (hasBoundaryEdgeContribution())
         {
 	    // Workaround for NVC++
-            #ifdef have_cuda
-	    for (Field<vectorField>& field : bEdgeContribution_())
+        #if defined(have_cuda) || defined(have_hip)
+            for (Field<vectorField>& field : bEdgeContribution_())
             {
-  	        for (vectorField& subField : field)
-		{
+                for (vectorField& subField : field)
+                {
                     subField = vector::zero;    
-		}
+                }
             }
-            #else
-	    for (Field<vectorField>& field : bEdgeContribution_())
+        #else
+            for (Field<vectorField>& field : bEdgeContribution_())
             {
                 field = vector::zero;
             }
-            #endif
+        #endif
         }
         if (hasDivDxDbMult())
         {
