@@ -35,6 +35,22 @@ License
 
 // * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * * //
 
+__global__
+void memCopyKernel
+(
+    const unsigned long long size,
+    char* const dst,
+    const char* const src
+)
+{
+    unsigned long long idx = blockIdx.x*blockDim.x + threadIdx.x;
+    unsigned long long stride = blockDim.x*gridDim.x;
+    for (unsigned long long i = idx; i < size; i += stride)
+    {
+        dst[i] = src[i];
+    }
+}
+
 void* Foam::hipMemoryExecutor::_backendAlloc(uint64_t size)
 {
 
@@ -67,11 +83,30 @@ void Foam::hipMemoryExecutor::_backendMemCopy(void* dst, const void* src, uint64
 {
     label err = 0;
     if (kind == memCopyKind::memCopyHostToDevice)
+    {
         err = CHECK_HIP_ERROR(hipMemcpy(dst, src, (size_t) size, hipMemcpyHostToDevice));
+    }
     else if (kind == memCopyKind::memCopyDeviceToHost)
+    {
         err = CHECK_HIP_ERROR(hipMemcpy(dst, src, (size_t) size, hipMemcpyDeviceToHost));
+    }
     else if (kind == memCopyKind::memCopyDeviceToDevice)
-        err = CHECK_HIP_ERROR(hipMemcpy(dst, src, (size_t) size, hipMemcpyDeviceToDevice));
+    {
+        label numblocks = SET_NUM_BLOCKS(size);
+        hipLaunchKernelGGL
+        (
+            memCopyKernel,
+            numblocks,
+            NUM_THREADS_PER_BLOCK,
+            0,
+            0,
+            size,
+            reinterpret_cast<char*>(dst),
+            reinterpret_cast<const char*>(src)
+        );
+        deviceSync();
+        CHECK_LAST_HIP_ERROR();
+    }
     else
         FatalErrorInFunction << "ERROR: memCopyKind not found" << abort(FatalError);
 
