@@ -40,7 +40,7 @@ namespace Foam
 
 namespace cuda
 {
-    
+
 template<typename F>
 __global__
 void lambdaKernel(F lambda, const label size)
@@ -49,7 +49,7 @@ void lambdaKernel(F lambda, const label size)
     const unsigned int gridSize = blockDim.x*gridDim.x;
 
     while (id < size)
-    {  
+    {
         lambda(id);
         id += gridSize;
     }
@@ -68,7 +68,7 @@ void reductionLambdaSumKernel
     unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x;
     const unsigned int tid = threadIdx.x;
     const label gsize = size;
-    const unsigned int blockSize = NUM_THREADS_PER_BLOCK; 
+    const unsigned int blockSize = NUM_THREADS_PER_BLOCK;
     const unsigned int gridSize = blockDim.x*2*gridDim.x;
 
     SharedMemory<resultType> smem;
@@ -76,9 +76,9 @@ void reductionLambdaSumKernel
     memset(&sdata[tid],0,sizeof(resultType));
 
     __syncthreads();
-        
+
     // grid-wise reduction step
-    // load from gloabl memory + gsize/gridSize step of reduction 
+    // load from gloabl memory + gsize/gridSize step of reduction
     while (id < gsize)
     {
         // handle loop_len not multiple of blockSize
@@ -92,7 +92,7 @@ void reductionLambdaSumKernel
         }
         id += gridSize;
     }
-        
+
     __syncthreads();
 
     // block wise reduction steps
@@ -108,13 +108,13 @@ void reductionLambdaSumKernel
     }
 
     __syncthreads();
-        
+
     if constexpr(std::is_same<resultType,double>::value)
     {
         if(tid == 0)
         {
             atomicAdd(result,sdata[0]);
-        } 
+        }
     }
     else
     {
@@ -145,7 +145,7 @@ void reductionLambdaCompareKernel
     unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x;
     const unsigned int tid = threadIdx.x;
     const label gsize = size;
-    const unsigned int blockSize = NUM_THREADS_PER_BLOCK; 
+    const unsigned int blockSize = NUM_THREADS_PER_BLOCK;
     const unsigned int gridSize = blockDim.x*2*gridDim.x;
 
     SharedMemory<resultType> smem;
@@ -161,11 +161,11 @@ void reductionLambdaCompareKernel
     {
         // handle loop_len not multiple of blockSize
         if (id+blockSize < gsize)
-	{
+        {
             tmp = op(lambda(id), lambda(id+blockSize));
         }
-	else
-	{
+        else
+        {
             tmp = lambda(id);
         }
         sdata[tid] = op(tmp, sdata[tid]);
@@ -175,35 +175,35 @@ void reductionLambdaCompareKernel
     __syncthreads();
 
     // block wise reduction steps
-    if (blockSize >= 512) 
-    { 
-        if (tid < 256) 
-	{
-            tmp = op(sdata[tid], sdata[tid + 256]); 
-	    __threadfence_block();
-            sdata[tid] = tmp; 
-        } 
-	__syncthreads(); 
-    }
-    if (blockSize >= 256) 
-    { 
-        if (tid < 128) 
-	{
-            tmp = op(sdata[tid], sdata[tid + 128]); 
-	    __threadfence_block();
+    if (blockSize >= 512)
+    {
+        if (tid < 256)
+        {
+            tmp = op(sdata[tid], sdata[tid + 256]);
+            __threadfence_block();
             sdata[tid] = tmp;
-        } 
-	__syncthreads(); 
+        }
+        __syncthreads();
     }
-    if (blockSize >= 128) 
-    { 
-        if (tid < 64)  
-	{
+    if (blockSize >= 256)
+    {
+        if (tid < 128)
+        {
+            tmp = op(sdata[tid], sdata[tid + 128]);
+            __threadfence_block();
+            sdata[tid] = tmp;
+        }
+        __syncthreads();
+    }
+    if (blockSize >= 128)
+    {
+        if (tid < 64)
+        {
             tmp = op(sdata[tid], sdata[tid + 64]);
-	    __threadfence_block();
+            __threadfence_block();
             sdata[tid] = tmp;
-        } 
-	__syncthreads(); 
+        }
+        __syncthreads();
     }
 
     // warp wise reduction step
@@ -213,7 +213,7 @@ void reductionLambdaCompareKernel
     }
 
     __syncthreads();
-    
+
     // note for high number of block too much contention of the mutex!
     if(tid == 0)
     {
@@ -249,7 +249,7 @@ void Foam::cudaExecutor::_backendFor(F& lambda, const label& size)
     <<<numblocks,NUM_THREADS_PER_BLOCK>>>
     (lambda,size);
 
-    deviceSync(); 
+    deviceSync();
     CHECK_LAST_CUDA_ERROR();
 };
 
@@ -261,7 +261,7 @@ void Foam::cudaExecutor::_backendSerialFor(F& lambda, const label& size)
 
     Foam::cuda::lambdaKernel<F><<<1,1>>>(lambda, size);
 
-    deviceSync(); 
+    deviceSync();
     CHECK_LAST_CUDA_ERROR();
 };
 
@@ -279,7 +279,7 @@ void Foam::cudaExecutor::_backendReductionSum
     (
         MemoryPool::getInstance()->allocate(sizeof(resultT))
     );
-    
+
     MemoryPool::getInstance()->memSet
     (
         (void*) dPtrResult,
@@ -293,14 +293,14 @@ void Foam::cudaExecutor::_backendReductionSum
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM; 
+    int maxbytes = MAX_SMEM;
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
     CHECK_CUDA_ERROR
     (
         cudaFuncSetAttribute
         (
             Foam::cuda::reductionLambdaSumKernel<resultT, F>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize, 
+            cudaFuncAttributeMaxDynamicSharedMemorySize,
             maxbytes
         )
     );
@@ -339,7 +339,7 @@ void Foam::cudaExecutor::_backendReductionCompare
     (
         MemoryPool::getInstance()->allocate(sizeof(resultT))
     );
-    
+
     MemoryPool::getInstance()->memSet
     (
         (void*) dPtrResult,
@@ -347,13 +347,13 @@ void Foam::cudaExecutor::_backendReductionCompare
         sizeof(resultT),
         sizeof(resultT)
     );
-    
+
     // create mutex
     Foam::Mutex mutex;
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM; 
+    int maxbytes = MAX_SMEM;
 
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
     CHECK_CUDA_ERROR
@@ -361,7 +361,7 @@ void Foam::cudaExecutor::_backendReductionCompare
         cudaFuncSetAttribute
         (
             Foam::cuda::reductionLambdaCompareKernel<resultT, F, Op>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize, 
+            cudaFuncAttributeMaxDynamicSharedMemorySize,
             maxbytes
         )
     );

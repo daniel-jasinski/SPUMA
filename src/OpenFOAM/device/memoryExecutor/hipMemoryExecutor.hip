@@ -57,7 +57,7 @@ void* Foam::hipMemoryExecutor::_backendAlloc(uint64_t size)
     label err = CHECK_HIP_ERROR(hipMallocManaged((void**)&ptr, size));
     int deviceId;
     CHECK_HIP_ERROR(hipGetDevice(&deviceId));
-    CHECK_HIP_ERROR(hipMemAdvise(ptr, size, hipMemAdviseSetCoarseGrain, deviceId)); 
+    CHECK_HIP_ERROR(hipMemAdvise(ptr, size, hipMemAdviseSetCoarseGrain, deviceId));
 
     if (err != 0)
     {
@@ -79,10 +79,10 @@ void Foam::hipMemoryExecutor::_backendClear(void* ptr)
 }
 
 void Foam::hipMemoryExecutor::_backendMemCopy
-( 
-    void* dst, 
-    const void* src, 
-    uint64_t size, 
+(
+    void* dst,
+    const void* src,
+    uint64_t size,
     memCopyKind kind
 )
 {
@@ -121,9 +121,9 @@ void Foam::hipMemoryExecutor::_backendMemCopy
 
 void Foam::hipMemoryExecutor::_backendMemSet
 (
-    void* ptr, 
-    const size_t sizeInBytes, 
-    const void* value, 
+    void* ptr,
+    const size_t sizeInBytes,
+    const void* value,
     size_t sizeOfValue
 )
 {
@@ -155,7 +155,7 @@ void Foam::hipMemoryExecutor::_backendMemSet
 
 void Foam::hipMemoryExecutor::_backendMemSetScalarOne
 (
-    void* ptr, 
+    void* ptr,
     const size_t sizeInBytes
 )
 {
@@ -171,8 +171,8 @@ void Foam::hipMemoryExecutor::_backendMemSetScalarOne
 
 void Foam::hipMemoryExecutor::_backendMemSet
 (
-    void* ptr, 
-    const size_t sizeInBytes, 
+    void* ptr,
+    const size_t sizeInBytes,
     const int value
 )
 {

@@ -64,9 +64,9 @@ void Foam::cudaMemoryExecutor::_backendClear(void* ptr)
 
 void Foam::cudaMemoryExecutor::_backendMemCopy
 (
-   void* dst, 
-   const void* src, 
-   uint64_t size, 
+   void* dst,
+   const void* src,
+   uint64_t size,
    memCopyKind kind
 )
 {
@@ -86,9 +86,9 @@ void Foam::cudaMemoryExecutor::_backendMemCopy
 
 void Foam::cudaMemoryExecutor::_backendMemSet
 (
-    void* ptr, 
-    const size_t sizeInBytes, 
-    const void* value, 
+    void* ptr,
+    const size_t sizeInBytes,
+    const void* value,
     size_t sizeOfValue
 )
 {
@@ -120,7 +120,7 @@ void Foam::cudaMemoryExecutor::_backendMemSet
 
 void Foam::cudaMemoryExecutor::_backendMemSetScalarOne
 (
-    void* ptr, 
+    void* ptr,
     const size_t sizeInBytes
 )
 {
@@ -136,8 +136,8 @@ void Foam::cudaMemoryExecutor::_backendMemSetScalarOne
 
 void Foam::cudaMemoryExecutor::_backendMemSet
 (
-    void* ptr, 
-    const size_t sizeInBytes, 
+    void* ptr,
+    const size_t sizeInBytes,
     const int value
 )
 {

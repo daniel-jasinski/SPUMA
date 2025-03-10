@@ -69,18 +69,18 @@ public:
     template<typename F, typename resultT>
     void _backendReductionSum
     (
-        F& lambda, 
-	resultT* const __restrict__ result, 
-	const label& size
+        F& lambda,
+        resultT* const __restrict__ result,
+        const label& size
     );
 
     template<typename F,typename Op, typename resultT>
     void _backendReductionCompare
     (
-        F& lambda, 
-	Op& op, 
-	resultT* const __restrict__ result, 
-	const label& size
+        F& lambda,
+        Op& op,
+        resultT* const __restrict__ result,
+        const label& size
     );
 };
 

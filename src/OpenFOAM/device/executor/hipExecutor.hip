@@ -40,7 +40,7 @@ namespace Foam
 
 namespace hip
 {
-    
+
 template<typename F>
 __global__
 void lambdaKernel(F lambda, const label size)
@@ -76,7 +76,7 @@ void reductionLambdaSumKernel
     memset(&sdata[tid], 0, sizeof(resultType));
 
     __syncthreads();
-  
+
     // grid-wise reduction step
     // load from gloabl memory + gsize/gridSize step of reduction
     while (id < gsize)
@@ -92,7 +92,7 @@ void reductionLambdaSumKernel
         }
         id += gridSize;
     }
-    
+
     __syncthreads();
 
     // block wise reduction steps
@@ -109,7 +109,7 @@ void reductionLambdaSumKernel
     }
 
     __syncthreads();
-    
+
     if constexpr(std::is_same<resultType,double>::value)
     {
         if(tid == 0)
@@ -155,7 +155,7 @@ void reductionLambdaCompareKernel
     sdata[tid] = *result;
 
     __syncthreads();
-    
+
     // grid-wise reduction step
     // load from gloabl memory + gsize/gridSize step of reduction
     while (id < gsize)
@@ -172,7 +172,7 @@ void reductionLambdaCompareKernel
         sdata[tid]=op(tmp,sdata[tid]);
         id += gridSize;
     }
-    
+
     __syncthreads();
 
     // block wise reduction steps
@@ -319,7 +319,7 @@ void Foam::hipExecutor::_backendReductionSum(
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
     int maxbytes = MAX_SMEM;
-    
+
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
     CHECK_HIP_ERROR
     (
@@ -383,7 +383,7 @@ void Foam::hipExecutor::_backendReductionCompare
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
     int maxbytes = MAX_SMEM;
-    
+
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
     CHECK_HIP_ERROR
     (

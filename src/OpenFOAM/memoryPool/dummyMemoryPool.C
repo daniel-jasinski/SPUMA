@@ -76,7 +76,7 @@ void Foam::dummyMemoryPool::free(void* ptr)
 {
     //if ptr is null do nothing
     if (ptr == nullptr) return;
-    
+
     //check if pointer was allocated with pool
     if (!this->isValid(ptr))
     {
@@ -92,7 +92,7 @@ void Foam::dummyMemoryPool::free(void* ptr)
 
     uint64_t size = block->second;
     this->unusedBlockList_.insert(blockPair(block->first, size));
-    
+
     DebugInFunction
         << "Deallocated block of size " << size
         << " at address " << reinterpret_cast<uint64_t>(ptr) << nl;
@@ -109,18 +109,18 @@ uint64_t Foam::dummyMemoryPool::arraySizeInBytes(void* poolPtr)
 {
     //if ptr is null do nothing
     if (poolPtr == nullptr) return 0;
-    
+
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
     {
         raisePoolValidError(poolPtr)
     }
-    
+
     blockList::iterator mapElement = this->usedBlockList_.find
     (
         reinterpret_cast<char*>(poolPtr)
     );
-    
+
     return mapElement->second;
 };
 
@@ -133,16 +133,16 @@ void Foam::dummyMemoryPool::copyIn
 {
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    
+
     //if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
-    
+
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
     {
         raisePoolValidError(poolPtr)
     }
-    
+
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
@@ -150,7 +150,7 @@ void Foam::dummyMemoryPool::copyIn
     (
         reinterpret_cast<char*>(poolPtr)
     );
-    
+
     if (nElementsInBytes > mapElement->second)
     {
         FatalErrorInFunction
@@ -160,10 +160,10 @@ void Foam::dummyMemoryPool::copyIn
 
     foamMemoryExecutor::memCopy
     (
-        poolPtr, 
-	ptr, 
-	nElementsInBytes, 
-	memCopyKind::memCopyHostToDevice
+        poolPtr,
+        ptr,
+        nElementsInBytes,
+        memCopyKind::memCopyHostToDevice
     );
 };
 
@@ -176,16 +176,16 @@ void Foam::dummyMemoryPool::copyOut
 {
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    
+
     //if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
-    
+
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
     {
         raisePoolValidError(poolPtr)
     }
-    
+
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
@@ -203,10 +203,10 @@ void Foam::dummyMemoryPool::copyOut
 
     foamMemoryExecutor::memCopy
     (
-        ptr, 
-	poolPtr, 
-	nElementsInBytes, 
-	memCopyKind::memCopyDeviceToHost
+        ptr,
+        poolPtr,
+        nElementsInBytes,
+        memCopyKind::memCopyDeviceToHost
     );
 };
 
@@ -220,29 +220,29 @@ void Foam::dummyMemoryPool::memSet
 {
     //if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    
+
     //if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
     void* allocatedPoolPtr = poolPtr;
-    
+
     if (!this->isValid(poolPtr))
     {
         //find nearest valid pointer
         if(!this->isInBlockRange(poolPtr))
-	{
+        {
             FatalErrorInFunction
                 << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(poolPtr)
                 << "is not valid and not in range" << abort(FatalError);
         }
         uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);
 
-        for (auto block = this->usedBlockList_.rbegin(); 
-	          block!= this->usedBlockList_.rend(); ++block)
+        for (auto block = this->usedBlockList_.rbegin();
+                  block!= this->usedBlockList_.rend(); ++block)
         {
             uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
             if ( (ptr>allocatedPtr) && (ptr < allocatedPtr + block->second) )
-	    {
+            {
                 allocatedPoolPtr = reinterpret_cast<void*>(allocatedPtr);
                 break;
             }
@@ -253,8 +253,8 @@ void Foam::dummyMemoryPool::memSet
         reinterpret_cast<char*>(allocatedPoolPtr)
     );
 
-    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes > 
-	reinterpret_cast<uint64_t>(allocatedPoolPtr) + mapElement->second)
+    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedPoolPtr) + mapElement->second)
     {
         FatalErrorInFunction
             << "Trying to assign more bytes than available in block"
@@ -272,7 +272,7 @@ void Foam::dummyMemoryPool::memSetScalarOne
 {
     // if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    
+
     // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
@@ -281,19 +281,19 @@ void Foam::dummyMemoryPool::memSetScalarOne
     {
         // find nearest valid pointer
         if(!this->isInBlockRange(poolPtr))
-	{
+        {
             FatalErrorInFunction
                 << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(poolPtr)
                 << "is not valid and not in range" << abort(FatalError);
         }
         uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);
 
-        for (auto block = this->usedBlockList_.rbegin(); 
-		  block!= this->usedBlockList_.rend(); ++block)
+        for (auto block = this->usedBlockList_.rbegin();
+                  block!= this->usedBlockList_.rend(); ++block)
         {
             uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
             if ((ptr>allocatedPtr) && (ptr < allocatedPtr + block->second))
-	    {
+            {
                 allocatedPoolPtr = reinterpret_cast<void*>(allocatedPtr);
                 break;
             }
@@ -304,8 +304,8 @@ void Foam::dummyMemoryPool::memSetScalarOne
         reinterpret_cast<char*>(allocatedPoolPtr)
     );
 
-    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes > 
-	reinterpret_cast<uint64_t>(allocatedPoolPtr) + mapElement->second)
+    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedPoolPtr) + mapElement->second)
     {
         FatalErrorInFunction
             << "Trying to assign more bytes than available in block"
@@ -324,29 +324,29 @@ void Foam::dummyMemoryPool::memSet
 {
     // if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    
+
     // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
     void* allocatedPoolPtr = poolPtr;
-    
+
     if (!this->isValid(poolPtr))
     {
         // find nearest valid pointer
         if(!this->isInBlockRange(poolPtr))
-	{
+        {
             FatalErrorInFunction
                 << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(poolPtr)
                 << "is not valid and not in range" << abort(FatalError);
         }
-        uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);    
+        uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);
 
-        for (auto block = this->usedBlockList_.rbegin(); 
-		  block!= this->usedBlockList_.rend(); ++block)
+        for (auto block = this->usedBlockList_.rbegin();
+                  block!= this->usedBlockList_.rend(); ++block)
         {
             uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
             if ((ptr>allocatedPtr) && (ptr < allocatedPtr + block->second))
-	    {
+            {
                 allocatedPoolPtr = reinterpret_cast<void*>(allocatedPtr);
                 break;
             }
@@ -357,9 +357,9 @@ void Foam::dummyMemoryPool::memSet
     (
         reinterpret_cast<char*>(allocatedPoolPtr)
     );
-    
-    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes > 
-	reinterpret_cast<uint64_t>(allocatedPoolPtr) + mapElement->second)
+
+    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedPoolPtr) + mapElement->second)
     {
         FatalErrorInFunction
             << "Trying to assign more bytes than available in block"
@@ -378,7 +378,7 @@ void Foam::dummyMemoryPool::memCopy
 {
     // if ptr is null do nothing
     if (tgtPtr == nullptr) return;
-    
+
     // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
@@ -387,19 +387,19 @@ void Foam::dummyMemoryPool::memCopy
     {
         // find nearest valid pointer
         if(!this->isInBlockRange(tgtPtr))
-	{
+        {
             FatalErrorInFunction
                 << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(tgtPtr)
                 << "is not valid and not in range" << abort(FatalError);
         }
         uint64_t ptr = reinterpret_cast<uint64_t>(tgtPtr);
 
-        for (auto block = this->usedBlockList_.rbegin(); 
-		  block!= this->usedBlockList_.rend(); ++block)
+        for (auto block = this->usedBlockList_.rbegin();
+                  block!= this->usedBlockList_.rend(); ++block)
         {
             uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
             if ((ptr>allocatedPtr) && (ptr < allocatedPtr + block->second))
-	    {
+            {
                 allocatedTgtPtr = reinterpret_cast<void*>(allocatedPtr);
                 break;
             }
@@ -415,21 +415,21 @@ void Foam::dummyMemoryPool::memCopy
     if (!this->isValid(srcPtr))
     {
         if(!this->isInBlockRange(srcPtr))
-	{
+        {
             FatalErrorInFunction
                 << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(srcPtr)
                 << "is not valid and not in range" << abort(FatalError);
         }
-        
-	uint64_t ptr = reinterpret_cast<uint64_t>(srcPtr);
-        
-	//search for the reference pointer of the block
-        for (auto block = this->usedBlockList_.rbegin(); 
-		  block!= this->usedBlockList_.rend(); ++block)
+
+        uint64_t ptr = reinterpret_cast<uint64_t>(srcPtr);
+
+        //search for the reference pointer of the block
+        for (auto block = this->usedBlockList_.rbegin();
+                  block!= this->usedBlockList_.rend(); ++block)
         {
             uint64_t allocatedPtr = reinterpret_cast<uint64_t>(block->first);
             if ((ptr>allocatedPtr) && (ptr < allocatedPtr + block->second))
-	    {
+            {
                 allocatedSrcPtr = reinterpret_cast<void*>(allocatedPtr);
                 break;
             }
@@ -441,16 +441,16 @@ void Foam::dummyMemoryPool::memCopy
         reinterpret_cast<char*>(allocatedSrcPtr)
     );
 
-    if (reinterpret_cast<uint64_t>(srcPtr) + nElementsInBytes > 
-	reinterpret_cast<uint64_t>(allocatedSrcPtr) + srcElement->second)
+    if (reinterpret_cast<uint64_t>(srcPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedSrcPtr) + srcElement->second)
     {
         FatalErrorInFunction
             << "Trying to read more bytes than available in src block"
             <<abort(FatalError);
     }
-    
-    if (reinterpret_cast<uint64_t>(tgtPtr) + nElementsInBytes > 
-	reinterpret_cast<uint64_t>(allocatedTgtPtr) + tgtElement->second)
+
+    if (reinterpret_cast<uint64_t>(tgtPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedTgtPtr) + tgtElement->second)
     {
         FatalErrorInFunction
             << "Trying to assign more bytes than available in tgt block"
@@ -459,17 +459,17 @@ void Foam::dummyMemoryPool::memCopy
 
     foamMemoryExecutor::memCopy
     (
-        tgtPtr, 
-	srcPtr, 
-	nElementsInBytes, 
-	memCopyKind::memCopyDeviceToDevice
+        tgtPtr,
+        srcPtr,
+        nElementsInBytes,
+        memCopyKind::memCopyDeviceToDevice
     );
 }
 
 void Foam::dummyMemoryPool::showAllocated(bool relative)
 {
-    for (blockList::iterator ii = this->usedBlockList_.begin(); 
-		             ii != this->usedBlockList_.end(); ii++)
+    for (blockList::iterator ii = this->usedBlockList_.begin();
+                             ii != this->usedBlockList_.end(); ii++)
         Info
             << "At address: "<< reinterpret_cast<uint64_t>(ii->first)
             << " allocated block of size " << ii->second << " bytes." << nl;
@@ -477,8 +477,8 @@ void Foam::dummyMemoryPool::showAllocated(bool relative)
 
 void Foam::dummyMemoryPool::showUnallocated(bool relative)
 {
-    for (blockList::iterator ii = this->unusedBlockList_.begin(); 
-		             ii != this->unusedBlockList_.end(); ii++)
+    for (blockList::iterator ii = this->unusedBlockList_.begin();
+                             ii != this->unusedBlockList_.end(); ii++)
         Info
             << "At address: "<< reinterpret_cast<uint64_t>(ii->first)
             << " allocated block of size " << ii->second << " bytes." << nl;

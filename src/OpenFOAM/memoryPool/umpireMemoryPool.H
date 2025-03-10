@@ -27,7 +27,7 @@ Class
     umpireMemoryPool
 
 Description
-    Interface to the Umpire memory pool implementation. 
+    Interface to the Umpire memory pool implementation.
     See https://github.com/LLNL/Umpire
 
 SourceFiles

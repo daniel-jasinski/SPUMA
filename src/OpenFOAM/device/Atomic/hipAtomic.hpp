@@ -138,8 +138,8 @@ struct hipAtomic
     FOAM_DEVICE static label _backendAtomicCAS
     (
         label& x,
-	const label& compare, 
-	const label& y
+        const label& compare,
+        const label& y
     )
     {
         return atomicCAS(&x,compare,y);

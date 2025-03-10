@@ -27,8 +27,8 @@ Class
     Foam::MemoryPool
 
 Description
-    Frontend interface to memory pool implementations. 
-    Memory pools are algorithms that rely on pools to 
+    Frontend interface to memory pool implementations.
+    Memory pools are algorithms that rely on pools to
     manage dynamic memory allocation in a efficient way.
     Memory pools remove the memory fragmentation issues and allow memory
     allocation (and deallocation) with constant execution time
@@ -60,7 +60,7 @@ SourceFiles
 namespace Foam
 {
 
-// Forward Declarations	
+// Forward Declarations
 class MemoryPool;
 
 /*---------------------------------------------------------------------------*\

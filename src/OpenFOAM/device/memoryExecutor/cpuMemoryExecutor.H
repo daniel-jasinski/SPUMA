@@ -43,7 +43,7 @@ SourceFiles
 
 namespace Foam
 {
-    
+
 /*---------------------------------------------------------------------------*\
                            Class cpuMemoryExecutor Declaration
 \*---------------------------------------------------------------------------*/
@@ -58,7 +58,7 @@ public:
     static constexpr label _memAlignBytes = 8;
 
     //- static member functions
-    
+
     static void* _backendAlloc(uint64_t size)
     {
         return new char[size];
@@ -71,10 +71,10 @@ public:
 
     static void _backendMemCopy
     (
-        void* dst, 
-	const void* src, 
-	uint64_t size, 
-	memCopyKind kind
+        void* dst,
+        const void* src,
+        uint64_t size,
+        memCopyKind kind
     )
     {
         std::memcpy(dst, src, static_cast<size_t>(size));
@@ -82,9 +82,9 @@ public:
 
     static void _backendMemSet
     (
-        void* ptr, 
-	const uint64_t sizeInBytes, 
-	const void* value, size_t sizeOfValue
+        void* ptr,
+        const uint64_t sizeInBytes,
+        const void* value, size_t sizeOfValue
     )
     {
         char* tmpPtr = static_cast<char*>(ptr);
@@ -109,9 +109,9 @@ public:
 
     static void _backendMemSet
     (
-        void* ptr, 
-	const uint64_t sizeInBytes, 
-	const int value
+        void* ptr,
+        const uint64_t sizeInBytes,
+        const int value
     )
     {
         std::memset(ptr, value, sizeInBytes);

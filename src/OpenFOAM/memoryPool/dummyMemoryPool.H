@@ -187,14 +187,14 @@ inline bool Foam::dummyMemoryPool::isInBlockRange(void* ptr)
 
     bool inRange = false;
     uint64_t Ptr = reinterpret_cast<uint64_t>(ptr);
-    
+
     // loop trough allocated records;
-    // use reverse iterator, likely the last allocated element 
+    // use reverse iterator, likely the last allocated element
     // will be the searched element
-    for (auto block = this->usedBlockList_.rbegin(); 
+    for (auto block = this->usedBlockList_.rbegin();
               block!= this->usedBlockList_.rend(); ++block)
     {
-        uint64_t poolptr = reinterpret_cast<uint64_t>(block->first); 
+        uint64_t poolptr = reinterpret_cast<uint64_t>(block->first);
         inRange = (Ptr >= poolptr) && (Ptr <= (poolptr + block->second));
         if(inRange)
             break;

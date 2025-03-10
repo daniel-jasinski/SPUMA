@@ -57,21 +57,21 @@ Foam::umpireMemoryPool::umpireMemoryPool(const uint64_t size):
     allocator_ = rm_.makeAllocator<umpire::strategy::DynamicPoolList>
     (
         "dynamic_pool",
-	allocator,
+        allocator,
         initialSize_, /*default 512 Mb*/
         minBlockSize_ /*default 1Mb*/
     );
 
     tmpAllocator_ = rm_.makeAllocator<umpire::strategy::DynamicPoolList>
     (
-        "tmp_dynamic_pool", 
-	hostAllocator
+        "tmp_dynamic_pool",
+        hostAllocator
     );
-    
+
     st_ = new umpire::strategy::DynamicPoolList
     (
         "strategy",
-	hostAllocator.getId(),hostAllocator
+        hostAllocator.getId(),hostAllocator
     );
 };
 
@@ -103,11 +103,11 @@ void Foam::umpireMemoryPool::free(void* ptr)
 {
     //if ptr is null do nothing
     if (ptr == nullptr) return;
-    
+
     //check if pointer was allocated with pool
     if (!this->isValid(ptr))
         return;
-    
+
     allocator_.deallocate(ptr);
 };
 
@@ -116,7 +116,7 @@ uint64_t Foam::umpireMemoryPool::arraySizeInBytes(void* poolPtr)
     // check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return 0;
-    
+
     return allocator_.getSize(poolPtr);
 };
 
@@ -129,16 +129,16 @@ void Foam::umpireMemoryPool::copyIn
 {
     // if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    
+
     // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
-    
+
     // check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
     {
         raisePoolValidError(poolPtr)
     }
-    
+
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
@@ -165,16 +165,16 @@ void Foam::umpireMemoryPool::copyOut
 {
     // if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    
+
     // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
-    
+
     // check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
     {
         raisePoolValidError(poolPtr)
     }
-    
+
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
@@ -202,7 +202,7 @@ void Foam::umpireMemoryPool::memSet
     // check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return;
-    
+
     // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
@@ -238,7 +238,7 @@ void Foam::umpireMemoryPool::memSetScalarOne
     // check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return;
-    
+
     // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
@@ -271,7 +271,7 @@ void Foam::umpireMemoryPool::memSet
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return;
-    
+
     //if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
@@ -284,7 +284,7 @@ void Foam::umpireMemoryPool::memSet
     }
 
     // does not work with anything but int
-    rm_.memset(poolPtr,value,nElementsInBytes); 
+    rm_.memset(poolPtr,value,nElementsInBytes);
 };
 
 void Foam::umpireMemoryPool::memCopy
@@ -297,9 +297,9 @@ void Foam::umpireMemoryPool::memCopy
     // check if allocation record associated with an tgtPtr and srcPtr exist
     // if ptr is null do nothing
     if (tgtPtr == nullptr) return;
-    
+
     if (nElementsInBytes == 0) return;
-    
+
     if(!this->isValid(tgtPtr) || !this->isValid(srcPtr))
         raisePoolValidError(poolPtr);
 

@@ -180,7 +180,7 @@ inline bool Foam::fixedSizeMemoryPool::isValid(void* poolPtr)
         reinterpret_cast<char*>(poolPtr)
     );
     bool valid = block == this->usedBlockList_.end() ? false : true;
-    
+
     return valid;
 }
 
@@ -190,15 +190,15 @@ inline bool Foam::fixedSizeMemoryPool::isInBlockRange(void* ptr)
     if (!ptr) return false;
 
     bool inRange = false;
-    
+
     // loop trough allocated records;
     uint64_t Ptr = reinterpret_cast<uint64_t>(ptr);
-    
+
     // use reverse iterator, likely the last allocated element will be checked
-    for (auto block = this->usedBlockList_.rbegin(); 
-	      block!= this->usedBlockList_.rend(); ++block)
+    for (auto block = this->usedBlockList_.rbegin();
+              block!= this->usedBlockList_.rend(); ++block)
     {
-        uint64_t poolptr = reinterpret_cast<uint64_t>(block->first); 
+        uint64_t poolptr = reinterpret_cast<uint64_t>(block->first);
         inRange = (Ptr >= poolptr) && (Ptr <= (poolptr + block->second));
         if(inRange)
             break;

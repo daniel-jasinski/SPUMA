@@ -54,9 +54,9 @@ template<typename T>
 class memoryExecutor
 {
 public:
-    
-    memoryExecutor(memoryExecutor<T> &other) = delete;   
-    
+
+    memoryExecutor(memoryExecutor<T> &other) = delete;
+
     static inline label memAlignBytes()
     {
         return T::_memAlignBytes;
@@ -96,7 +96,7 @@ public:
 
     static inline void memSetScalarOne(void* ptr, const size_t sizeInBytes)
     {
-       T::_backendMemSetScalarOne(ptr, sizeInBytes); 
+       T::_backendMemSetScalarOne(ptr, sizeInBytes);
     }
 
     static inline void memSet(void* ptr, const size_t sizeInBytes, const int value)

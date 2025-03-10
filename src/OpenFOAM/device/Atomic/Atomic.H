@@ -105,8 +105,8 @@ struct Atomic
     FOAM_DEVICE static label AtomicCAS
     (
         label& x,
-	const label& compare, 
-	const label& y
+        const label& compare,
+        const label& y
     )
     {
         return T::_backendAtomicCAS(x,compare,y);

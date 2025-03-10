@@ -181,37 +181,37 @@ template <typename T,int blockSize>
 __device__
 void newWarpReduceNoVolatile( T* sdata, int tid)
 {
-    // hip memory model do not guarantee that reads 
+    // hip memory model do not guarantee that reads
     // are perfomed before write: separate them
 
     T temp(Zero);
-    
-    if (blockSize >= 64) 
+
+    if (blockSize >= 64)
     {
         temp += sdata[tid + 32]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 32) 
+    if (blockSize >= 32)
     {
         temp += sdata[tid + 16]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 16) 
+    if (blockSize >= 16)
     {
         temp += sdata[tid + 8]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 8) 
+    if (blockSize >= 8)
     {
         temp += sdata[tid + 4]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 4) 
+    if (blockSize >= 4)
     {
         temp += sdata[tid + 2]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 2) 
+    if (blockSize >= 2)
     {
         temp += sdata[tid + 1]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();

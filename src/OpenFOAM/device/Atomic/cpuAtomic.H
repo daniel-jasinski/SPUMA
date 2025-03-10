@@ -104,8 +104,8 @@ struct cpuAtomic
     static label _backendAtomicCAS
     (
         label& x,
-	const label& compare, 
-	const label& y
+        const label& compare,
+        const label& y
     )
     {
         label old = x;

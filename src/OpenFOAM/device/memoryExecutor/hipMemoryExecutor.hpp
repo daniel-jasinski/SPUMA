@@ -79,15 +79,15 @@ public:
 
     static void _backendMemSetScalarOne
     (
-        void* ptr, 
-	const size_t sizeInBytes
+        void* ptr,
+        const size_t sizeInBytes
     );
 
     static void _backendMemSet
     (
-        void* ptr, 
-	const size_t sizeInBytes, 
-	const int value
+        void* ptr,
+        const size_t sizeInBytes,
+        const int value
     );
 };
 
