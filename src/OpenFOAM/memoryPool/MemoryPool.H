@@ -1,32 +1,41 @@
 /*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2023-2024 CINECA
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
-    This file is part of zeptoFOAM.
+    This file is part of OpenFOAM.
 
-    zeptoFOAM is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    zeptoFOAM is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with zeptoFOAM.
-    If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    MemoryPool
+    Foam::MemoryPool
 
 Description
-    A naive implementation of a memory pool
+    Frontend interface to memory pool implementations. 
+    Memory pools are algorithms that rely on pools to 
+    manage dynamic memory allocation in a efficient way.
+    Memory pools remove the memory fragmentation issues and allow memory
+    allocation (and deallocation) with constant execution time
 
 SourceFiles
     MemoryPool.H
+    MemoryPool.C
 
 \*---------------------------------------------------------------------------*/
 
@@ -47,9 +56,12 @@ SourceFiles
         << "is not valid" << abort(FatalError);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 namespace Foam
 {
-    class MemoryPool;
+
+// Forward Declarations	
+class MemoryPool;
 
 /*---------------------------------------------------------------------------*\
                            Class MemoryPool Declaration
@@ -97,7 +109,6 @@ public:
         const word& type,
         const uint64_t size
     );
-
 
     // Destructor
     virtual ~MemoryPool();
@@ -178,13 +189,13 @@ public:
     virtual scalar occupancy() const
     {
         return 100 * scalar(this->allocatedSize()) / scalar(this->size());
-    };
+    }
 
     // Returns max occupancy reached
     virtual uint64_t maxOccupancy() const
     {
         return maxOccupancy_;
-    };
+    }
 
     // Prints list of allocated blocks
     virtual void showAllocated(bool relative = false) = 0;

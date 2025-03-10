@@ -27,23 +27,31 @@ Class
     Foam::hipExecutor
 
 Description
-    Defines backend executors for hip (AMD ROCm).
+    Hip (AMD ROCm) executor backend.
 
 SourceFiles
     hipExecutor.hpp
     hipExecutor.hip
 
 \*---------------------------------------------------------------------------*/
+
 #ifndef Foam_hip_executor_H
 #define Foam_hip_executor_H
 
 #include "executor.H"
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 namespace Foam
 {
-//fwd declaration
+
+// Forward Declarations
 class hipExecutor;
 
+
+/*---------------------------------------------------------------------------*\
+                          Class hipExecutor Declaration
+\*---------------------------------------------------------------------------*/
 
 class hipExecutor
 :
@@ -52,10 +60,6 @@ class hipExecutor
 
 public:
 
-    //hipExecutor() = default;
-
-    //~hipExecutor() = default;
-
     template<typename F>
     void _backendFor(F& lambda, const label& size);
 
@@ -63,16 +67,35 @@ public:
     void _backendSerialFor(F& lambda, const label& size);
 
     template<typename F, typename resultT>
-    void _backendReductionSum(F& lambda, resultT* const __restrict__ result, const label& size);
+    void _backendReductionSum
+    (
+        F& lambda, 
+	resultT* const __restrict__ result, 
+	const label& size
+    );
 
     template<typename F,typename Op, typename resultT>
-    void _backendReductionCompare(F& lambda, Op& op, resultT* const __restrict__ result, const label& size);
+    void _backendReductionCompare
+    (
+        F& lambda, 
+	Op& op, 
+	resultT* const __restrict__ result, 
+	const label& size
+    );
 };
 
-} // namespace Foam
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
     #include "hipExecutor.hip"
 #endif
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 #endif
+
+// ************************************************************************* //

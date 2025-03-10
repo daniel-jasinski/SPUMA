@@ -1,37 +1,40 @@
 /*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2023-2024 CINECA
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
-    This file is part of zeptoFOAM.
+    This file is part of OpenFOAM.
 
-    zeptoFOAM is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    zeptoFOAM is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with zeptoFOAM.
-    If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
     dummyMemoryPool
 
 Description
-    A naive implementation of a memory pool that does not use any pooling
+    A memory pool naive implementation that does not use any pooling
     strategy.
 
 SourceFiles
-    MemoryPool.H
     dummyMemoryPool.H
     dummyMemoryPool.C
-\* ---------------------------------------------------------------------------*/
 
+\* ---------------------------------------------------------------------------*/
 
 #ifndef dummy_Memory_Pool_Executor_H
 #define dummy_Memory_Pool_Executor_H
@@ -39,8 +42,14 @@ SourceFiles
 #include <iostream>
 #include "MemoryPool.H"
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 namespace Foam
 {
+
+/*---------------------------------------------------------------------------*\
+                          Class dummyMemoryPool Declaration
+\*---------------------------------------------------------------------------*/
 
 class dummyMemoryPool:
     public MemoryPool
@@ -49,12 +58,11 @@ class dummyMemoryPool:
 private:
 
     // Private constructor to prevent instancing
-
     dummyMemoryPool(const uint64_t size = 0);
 
 public:
 
-    //declare interface as friend
+    // declare interface as friend
     friend class MemoryPool;
 
     // Static Data
@@ -129,28 +137,26 @@ public:
     uint64_t size() const
     {
         return size_;
-    };
+    }
 
     // Returns allocated size
     uint64_t allocatedSize() const
     {
         return allocatedSize_;
-    };
+    }
 
     // Returns unallocated size
     uint64_t unallocatedSize() const
     {
         return unallocatedSize_;
-    };
+    }
 
     // Prints list of allocated blocks
     void showAllocated(bool relative = false);
 
     // Prints list of unallocated blocks
     void showUnallocated(bool relative = false);
-
 };
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -165,7 +171,10 @@ inline bool Foam::dummyMemoryPool::isValid(void* poolPtr)
     //case when poolPtr is null
     if ( !poolPtr ) return false;
 
-    blockList::iterator block = this->usedBlockList_.find(reinterpret_cast<char*>(poolPtr));
+    blockList::iterator block = this->usedBlockList_.find
+    (
+        reinterpret_cast<char*>(poolPtr)
+    );
     bool valid = block == this->usedBlockList_.end() ? false : true;
 
     return valid;
@@ -178,9 +187,12 @@ inline bool Foam::dummyMemoryPool::isInBlockRange(void* ptr)
 
     bool inRange = false;
     uint64_t Ptr = reinterpret_cast<uint64_t>(ptr);
+    
     // loop trough allocated records;
-    // use reverse iterator, likely the last allocated element will be the searched element
-    for (auto block = this->usedBlockList_.rbegin(); block!= this->usedBlockList_.rend(); ++block)
+    // use reverse iterator, likely the last allocated element 
+    // will be the searched element
+    for (auto block = this->usedBlockList_.rbegin(); 
+              block!= this->usedBlockList_.rend(); ++block)
     {
         uint64_t poolptr = reinterpret_cast<uint64_t>(block->first); 
         inRange = (Ptr >= poolptr) && (Ptr <= (poolptr + block->second));
@@ -190,6 +202,8 @@ inline bool Foam::dummyMemoryPool::isInBlockRange(void* ptr)
 
     return inRange;
 }
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
 

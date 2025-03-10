@@ -1,8 +1,46 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2017-2023 OpenCFD Ltd.
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+Description
+    Collection of CUDA global utility functions 
+
+SourceFiles
+    cudaDeviceUtils.H
+
+\*---------------------------------------------------------------------------*/
+
 #ifndef Foam_cuda_Device_Utils_H
 #define Foam_cuda_Device_Utils_H
+
 #ifdef have_cuda
+
 #include "cudaError.cuh"
 #include <cuda_runtime_api.h>
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 __device__ __forceinline__
 double atomicMin(double *address, double val)
@@ -60,6 +98,9 @@ double atomicMax(double *address, double val)
 namespace Foam
 {
 
+/*---------------------------------------------------------------------------*\
+                           Struct Mutex Declaration
+\*---------------------------------------------------------------------------*/
 
 struct Mutex
 {
@@ -83,12 +124,19 @@ private:
     int* mutex_;
 };
 
+/*---------------------------------------------------------------------------*\
+                           Struct spinLock Declaration
+\*---------------------------------------------------------------------------*/
+
 struct spinLock
 {
-    __device__ static inline void lock(int* mutex) {
+    __device__ static inline void lock(int* mutex) 
+    {
         while (atomicCAS(mutex, 0, 1) == 1) {};
     }
-    __device__ static inline void unlock(int* mutex){
+    
+    __device__ static inline void unlock(int* mutex)
+    {
        atomicExch(mutex, 0); 
     } 
 };
@@ -108,7 +156,6 @@ void warpReduceNoVolatile( T* sdata, int tid)
     if (blockSize >=  4) { tmp = sdata[tid +  2];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
     if (blockSize >=  2) { tmp = sdata[tid +  1];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
 };
-
 
 template <typename T,typename Op,int blockSize>
 __device__
@@ -131,33 +178,40 @@ void warpReduceCompareNoVolatile( T* sdata, Op& op,int tid)
 
 template <typename T,int blockSize>
 __device__
-void newWarpReduceNoVolatile( T* sdata, int tid)
+void newWarpReduceNoVolatile(T* sdata, int tid)
 {   
-    //cuda memory model do not guarantee that reads are perfomed before write: separate them
+    // cuda memory model do not guarantee that reads 
+    // are perfomed before write: separate them
     
-    T temp(Zero); //error static init
-    //memset(temp.v_,0,sizeof(T));
-    if (blockSize >= 64) {
+    T temp(Zero);
+    
+    if (blockSize >= 64) 
+    {
         temp += sdata[tid + 32]; __syncwarp();
         sdata[tid] = temp; __syncwarp();
     }
-    if (blockSize >= 32) {
+    if (blockSize >= 32) 
+    {
         temp += sdata[tid + 16]; __syncwarp();
         sdata[tid] = temp; __syncwarp();
     }
-    if (blockSize >= 16) {
+    if (blockSize >= 16) 
+    {
         temp += sdata[tid + 8]; __syncwarp();
         sdata[tid] = temp; __syncwarp();
     }
-    if (blockSize >= 8) {
+    if (blockSize >= 8) 
+    {
         temp += sdata[tid + 4]; __syncwarp();
         sdata[tid] = temp; __syncwarp();
     }
-    if (blockSize >= 4) {
+    if (blockSize >= 4) 
+    {
         temp += sdata[tid + 2]; __syncwarp();
         sdata[tid] = temp; __syncwarp();
     }
-    if (blockSize >= 2) {
+    if (blockSize >= 2) 
+    {
         temp += sdata[tid + 1]; __syncwarp();
         sdata[tid] = temp; __syncwarp();
     }
@@ -181,17 +235,30 @@ void warpReduce(volatile T* sdata, int tid) // volataile to ensure visibility of
 // casting the same pointer to the desired type. This prevent multiple definition
 // of the same shared pointer of different type.
 template <typename T>
-struct SharedMemory{
-  __device__ inline T *getPointer(){
-    extern __shared__ __align__(8) char smem[];
-    return reinterpret_cast<T*>(smem);
-  }
+struct SharedMemory
+{
+    __device__ inline T *getPointer()
+    {
+        extern __shared__ __align__(8) char smem[];
+        return reinterpret_cast<T*>(smem);
+    }
 };
 
-} // end namespace cuda
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-} //end namespace Foam
+} // End namespace cuda
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
 
+// ************************************************************************* //
+
 #endif
+
+// ************************************************************************* //
+

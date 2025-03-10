@@ -27,7 +27,7 @@ Class
     Foam::hipMemoryExecutor
 
 Description
-    Memory pool hip (AMD ROCm) backend.
+    Hip executor for the memory pool operations.
 
 SourceFiles
     hipMemoryExecutor.hpp
@@ -40,9 +40,14 @@ SourceFiles
 
 #include "memoryExecutor.H"
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+
+/*---------------------------------------------------------------------------*\
+                           Class hipMemoryExecutor Declaration
+\*---------------------------------------------------------------------------*/
 
 class hipMemoryExecutor
 : public memoryExecutor<hipMemoryExecutor>
@@ -72,9 +77,18 @@ public:
         size_t sizeOfValue
     );
 
-    static void _backendMemSetScalarOne(void* ptr, const size_t sizeInBytes);
+    static void _backendMemSetScalarOne
+    (
+        void* ptr, 
+	const size_t sizeInBytes
+    );
 
-    static void _backendMemSet(void* ptr, const size_t sizeInBytes, const int value);
+    static void _backendMemSet
+    (
+        void* ptr, 
+	const size_t sizeInBytes, 
+	const int value
+    );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

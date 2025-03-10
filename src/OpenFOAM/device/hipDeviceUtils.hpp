@@ -30,12 +30,17 @@ SourceFiles
     hipDevicUtils.hpp
 
 \*---------------------------------------------------------------------------*/
+
 #ifndef Foam_hip_Device_Utils_H
 #define Foam_hip_Device_Utils_H
+
 #ifdef have_hip
+
 #include "MemoryPool.H"
 #include "hipError.hpp"
 #include <hip/hip_runtime.h>
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
@@ -93,6 +98,10 @@ double hipAtomicMaxDouble(double *address, double val)
     return __longlong_as_double(ret);
 }
 
+/*---------------------------------------------------------------------------*\
+                          Struct Mutex Declaration
+\*---------------------------------------------------------------------------*/
+
 struct Mutex
 {
     Mutex()
@@ -114,6 +123,11 @@ struct Mutex
 private:
     int* mutex_;
 };
+
+
+/*---------------------------------------------------------------------------*\
+                          Struct spinLock Declaration
+\*---------------------------------------------------------------------------*/
 
 struct spinLock
 {
@@ -167,35 +181,41 @@ template <typename T,int blockSize>
 __device__
 void newWarpReduceNoVolatile( T* sdata, int tid)
 {
-    //hip memory model do not guarantee that reads are perfomed before write: separate them
+    // hip memory model do not guarantee that reads 
+    // are perfomed before write: separate them
 
-    T temp(Zero); //error static init
-    //memset(temp.v_,0,sizeof(T));
-    if (blockSize >= 64) {
+    T temp(Zero);
+    
+    if (blockSize >= 64) 
+    {
         temp += sdata[tid + 32]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 32) {
+    if (blockSize >= 32) 
+    {
         temp += sdata[tid + 16]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 16) {
+    if (blockSize >= 16) 
+    {
         temp += sdata[tid + 8]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 8) {
+    if (blockSize >= 8) 
+    {
         temp += sdata[tid + 4]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 4) {
+    if (blockSize >= 4) 
+    {
         temp += sdata[tid + 2]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-    if (blockSize >= 2) {
+    if (blockSize >= 2) 
+    {
         temp += sdata[tid + 1]; __threadfence_block();
         sdata[tid] = temp; __threadfence_block();
     }
-
 };
 
 template <typename T, int blockSize>
@@ -210,12 +230,12 @@ void warpReduce(volatile T* sdata, int tid) // volataile to ensure visibility of
     if (blockSize >= 2)  sdata[tid] += sdata[tid + 1];
 };
 
-
 // Simple wrapper to allow the use of extern linked shared memory by
 // casting the same pointer to the desired type. This prevents multiple
 // definitions of the same shared pointer for different types.
 template <typename T>
-struct SharedMemory{
+struct SharedMemory
+{
     __device__ inline T *getPointer()
     {
         extern __shared__ __align__(8) char smem[];
@@ -223,10 +243,19 @@ struct SharedMemory{
     }
 };
 
-} // end namespace hip
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace hip
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } //end namespace Foam
 
 #endif
 
+// ************************************************************************* //
+
 #endif
+
+// ************************************************************************* //
+

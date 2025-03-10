@@ -25,7 +25,6 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-
 #include <hip/hip_runtime.h>
 #include "hipMemoryExecutor.hpp"
 #include "deviceM.H"
@@ -79,7 +78,13 @@ void Foam::hipMemoryExecutor::_backendClear(void* ptr)
     }
 }
 
-void Foam::hipMemoryExecutor::_backendMemCopy(void* dst, const void* src, uint64_t size, memCopyKind kind)
+void Foam::hipMemoryExecutor::_backendMemCopy
+( 
+    void* dst, 
+    const void* src, 
+    uint64_t size, 
+    memCopyKind kind
+)
 {
     label err = 0;
     if (kind == memCopyKind::memCopyHostToDevice)
@@ -114,7 +119,13 @@ void Foam::hipMemoryExecutor::_backendMemCopy(void* dst, const void* src, uint64
         FatalErrorInFunction << "ERROR: hipMemcpy returned " << err << abort(FatalError);
 }
 
-void Foam::hipMemoryExecutor::_backendMemSet(void* ptr, const size_t sizeInBytes, const void* value, size_t sizeOfValue)
+void Foam::hipMemoryExecutor::_backendMemSet
+(
+    void* ptr, 
+    const size_t sizeInBytes, 
+    const void* value, 
+    size_t sizeOfValue
+)
 {
     label err = CHECK_HIP_ERROR
     (
@@ -142,7 +153,11 @@ void Foam::hipMemoryExecutor::_backendMemSet(void* ptr, const size_t sizeInBytes
     CHECK_LAST_HIP_ERROR();
 }
 
-void Foam::hipMemoryExecutor::_backendMemSetScalarOne(void* ptr, const size_t sizeInBytes)
+void Foam::hipMemoryExecutor::_backendMemSetScalarOne
+(
+    void* ptr, 
+    const size_t sizeInBytes
+)
 {
     const int numBlocks = SET_NUM_BLOCKS(sizeInBytes);
     Foam::device::memSetOneKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
@@ -154,7 +169,12 @@ void Foam::hipMemoryExecutor::_backendMemSetScalarOne(void* ptr, const size_t si
     CHECK_LAST_HIP_ERROR();
 }
 
-void Foam::hipMemoryExecutor::_backendMemSet(void* ptr, const size_t sizeInBytes, const int value)
+void Foam::hipMemoryExecutor::_backendMemSet
+(
+    void* ptr, 
+    const size_t sizeInBytes, 
+    const int value
+)
 {
     label err = CHECK_HIP_ERROR
     (
@@ -168,7 +188,6 @@ void Foam::hipMemoryExecutor::_backendMemSet(void* ptr, const size_t sizeInBytes
 
     if (err != 0)
         FatalErrorInFunction << "ERROR: hipMemcpy returned " << err << abort(FatalError);
-
 }
 
-
+// ************************************************************************* //

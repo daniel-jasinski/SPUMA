@@ -1,36 +1,39 @@
 /*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2023-2024 CINECA
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
-    This file is part of zeptoFOAM.
+    This file is part of OpenFOAM.
 
-    zeptoFOAM is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    zeptoFOAM is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with zeptoFOAM.
-    If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
     umpireMemoryPool
 
 Description
-    wrapper for umpire library
+    Interface to the Umpire memory pool implementation. 
+    See https://github.com/LLNL/Umpire
 
 SourceFiles
-    MemoryPool.H
     umpireMemoryPool.H
     umpireMemoryPool.C
 \* ---------------------------------------------------------------------------*/
-
 
 #ifndef umpire_Memory_Pool_Executor_H
 #define umpire_Memory_Pool_Executor_H
@@ -42,8 +45,14 @@ SourceFiles
 #include <umpire/strategy/DynamicPoolList.hpp>
 #include <umpire/strategy/mixins/Inspector.hpp>
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 namespace Foam
 {
+
+/*---------------------------------------------------------------------------*\
+                          Class umpireMemoryPool Declaration
+\*---------------------------------------------------------------------------*/
 
 class umpireMemoryPool:
     public MemoryPool
@@ -94,7 +103,7 @@ public:
     virtual inline bool isInRange(void* ptr)
     {
         NotImplemented;
-    };
+    }
 
     // Returns size of array (in bytes if type not specified)
     uint64_t arraySizeInBytes(void* poolPtr);
@@ -151,41 +160,39 @@ public:
     uint64_t size() const
     {
         return allocator_.getActualSize();
-    };
+    }
 
     // Returns allocated size
     uint64_t allocatedSize() const
     {
         return allocator_.getCurrentSize();
-    };
+    }
 
     // Returns allocated size
     uint64_t unallocatedSize() const
     {
         return this->size() - this->allocatedSize();
-    };
+    }
 
     // Returns occupancy rate (percent)
     scalar occupancy()
     {
         scalar occupancy = 100 * scalar(this->allocatedSize()) / scalar(this->size());
         return occupancy;
-    };
+    }
 
     // Prints list of allocated blocks
     void showAllocated(bool relative = false)
     {
         NotImplemented;
-    };
+    }
 
     // Prints list of unallocated blocks
     void showUnallocated(bool relative = false)
     {
         NotImplemented;
-    };
-
+    }
 };
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -210,6 +217,8 @@ inline bool Foam::umpireMemoryPool::isValid(void* poolPtr)
     }
     return valid;
 }
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
 

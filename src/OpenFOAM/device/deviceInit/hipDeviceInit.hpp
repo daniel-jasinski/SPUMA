@@ -27,12 +27,13 @@ Class
     Foam::hipDeviceInit
 
 Description
-    Class handling initialization of accelerator device in hip (AMD ROCm)
+    Hip (AMD ROCm) device initialization backend
 
 SourceFiles
     hipDeviceInit.hpp
 
 \*---------------------------------------------------------------------------*/
+
 #ifndef Foam_hip_deviceInit_H
 #define Foam_hip_deviceInit_H
 
@@ -44,13 +45,18 @@ SourceFiles
     #include <hip/hip_runtime.h>
 #endif
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 namespace Foam
 {
+
+/*---------------------------------------------------------------------------*\
+                          Class hipDeviceInit Declaration
+\*---------------------------------------------------------------------------*/
+
 class hipDeviceInit
 : public deviceInit<hipDeviceInit>
 {
-private:
-    /* data */
 public:
 
     static void _backendInit()
@@ -65,6 +71,12 @@ public:
     }
 };
 
-} // namespace Foam
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
+
+// ************************************************************************* //

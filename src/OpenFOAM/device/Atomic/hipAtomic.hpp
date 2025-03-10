@@ -27,17 +27,20 @@ Struct
     Foam::hipAtomic
 
 Description
-    Class handling atomic operations in hip (AMD ROCm)
+    HIP atomic backend (AMD ROCm)
 
 SourceFiles
     hipAtomic.hpp
 
 \*---------------------------------------------------------------------------*/
+
 #ifndef Foam_hip_Atomic_H
 #define Foam_hip_Atomic_H
 
 #include "Atomic.H"
 #include "hipDeviceUtils.hpp"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
@@ -51,28 +54,28 @@ struct hipAtomic
         FOAM_DEVICE void operator()(T& x, const T& y) const
         {
             atomicAdd(&x,y);
-        };
+        }
     };
 
     FOAM_DEVICE static void  _backendAtomicAdd(solveScalar& x, const solveScalar& y)
     {
         atomicAdd(&x,y);
-    };
+    }
 
     FOAM_DEVICE static void  _backendAtomicAdd(label& x, const label& y)
     {
         atomicAdd(&x,y);
-    };
+    }
 
     FOAM_DEVICE static void  _backendAtomicMax(solveScalar& x, const solveScalar& y)
     {
         hipAtomicMaxDouble(&x,y);
-    };
+    }
 
     FOAM_DEVICE static void  _backendAtomicMax(label& x, const label& y)
     {
         atomicMax(&x, y);
-    };
+    }
 
     template<class T>
     struct atomicMaxEqOp
@@ -80,18 +83,18 @@ struct hipAtomic
         FOAM_DEVICE void operator()(T& x, const T& y) const
         {
             _backendAtomicMax(x,y);
-        };
+        }
     };
 
     FOAM_DEVICE static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
     {
         hipAtomicMinDouble(&x,y);
-    };
+    }
 
     FOAM_DEVICE static void  _backendAtomicMin(label& x, const label& y)
     {
         atomicMin(&x, y);
-    };
+    }
 
     template<class T>
     struct atomicMinEqOp
@@ -99,7 +102,7 @@ struct hipAtomic
         FOAM_DEVICE void operator()(T& x, const T& y) const
         {
             _backendAtomicMin(x,y);
-        };
+        }
     };
 
     template<class Form, class Cmpt, direction Ncmpts>
@@ -110,7 +113,7 @@ struct hipAtomic
     )
     {
         VectorSpaceOps<Ncmpts,0>::eqOp(vs1, vs2, atomicPlusEqOp<Cmpt>());
-    };
+    }
 
     template<class Form, class Cmpt, direction Ncmpts>
     FOAM_DEVICE static void _backendAtomicMax
@@ -120,7 +123,7 @@ struct hipAtomic
     )
     {
         VectorSpaceOps<Ncmpts,0>::eqOp(vs1, vs2, atomicMaxEqOp<Cmpt>());
-    };
+    }
 
     template<class Form, class Cmpt, direction Ncmpts>
     FOAM_DEVICE static void _backendAtomicMin
@@ -130,15 +133,25 @@ struct hipAtomic
     )
     {
         VectorSpaceOps<Ncmpts,0>::eqOp(vs1, vs2, atomicMinEqOp<Cmpt>());
-    };
+    }
 
-    FOAM_DEVICE static label _backendAtomicCAS(label& x,const label& compare, const label& y)
+    FOAM_DEVICE static label _backendAtomicCAS
+    (
+        label& x,
+	const label& compare, 
+	const label& y
+    )
     {
         return atomicCAS(&x,compare,y);
-    };
-
+    }
 };
 
-} // namespace Foam
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
+
+// ************************************************************************* //

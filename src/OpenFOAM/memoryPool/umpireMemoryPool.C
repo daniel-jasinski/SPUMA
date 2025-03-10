@@ -1,23 +1,27 @@
 /*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2023-2024 CINECA
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
-    This file is part of zeptoFOAM.
+    This file is part of OpenFOAM.
 
-    zeptoFOAM is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    zeptoFOAM is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with zeptoFOAM.
-    If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 \*---------------------------------------------------------------------------*/
 
@@ -26,11 +30,11 @@ License
 #include "umpireMemoryPool.H"
 #include "error.H"
 
-
 namespace Foam
 {
     defineTypeNameAndDebug(umpireMemoryPool,  0);
 }
+
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
 
 Foam::umpireMemoryPool::umpireMemoryPool(const uint64_t size):
@@ -39,13 +43,9 @@ Foam::umpireMemoryPool::umpireMemoryPool(const uint64_t size):
     inspector_()
 {
 #if defined(have_cuda) || defined(have_hip)
-        #ifdef have_managed
-        auto allocator = rm_.getAllocator("UM");
-        #else
-        auto allocator = rm_.getAllocator("DEVICE");
-        #endif
+    auto allocator = rm_.getAllocator("UM");
 #else
-        auto allocator = rm_.getAllocator("HOST");
+    auto allocator = rm_.getAllocator("HOST");
 #endif
 
     auto hostAllocator = rm_.getAllocator("HOST");
@@ -54,13 +54,25 @@ Foam::umpireMemoryPool::umpireMemoryPool(const uint64_t size):
     initialSize_ = size >  GB ? size : GB;
     minBlockSize_ = 1024*1024; //1Mb
 
-    allocator_ = rm_.makeAllocator<umpire::strategy::DynamicPoolList>("dynamic_pool",allocator,
-                                                                        initialSize_, /*default 512 Mb*/
-                                                                        minBlockSize_); /*default 1Mb*/
+    allocator_ = rm_.makeAllocator<umpire::strategy::DynamicPoolList>
+    (
+        "dynamic_pool",
+	allocator,
+        initialSize_, /*default 512 Mb*/
+        minBlockSize_ /*default 1Mb*/
+    );
 
-    tmpAllocator_ = rm_.makeAllocator<umpire::strategy::DynamicPoolList>("tmp_dynamic_pool", hostAllocator);
-    st_ = new umpire::strategy::DynamicPoolList("strategy",hostAllocator.getId(),hostAllocator);
-
+    tmpAllocator_ = rm_.makeAllocator<umpire::strategy::DynamicPoolList>
+    (
+        "tmp_dynamic_pool", 
+	hostAllocator
+    );
+    
+    st_ = new umpire::strategy::DynamicPoolList
+    (
+        "strategy",
+	hostAllocator.getId(),hostAllocator
+    );
 };
 
 // * * * * * * * * * * * * * * * Destructors  * * * * * * * * * * * * * * * //
@@ -72,7 +84,6 @@ Foam::umpireMemoryPool::~umpireMemoryPool()
 
 void* Foam::umpireMemoryPool::allocate(uint64_t sizeInBytes)
 {
-
     if (!sizeInBytes)
     {
         Info << "WARNING: trying to allocate a block of zero size." << nl;
@@ -86,25 +97,26 @@ void* Foam::umpireMemoryPool::allocate(uint64_t sizeInBytes)
     if (allocatedSizeInBytes > this->maxOccupancy_) this->maxOccupancy_ = allocatedSizeInBytes;
 
     return poolPtr;
-
 };
 
-// free function
 void Foam::umpireMemoryPool::free(void* ptr)
 {
     //if ptr is null do nothing
     if (ptr == nullptr) return;
+    
     //check if pointer was allocated with pool
     if (!this->isValid(ptr))
         return;
+    
     allocator_.deallocate(ptr);
 };
 
 uint64_t Foam::umpireMemoryPool::arraySizeInBytes(void* poolPtr)
 {
-    //check if pointer was allocated with pool
+    // check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return 0;
+    
     return allocator_.getSize(poolPtr);
 };
 
@@ -115,14 +127,18 @@ void Foam::umpireMemoryPool::copyIn
     uint64_t nElementsInBytes
 )
 {
-    //if ptr is null do nothing
+    // if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    //if nElementsInBytes = 0 do nothing
+    
+    // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
-    //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr)){
+    
+    // check if pointer was allocated with pool
+    if (!this->isValid(poolPtr))
+    {
         raisePoolValidError(poolPtr)
     }
+    
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
@@ -147,14 +163,18 @@ void Foam::umpireMemoryPool::copyOut
     uint64_t nElementsInBytes
 )
 {
-    //if ptr is null do nothing
+    // if ptr is null do nothing
     if (poolPtr == nullptr) return;
-    //if nElementsInBytes = 0 do nothing
+    
+    // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
-    //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr)){
+    
+    // check if pointer was allocated with pool
+    if (!this->isValid(poolPtr))
+    {
         raisePoolValidError(poolPtr)
     }
+    
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
@@ -179,10 +199,11 @@ void Foam::umpireMemoryPool::memSet
     uint64_t nElementsInBytes
 )
 {
-    //check if pointer was allocated with pool
+    // check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return;
-    //if nElementsInBytes = 0 do nothing
+    
+    // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
     uint64_t size = allocator_.getSize(poolPtr);
@@ -192,15 +213,8 @@ void Foam::umpireMemoryPool::memSet
             << "Trying to assign more bytes than available in block"
             <<abort(FatalError);
     }
-    /*
-    T* tmpPtr =(T*)tmpAllocator_.allocate(sizeof(T));
-    *tmPtr= value;
-    this->rm_.copy(poolPtr,tmpPtr,sizeof(T));
-    trova modo di copiare il primo elemento del pool sul resto
-    this->tmpAllocator_.deallocate(tmpPtr);
-    */
 
-    //-- workaround to delete type info in function --//
+    // workaround to delete type info in function
     char* tmpPtr = (char*)tmpAllocator_.allocate(size);
     char* tmpValue = (char*)value;
     for (size_t i = 0; i < size; i+=sizeOfValue)
@@ -210,7 +224,7 @@ void Foam::umpireMemoryPool::memSet
             tmpPtr[i+j] = tmpValue[j];
         }
     }
-    // -------------------------------------------//
+
     rm_.copy(poolPtr, (void*)tmpPtr, size);
     tmpAllocator_.deallocate(tmpPtr);
 };
@@ -221,10 +235,11 @@ void Foam::umpireMemoryPool::memSetScalarOne
     uint64_t nElementsInBytes
 )
 {
-    //check if pointer was allocated with pool
+    // check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return;
-    //if nElementsInBytes = 0 do nothing
+    
+    // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
     uint64_t size = allocator_.getSize(poolPtr);
@@ -235,13 +250,6 @@ void Foam::umpireMemoryPool::memSetScalarOne
             <<abort(FatalError);
     }
 
-    /*
-    T* tmpPtr =(T*)tmpAllocator_.allocate(sizeof(T));
-    *tmPtr= value;
-    this->rm_.copy(poolPtr,tmpPtr,sizeof(T));
-    trova modo di copiare il primo elemento del pool sul resto
-    this->tmpAllocator_.deallocate(tmpPtr);
-    */
     scalar* tmpPtr = (scalar*)tmpAllocator_.allocate(size);
     const scalar one = 1.0;
     for (size_t i = 0; i < size/sizeof(scalar); i++)
@@ -263,6 +271,7 @@ void Foam::umpireMemoryPool::memSet
     //check if pointer was allocated with pool
     if (!this->isValid(poolPtr))
         return;
+    
     //if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
@@ -274,7 +283,8 @@ void Foam::umpireMemoryPool::memSet
             <<abort(FatalError);
     }
 
-    rm_.memset(poolPtr,value,nElementsInBytes); // does not work with anything but int
+    // does not work with anything but int
+    rm_.memset(poolPtr,value,nElementsInBytes); 
 };
 
 void Foam::umpireMemoryPool::memCopy
@@ -284,14 +294,14 @@ void Foam::umpireMemoryPool::memCopy
     uint64_t nElementsInBytes
 )
 {
-    //check if allocation record associated with an tgtPtr and srcPtr exist
-    //if ptr is null do nothing
+    // check if allocation record associated with an tgtPtr and srcPtr exist
+    // if ptr is null do nothing
     if (tgtPtr == nullptr) return;
-    //if nElementsInBytes = 0 do nothing
+    
     if (nElementsInBytes == 0) return;
+    
     if(!this->isValid(tgtPtr) || !this->isValid(srcPtr))
         raisePoolValidError(poolPtr);
-    //TODO add in range check
 
     uint64_t srcSizeInBytes = this->allocator_.getSize(srcPtr);
     const uint64_t tgtSizeInBytes = this->allocator_.getSize(tgtPtr);
@@ -312,3 +322,5 @@ void Foam::umpireMemoryPool::memCopy
 
     rm_.copy(tgtPtr,srcPtr,nElementsInBytes);
 }
+
+// ************************************************************************* //
