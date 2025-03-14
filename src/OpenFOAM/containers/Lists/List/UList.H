@@ -98,7 +98,7 @@ class UList
 
         //- Vector of values of type T
         T* __restrict__ v_;
-        
+
         bool usePool_;
 
 protected:
@@ -249,7 +249,7 @@ public:
     // Member Functions
         // Query memory management
             inline bool usePool() const;
-            
+
         // Access
 
             //- The forward circular index. The next index in the list

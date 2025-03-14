@@ -103,8 +103,8 @@ Foam::fv::gaussGrad<Type>::gradf
 
         const auto pSfp = pSf.cbegin();
         const auto pssfp = pssf.cbegin();
-        const auto pFaceCellsp = pFaceCells.cbegin(); 
-        auto igGradp = igGrad.begin(); 
+        const auto pFaceCellsp = pFaceCells.cbegin();
+        auto igGradp = igGrad.begin();
         auto Lambda = [=](label facei)
         {
             foamAtomic::AtomicAdd(igGradp[pFaceCellsp[facei]], pSfp[facei]*pssfp[facei]);

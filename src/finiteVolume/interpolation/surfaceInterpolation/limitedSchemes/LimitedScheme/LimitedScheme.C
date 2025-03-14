@@ -91,10 +91,10 @@ void Foam::LimitedScheme<Type, Limiter, LimitFunc>::calcLimiter
             gradcp[own],
             gradcp[nei],
             Cp[nei] - Cp[own]
-        ); 
+        );
     };
     exec.parallelFor(Lambda, pLim.size());
-    
+
     surfaceScalarField::Boundary& bLim = limiterField.boundaryFieldRef();
 
     forAll(bLim, patchi)
@@ -138,7 +138,7 @@ void Foam::LimitedScheme<Type, Limiter, LimitFunc>::calcLimiter
             const auto pdp = pd.cbegin();
 
             auto Lambda = [=](label face)
-	    {
+            {
                 pLimp[face] = localLimiter.limiter
                 (
                     pCDweightsp[face],
@@ -148,7 +148,7 @@ void Foam::LimitedScheme<Type, Limiter, LimitFunc>::calcLimiter
                     pGradcPp[face],
                     pGradcNp[face],
                     pdp[face]
-                ); 
+                );
             };
             exec.parallelFor(Lambda, pLim.size());
         }

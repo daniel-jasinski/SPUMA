@@ -80,7 +80,7 @@ public:
 
         //construct list on memoryPool
         IOList(const IOobject& io, poolSwitch usePool);
-        
+
         //- Construct from IOobject and zero size (if not read)
         IOList(const IOobject& io, Foam::zero);
 

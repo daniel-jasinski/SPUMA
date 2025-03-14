@@ -359,7 +359,7 @@ void cmptAv
 {
     typedef typename Field<Type>::cmptType resultType;
     if(result.usePool() && f1.usePool())
-    {    
+    {
         /* Check fields have same size */
         checkFields(result, f1, "f1 = cmptAv(f2)");
         auto rp = result.begin();
@@ -483,7 +483,7 @@ Type max(const UList<Type>& f1)
         {
             TFOR_ALL_S_OP_FUNC_F_S(Type, result, =, max, Type, f1, Type, result)
         }
-        
+
         return result;
     }
 
@@ -510,7 +510,7 @@ Type min(const UList<Type>& f1)
         {
             TFOR_ALL_S_OP_FUNC_F_S(Type, result, =, min, Type, f1, Type, result)
         }
-        
+
         return result;
     }
     return pTraits<Type>::max;

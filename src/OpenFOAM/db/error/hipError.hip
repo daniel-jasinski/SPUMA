@@ -79,9 +79,9 @@ bool isDeviceValid(const void * ptr)
 
 template int checkHipError<hipError_t>
 (
-    hipError_t err, 
+    hipError_t err,
     const char* const func,
-    const char* const file, 
+    const char* const file,
     const int line
 );
 

@@ -53,7 +53,7 @@ Foam::tmp<Foam::Field<Type>> Foam::lduMatrix::H(const Field<Type>& psi) const
         const label nFaces = upper().size();
 
         auto Lambda = [=](label face)
-	{
+        {
             foamAtomic::AtomicAdd(HpsiPtr[uPtr[face]], -lowerPtr[face]*psiPtr[lPtr[face]]);
             foamAtomic::AtomicAdd(HpsiPtr[lPtr[face]], -upperPtr[face]*psiPtr[uPtr[face]]);
         };
@@ -95,10 +95,10 @@ Foam::lduMatrix::faceH(const Field<Type>& psi) const
         const auto Up = Upper.begin();
 
         auto Lambda = [=](label face)
-	{
+        {
             faceHpsip[face] =
                 Up[face]*psip[u[face]]
-              - Lp[face]*psip[l[face]]; 
+              - Lp[face]*psip[l[face]];
         };
 
         foamExecutor exec;

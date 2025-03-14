@@ -122,28 +122,28 @@ void Foam::twoStageGaussSeidelSmoother::smooth
     for (label sweep=0; sweep<nSweeps; sweep++)
     {
         // -- Compute new residual vector (scaled by D^-1)
-	
-	// --- Calculate A.psi (we use rDr as auxiliary field)
+
+        // --- Calculate A.psi (we use rDr as auxiliary field)
         matrix_.Amul(rDr, psi, interfaceBouCoeffs_, interfaces_, cmpt);
 
-	// --- Calculate rDr = D^-1 * rA
-	// --- Initialize g with rDr
-	auto LambdarDr = [=](label celli)
+        // --- Calculate rDr = D^-1 * rA
+        // --- Initialize g with rDr
+        auto LambdarDr = [=](label celli)
         {
             rDrPtr[celli] = rDPtr[celli] * (bPtr[celli] - rDrPtr[celli]);
-	    gPtr[celli] = rDrPtr[celli];
+            gPtr[celli] = rDrPtr[celli];
         };
         exec.parallelFor(LambdarDr, nCells);
 
         // --- Perform local inner (nj) Jacobi iterations
         const label nj = 1;
         const scalar omega = 0.9;
-	
-	for (label j=0; j<nj; ++j)
+
+        for (label j=0; j<nj; ++j)
         {
             gOld = g;
 
-	    if (j != 0)
+            if (j != 0)
                 g = rDr;
 
             // --- Multiply g by the matrix omega * D^-1 * L

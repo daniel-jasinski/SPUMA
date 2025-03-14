@@ -47,7 +47,7 @@ void Foam::lduInterfaceField::addToInternalField
     if (add)
     {
         auto Lambda = [=](label elemI)
-	{
+        {
             foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], coeffsp[elemI]*valsp[elemI]);
         };
         exec.parallelFor(Lambda, faceCells.size());
@@ -55,7 +55,7 @@ void Foam::lduInterfaceField::addToInternalField
     else
     {
         auto Lambda = [=](label elemI)
-	{
+        {
             foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], -coeffsp[elemI]*valsp[elemI]);
         };
         exec.parallelFor(Lambda,faceCells.size());

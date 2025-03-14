@@ -102,17 +102,17 @@ void Foam::RichardsonSmoother::smooth
     };
     exec.parallelFor(Lambda1, nCells);
 
-    const scalar omega = 0.75; 
+    const scalar omega = 0.75;
 
     for (label sweep=0; sweep<nSweeps; sweep++)
     {
         // --- Calculate A.psi
         matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
 
-	// --- Update solution (iteration of the damped jacobi method)
+        // --- Update solution (iteration of the damped jacobi method)
         auto Lambda2 = [=](label celli)
         {
-	    psiPtr[celli] += omega * rDPtr[celli] * (bPtr[celli] - ApsiPtr[celli]);
+            psiPtr[celli] += omega * rDPtr[celli] * (bPtr[celli] - ApsiPtr[celli]);
         };
         exec.parallelFor(Lambda2, nCells);
     }

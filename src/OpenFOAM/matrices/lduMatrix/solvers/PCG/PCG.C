@@ -156,7 +156,7 @@ Foam::solverPerformance Foam::PCG::scalarSolve
             if (solverPerf.nIterations() == 0)
             {
                 auto Lamda1 = [=](label cell)
-		{
+                {
                     pAPtr[cell] = wAPtr[cell];
                 };
                 exec.parallelFor(Lamda1, nCells);
@@ -166,9 +166,9 @@ Foam::solverPerformance Foam::PCG::scalarSolve
                 const solveScalar beta = wArA/wArAold;
 
                 auto Lamda2 = [=](label cell)
-		{
+                {
                     pAPtr[cell] = wAPtr[cell] + beta*pAPtr[cell];
-		};
+                };
                 exec.parallelFor(Lamda2, nCells);
             }
 
@@ -186,9 +186,9 @@ Foam::solverPerformance Foam::PCG::scalarSolve
             const solveScalar alpha = wArA/wApA;
 
             auto Lambda3 = [=](label cell)
-	    {
+            {
                 psiPtr[cell] += alpha*pAPtr[cell];
-                rAPtr[cell] -= alpha*wAPtr[cell]; 
+                rAPtr[cell] -= alpha*wAPtr[cell];
             };
             exec.parallelFor(Lambda3, nCells);
 

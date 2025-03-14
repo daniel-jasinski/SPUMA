@@ -513,13 +513,13 @@ void objective::nullify()
         }
         if (hasBoundaryEdgeContribution())
         {
-	    // Workaround for NVC++
+        // Workaround for NVC++
         #if defined(have_cuda) || defined(have_hip)
             for (Field<vectorField>& field : bEdgeContribution_())
             {
                 for (vectorField& subField : field)
                 {
-                    subField = vector::zero;    
+                    subField = vector::zero;
                 }
             }
         #else

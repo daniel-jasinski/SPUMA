@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
         runTime.printExecutionTime(Info);
         Info << "device Pool occupancy: " << memPool->occupancy() << nl << nl;
     }
-    
+
     Info
         << "device Pool Max Occupancy: " << memPool->maxOccupancy()
         << " / " << memPool->size() << " [bytes]" << nl;

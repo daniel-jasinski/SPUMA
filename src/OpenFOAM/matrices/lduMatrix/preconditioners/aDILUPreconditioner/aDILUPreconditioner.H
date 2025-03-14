@@ -32,8 +32,8 @@ Group
     grpLduMatrixPreconditioners
 
 Description
-    Approximated simplified diagonal-based incomplete LU preconditioner for 
-    asymmetric matrices good for GPUs. The reciprocal of the preconditioned 
+    Approximated simplified diagonal-based incomplete LU preconditioner for
+    asymmetric matrices good for GPUs. The reciprocal of the preconditioned
     diagonal is calculated and stored.
 
 SourceFiles

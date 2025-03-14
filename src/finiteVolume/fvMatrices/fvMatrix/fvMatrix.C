@@ -229,7 +229,7 @@ void Foam::fvMatrix<Type>::addBoundarySource
                         (
                             sourcep[addrp[facei]],
                             cmptMultiply(pbcp[facei], pnfp[facei])
-                        ); 
+                        );
                     };
                     foamExecutor exec;
                     exec.parallelFor(Lambda, addr.size());
@@ -270,7 +270,7 @@ void Foam::fvMatrix<Type>::setValuesFromList
 
     if constexpr(std::is_same<UList<Type>, ListType<Type>>())
     {
-    
+
     // define ptr to pass to lambda
     foamExecutor exec;
     const auto cellLabelsPtr = cellLabels.cbegin();
@@ -1275,7 +1275,7 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
                 auto Lambda = [=](label face)
                 {
                     foamAtomic::AtomicAdd(Dp[pap[face]], component(iCoeffsp[face], 0));
-                    foamAtomic::AtomicAdd(sumOffp[pap[face]], mag(component(pCoeffsp[face], 0))); 
+                    foamAtomic::AtomicAdd(sumOffp[pap[face]], mag(component(pCoeffsp[face], 0)));
                 };
                 exec.parallelFor(Lambda, pa.size());
             }
@@ -1285,7 +1285,7 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
                 // contribution to ensure stability
                 auto Lambda = [=](label face)
                 {
-                   foamAtomic::AtomicAdd(Dp[pap[face]], cmptMax(cmptMag(iCoeffsp[face]))); 
+                   foamAtomic::AtomicAdd(Dp[pap[face]], cmptMax(cmptMag(iCoeffsp[face])));
                 };
                 exec.parallelFor(Lambda, pa.size());
             }
@@ -1365,7 +1365,7 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
             const auto pap = pa.cbegin();
             Field<Type>& iCoeffs = internalCoeffs_[patchi];
             const auto iCoeffsp = iCoeffs.cbegin();
-            
+
             if (ptf.coupled())
             {
                 auto Lambda = [=](label face)

@@ -32,7 +32,7 @@ Group
     grpLduMatrixSmoothers
 
 Description
-    Approximated simplified diagonal-based incomplete LU smoother 
+    Approximated simplified diagonal-based incomplete LU smoother
     for asymmetric matrices running on GPUs.
 
 SourceFiles

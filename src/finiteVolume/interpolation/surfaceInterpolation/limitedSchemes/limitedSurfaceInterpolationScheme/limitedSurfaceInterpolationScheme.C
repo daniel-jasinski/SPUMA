@@ -146,7 +146,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::weights
     surfaceScalarField& Weights = tLimiter.ref();
 
     scalarField& pWeights = Weights.primitiveFieldRef();
-    
+
     foamExecutor exec;
     auto pWeightsp = pWeights.begin();
     const auto CDweightsp = CDweights.cbegin();
@@ -173,7 +173,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::weights
         const auto pCDweightsp = pCDweights.cbegin();
         const auto pFaceFluxp = pFaceFlux.cbegin();
         auto LambdaB = [=](label face)
-	{
+        {
             pWeightsp[face] =
                 pWeightsp[face]*pCDweightsp[face]
             + (1.0 - pWeightsp[face])*pos0(pFaceFluxp[face]);

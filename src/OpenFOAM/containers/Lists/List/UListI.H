@@ -62,7 +62,7 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
     (
         this->v_, this->size_, val
     );*/
-    
+
     if(this->usePool_)
     {
         Foam::MemoryPool::getInstance()->memSet
@@ -80,7 +80,7 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
             this->v_, this->size_, val
         );
     };
-    
+
 }
 
 // TODO MemmoryPool
@@ -100,7 +100,7 @@ inline void Foam::UList<T>::fill_uniform(const Foam::zero)
         (
             this->data_bytes(), this->size_bytes(), char(0)
         );*/
-        
+
         if(this->usePool_)
         {
             Foam::MemoryPool::getInstance()->memSet
@@ -117,7 +117,7 @@ inline void Foam::UList<T>::fill_uniform(const Foam::zero)
                 this->data_bytes(), this->size_bytes(), char(0)
             );
         };
-        
+
     }
     else
     {
@@ -399,7 +399,7 @@ inline void Foam::UList<T>::shallowCopy(const UList<T>& list) noexcept
         if (list.usePool())
         {
             DebugInFunction<<"Error shallow copy from pool to non-pool"<<endl;
-        } 
+        }
     }
     if
     (

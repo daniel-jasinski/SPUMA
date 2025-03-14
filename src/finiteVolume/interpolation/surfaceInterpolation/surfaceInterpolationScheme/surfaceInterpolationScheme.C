@@ -175,9 +175,9 @@ Foam::surfaceInterpolationScheme<Type>::interpolate
     const auto vfip = vfi.cbegin();
     const auto Pp = P.cbegin();
     const auto Np = N.cbegin();
-    
+
     auto Lambda = [=](label fi)
-    { 
+    {
         sfip[fi] = lambdap[fi]*vfip[Pp[fi]] + yp[fi]*vfip[Np[fi]];
     };
     foamExecutor exec;
@@ -276,21 +276,21 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
     const auto vfip = vfi.cbegin();
     const auto Pp = P.cbegin();
     const auto Np = N.cbegin();
-    
+
     foamExecutor exec;
     if constexpr(std::is_same<typename SFType::value_type,one>::value)
     {
         auto Lambda = [=](label fi)
-        { 
+        {
             sfip[fi] = Sfi[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);
         };
         exec.parallelFor(Lambda, P.size());
     }
     else
-    {    
+    {
         const auto Sfip = Sfi.cbegin();
         auto Lambda = [=](label fi)
-        { 
+        {
             sfip[fi] = Sfip[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);
         };
         exec.parallelFor(Lambda, P.size());

@@ -62,7 +62,7 @@ void Foam::List<T>::doResize(const label len)
             {
                 this->v_ = new T[len];
             };
-            
+
             // Can dispatch with
             // - std::execution::parallel_unsequenced_policy
             // - std::execution::unsequenced_policy
@@ -90,7 +90,7 @@ void Foam::List<T>::doResize(const label len)
             };
 
             this->size_ = len;
-            
+
             if (this->usePool_)
             {
                 this->v_ = static_cast<T*>
@@ -348,13 +348,13 @@ Foam::List<T>::List(DynamicList<T, SizeMin>&& list)
 
 template<class T>
 Foam::List<T>::~List()
-{   
+{
     if (this->size_ > 0)
     {
         if(this->usePool_)
         {
             MemoryPool::getInstance()->free(this->v_);
-            
+
         }
         else
         {

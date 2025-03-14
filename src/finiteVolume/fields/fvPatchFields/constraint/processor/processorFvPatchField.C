@@ -454,7 +454,7 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
     sendBuf_.resize_nocopy(this->patch().size());
 
     const labelUList& faceCells = lduAddr.patchAddr(patchId);
-    
+
     foamExecutor exec;
     auto sendBufp = sendBuf_.begin();
     const auto psiInternalp = psiInternal.cbegin();

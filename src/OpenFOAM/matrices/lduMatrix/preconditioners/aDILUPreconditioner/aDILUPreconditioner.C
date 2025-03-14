@@ -69,7 +69,7 @@ void Foam::aDILUPreconditioner::calcReciprocalD
     const lduMatrix& matrix
 )
 {
-    solveScalar* __restrict__ rDPtr = rD.begin(); 
+    solveScalar* __restrict__ rDPtr = rD.begin();
 
     tmp<scalarField> rDTmp = tmp<scalarField>::New(rD);
     scalarField& rDtmp = rDTmp.ref();
@@ -87,10 +87,10 @@ void Foam::aDILUPreconditioner::calcReciprocalD
     auto Lambda1 = [=](label face)
     {
         foamAtomic::AtomicAdd
-	(
-	    rDtmpPtr[uPtr[face]], 
+        (
+            rDtmpPtr[uPtr[face]],
            -upperPtr[face]*lowerPtr[face]/rDPtr[lPtr[face]]
-	);
+        );
     };
     exec.parallelFor(Lambda1, nFaces);
 
@@ -151,7 +151,7 @@ void Foam::aDILUPreconditioner::precondition
     exec.parallelFor(Lambda2, nFaces);
 
     wA = wAtmp;
- 
+
     auto Lambda3 = [=](label face)
     {
         foamAtomic::AtomicAdd

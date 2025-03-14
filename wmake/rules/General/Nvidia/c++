@@ -22,8 +22,8 @@ include $(GENERAL_RULES)/cuda
 
 ifneq (,$(findstring true,$(have_cuda)))
     CC += -gpu=cc$(NVARCH) -cuda -Dhave_cuda
-    
 endif
+
 # Tuning
 sinclude $(GENERAL_RULES)/common/c++$(WM_COMPILE_OPTION)
 

@@ -55,7 +55,7 @@ void Foam::lduAddressing::calcLosort() const
     // Create temporary neighbour addressing
     labelListList cellNbrFaces(size());
 
-    //what if nNbrOfFace[celli] =0? 
+    //what if nNbrOfFace[celli] =0?
     forAll(cellNbrFaces, celli)
     {
         cellNbrFaces[celli].setSize(nNbrOfFace[celli]);

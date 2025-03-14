@@ -213,7 +213,7 @@ void Foam::omegaWallFunctionFvPatchScalarField::calculate
     foamExecutor exec;
     auto omega0p = omega0.begin();
     const auto faceCellsp = faceCells.cbegin();
-    const auto nutwp = nutw.cbegin(); 
+    const auto nutwp = nutw.cbegin();
     const auto nuwp = nuw.cbegin();
     const auto kp = k.cbegin();
     const auto yp = y.cbegin();
@@ -258,7 +258,7 @@ void Foam::omegaWallFunctionFvPatchScalarField::calculate
                 {
                     foamAtomic::AtomicAdd
                     (
-                        omega0p[faceCellsp[facei]], 
+                        omega0p[faceCellsp[facei]],
                         cornerWeightsp[facei]*omegaLog(facei)
                     );
                 }
@@ -361,7 +361,7 @@ void Foam::omegaWallFunctionFvPatchScalarField::calculate
     auto G0p = G0.begin();
     const auto magGradUwp = magGradUw.cbegin();
     const blenderType blender = blender_; //local copy of blender to pass to executor lambda
-    
+
     auto Lambda = [=](label facei)
     {
         if (!(blender == blenderType::STEPWISE) || yPlus(facei) > yPlusLam)
@@ -563,14 +563,14 @@ void Foam::omegaWallFunctionFvPatchScalarField::updateCoeffs()
     FieldType& G = db().lookupObjectRef<FieldType>(turbModel.GName());
 
     FieldType& omega = const_cast<FieldType&>(internalField());
-    
+
     foamExecutor exec;
     const auto pFaceCellsp = patch().faceCells().cbegin();
     auto Gp = G.begin();
     const auto G0p = G0.cbegin();
     auto omegap = omega.begin();
     const auto omega0p = omega0.cbegin();
-    
+
     auto Lambda = [=](label facei)
     {
         const label celli = pFaceCellsp[facei];

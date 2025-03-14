@@ -176,7 +176,7 @@ Foam::solverPerformance Foam::PBiCG::solve
                 auto Lambda0 = [=](label cell)
                 {
                     pAPtr[cell] = wAPtr[cell];
-                    pTPtr[cell] = wTPtr[cell];   
+                    pTPtr[cell] = wTPtr[cell];
                 };
                 exec.parallelFor(Lambda0, nCells);
             }

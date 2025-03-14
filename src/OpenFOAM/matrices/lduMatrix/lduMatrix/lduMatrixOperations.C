@@ -341,12 +341,12 @@ void Foam::lduMatrix::operator*=(const scalarField& sf)
         const auto sfp = sf.cbegin();
 
         auto LambdaNeigh = [=](label face)
-	{
+        {
             upperp[face] *= sfp[lp[face]];
         };
-        
+
         auto LambdaOwn = [=](label face)
-	{
+        {
             lowerp[face] *= sfp[up[face]];
         };
 

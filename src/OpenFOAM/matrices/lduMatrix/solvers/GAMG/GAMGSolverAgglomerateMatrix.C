@@ -144,17 +144,17 @@ void Foam::GAMGSolver::agglomerateMatrix
             scalarField& coarseLower = coarseMatrix.lower(nCoarseFaces);
 
             const bool* const __restrict__ faceFlipMapPtr = faceFlipMap.cbegin();
-	    const label* const __restrict__ faceRestrictAddrPtr = faceRestrictAddr.cbegin();
+            const label* const __restrict__ faceRestrictAddrPtr = faceRestrictAddr.cbegin();
             const scalar* const __restrict__ fineLowerPtr = fineLower.cbegin();
-	    const scalar* const __restrict__ fineUpperPtr = fineUpper.cbegin();
+            const scalar* const __restrict__ fineUpperPtr = fineUpper.cbegin();
             scalar* __restrict__ coarseUpperPtr = coarseUpper.begin();
             scalar* __restrict__ coarseLowerPtr = coarseLower.begin();
-	    scalar* __restrict__ coarseDiagPtr = coarseDiag.begin();
+            scalar* __restrict__ coarseDiagPtr = coarseDiag.begin();
 
             // forAll(faceRestrictAddr, fineFacei)
             // {
-	    const label size = faceRestrictAddr.size();
-	    foamExecutor exec;
+            const label size = faceRestrictAddr.size();
+            foamExecutor exec;
 
             auto Lambda = [=](label fineFacei)
             {
@@ -193,25 +193,25 @@ void Foam::GAMGSolver::agglomerateMatrix
             // Coarse matrix upper coefficients
             scalarField& coarseUpper = coarseMatrix.upper(nCoarseFaces);
 
-	    const label* const __restrict__ faceRestrictAddrPtr = faceRestrictAddr.cbegin();
+            const label* const __restrict__ faceRestrictAddrPtr = faceRestrictAddr.cbegin();
             const scalar* const __restrict__ fineUpperPtr = fineUpper.cbegin();
             scalar* __restrict__ coarseUpperPtr = coarseUpper.begin();
-	    scalar* __restrict__ coarseDiagPtr = coarseDiag.begin();
+            scalar* __restrict__ coarseDiagPtr = coarseDiag.begin();
 
 
             const label size = faceRestrictAddr.size();
             foamExecutor exec;
 
-	    auto Lambda = [=](label fineFacei)
+            auto Lambda = [=](label fineFacei)
             {
-	        label cFace = faceRestrictAddrPtr[fineFacei];
+                label cFace = faceRestrictAddrPtr[fineFacei];
 
-	        if (cFace >= 0)
+                if (cFace >= 0)
                 {
                     foamAtomic::AtomicAdd(coarseUpperPtr[cFace], fineUpperPtr[fineFacei]);
-		}
-		else
-		{
+                }
+                    else
+                {
                     foamAtomic::AtomicAdd(coarseDiagPtr[-1 - cFace], 2*fineUpperPtr[fineFacei]);
                 }
             };

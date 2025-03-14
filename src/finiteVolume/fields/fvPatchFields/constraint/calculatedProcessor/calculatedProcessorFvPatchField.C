@@ -213,7 +213,7 @@ void Foam::calculatedProcessorFvPatchField<Type>::initInterfaceMatrixUpdate
     const auto psiInternalp = psiInternal.cbegin();
     const auto fcp = fc.cbegin();
     auto Lambda = [=](label i)
-    { 
+    {
         sSendBufp[i] = psiInternalp[fcp[i]];
     };
     exec.parallelFor(Lambda, fc.size());
@@ -266,7 +266,7 @@ void Foam::calculatedProcessorFvPatchField<Type>::addToInternalField
     if (add)
     {
         auto Lambda = [=](label elemI)
-	{
+        {
             foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], coeffsp[elemI]*valsp[elemI]);
         };
         exec.parallelFor(Lambda, faceCells.size());
@@ -274,7 +274,7 @@ void Foam::calculatedProcessorFvPatchField<Type>::addToInternalField
     else
     {
         auto Lambda = [=](label elemI)
-	{
+        {
             foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], -coeffsp[elemI]*valsp[elemI]);
         };
         exec.parallelFor(Lambda, faceCells.size());

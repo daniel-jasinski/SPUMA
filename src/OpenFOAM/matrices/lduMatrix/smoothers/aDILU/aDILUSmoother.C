@@ -113,11 +113,11 @@ void Foam::aDILUSmoother::smooth
         foamExecutor exec;
         auto Lambda1 = [=](label celli)
         {
-	    rAPtr[celli] *= rDPtr[celli];
+            rAPtr[celli] *= rDPtr[celli];
         };
         exec.parallelFor(Lambda1, nCells);
 
-	tmp<scalarField> rATmp = tmp<scalarField>::New(rA);
+        tmp<scalarField> rATmp = tmp<scalarField>::New(rA);
         scalarField& rAtmp = rATmp.ref();
         solveScalar* __restrict__ rAtmpPtr = rAtmp.begin();
 

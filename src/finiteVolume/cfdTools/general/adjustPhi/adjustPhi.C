@@ -55,7 +55,7 @@ bool Foam::adjustPhi
             const fvPatchVectorField& Up = U.boundaryField()[patchi];
             const fvsPatchScalarField& phip = bphi[patchi];
 
-            foamExecutor exec;            
+            foamExecutor exec;
             const auto phipPtr = phip.cbegin();
             auto LambdaIn = [=](label i)
             {
@@ -65,13 +65,13 @@ bool Foam::adjustPhi
                 return value;
             };
             auto LambdaOut = [=](label i)
-            {   
+            {
                 scalar value = 0.0;
                 if(!(phipPtr[i] < 0.0))
                     value = phipPtr[i];
-                return value;  
+                return value;
             };
-            
+
             if (!phip.coupled())
             {
                 if (Up.fixesValue() && !isA<inletOutletFvPatchVectorField>(Up))
@@ -135,7 +135,7 @@ bool Foam::adjustPhi
                     auto Lambda = [=](label i)
                     {
                         if (phipPtr[i] > 0.0)
-                            phipPtr[i] *= massCorr; 
+                            phipPtr[i] *= massCorr;
                     };
                     exec.parallelFor(Lambda, phip.size());
                 }

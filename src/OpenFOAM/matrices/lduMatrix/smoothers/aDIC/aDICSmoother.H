@@ -32,7 +32,7 @@ Group
     grpLduMatrixSmoothers
 
 Description
-    Approximated simplified diagonal-based incomplete Cholesky preconditioner 
+    Approximated simplified diagonal-based incomplete Cholesky preconditioner
     for symmetric matrices (symmetric equivalent of DILU). The reciprocal of the
     preconditioned diagonal is calculated and stored.
 

@@ -126,13 +126,13 @@ void Foam::lduMatrix::Amul
     {
         const label nFaces = upper().size();
         auto LamdaDiag = [=](label cell)
-	{
-	    ApsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
-	};
+        {
+            ApsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
+        };
         exec.parallelFor(LamdaDiag, nCells);
 
         auto LambdaOffDiag = [=](label face)
-	{
+        {
             foamAtomic::AtomicAdd(ApsiPtr[uPtr[face]], lowerPtr[face]*psiPtr[lPtr[face]]);
             foamAtomic::AtomicAdd(ApsiPtr[lPtr[face]], upperPtr[face]*psiPtr[uPtr[face]]);
         };
@@ -199,13 +199,13 @@ void Foam::lduMatrix::Tmul
     exec.parallelFor(LambdaDiag, nCells);
 
     const label nFaces = upper().size();
-    
+
     auto LambdaOffDiag = [=](label face)
     {
         foamAtomic::AtomicAdd(TpsiPtr[uPtr[face]], upperPtr[face]*psiPtr[lPtr[face]]);
         foamAtomic::AtomicAdd(TpsiPtr[lPtr[face]], lowerPtr[face]*psiPtr[uPtr[face]]);
     };
-    exec.parallelFor(LambdaOffDiag,nFaces); 
+    exec.parallelFor(LambdaOffDiag,nFaces);
 
     // Update interface interfaces
     updateMatrixInterfaces
@@ -270,9 +270,9 @@ void Foam::lduMatrix::sumA
             const auto pap = pa.cbegin();
             const auto pCoeffsp = pCoeffs.cbegin();
             auto Lambda = [=](label face)
-	    {
+            {
                 foamAtomic::AtomicAdd(sumAPtr[pap[face]], -pCoeffsp[face]);
-	    };
+            };
             exec.parallelFor(Lambda,pa.size());
         }
     }
@@ -328,7 +328,7 @@ void Foam::lduMatrix::residual
     );
 
     const label nCells = diag().size();
-    
+
     auto LambdaDiag = [=](label cell)
     {
         rAPtr[cell] = sourcePtr[cell] - diagPtr[cell]*psiPtr[cell];
@@ -390,7 +390,7 @@ Foam::tmp<Foam::scalarField> Foam::lduMatrix::H1() const
         const label nFaces = upper().size();
 
         auto Lambda = [=](label face)
-	{ 
+        {
             foamAtomic::AtomicAdd(H1Ptr[uPtr[face]], -lowerPtr[face]);
             foamAtomic::AtomicAdd(H1Ptr[lPtr[face]], -upperPtr[face]);
         };

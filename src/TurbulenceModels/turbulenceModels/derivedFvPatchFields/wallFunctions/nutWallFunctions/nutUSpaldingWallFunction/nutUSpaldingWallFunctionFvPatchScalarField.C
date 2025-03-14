@@ -80,7 +80,7 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcNut() const
         // tolerance.
 
         scalarField& nutw = tnutw.ref();
-        
+
         foamExecutor exec;
         auto nutwp = nutw.begin();
         const auto errp = err.cbegin();
@@ -91,7 +91,7 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcNut() const
             if (errp[facei] < tolerance)
             {
                 nutwp[facei] = thisp[facei];
-            } 
+            }
         };
         exec.parallelFor(Lambda, err.size());
     }
@@ -151,7 +151,7 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
     foamExecutor exec;
     auto errp = err.begin();
     auto uTaup = uTau.begin();
-    
+
     auto magUpp = magUp.begin();
     auto magGradUp = magGradU.begin();
     auto nuwp = nuw.begin();
@@ -165,7 +165,7 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
         scalar ut = sqrt((nutwp[facei] + nuwp[facei])*magGradUp[facei]);
         // Note: for exact restart seed with laminar viscosity only:
         //scalar ut = sqrt(nuw[facei]*magGradU[facei]);
-        
+
         if (ROOTVSMALL < ut)
         {
             int iter = 0;

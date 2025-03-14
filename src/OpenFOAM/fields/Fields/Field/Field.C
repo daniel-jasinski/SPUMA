@@ -327,15 +327,15 @@ void Foam::Field<Type>::map
         auto mapAddressingPtr = mapAddressing.cbegin();
 
         foamExecutor exec;
-	auto mapAddr = [=] (label i)
-	{
-	    const label mapI = mapAddressingPtr[i];
+        auto mapAddr = [=] (label i)
+        {
+            const label mapI = mapAddressingPtr[i];
             if (mapI >= 0)
             {
                 fPtr[i] = mapFPtr[mapI];
             }
-	};
-	exec.parallelFor(mapAddr, f.size());
+        };
+        exec.parallelFor(mapAddr, f.size());
     }
 }
 
@@ -604,7 +604,7 @@ void Foam::Field<Type>::rmap
 
 template<class Type>
 void Foam::Field<Type>::negate()
-{  
+{
     if (this->usePool())
     {
         auto rp = this->begin();
@@ -809,7 +809,7 @@ void Foam::Field<Type>::operator=(const tmp<Field>& rhs)
     //if movable: move instead of copying
     if (rhs.movable())
     {
-       Field<Type>::operator=(std::move(rhs.ref())); 
+       Field<Type>::operator=(std::move(rhs.ref()));
     }
     else
     {

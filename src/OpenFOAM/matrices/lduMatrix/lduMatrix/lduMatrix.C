@@ -224,7 +224,7 @@ Foam::scalarField& Foam::lduMatrix::diag(bool init)
         else
         {
             diagPtr_ =
-                std::make_unique<scalarField>(lduAddr().size()); 
+                std::make_unique<scalarField>(lduAddr().size());
         }
     }
 

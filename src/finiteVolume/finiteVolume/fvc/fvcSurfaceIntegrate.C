@@ -62,9 +62,9 @@ void surfaceIntegrate
     const auto op = owner.cbegin();
     const auto np = neighbour.cbegin();
     auto Lambda = [=](label facei)
-    { 
+    {
         foamAtomic::AtomicAdd(ivfp[op[facei]], issfp[facei]);
-        foamAtomic::AtomicAdd(ivfp[np[facei]],-issfp[facei]); 
+        foamAtomic::AtomicAdd(ivfp[np[facei]],-issfp[facei]);
     };
     exec.parallelFor(Lambda, owner.size());
 
@@ -178,7 +178,7 @@ surfaceSum
     auto Lambda = [=](label facei)
     {
         foamAtomic::AtomicAdd(vfp[op[facei]], ssfp[facei]);
-        foamAtomic::AtomicAdd(vfp[np[facei]], ssfp[facei]);      
+        foamAtomic::AtomicAdd(vfp[np[facei]], ssfp[facei]);
     };
     exec.parallelFor(Lambda, owner.size());
 
@@ -193,7 +193,7 @@ surfaceSum
         const auto pFaceCellsp = pFaceCells.cbegin();
         auto patchLambda = [=](label facei)
         {
-           foamAtomic::AtomicAdd(vfp[pFaceCellsp[facei]], pssfp[facei]); 
+           foamAtomic::AtomicAdd(vfp[pFaceCellsp[facei]], pssfp[facei]);
         };
         exec.parallelFor(patchLambda, mesh.boundary()[patchi].size());
     }

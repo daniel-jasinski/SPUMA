@@ -41,7 +41,7 @@ int checkCudaError
         std::cerr << "CUDA Runtime Error at: " << file << ":" << line
                   << std::endl;
         std::cerr << cudaGetErrorString(err) << " " << func << std::endl;
-        
+
         FatalErrorInFunction<<abort(Foam::FatalError);
     }
     return static_cast<int>(err);
@@ -59,7 +59,7 @@ int checkLastCudaError
         std::cerr << "CUDA Runtime Error at: " << file << ":" << line
                   << std::endl;
         std::cerr << cudaGetErrorString(err) << std::endl;
-        
+
         FatalErrorInFunction<<abort(Foam::FatalError);
     }
     return static_cast<int>(err);
@@ -79,7 +79,7 @@ bool isDeviceValid(const void * ptr)
 
 template int checkCudaError<cudaError_t>
 (
-    cudaError_t err, 
+    cudaError_t err,
     const char* const func,
     const char* const file, const int line
 );

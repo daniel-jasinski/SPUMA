@@ -69,7 +69,7 @@ void Foam::aDICPreconditioner::calcReciprocalD
     const lduMatrix& matrix
 )
 {
-    solveScalar* __restrict__ rDPtr = rD.begin(); 
+    solveScalar* __restrict__ rDPtr = rD.begin();
 
     tmp<scalarField> rDTmp = tmp<scalarField>::New(rD);
     scalarField& rDtmp = rDTmp.ref();
@@ -86,10 +86,10 @@ void Foam::aDICPreconditioner::calcReciprocalD
     auto Lambda1 = [=](label face)
     {
         foamAtomic::AtomicAdd
-	(
-	    rDtmpPtr[uPtr[face]], 
+        (
+            rDtmpPtr[uPtr[face]],
            -upperPtr[face]*upperPtr[face]/rDPtr[lPtr[face]]
-	);
+        );
     };
     exec.parallelFor(Lambda1, nFaces);
 
@@ -148,7 +148,7 @@ void Foam::aDICPreconditioner::precondition
     exec.parallelFor(Lambda2, nFaces);
 
     wA = wAtmp;
- 
+
     auto Lambda3 = [=](label face)
     {
         foamAtomic::AtomicAdd

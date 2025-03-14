@@ -32,7 +32,7 @@ Group
     grpLduMatrixSmoothers
 
 Description
-    Modified (preconditioned) Richardson iteration. 
+    Modified (preconditioned) Richardson iteration.
     Also known as damped Jacobi method.
 
 SourceFiles

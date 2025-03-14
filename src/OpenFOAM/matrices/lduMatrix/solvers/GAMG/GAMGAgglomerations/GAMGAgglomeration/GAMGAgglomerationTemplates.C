@@ -46,10 +46,10 @@ void Foam::GAMGAgglomeration::restrictField
 
     const label* const __restrict__ fineToCoarsePtr = fineToCoarse.cbegin();
     const Type* const __restrict__ ffPtr = ff.cbegin();
-    Type* __restrict__ cfPtr = cf.begin(); 
+    Type* __restrict__ cfPtr = cf.begin();
     const label size = ff.size();
-    
-    foamExecutor exec; 
+
+    foamExecutor exec;
     auto Lambda = [=](label i)
     {
         foamAtomic::AtomicAdd(cfPtr[fineToCoarsePtr[i]], ffPtr[i]);
@@ -128,15 +128,15 @@ void Foam::GAMGAgglomeration::restrictFaceField
     const Type* const __restrict__ ffPtr = ff.cbegin();
     Type* __restrict__ cfPtr = cf.begin();
     const label size = fineToCoarse.size();
-    
+
     foamExecutor exec;
     auto Lambda = [=](label ffacei)
     {
-	label cFace = fineToCoarsePtr[ffacei];
-	if (cFace >= 0)
+        label cFace = fineToCoarsePtr[ffacei];
+        if (cFace >= 0)
         {
             foamAtomic::AtomicAdd(cfPtr[cFace], ffPtr[ffacei]);
-	}
+        }
     };
     exec.parallelFor(Lambda, size);
 }
@@ -184,11 +184,11 @@ void Foam::GAMGAgglomeration::prolongField
             Pstream::commsTypes::nonBlocking    //Pstream::commsTypes::scheduled
         );
 
-	const Type* const __restrict__ allCfPtr = allCf.cbegin();
+        const Type* const __restrict__ allCfPtr = allCf.cbegin();
 
         auto Lambda = [=](label i)
         {
-	    ffPtr[i] = allCfPtr[fineToCoarsePtr[i]];
+            ffPtr[i] = allCfPtr[fineToCoarsePtr[i]];
         };
         exec.parallelFor(Lambda, size);
     }
