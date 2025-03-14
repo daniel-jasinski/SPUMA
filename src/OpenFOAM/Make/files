@@ -458,6 +458,7 @@ $(lduMatrix)/solvers/PPCR/PPCR.C
 $(lduMatrix)/smoothers/GaussSeidel/GaussSeidelSmoother.C
 $(lduMatrix)/smoothers/symGaussSeidel/symGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/nonBlockingGaussSeidel/nonBlockingGaussSeidelSmoother.C
+$(lduMatrix)/smoothers/twoStageGaussSeidel/twoStageGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/DIC/DICSmoother.C
 $(lduMatrix)/smoothers/aDIC/aDICSmoother.C
 $(lduMatrix)/smoothers/FDIC/FDICSmoother.C
