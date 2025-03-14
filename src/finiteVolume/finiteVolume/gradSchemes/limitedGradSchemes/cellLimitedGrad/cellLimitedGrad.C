@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2018 OpenFOAM Foundation
     Copyright (C) 2021 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -52,7 +53,8 @@ void Foam::fv::cellLimitedGrad<Type, Limiter>::limitGradient
     foamExecutor exec;
     auto gIfp = gIf.begin();
     auto limiterp = limiter.cbegin();
-    auto Lambda = [=](label celli){
+    auto Lambda = [=](label celli)
+    {
         gIfp[celli] = tensor
         (
             cmptMultiply(limiterp[celli], gIfp[celli].x()),
@@ -60,18 +62,7 @@ void Foam::fv::cellLimitedGrad<Type, Limiter>::limitGradient
             cmptMultiply(limiterp[celli], gIfp[celli].z())
         );
     };
-    exec.parallelFor(Lambda,gIf.size());
-
-
-    // forAll(gIf, celli)
-    // {
-    //     gIf[celli] = tensor
-    //     (
-    //         cmptMultiply(limiter[celli], gIf[celli].x()),
-    //         cmptMultiply(limiter[celli], gIf[celli].y()),
-    //         cmptMultiply(limiter[celli], gIf[celli].z())
-    //     );
-    // }
+    exec.parallelFor(Lambda, gIf.size());
 }
 
 
@@ -131,7 +122,8 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
     const auto Cfp = Cf.cbegin();
     const auto gp = g.cbegin();
 
-    auto Lambda = [=](label facei){
+    auto Lambda = [=](label facei)
+    {
         const label own = ownerp[facei];
         const label nei = neighbourp[facei];
 
@@ -143,29 +135,8 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
 
         foamAtomic::AtomicMax(maxVsfp[nei], vsfOwn);
         foamAtomic::AtomicMin(minVsfp[nei], vsfOwn);
-
-        // maxVsfp[own] = max(maxVsfp[own], vsfNei);
-        // minVsfp[own] = min(minVsfp[own], vsfNei);
-
-        // maxVsfp[nei] = max(maxVsfp[nei], vsfOwn);
-        // minVsfp[nei] = min(minVsfp[nei], vsfOwn);
     };
-    exec.parallelFor(Lambda,owner.size());
-    // forAll(owner, facei)
-    // {
-    //     const label own = owner[facei];
-    //     const label nei = neighbour[facei];
-
-    //     const Type& vsfOwn = vsf[own];
-    //     const Type& vsfNei = vsf[nei];
-
-    //     maxVsf[own] = max(maxVsf[own], vsfNei);
-    //     minVsf[own] = min(minVsf[own], vsfNei);
-
-    //     maxVsf[nei] = max(maxVsf[nei], vsfOwn);
-    //     minVsf[nei] = min(minVsf[nei], vsfOwn);
-    // }
-
+    exec.parallelFor(Lambda, owner.size());
 
     const auto& bsf = vsf.boundaryField();
 
@@ -181,46 +152,27 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
         {
             const Field<Type> psfNei(psf.patchNeighbourField());
             const auto psfNeip = psfNei.cbegin();
-            auto Lambda = [=](label pFacei){
+            auto Lambda = [=](label pFacei)
+            {
                 const label own = pOwnerp[pFacei];
                 const Type& vsfNei = psfNeip[pFacei];
 
                 foamAtomic::AtomicMax(maxVsfp[own], vsfNei);
                 foamAtomic::AtomicMin(minVsfp[own], vsfNei);
-                // maxVsfp[own] = max(maxVsfp[own], vsfNei);
-                // minVsfp[own] = min(minVsfp[own], vsfNei);
             };
-            exec.parallelFor(Lambda,pOwner.size());
-            // forAll(pOwner, pFacei)
-            // {
-            //     const label own = pOwner[pFacei];
-            //     const Type& vsfNei = psfNei[pFacei];
-
-            //     maxVsf[own] = max(maxVsf[own], vsfNei);
-            //     minVsf[own] = min(minVsf[own], vsfNei);
-            // }
+            exec.parallelFor(Lambda, pOwner.size());
         }
         else
         {
-            auto Lambda = [=](label pFacei){
+            auto Lambda = [=](label pFacei)
+            {
                 const label own = pOwnerp[pFacei];
                 const Type& vsfNei = psfp[pFacei];
 
                 foamAtomic::AtomicMax(maxVsfp[own], vsfNei);
                 foamAtomic::AtomicMin(minVsfp[own], vsfNei);
-                // maxVsfp[own] = max(maxVsfp[own], vsfNei);
-                // minVsfp[own] = min(minVsfp[own], vsfNei);
-
             };
-            exec.parallelFor(Lambda,pOwner.size());
-            // forAll(pOwner, pFacei)
-            // {
-            //     const label own = pOwner[pFacei];
-            //     const Type& vsfNei = psf[pFacei];
-
-            //     maxVsf[own] = max(maxVsf[own], vsfNei);
-            //     minVsf[own] = min(minVsf[own], vsfNei);
-            // }
+            exec.parallelFor(Lambda, pOwner.size());
         }
     }
 
@@ -234,7 +186,6 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
         minVsf -= maxMinVsf;
     }
 
-
     // Create limiter initialized to 1
     // Note: the limiter is not permitted to be > 1
     Field<Type> limiter(vsf.primitiveField().size(), pTraits<Type>::one);
@@ -242,7 +193,8 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
     Limiter localLimiter(*this);
     const label nComponents = pTraits<Type>::nComponents;
 
-    auto LambdaInitLimiter = [=](label facei){
+    auto LambdaInitLimiter = [=](label facei)
+    {
         const label own = ownerp[facei];
         const label nei = neighbourp[facei];
 
@@ -268,31 +220,7 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
             nComponents
         );
     };
-    exec.parallelFor(LambdaInitLimiter,owner.size());
-
-    // forAll(owner, facei)
-    // {
-    //     const label own = owner[facei];
-    //     const label nei = neighbour[facei];
-
-    //     // owner side
-    //     limitFace
-    //     (
-    //         limiter[own],
-    //         maxVsf[own],
-    //         minVsf[own],
-    //         (Cf[facei] - C[own]) & g[own]
-    //     );
-
-    //     // neighbour side
-    //     limitFace
-    //     (
-    //         limiter[nei],
-    //         maxVsf[nei],
-    //         minVsf[nei],
-    //         (Cf[facei] - C[nei]) & g[nei]
-    //     );
-    // }
+    exec.parallelFor(LambdaInitLimiter, owner.size());
 
     forAll(bsf, patchi)
     {
@@ -302,7 +230,8 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
         const auto pOwnerp = pOwner.cbegin();
         const auto pCfp = pCf.cbegin();
 
-        auto Lambda = [=](label pFacei){
+        auto Lambda = [=](label pFacei)
+        {
             const label own = pOwnerp[pFacei];
 
             limitFace
@@ -315,19 +244,7 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
                 nComponents
             );
         };
-        exec.parallelFor(Lambda,pOwner.size());
-        // forAll(pOwner, pFacei)
-        // {
-        //     const label own = pOwner[pFacei];
-
-        //     limitFace
-        //     (
-        //         limiter[own],
-        //         maxVsf[own],
-        //         minVsf[own],
-        //         ((pCf[pFacei] - C[own]) & g[own])
-        //     );
-        // }
+        exec.parallelFor(Lambda, pOwner.size());
     }
 
     if (fv::debug)

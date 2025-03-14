@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -60,17 +61,12 @@ void surfaceIntegrate
     const auto issfp = issf.cbegin();
     const auto op = owner.cbegin();
     const auto np = neighbour.cbegin();
-    // forAll(owner, facei)
-    // {
-    //     ivf[owner[facei]] += issf[facei];
-    //     ivf[neighbour[facei]] -= issf[facei];
-    // }
     auto Lambda = [=](label facei)
     { 
         foamAtomic::AtomicAdd(ivfp[op[facei]], issfp[facei]);
         foamAtomic::AtomicAdd(ivfp[np[facei]],-issfp[facei]); 
     };
-    exec.parallelFor(Lambda,owner.size());
+    exec.parallelFor(Lambda, owner.size());
 
     forAll(mesh.boundary(), patchi)
     {
@@ -81,15 +77,11 @@ void surfaceIntegrate
 
         const auto pFaceCellsp = pFaceCells.cbegin();
         const auto pssfp = pssf.cbegin();
-        // forAll(mesh.boundary()[patchi], facei)
-        // {
-        //     ivf[pFaceCells[facei]] += pssf[facei];
-        // }
         auto PatchLambda = [=](label facei)
         {
             foamAtomic::AtomicAdd(ivfp[pFaceCellsp[facei]], pssfp[facei]);
         };
-        exec.parallelFor(PatchLambda,mesh.boundary()[patchi].size());
+        exec.parallelFor(PatchLambda, mesh.boundary()[patchi].size());
     };
 
     ivf /= mesh.Vsc();
@@ -183,17 +175,12 @@ surfaceSum
     const auto op = owner.cbegin();
     const auto np = neighbour.cbegin();
     const auto ssfp = ssf.cbegin();
-    // forAll(owner, facei)
-    // {
-    //     vf[owner[facei]] += ssf[facei];
-    //     vf[neighbour[facei]] += ssf[facei];
-    // }
     auto Lambda = [=](label facei)
     {
         foamAtomic::AtomicAdd(vfp[op[facei]], ssfp[facei]);
         foamAtomic::AtomicAdd(vfp[np[facei]], ssfp[facei]);      
     };
-    exec.parallelFor(Lambda,owner.size());
+    exec.parallelFor(Lambda, owner.size());
 
     forAll(mesh.boundary(), patchi)
     {
@@ -204,15 +191,11 @@ surfaceSum
 
         const auto pssfp = pssf.cbegin();
         const auto pFaceCellsp = pFaceCells.cbegin();
-        // forAll(mesh.boundary()[patchi], facei)
-        // {
-        //     vf[pFaceCells[facei]] += pssf[facei];
-        // }
         auto patchLambda = [=](label facei)
         {
            foamAtomic::AtomicAdd(vfp[pFaceCellsp[facei]], pssfp[facei]); 
         };
-        exec.parallelFor(patchLambda,mesh.boundary()[patchi].size());
+        exec.parallelFor(patchLambda, mesh.boundary()[patchi].size());
     }
 
     vf.correctBoundaryConditions();

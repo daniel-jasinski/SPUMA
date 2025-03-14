@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2021 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -78,27 +79,19 @@ Foam::fv::gaussGrad<Type>::gradf
     Field<GradType>& igGrad = gGrad;
     const Field<Type>& issf = ssf;
 
-    // forAll(owner, facei)
-    // {
-    //     const GradType Sfssf = Sf[facei]*issf[facei];
-
-    //     igGrad[owner[facei]] += Sfssf;
-    //     igGrad[neighbour[facei]] -= Sfssf;
-    // }
-
     auto igGradp = igGrad.begin();
     const auto Sfp = Sf.cbegin();
     const auto issfp = issf.cbegin();
     const auto ownerp = owner.cbegin();
     const auto neighbourp = neighbour.cbegin();
-    auto Lambda = [=](label facei){
+    auto Lambda = [=](label facei)
+    {
         const GradType Sfssf = Sfp[facei]*issfp[facei];
-
         foamAtomic::AtomicAdd(igGradp[ownerp[facei]], Sfssf);
         foamAtomic::AtomicAdd(igGradp[neighbourp[facei]], - Sfssf);
     };
     foamExecutor exec;
-    exec.parallelFor(Lambda,owner.size());
+    exec.parallelFor(Lambda, owner.size());
 
     forAll(mesh.boundary(), patchi)
     {
@@ -106,14 +99,7 @@ Foam::fv::gaussGrad<Type>::gradf
             mesh.boundary()[patchi].faceCells();
 
         const vectorField& pSf = mesh.Sf().boundaryField()[patchi];
-
         const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
-
-        //TODO executor
-        // forAll(mesh.boundary()[patchi], facei)
-        // {
-        //     igGrad[pFaceCells[facei]] += pSf[facei]*pssf[facei];
-        // }
 
         const auto pSfp = pSf.cbegin();
         const auto pssfp = pssf.cbegin();
@@ -123,7 +109,7 @@ Foam::fv::gaussGrad<Type>::gradf
         {
             foamAtomic::AtomicAdd(igGradp[pFaceCellsp[facei]], pSfp[facei]*pssfp[facei]);
         };
-        exec.parallelFor(Lambda,mesh.boundary()[patchi].size());
+        exec.parallelFor(Lambda, mesh.boundary()[patchi].size());
     }
 
     igGrad /= mesh.V();

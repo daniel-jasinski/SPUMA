@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -154,25 +155,22 @@ Foam::solverPerformance Foam::PCG::scalarSolve
 
             if (solverPerf.nIterations() == 0)
             {
-                // for (label cell=0; cell<nCells; cell++)
-                // {
-                //     pAPtr[cell] = wAPtr[cell];
-                // }
-                auto Lamda1 = [=](label cell){pAPtr[cell] = wAPtr[cell];};
-                exec.parallelFor(Lamda1,nCells);
+                auto Lamda1 = [=](label cell)
+		{
+                    pAPtr[cell] = wAPtr[cell];
+                };
+                exec.parallelFor(Lamda1, nCells);
             }
             else
             {
                 const solveScalar beta = wArA/wArAold;
 
-                // for (label cell=0; cell<nCells; cell++)
-                // {
-                //     pAPtr[cell] = wAPtr[cell] + beta*pAPtr[cell];
-                // }
-                auto Lamda2 = [=](label cell){pAPtr[cell] = wAPtr[cell] + beta*pAPtr[cell];};
-                exec.parallelFor(Lamda2,nCells);
+                auto Lamda2 = [=](label cell)
+		{
+                    pAPtr[cell] = wAPtr[cell] + beta*pAPtr[cell];
+		};
+                exec.parallelFor(Lamda2, nCells);
             }
-
 
             // --- Update preconditioned residual
             matrix_.Amul(wA, pA, interfaceBouCoeffs_, interfaces_, cmpt);
@@ -187,16 +185,12 @@ Foam::solverPerformance Foam::PCG::scalarSolve
 
             const solveScalar alpha = wArA/wApA;
 
-            // for (label cell=0; cell<nCells; cell++)
-            // {
-            //     psiPtr[cell] += alpha*pAPtr[cell];
-            //     rAPtr[cell] -= alpha*wAPtr[cell];
-            // }
-            auto Lambda3 = [=](label cell){
+            auto Lambda3 = [=](label cell)
+	    {
                 psiPtr[cell] += alpha*pAPtr[cell];
                 rAPtr[cell] -= alpha*wAPtr[cell]; 
             };
-            exec.parallelFor(Lambda3,nCells);
+            exec.parallelFor(Lambda3, nCells);
 
             solverPerf.finalResidual() =
                 gSumMag(rA, matrix().mesh().comm())

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -168,21 +169,19 @@ Foam::surfaceInterpolationScheme<Type>::interpolate
 
     Field<Type>& sfi = sf.primitiveFieldRef();
 
-    //TODO executor 
-    // for (label fi=0; fi<P.size(); fi++)
-    // {
-    //     sfi[fi] = lambda[fi]*vfi[P[fi]] + y[fi]*vfi[N[fi]];
-    // }
     auto sfip = sfi.begin();
     const auto lambdap = lambda.cbegin();
     const auto yp = y.cbegin();
     const auto vfip = vfi.cbegin();
     const auto Pp = P.cbegin();
     const auto Np = N.cbegin();
-    auto Lambda = [=](label fi){ sfip[fi] = lambdap[fi]*vfip[Pp[fi]] + yp[fi]*vfip[Np[fi]];};
+    
+    auto Lambda = [=](label fi)
+    { 
+        sfip[fi] = lambdap[fi]*vfip[Pp[fi]] + yp[fi]*vfip[Np[fi]];
+    };
     foamExecutor exec;
-    exec.parallelFor(Lambda,P.size());
-
+    exec.parallelFor(Lambda, P.size());
 
     // Interpolate across coupled patches using given lambdas and ys
     typename GeometricField<Type, fvsPatchField, surfaceMesh>::
@@ -272,14 +271,6 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
 
     const typename SFType::Internal& Sfi = Sf.internalField();
 
-    // for (label fi=0; fi<P.size(); fi++)
-    // {
-    //     // Same as:
-    //     // sfi[fi] = Sfi[fi] & lerp(vfi[N[fi]], vfi[P[fi]], lambda[fi]);
-    //     // but maybe the compiler notices the fused multiply add form
-    //     sfi[fi] = Sfi[fi] & (lambda[fi]*(vfi[P[fi]] - vfi[N[fi]]) + vfi[N[fi]]);
-    // }
-    
     auto sfip = sfi.begin();
     const auto lambdap = lambda.cbegin();
     const auto vfip = vfi.cbegin();
@@ -287,18 +278,22 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
     const auto Np = N.cbegin();
     
     foamExecutor exec;
-    //handle oneGeometricField without triggering a copy in the lambda for other cases
     if constexpr(std::is_same<typename SFType::value_type,one>::value)
     {
-
-        auto Lambda = [=](label fi){ sfip[fi] = Sfi[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);};
-        exec.parallelFor(Lambda,P.size());
+        auto Lambda = [=](label fi)
+        { 
+            sfip[fi] = Sfi[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);
+        };
+        exec.parallelFor(Lambda, P.size());
     }
     else
     {    
         const auto Sfip = Sfi.cbegin();
-        auto Lambda = [=](label fi){ sfip[fi] = Sfip[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);};
-        exec.parallelFor(Lambda,P.size());
+        auto Lambda = [=](label fi)
+        { 
+            sfip[fi] = Sfip[fi] & (lambdap[fi]*(vfip[Pp[fi]] - vfip[Np[fi]]) + vfip[Np[fi]]);
+        };
+        exec.parallelFor(Lambda, P.size());
     }
 
     // Interpolate across coupled patches using given lambdas

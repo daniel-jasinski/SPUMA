@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019-2021 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -145,23 +146,18 @@ Foam::limitedSurfaceInterpolationScheme<Type>::weights
     surfaceScalarField& Weights = tLimiter.ref();
 
     scalarField& pWeights = Weights.primitiveFieldRef();
-    //TODO executor
-    // forAll(pWeights, face)
-    // {
-    //     pWeights[face] =
-    //         pWeights[face]*CDweights[face]
-    //       + (1.0 - pWeights[face])*pos0(faceFlux_[face]);
-    // }
+    
     foamExecutor exec;
     auto pWeightsp = pWeights.begin();
     const auto CDweightsp = CDweights.cbegin();
     const auto faceFluxp = faceFlux_.cbegin();
-    auto LambdaI = [=](label face){
+    auto LambdaI = [=](label face)
+    {
         pWeightsp[face] =
             pWeightsp[face]*CDweightsp[face]
           + (1.0 - pWeightsp[face])*pos0(faceFluxp[face]);
     };
-    exec.parallelFor(LambdaI,pWeights.size());
+    exec.parallelFor(LambdaI, pWeights.size());
 
     surfaceScalarField::Boundary& bWeights =
         Weights.boundaryFieldRef();
@@ -173,21 +169,16 @@ Foam::limitedSurfaceInterpolationScheme<Type>::weights
         const scalarField& pCDweights = CDweights.boundaryField()[patchi];
         const scalarField& pFaceFlux = faceFlux_.boundaryField()[patchi];
 
-        // forAll(pWeights, face)
-        // {
-        //     pWeights[face] =
-        //         pWeights[face]*pCDweights[face]
-        //       + (1.0 - pWeights[face])*pos0(pFaceFlux[face]);
-        // }
         auto pWeightsp = pWeights.begin();
         const auto pCDweightsp = pCDweights.cbegin();
         const auto pFaceFluxp = pFaceFlux.cbegin();
-        auto LambdaB = [=](label face){
+        auto LambdaB = [=](label face)
+	{
             pWeightsp[face] =
                 pWeightsp[face]*pCDweightsp[face]
             + (1.0 - pWeightsp[face])*pos0(pFaceFluxp[face]);
         };
-        exec.parallelFor(LambdaB,pWeights.size());
+        exec.parallelFor(LambdaB, pWeights.size());
     }
 
     return tLimiter;

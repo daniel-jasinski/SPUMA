@@ -24,6 +24,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 \*---------------------------------------------------------------------------*/
+
 #include "hipError.hpp"
 
 template <typename T>
@@ -76,6 +77,12 @@ bool isDeviceValid(const void * ptr)
     return valid;
 }
 
-template int checkHipError<hipError_t>(hipError_t err, const char* const func,
-                                          const char* const file, const int line);
+template int checkHipError<hipError_t>
+(
+    hipError_t err, 
+    const char* const func,
+    const char* const file, 
+    const int line
+);
 
+// ************************************************************************* //

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -60,10 +61,6 @@ void Foam::fvMatrix<Type>::addToInternalField
             << abort(FatalError);
     }
 
-    // forAll(addr, facei)
-    // {
-    //     intf[addr[facei]] += pf[facei];
-    // }
     auto intfp = intf.begin();
     const auto addrp = addr.cbegin();
     const auto pfp = pf.cbegin();
@@ -72,7 +69,7 @@ void Foam::fvMatrix<Type>::addToInternalField
         foamAtomic::AtomicAdd(intfp[addrp[facei]], pfp[facei]);
     };
     foamExecutor exec;
-    exec.parallelFor(Lambda,addr.size());
+    exec.parallelFor(Lambda, addr.size());
 }
 
 
@@ -109,15 +106,12 @@ void Foam::fvMatrix<Type>::subtractFromInternalField
     auto intfp = intf.begin();
     const auto addrp = addr.cbegin();
     const auto pfp = pf.cbegin();
-    // forAll(addr, facei)
-    // {
-    //     intf[addr[facei]] -= pf[facei];
-    // }
-    auto Lambda = [=](label facei){
+    auto Lambda = [=](label facei)
+    {
         foamAtomic::AtomicAdd(intfp[addrp[facei]], -pfp[facei]);
     };
     foamExecutor exec;
-    exec.parallelFor(Lambda,addr.size());
+    exec.parallelFor(Lambda, addr.size());
 }
 
 
@@ -225,21 +219,20 @@ void Foam::fvMatrix<Type>::addBoundarySource
 
                     const labelUList& addr = lduAddr().patchAddr(patchi);
 
-                    // forAll(addr, facei)
-                    // {
-                    //     source[addr[facei]] +=
-                    //         cmptMultiply(pbc[facei], pnf[facei]);
-                    // }
                     auto sourcep = source.begin();
                     const auto addrp = addr.cbegin();
                     const auto pbcp = pbc.cbegin();
                     const auto pnfp = pnf.cbegin();
                     auto Lambda = [=](label facei)
                     {
-                        foamAtomic::AtomicAdd(sourcep[addrp[facei]],cmptMultiply(pbcp[facei], pnfp[facei])); 
+                        foamAtomic::AtomicAdd
+                        (
+                            sourcep[addrp[facei]],
+                            cmptMultiply(pbcp[facei], pnfp[facei])
+                        ); 
                     };
                     foamExecutor exec;
-                    exec.parallelFor(Lambda,addr.size());
+                    exec.parallelFor(Lambda, addr.size());
                 }
             }
         }
@@ -275,8 +268,9 @@ void Foam::fvMatrix<Type>::setValuesFromList
     //      - cut connections to neighbours
     // - make (on non-adjusted cells) contribution explicit
 
-    if constexpr(std::is_same<UList<Type>,ListType<Type>>())
+    if constexpr(std::is_same<UList<Type>, ListType<Type>>())
     {
+    
     // define ptr to pass to lambda
     foamExecutor exec;
     const auto cellLabelsPtr = cellLabels.cbegin();
@@ -297,37 +291,40 @@ void Foam::fvMatrix<Type>::setValuesFromList
     const label nInternalFaces = mesh.nInternalFaces();
 
     //probably usless branch for symm and asymm
-    if (symmetric() || asymmetric()){
-
-        auto Lambda = [=](label i){
+    if (symmetric() || asymmetric())
+    {
+        auto Lambda = [=](label i)
+        {
             const label celli = cellLabelsPtr[i];
             const Type value = valuesPtr[i];
 
-            label old = foamAtomic::AtomicCAS(cellCounterPtr[celli],0,1);
-            if(!old){
-                for (label id = cfStartPtr[celli]; id < cfStartPtr[celli+1]; id++ ){
+            label old = foamAtomic::AtomicCAS(cellCounterPtr[celli], 0, 1);
+            if (!old)
+            {
+                for (label id = cfStartPtr[celli]; id < cfStartPtr[celli+1]; id++)
+                {
                     label facei = cfPtr[id];
-                    if((facei >= 0) && (facei < nInternalFaces))
+                    if ((facei >= 0) && (facei < nInternalFaces))
                     {
                         if (celli == ownPtr[facei])
                         {
                             if(lowerPtr[facei])
-                            foamAtomic::AtomicAdd(srcPtr[neiPtr[facei]], -lowerPtr[facei] * value);
+                                foamAtomic::AtomicAdd(srcPtr[neiPtr[facei]], -lowerPtr[facei] * value);
                         }
                         else
                         {
                             if(upperPtr[facei])
-                            foamAtomic::AtomicAdd(srcPtr[ownPtr[facei]], -upperPtr[facei] * value);
+                                foamAtomic::AtomicAdd(srcPtr[ownPtr[facei]], -upperPtr[facei] * value);
                         }
 
                         upperPtr[facei] = 0.0;
                         lowerPtr[facei] = 0.0;
 
                     }
-                } // for loop
-            }// cas if
+                }
+            }
         };
-        exec.parallelFor(Lambda,cellLabels.size());
+        exec.parallelFor(Lambda, cellLabels.size());
     }
 
     // boundary fields on cpu
@@ -343,20 +340,22 @@ void Foam::fvMatrix<Type>::setValuesFromList
                 auto internalCoeffs_p = internalCoeffs_[patchi].begin();
                 auto boundaryCoeffs_p = boundaryCoeffs_[patchi].begin();
                 const label patchFaceStart = bmesh[patchi].start();
-                auto Lambda = [=](label i){
+                auto Lambda = [=](label i)
+                {
                     const label celli = cellLabelsPtr[i];
-                    for (label id = cfStartPtr[celli]; id < cfStartPtr[celli+1]; id++ ){
+                    for (label id = cfStartPtr[celli]; id < cfStartPtr[celli+1]; id++)
+                    {
                         const label facei = cfPtr[id];
                         const label bndfacei = facei - nInternalFaces;
-                        //check if is a boundary face and is the right patch
-                        if((bndfacei >= 0) && (bndfacei < nBndFaces) && (patchID_p[bndfacei] == patchi) ){
-                                const label pfacei = facei - patchFaceStart;
-                                internalCoeffs_p[pfacei] = Zero;
-                                boundaryCoeffs_p[pfacei] = Zero;
+                        if((bndfacei >= 0) && (bndfacei < nBndFaces) && (patchID_p[bndfacei] == patchi))
+                        {
+                            const label pfacei = facei - patchFaceStart;
+                            internalCoeffs_p[pfacei] = Zero;
+                            boundaryCoeffs_p[pfacei] = Zero;
                         }
                     };
                 };
-                exec.parallelFor(Lambda,cellLabels.size());
+                exec.parallelFor(Lambda, cellLabels.size());
             }
         }
     }
@@ -364,16 +363,18 @@ void Foam::fvMatrix<Type>::setValuesFromList
     auto psiPtr = psi.begin();
     const auto diagPtr = Diag.begin();
 
-    auto Lambda = [=](label i){
+    auto Lambda = [=](label i)
+    {
         const label celli = cellLabelsPtr[i];
         const Type value = valuesPtr[i];
         psiPtr[celli] = value;
         srcPtr[celli] = value*diagPtr[celli];
     };
-    exec.parallelFor(Lambda,cellLabels.size());
+    exec.parallelFor(Lambda, cellLabels.size());
 
-    }else{ //handle other list types non supported on memorypool
-
+    }
+    else
+    { //handle other list types non supported on memorypool
 
     if (symmetric() || asymmetric())
     {
@@ -445,8 +446,6 @@ void Foam::fvMatrix<Type>::setValuesFromList
     }
 
     }//end if else  on list type
-
-
 }
 
 
@@ -1273,31 +1272,22 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
                 const auto pCoeffsp = pCoeffs.cbegin();
                 // For coupled boundaries add the diagonal and
                 // off-diagonal contributions
-                // forAll(pa, face)
-                // {
-                //     D[pa[face]] += component(iCoeffs[face], 0);
-                //     sumOff[pa[face]] += mag(component(pCoeffs[face], 0));
-                // }
                 auto Lambda = [=](label face)
                 {
-                    foamAtomic::AtomicAdd(Dp[pap[face]],component(iCoeffsp[face], 0));
+                    foamAtomic::AtomicAdd(Dp[pap[face]], component(iCoeffsp[face], 0));
                     foamAtomic::AtomicAdd(sumOffp[pap[face]], mag(component(pCoeffsp[face], 0))); 
                 };
-                exec.parallelFor(Lambda,pa.size());
+                exec.parallelFor(Lambda, pa.size());
             }
             else
             {
                 // For non-coupled boundaries add the maximum magnitude diagonal
                 // contribution to ensure stability
-                // forAll(pa, face)
-                // {
-                //     D[pa[face]] += cmptMax(cmptMag(iCoeffs[face]));
-                // }
                 auto Lambda = [=](label face)
                 {
                    foamAtomic::AtomicAdd(Dp[pap[face]], cmptMax(cmptMag(iCoeffsp[face]))); 
                 };
-                exec.parallelFor(Lambda,pa.size());
+                exec.parallelFor(Lambda, pa.size());
             }
         }
     }
@@ -1355,15 +1345,11 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
 
     // Ensure the matrix is diagonally dominant...
     // Assumes that the central coefficient is positive and ensures it is
-    // forAll(D, celli)
-    // {
-    //     D[celli] = max(mag(D[celli]), sumOff[celli]);
-    // }
     auto LambdaDiag = [=](label celli)
     {
         Dp[celli] = max(mag(Dp[celli]), sumOffp[celli]);
     };
-    exec.parallelFor(LambdaDiag,D.size());
+    exec.parallelFor(LambdaDiag, D.size());
 
     // ... then relax
     D /= alpha;
@@ -1382,27 +1368,19 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
             
             if (ptf.coupled())
             {
-                // forAll(pa, face)
-                // {
-                //     D[pa[face]] -= component(iCoeffs[face], 0);
-                // }
                 auto Lambda = [=](label face)
                 {
                     foamAtomic::AtomicAdd(Dp[pap[face]], -component(iCoeffsp[face], 0));
                 };
-                exec.parallelFor(Lambda,pa.size());
+                exec.parallelFor(Lambda, pa.size());
             }
             else
             {
-                // forAll(pa, face)
-                // {
-                //     D[pa[face]] -= cmptMin(iCoeffs[face]);
-                // }
                 auto Lambda = [=](label face)
                 {
                     foamAtomic::AtomicAdd(Dp[pap[face]], -cmptMin(iCoeffsp[face]));
                 };
-                exec.parallelFor(Lambda,pa.size());
+                exec.parallelFor(Lambda, pa.size());
             }
         }
     }

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -55,9 +56,9 @@ void component
         checkFields(result, f1, "f1 = f2.component(s)");
         auto rp = result.begin();
         auto f1p = f1.cbegin();
-        auto Lambda = [=](label i){ rp[i] = f1p[i].component(d);};
+        auto Lambda = [=](label i) {rp[i] = f1p[i].component(d);};
         foamExecutor exec;
-        exec.parallelFor(Lambda,result.size());
+        exec.parallelFor(Lambda, result.size());
     }
     else
     {
@@ -76,9 +77,9 @@ void T(Field<Type>& result, const UList<Type>& f1)
     {
         auto rp = result.begin();
         auto f1p = f1.begin();
-        auto Lambda = [=](label i){ rp[i] = f1p[i].T(); };
+        auto Lambda = [=](label i) {rp[i] = f1p[i].T();};
         foamExecutor exec;
-        exec.parallelFor(Lambda,result.size());
+        exec.parallelFor(Lambda, result.size());
     }
     else
     {
@@ -102,10 +103,8 @@ void pow
         auto rp = result.begin();
         const auto f1p = f1.cbegin();
         auto zerop = pTraits<resultType>::zero;
-        auto Lambda = [=](label i){
-            rp[i] = pow(f1p[i],zerop);
-        };
-        exec.parallelFor(Lambda,result.size());
+        auto Lambda = [=](label i) {rp[i] = pow(f1p[i],zerop);};
+        exec.parallelFor(Lambda, result.size());
     }
     else
     {
@@ -161,10 +160,8 @@ void sqr
         foamExecutor exec;
         auto rp = result.begin();
         const auto f1p = f1.cbegin();
-        auto Lambda = [=](label i){
-            rp[i] = sqr(f1p[i]);
-        };
-        exec.parallelFor(Lambda,result.size());
+        auto Lambda = [=](label i) {rp[i] = sqr(f1p[i]);};
+        exec.parallelFor(Lambda, result.size());
     }
     else
     {
@@ -208,10 +205,8 @@ void magSqr
         foamExecutor exec;
         auto rp = result.begin();
         const auto f1p = f1.cbegin();
-        auto Lambda = [=](label i){
-            rp[i] = magSqr(f1p[i]);
-        };
-        exec.parallelFor(Lambda,result.size());
+        auto Lambda = [=](label i) {rp[i] = magSqr(f1p[i]);};
+        exec.parallelFor(Lambda, result.size());
     }
     else
     {
@@ -257,9 +252,9 @@ void mag
         checkFields(result, f1, "f1 = mag(f2)");
         auto rp = result.begin();
         auto f1p = f1.cbegin();
-        auto Lambda = [=](label i){rp[i] = mag(f1p[i]);};
+        auto Lambda = [=](label i) {rp[i] = mag(f1p[i]);};
         foamExecutor exec;
-        exec.parallelFor(Lambda,result.size());
+        exec.parallelFor(Lambda, result.size());
     }
     else
     {
@@ -369,9 +364,9 @@ void cmptAv
         checkFields(result, f1, "f1 = cmptAv(f2)");
         auto rp = result.begin();
         const auto f1p = f1.cbegin();
-        auto Lambda = [=](label i){rp[i]=cmptAv(f1p[i]);};
+        auto Lambda = [=](label i) {rp[i] = cmptAv(f1p[i]);};
         foamExecutor exec;
-        exec.parallelFor(Lambda,result.size());
+        exec.parallelFor(Lambda, result.size());
     }
     else
     {
@@ -408,9 +403,9 @@ void cmptMag(Field<Type>& result, const UList<Type>& f1)
         checkFields(result, f1, "f1 = cmptMag(f2)");
         auto rp = result.begin();
         const auto f1p = f1.cbegin();
-        auto Lambda = [=](label i){ rp[i] = cmptMag(f1p[i]);};
+        auto Lambda = [=](label i) {rp[i] = cmptMag(f1p[i]);};
         foamExecutor exec;
-        exec.parallelFor(Lambda,result.size());
+        exec.parallelFor(Lambda, result.size());
     }
     else
     {
@@ -480,9 +475,9 @@ Type max(const UList<Type>& f1)
         {
             const auto f1p = f1.cbegin();
             foamExecutor exec;
-            auto Lambda = [=](label i){ return f1p[i];};
-            auto CompareOp = [](Type a, Type b){return max(a,b);};
-            exec.reductionCompare(Lambda,CompareOp,&result,f1.size());
+            auto Lambda = [=](label i) {return f1p[i];};
+            auto CompareOp = [](Type a, Type b) {return max(a,b);};
+            exec.reductionCompare(Lambda, CompareOp, &result, f1.size());
         }
         else
         {
@@ -507,9 +502,9 @@ Type min(const UList<Type>& f1)
         {
             const auto f1p = f1.cbegin();
             foamExecutor exec;
-            auto Lambda = [=](label i){ return f1p[i];};
-            auto CompareOp = [](Type a, Type b){return min(a,b);};
-            exec.reductionCompare(Lambda,CompareOp,&result,f1.size());
+            auto Lambda = [=](label i) {return f1p[i];};
+            auto CompareOp = [](Type a, Type b) {return min(a,b);};
+            exec.reductionCompare(Lambda, CompareOp, &result, f1.size());
         }
         else
         {
@@ -536,10 +531,9 @@ Type sum(const UList<Type>& f1)
         {
             auto f1p = f1.begin();
             const label size = f1.size();
-            //this is the thing being accumulated in result
-            auto sumOp = [=] (label i){return f1p[i];};
+            auto sumOp = [=] (label i) {return f1p[i];};
             foamExecutor exec;
-            exec.reductionSum(sumOp, &result,size);
+            exec.reductionSum(sumOp, &result, size);
         }
         else
         {
@@ -625,11 +619,9 @@ sumProd(const UList<Type>& f1, const UList<Type>& f2)
             auto f1p = f1.begin();
             auto f2p = f2.begin();
             const label size = f1.size();
-
-            auto sumProd = [=](label i){ return f1p[i]&&f2p[i]; };
-
+            auto sumProd = [=](label i) {return f1p[i]&&f2p[i];};
             foamExecutor exec;
-            exec.reductionSum(sumProd, &result,size);
+            exec.reductionSum(sumProd, &result, size);
         }
         else
         {
@@ -674,9 +666,9 @@ sumSqr(const UList<Type>& f1)
         if (f1.usePool())
         {
             auto f1p = f1.begin();
-            auto sumSqrOp = [=] (label i){return sqr(f1p[i]);};
+            auto sumSqrOp = [=] (label i) {return sqr(f1p[i]);};
             foamExecutor exec;
-            exec.reductionSum(sumSqrOp, &result,f1.size());
+            exec.reductionSum(sumSqrOp, &result, f1.size());
         }
         else
         {
@@ -709,9 +701,9 @@ sumMag(const UList<Type>& f1)
         if (f1.usePool())
         {
             auto f1p = f1.begin();
-            auto sumMagOp = [=] (label i){return mag(f1p[i]);};
+            auto sumMagOp = [=] (label i) {return mag(f1p[i]);};
             foamExecutor exec;
-            exec.reductionSum(sumMagOp, &result,f1.size());
+            exec.reductionSum(sumMagOp, &result, f1.size());
         }
         else
         {
@@ -941,19 +933,17 @@ void OpFunc(                                                                    
     const UList<Type2> &f2)                                                                            \
 {                                                                                                      \
     typedef typename product<Type1, Type2>::type resultType;                                           \
-    /*if constexpr*/                                                                                   \
-    /*(std::is_same<Type1,Type2>::value && std::is_same<Type1,vector>::value)*/                        \
     if (result.usePool() && f1.usePool() && f2.usePool())                                              \
     {                                                                                                  \
         /* Check fields have same size */                                                              \
         checkFields(result, f1, f2, "f1 = f2 " #Op " f3");                                             \
-        auto rp = result.begin();\
-        auto f1p = f1.begin();\
-        auto f2p = f2.begin();\
-        const label size = result.size();\
-        auto OpFunc##Lambda = [=](label i){rp[i] = f1p[i] Op f2p[i];};\
-        foamExecutor exec;\
-        exec.parallelFor(OpFunc##Lambda,size);\
+        auto rp = result.begin();                                                                      \
+        auto f1p = f1.begin();                                                                         \
+        auto f2p = f2.begin();                                                                         \
+        const label size = result.size();                                                              \
+        auto OpFunc##Lambda = [=](label i) {rp[i] = f1p[i] Op f2p[i];};                                \
+        foamExecutor exec;                                                                             \
+        exec.parallelFor(OpFunc##Lambda, size);                                                        \
     }                                                                                                  \
     else                                                                                               \
     {                                                                                                  \
@@ -1016,13 +1006,13 @@ void OpFunc(                                                                    
     {                                                                                                  \
         /* Check fields have same size */                                                              \
         checkFields(result, f1, "f1 = f2 " #Op " s");                                                  \
-        auto rp = result.begin();\
-        auto f1p = f1.begin();\
-        auto v = static_cast<const Form &>(vs);\
-        const label size = result.size();\
-        auto OpFunc##Lambda = [=](label i){rp[i] = f1p[i] Op v;};\
-        foamExecutor exec;\
-        exec.parallelFor(OpFunc##Lambda,size);\
+        auto rp = result.begin();                                                                      \
+        auto f1p = f1.begin();                                                                         \
+        auto v = static_cast<const Form &>(vs);                                                        \
+        const label size = result.size();                                                              \
+        auto OpFunc##Lambda = [=](label i) {rp[i] = f1p[i] Op v;};                                     \
+        foamExecutor exec;                                                                             \
+        exec.parallelFor(OpFunc##Lambda, size);                                                        \
     }                                                                                                  \
     else                                                                                               \
     {                                                                                                  \
@@ -1064,13 +1054,13 @@ void OpFunc(                                                                    
     {                                                                                                  \
         /* Check fields have same size */                                                              \
         checkFields(result, f1, "f1 = s " #Op " f2");                                                  \
-        auto rp = result.begin();\
-        auto f1p = f1.begin();\
-        auto v = static_cast<const Form &>(vs);\
-        const label size = result.size();\
-        auto OpFunc##Lambda = [=](label i){rp[i] = v Op f1p[i];};\
-        foamExecutor exec;\
-        exec.parallelFor(OpFunc##Lambda,size);\
+        auto rp = result.begin();                                                                      \
+        auto f1p = f1.begin();                                                                         \
+        auto v = static_cast<const Form &>(vs);                                                        \
+        const label size = result.size();                                                              \
+        auto OpFunc##Lambda = [=](label i) {rp[i] = v Op f1p[i];};                                     \
+        foamExecutor exec;                                                                             \
+        exec.parallelFor(OpFunc##Lambda, size);                                                        \
     }                                                                                                  \
     else                                                                                               \
     {                                                                                                  \

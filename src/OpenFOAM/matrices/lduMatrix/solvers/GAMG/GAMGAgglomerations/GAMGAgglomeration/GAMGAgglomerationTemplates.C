@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -47,6 +48,7 @@ void Foam::GAMGAgglomeration::restrictField
     const Type* const __restrict__ ffPtr = ff.cbegin();
     Type* __restrict__ cfPtr = cf.begin(); 
     const label size = ff.size();
+    
     foamExecutor exec; 
     auto Lambda = [=](label i)
     {

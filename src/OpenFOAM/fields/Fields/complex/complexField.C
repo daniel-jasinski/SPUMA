@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
     Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -259,9 +260,9 @@ complex sumProd(const UList<complex>& f1, const UList<complex>& f2)
         {
             auto f1p = f1.cbegin();
             auto f2p = f2.cbegin();
-            auto sumProd = [=](label i){ return f1p[i]*f2p[i];};
+            auto sumProd = [=](label i) {return f1p[i]*f2p[i];};
             foamExecutor exec;
-            exec.reductionSum(sumProd,&result,f1.size());
+            exec.reductionSum(sumProd, &result, f1.size());
         }
         else
         {

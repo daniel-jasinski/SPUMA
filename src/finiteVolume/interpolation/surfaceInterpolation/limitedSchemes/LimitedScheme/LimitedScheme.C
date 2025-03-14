@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2020-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -76,7 +77,8 @@ void Foam::LimitedScheme<Type, Limiter, LimitFunc>::calcLimiter
 
     Limiter localLimiter(*this);
 
-    auto Lambda = [=](label face){
+    auto Lambda = [=](label face)
+    {
         const label own = ownp[face];
         const label nei = neighp[face];
 
@@ -91,25 +93,8 @@ void Foam::LimitedScheme<Type, Limiter, LimitFunc>::calcLimiter
             Cp[nei] - Cp[own]
         ); 
     };
-    exec.parallelFor(Lambda,pLim.size());
+    exec.parallelFor(Lambda, pLim.size());
     
-    // forAll(pLim, face)
-    // {
-    //     label own = owner[face];
-    //     label nei = neighbour[face];
-
-    //     pLim[face] = Limiter::limiter
-    //     (
-    //         CDweights[face],
-    //         this->faceFlux_[face],
-    //         lPhi[own],
-    //         lPhi[nei],
-    //         gradc[own],
-    //         gradc[nei],
-    //         C[nei] - C[own]
-    //     );
-    // }
-
     surfaceScalarField::Boundary& bLim = limiterField.boundaryFieldRef();
 
     forAll(bLim, patchi)
@@ -152,32 +137,20 @@ void Foam::LimitedScheme<Type, Limiter, LimitFunc>::calcLimiter
             const auto pGradcNp = pGradcN.cbegin();
             const auto pdp = pd.cbegin();
 
-            auto Lambda = [=](label face){
-                    pLimp[face] = localLimiter.limiter
-                    (
-                        pCDweightsp[face],
-                        pFaceFluxp[face],
-                        plPhiPp[face],
-                        plPhiNp[face],
-                        pGradcPp[face],
-                        pGradcNp[face],
-                        pdp[face]
-                    ); 
+            auto Lambda = [=](label face)
+	    {
+                pLimp[face] = localLimiter.limiter
+                (
+                    pCDweightsp[face],
+                    pFaceFluxp[face],
+                    plPhiPp[face],
+                    plPhiNp[face],
+                    pGradcPp[face],
+                    pGradcNp[face],
+                    pdp[face]
+                ); 
             };
-            exec.parallelFor(Lambda,pLim.size());
-            // forAll(pLim, face)
-            // {
-            //     pLim[face] = Limiter::limiter
-            //     (
-            //         pCDweights[face],
-            //         pFaceFlux[face],
-            //         plPhiP[face],
-            //         plPhiN[face],
-            //         pGradcP[face],
-            //         pGradcN[face],
-            //         pd[face]
-            //     );
-            // }
+            exec.parallelFor(Lambda, pLim.size());
         }
         else
         {

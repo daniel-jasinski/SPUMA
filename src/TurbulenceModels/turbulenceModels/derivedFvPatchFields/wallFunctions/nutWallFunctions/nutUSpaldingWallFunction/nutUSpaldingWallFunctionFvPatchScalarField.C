@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -79,26 +80,20 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcNut() const
         // tolerance.
 
         scalarField& nutw = tnutw.ref();
-        // TODO executor
+        
         foamExecutor exec;
         auto nutwp = nutw.begin();
         const auto errp = err.cbegin();
         const auto thisp = this->cbegin();
         const scalar tolerance = tolerance_;
-        auto Lambda = [=](label facei){
+        auto Lambda = [=](label facei)
+        {
             if (errp[facei] < tolerance)
             {
                 nutwp[facei] = thisp[facei];
             } 
         };
-        exec.parallelFor(Lambda,err.size());
-        // forAll(err, facei)
-        // {
-        //     if (err[facei] < tolerance_)
-        //     {
-        //         nutw[facei] = this->operator[](facei);
-        //     }
-        // }
+        exec.parallelFor(Lambda, err.size());
     }
     return tnutw;
 }
@@ -153,7 +148,6 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
     err.setSize(uTau.size());
     err = 0.0;
 
-    //TODO executor
     foamExecutor exec;
     auto errp = err.begin();
     auto uTaup = uTau.begin();
@@ -171,14 +165,6 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
         scalar ut = sqrt((nutwp[facei] + nuwp[facei])*magGradUp[facei]);
         // Note: for exact restart seed with laminar viscosity only:
         //scalar ut = sqrt(nuw[facei]*magGradU[facei]);
-        
-        // const auto a = errp[facei];
-        // const auto b = uTaup[facei];
-        // const auto c = magUpp[facei];
-        // const auto d = magGradUp[facei];
-        // const auto e = nuwp[facei];
-        // const auto f = nutwp[facei];
-        // const auto g = yp[facei];
         
         if (ROOTVSMALL < ut)
         {
@@ -212,63 +198,9 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
 
             uTaup[facei] = max(scalar(0), ut);
         }
-
     };
 
-    exec.parallelFor(Lambda,uTau.size());
-
-
-    // forAll(uTau, facei)
-    // {
-    //     scalar ut = sqrt((nutw[facei] + nuw[facei])*magGradU[facei]);
-    //     // Note: for exact restart seed with laminar viscosity only:
-    //     //scalar ut = sqrt(nuw[facei]*magGradU[facei]);
-
-    //     if (ROOTVSMALL < ut)
-    //     {
-    //         int iter = 0;
-
-    //         do
-    //         {
-    //             const scalar kUu = min(kappa*magUp[facei]/ut, scalar(50));
-    //             const scalar fkUu = exp(kUu) - 1 - kUu*(1 + 0.5*kUu);
-
-    //             const scalar f =
-    //                 - ut*y[facei]/nuw[facei]
-    //                 + magUp[facei]/ut
-    //                 + 1.0/E*(fkUu - 1.0/6.0*kUu*sqr(kUu));
-
-    //             const scalar df =
-    //                 y[facei]/nuw[facei]
-    //               + magUp[facei]/sqr(ut)
-    //               + 1.0/E*kUu*fkUu/ut;
-
-    //             const scalar uTauNew = ut + f/df;
-    //             err[facei] = mag((ut - uTauNew)/ut);
-    //             ut = uTauNew;
-
-    //             //iterations_++;
-
-    //         } while
-    //         (
-    //             ut > ROOTVSMALL
-    //          && err[facei] > tolerance_
-    //          && ++iter < maxIter
-    //         );
-
-    //         uTau[facei] = max(scalar(0), ut);
-
-    //         //invocations_++;
-    //         //if (iter > 1)
-    //         //{
-    //         //    nontrivial_++;
-    //         //}
-    //         //if (iter >= maxIter_)
-    //         //{
-    //         //    nonconvergence_++;
-    //         //}
-    //     }
-    // }
+    exec.parallelFor(Lambda, uTau.size());
 
     return tuTau;
 }

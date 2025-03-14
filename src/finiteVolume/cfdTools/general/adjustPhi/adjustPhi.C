@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -75,35 +76,13 @@ bool Foam::adjustPhi
             {
                 if (Up.fixesValue() && !isA<inletOutletFvPatchVectorField>(Up))
                 {
-                    // forAll(phip, i)
-                    // {
-                    //     if (phip[i] < 0.0)
-                    //     {
-                    //         massIn -= phip[i];
-                    //     }
-                    //     else
-                    //     {
-                    //         fixedMassOut += phip[i];
-                    //     }
-                    // }
-                    exec.reductionSum(LambdaIn,&massIn,phip.size());
-                    exec.reductionSum(LambdaOut,&fixedMassOut,phip.size());
+                    exec.reductionSum(LambdaIn, &massIn, phip.size());
+                    exec.reductionSum(LambdaOut, &fixedMassOut, phip.size());
                 }
                 else
                 {
-                    // forAll(phip, i)
-                    // {
-                    //     if (phip[i] < 0.0)
-                    //     {
-                    //         massIn -= phip[i];
-                    //     }
-                    //     else
-                    //     {
-                    //         adjustableMassOut += phip[i];
-                    //     }
-                    // }
-                    exec.reductionSum(LambdaIn,&massIn,phip.size());
-                    exec.reductionSum(LambdaOut,&adjustableMassOut,phip.size());
+                    exec.reductionSum(LambdaIn, &massIn, phip.size());
+                    exec.reductionSum(LambdaOut, &adjustableMassOut, phip.size());
                 }
             }
         }
@@ -153,19 +132,12 @@ bool Foam::adjustPhi
                  || isA<inletOutletFvPatchVectorField>(Up)
                 )
                 {
-                    // forAll(phip, i)
-                    // {
-                    //     if (phip[i] > 0.0)
-                    //     {
-                    //         phip[i] *= massCorr;
-                    //     }
-                    // }
                     auto Lambda = [=](label i)
                     {
                         if (phipPtr[i] > 0.0)
                             phipPtr[i] *= massCorr; 
                     };
-                    exec.parallelFor(Lambda,phip.size());
+                    exec.parallelFor(Lambda, phip.size());
                 }
             }
         }

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -607,9 +608,9 @@ void Foam::Field<Type>::negate()
     if (this->usePool())
     {
         auto rp = this->begin();
-        auto negateOp = [=] (label i){rp[i] = - rp[i];};
+        auto negateOp = [=] (label i) {rp[i] = - rp[i];};
         foamExecutor exec;
-        exec.parallelFor(negateOp,this->size());
+        exec.parallelFor(negateOp, this->size());
     }
     else
     {
@@ -648,7 +649,7 @@ void Foam::Field<Type>::replace
         checkFields(*this, sf, "f1.replace(s, f2)");
         auto rp = this->begin();
         auto sfp = sf.begin();
-        auto replaceOp = [=](label i){ rp[i].replace(d,sfp[i]); };
+        auto replaceOp = [=](label i) {rp[i].replace(d,sfp[i]);};
         foamExecutor exec;
         exec.parallelFor(replaceOp, this->size());
     }
@@ -684,7 +685,7 @@ void Foam::Field<Type>::replace
         auto rp = this->begin();
         auto replaceLambda = [=] (label i){ rp[i].replace(d,c);};
         foamExecutor exec;
-        exec.parallelFor(replaceLambda,this->size());
+        exec.parallelFor(replaceLambda, this->size());
     }
     else
     {
@@ -824,9 +825,9 @@ void Foam::Field<Type>::operator=(const VectorSpace<Form,Cmpt,nCmpt>& vs)
     if (this->usePool())
     {
         auto rp = this->begin();
-        auto Lambda = [=](label i){rp[i] = vs;};
+        auto Lambda = [=](label i) {rp[i] = vs;};
         foamExecutor exec;
-        exec.parallelFor(Lambda,this->size());
+        exec.parallelFor(Lambda, this->size());
     }
     else
     {
@@ -834,7 +835,7 @@ void Foam::Field<Type>::operator=(const VectorSpace<Form,Cmpt,nCmpt>& vs)
     }
 }
 
-#define COMPUTED_ASSIGNMENT(TYPE, op)                                           \
+#define COMPUTED_ASSIGNMENT(TYPE, op)                                                 \
                                                                                       \
 template <class Type>                                                                 \
 void Foam::Field<Type>::operator op(const UList<TYPE> &f)                             \
@@ -842,11 +843,11 @@ void Foam::Field<Type>::operator op(const UList<TYPE> &f)                       
     if (this->usePool() && f.usePool())                                               \
     {                                                                                 \
         checkFields(*this, f, "f1 " #op " f2");                                       \
-        auto rp =this->begin();\
-        const auto fp = f.cbegin();\
-        auto opLambda = [=](label i){rp[i] op fp[i];};\
-        foamExecutor exec;\
-        exec.parallelFor(opLambda,f.size());\
+        auto rp =this->begin();                                                       \
+        const auto fp = f.cbegin();                                                   \
+        auto opLambda = [=](label i) {rp[i] op fp[i];};                               \
+        foamExecutor exec;                                                            \
+        exec.parallelFor(opLambda, f.size());                                         \
     }                                                                                 \
     else                                                                              \
     {                                                                                 \
@@ -866,10 +867,10 @@ void Foam::Field<Type>::operator op(const TYPE & t)                             
 {                                                                                     \
     if (this->usePool())                                                              \
     {                                                                                 \
-        auto rp =this->begin();\
-        auto opLambda = [=](label i){rp[i] op t;};\
-        foamExecutor exec;\
-        exec.parallelFor(opLambda,this->size());\
+        auto rp =this->begin();                                                       \
+        auto opLambda = [=](label i){rp[i] op t;};                                    \
+        foamExecutor exec;                                                            \
+        exec.parallelFor(opLambda, this->size());                                     \
     }                                                                                 \
     else                                                                              \
     {                                                                                 \

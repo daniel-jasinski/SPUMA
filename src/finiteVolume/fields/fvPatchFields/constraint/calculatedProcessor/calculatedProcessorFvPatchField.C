@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -211,11 +212,10 @@ void Foam::calculatedProcessorFvPatchField<Type>::initInterfaceMatrixUpdate
     auto sSendBufp = scalarSendBuf_.begin();
     const auto psiInternalp = psiInternal.cbegin();
     const auto fcp = fc.cbegin();
-    auto Lambda = [=](label i ){sSendBufp[i] = psiInternalp[fcp[i]];};
-    // forAll(fc, i)
-    // {
-    //     scalarSendBuf_[i] = psiInternal[fc[i]];
-    // }
+    auto Lambda = [=](label i)
+    { 
+        sSendBufp[i] = psiInternalp[fcp[i]];
+    };
     exec.parallelFor(Lambda, fc.size());
 
     scalarRecvBuf_.resize_nocopy(scalarSendBuf_.size());
@@ -265,25 +265,19 @@ void Foam::calculatedProcessorFvPatchField<Type>::addToInternalField
 
     if (add)
     {
-        // forAll(faceCells, elemI)
-        // {
-        //     result[faceCells[elemI]] += coeffs[elemI]*vals[elemI];
-        // }
-        auto Lambda = [=](label elemI){
+        auto Lambda = [=](label elemI)
+	{
             foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], coeffsp[elemI]*valsp[elemI]);
         };
-        exec.parallelFor(Lambda,faceCells.size());
+        exec.parallelFor(Lambda, faceCells.size());
     }
     else
     {
-        // forAll(faceCells, elemI)
-        // {
-        //     result[faceCells[elemI]] -= coeffs[elemI]*vals[elemI];
-        // }
-        auto Lambda = [=](label elemI){
+        auto Lambda = [=](label elemI)
+	{
             foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], -coeffsp[elemI]*valsp[elemI]);
         };
-        exec.parallelFor(Lambda,faceCells.size());
+        exec.parallelFor(Lambda, faceCells.size());
     }
 }
 

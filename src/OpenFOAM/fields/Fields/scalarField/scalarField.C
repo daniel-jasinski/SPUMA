@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -108,10 +109,10 @@ float sumProd(const UList<float>& f1, const UList<float>& f2)
             auto f2p = f2.cbegin();
             const label size = f1.size();
 
-            auto sumProd = [=](label i){ return f1p[i]*f2p[i]; };
+            auto sumProd = [=](label i) {return f1p[i]*f2p[i];};
 
             foamExecutor exec;
-            exec.reductionSum(sumProd, &result,size);
+            exec.reductionSum(sumProd, &result, size);
         }
         else
         {
@@ -134,7 +135,7 @@ double sumProd(const UList<double>& f1, const UList<double>& f2)
             auto f2p = f2.cbegin();
             const label size = f1.size();
 
-            auto sumProd = [=](label i){ return f1p[i]*f2p[i]; };
+            auto sumProd = [=](label i) {return f1p[i]*f2p[i];};
 
             foamExecutor exec;
             exec.reductionSum(sumProd, &result,size);

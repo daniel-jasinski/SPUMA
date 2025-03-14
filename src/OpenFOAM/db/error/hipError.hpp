@@ -31,9 +31,12 @@ Description
 
 #ifndef hipError_H
 #define hipError_H
+
 #include "error.H"
 #include <iostream>
 #include <hip/hip_runtime.h>
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int checkLastHipError
 (
@@ -55,8 +58,10 @@ int checkHipError
 // check if a pointer is a valid gpu pointer;
 bool isDeviceValid(const void * ptr);
 
-#define PrintDeviceValid(ptr)\
-    std::cout<< #ptr " device valid: "<<isDeviceValid(ptr)<<std::endl;
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
+
+// ************************************************************************* //
+
 

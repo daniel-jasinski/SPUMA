@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -115,11 +116,6 @@ void Foam::aDILUSmoother::smooth
 	    rAPtr[celli] *= rDPtr[celli];
         };
         exec.parallelFor(Lambda1, nCells);
-
-        /* forAll(rA, i)
-        {
-            rA[i] *= rD_[i];
-        }*/
 
 	tmp<scalarField> rATmp = tmp<scalarField>::New(rA);
         scalarField& rAtmp = rATmp.ref();

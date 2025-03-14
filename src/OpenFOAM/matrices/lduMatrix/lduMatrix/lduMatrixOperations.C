@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,29 +41,20 @@ void Foam::lduMatrix::sumDiag()
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
     scalarField& Diag = diag();
 
-    // const labelUList& l = lduAddr().lowerAddr();
-    // const labelUList& u = lduAddr().upperAddr();
-
-    // for (label face=0; face<l.size(); face++)
-    // {
-    //    Diag[l[face]] += Lower[face];
-    //    Diag[u[face]] += Upper[face];
-    // }
-
     scalar* diag = Diag.begin();
     const scalar* lower = Lower.cbegin();
     const scalar* upper = Upper.cbegin();
     const auto l = lduAddr().lowerAddr().cbegin();
     const auto u = lduAddr().upperAddr().cbegin();
 
-    auto sumDiagOp = [=](label face){
+    auto sumDiagOp = [=](label face)
+    {
        foamAtomic::AtomicAdd(diag[l[face]], lower[face]);
        foamAtomic::AtomicAdd(diag[u[face]], upper[face]);
     };
 
     foamExecutor exec;
-    exec.parallelFor(sumDiagOp,lduAddr().lowerAddr().size());
-
+    exec.parallelFor(sumDiagOp, lduAddr().lowerAddr().size());
 }
 
 
@@ -72,27 +64,19 @@ void Foam::lduMatrix::negSumDiag()
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
     scalarField& Diag = diag();
 
-    // const labelUList& l = lduAddr().lowerAddr();
-    // const labelUList& u = lduAddr().upperAddr();
-
-    // for (label face=0; face<l.size(); face++)
-    // {
-    //     Diag[l[face]] -= Lower[face];
-    //     Diag[u[face]] -= Upper[face];
-    // }
-
     scalar* diag = Diag.begin();
     const scalar* lower = Lower.cbegin();
     const scalar* upper = Upper.cbegin();
     const auto l = lduAddr().lowerAddr().cbegin();
     const auto u = lduAddr().upperAddr().cbegin();
-    auto Lambda = [=](label face){
+    auto Lambda = [=](label face)
+    {
        foamAtomic::AtomicAdd(diag[l[face]], -lower[face]);
        foamAtomic::AtomicAdd(diag[u[face]], -upper[face]);
     };
 
     foamExecutor exec;
-    exec.parallelFor(Lambda,lduAddr().lowerAddr().size());
+    exec.parallelFor(Lambda, lduAddr().lowerAddr().size());
 }
 
 
@@ -104,28 +88,20 @@ void Foam::lduMatrix::sumMagOffDiag
     const scalarField& Lower = const_cast<const lduMatrix&>(*this).lower();
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
 
-    //const labelUList& l = lduAddr().lowerAddr();
-    //const labelUList& u = lduAddr().upperAddr();
-
-    // for (label face = 0; face < l.size(); face++)
-    // {
-    //     sumOff[u[face]] += mag(Lower[face]);
-    //     sumOff[l[face]] += mag(Upper[face]);
-    // }
-
     auto sumoff = sumOff.begin();
     const scalar* lower = Lower.cbegin();
     const scalar* upper = Upper.cbegin();
     const auto l = lduAddr().lowerAddr().cbegin();
     const auto u = lduAddr().upperAddr().cbegin();
 
-    auto Lambda = [=](label face){
+    auto Lambda = [=](label face)
+    {
         foamAtomic::AtomicAdd(sumoff[u[face]], mag(lower[face]));
         foamAtomic::AtomicAdd(sumoff[l[face]], mag(upper[face]));
     };
 
     foamExecutor exec;
-    exec.parallelFor(Lambda,lduAddr().lowerAddr().size());
+    exec.parallelFor(Lambda, lduAddr().lowerAddr().size());
 }
 
 
@@ -357,16 +333,6 @@ void Foam::lduMatrix::operator*=(const scalarField& sf)
         const labelUList& l = lduAddr().lowerAddr();
         const labelUList& u = lduAddr().upperAddr();
 
-        // for (label face=0; face<upper.size(); face++)
-        // {
-        //     upper[face] *= sf[l[face]];
-        // }
-
-        // for (label face=0; face<lower.size(); face++)
-        // {
-        //     lower[face] *= sf[u[face]];
-        // }
-
         foamExecutor exec;
         const auto lp = l.cbegin();
         const auto up = u.cbegin();
@@ -374,14 +340,18 @@ void Foam::lduMatrix::operator*=(const scalarField& sf)
         auto lowerp = lower.begin();
         const auto sfp = sf.cbegin();
 
-        auto LambdaNeigh = [=](label face){
+        auto LambdaNeigh = [=](label face)
+	{
             upperp[face] *= sfp[lp[face]];
         };
-        auto LambdaOwn = [=](label face){
+        
+        auto LambdaOwn = [=](label face)
+	{
             lowerp[face] *= sfp[up[face]];
         };
-        exec.parallelFor(LambdaNeigh,upper.size());
-        exec.parallelFor(LambdaOwn,lower.size());
+
+        exec.parallelFor(LambdaNeigh, upper.size());
+        exec.parallelFor(LambdaOwn, lower.size());
     }
 }
 
