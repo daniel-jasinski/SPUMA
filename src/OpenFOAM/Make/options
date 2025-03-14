@@ -27,11 +27,20 @@ else
     LIB_LIBS += -L$(FOAM_LIBBIN)/dummy -lPstream
 endif
 
-/*platform specific source files*/
+/* umpire memory pool source files */
+include $(WM_PROJECT_DIR)/src/OpenFOAM/Make/umpireFiles
+
+ifneq (,$(findstring true,$(have_umpire)))
+    LIB_LIBS += -L$(UMPIRE_HOME)/lib -L$(UMPIRE_HOME)/lib64 -lumpire
+    EXE_INC += -Dhave_umpire -I$(UMPIRE_HOME)/include
+endif 
+
+/* platform specific source files */
 include $(WM_PROJECT_DIR)/src/OpenFOAM/Make/deviceFiles
 
 ifneq (,$(findstring true,$(have_cuda)))
     LIB_LIBS += -lcudart
     EXE_INC += -Dhave_cuda
 endif
+
 

@@ -301,7 +301,7 @@ void Foam::umpireMemoryPool::memCopy
     if (nElementsInBytes == 0) return;
 
     if(!this->isValid(tgtPtr) || !this->isValid(srcPtr))
-        raisePoolValidError(poolPtr);
+        raisePoolValidError(tgtPtr);
 
     uint64_t srcSizeInBytes = this->allocator_.getSize(srcPtr);
     const uint64_t tgtSizeInBytes = this->allocator_.getSize(tgtPtr);

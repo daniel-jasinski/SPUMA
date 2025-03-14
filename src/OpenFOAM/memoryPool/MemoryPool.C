@@ -75,12 +75,19 @@ Foam::MemoryPool* Foam::MemoryPool::New
         }
         else if (type == "dummyMemoryPool")
         {
-            instance = new  dummyMemoryPool(size);
+            instance = new dummyMemoryPool(size);
         }
+#ifdef have_umpire
+        else if (type == "umpireMemoryPool")
+        {
+            instance = new umpireMemoryPool(size);
+        }
+#endif
         else
         {
             FatalErrorInFunction
-            << "wrong memory pool type" << nl
+            << type << " does not exist. " 
+            << "Please use a different memory pool." << nl
             << abort(FatalError);
         }
     }
