@@ -33,8 +33,8 @@ cuFLAGS    = \
 
 cutoo       = $(WM_SCHEDULER) $(NVCC) $(cuFLAGS) -c $< -o $@
 
-LIB_LIBS += -lcudart -lcusparse
-LINKEXE += -lcudart -lcusparse
+LIB_LIBS += -lcudart
+LINKEXE += -lcudart
 
 $(OBJECTS_DIR)/%.o : %.cu
 	$(cutoo)

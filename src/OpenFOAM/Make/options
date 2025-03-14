@@ -31,12 +31,7 @@ endif
 include $(WM_PROJECT_DIR)/src/OpenFOAM/Make/deviceFiles
 
 ifneq (,$(findstring true,$(have_cuda)))
-    LIB_LIBS += -lcudart -lcusparse
+    LIB_LIBS += -lcudart
     EXE_INC += -Dhave_cuda
-
-    ifneq (,$(findstring true,$(have_managed)))
-        EXE_INC += -Dhave_managed
-    endif
-
 endif
 

@@ -37,11 +37,7 @@ void* Foam::cudaMemoryExecutor::_backendAlloc(uint64_t size)
 {
 
     void* ptr;
-    #ifdef have_managed
-        label err = CHECK_CUDA_ERROR(cudaMallocManaged((void**)&ptr, size));
-    #else
-        label err = CHECK_CUDA_ERROR(cudaMalloc((void**)&ptr, size));
-    #endif
+    label err = CHECK_CUDA_ERROR(cudaMallocManaged((void**)&ptr, size));
 
     if (err != 0)
     {

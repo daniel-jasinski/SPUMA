@@ -21,13 +21,8 @@ c++LESSWARN =
 include $(GENERAL_RULES)/cuda
 
 ifneq (,$(findstring true,$(have_cuda)))
-    #c++FLAGS += -Dhave_cuda
     CC += -gpu=cc$(NVARCH) -cuda -Dhave_cuda
     
-    ifneq (,$(findstring true,$(have_managed)))
-        CC += -Dhave_managed
-    endif
-
 endif
 # Tuning
 sinclude $(GENERAL_RULES)/common/c++$(WM_COMPILE_OPTION)
