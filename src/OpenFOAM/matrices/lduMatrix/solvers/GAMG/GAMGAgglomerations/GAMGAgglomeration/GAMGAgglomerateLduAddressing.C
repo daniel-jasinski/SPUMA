@@ -267,7 +267,7 @@ void Foam::GAMGAgglomeration::agglomerateLduAddressing
     patchFaceRestrictAddressing_.set
     (
         fineLevelIndex,
-        new labelListList(fineInterfaces.size(), labelList(poolSwitch(1)))
+        new labelListList(fineInterfaces.size(), labelList(poolSwitch(1)),poolSwitch(1))
     );
     labelListList& patchFineToCoarse =
         patchFaceRestrictAddressing_[fineLevelIndex];
