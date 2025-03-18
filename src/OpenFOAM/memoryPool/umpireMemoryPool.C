@@ -26,6 +26,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include <cstring>
+#include "memoryExecutors.H"
 #include "memCopyKind.H"
 #include "umpireMemoryPool.H"
 #include "error.H"
@@ -42,6 +43,7 @@ Foam::umpireMemoryPool::umpireMemoryPool(const uint64_t size):
     rm_(umpire::ResourceManager::getInstance()),
     inspector_()
 {
+    DebugInfo<<"create umpire memory pool"<<endl;
 #if defined(have_cuda) || defined(have_hip)
     auto allocator = rm_.getAllocator("UM");
 #else
@@ -62,12 +64,6 @@ Foam::umpireMemoryPool::umpireMemoryPool(const uint64_t size):
         minBlockSize_ /*default 1Mb*/
     );
 
-    tmpAllocator_ = rm_.makeAllocator<umpire::strategy::DynamicPoolList>
-    (
-        "tmp_dynamic_pool",
-        hostAllocator
-    );
-
     st_ = new umpire::strategy::DynamicPoolList
     (
         "strategy",
@@ -86,7 +82,7 @@ void* Foam::umpireMemoryPool::allocate(uint64_t sizeInBytes)
 {
     if (!sizeInBytes)
     {
-        Info << "WARNING: trying to allocate a block of zero size." << nl;
+        WarningInFunction<< "Trying to allocate a block of zero size." << nl;
         return nullptr;
     }
 
@@ -105,19 +101,20 @@ void Foam::umpireMemoryPool::free(void* ptr)
     if (ptr == nullptr) return;
 
     //check if pointer was allocated with pool
-    if (!this->isValid(ptr))
-        return;
+    rm_.findAllocationRecord(ptr);
 
     allocator_.deallocate(ptr);
 };
 
 uint64_t Foam::umpireMemoryPool::arraySizeInBytes(void* poolPtr)
 {
-    // check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return 0;
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return 0;
 
-    return allocator_.getSize(poolPtr);
+    //check if pointer was allocated with pool
+    auto record = rm_.findAllocationRecord(poolPtr);
+
+    return record->size;
 };
 
 void Foam::umpireMemoryPool::copyIn
@@ -134,15 +131,12 @@ void Foam::umpireMemoryPool::copyIn
     if (nElementsInBytes == 0) return;
 
     // check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-    {
-        raisePoolValidError(poolPtr)
-    }
+    auto record = rm_.findAllocationRecord(poolPtr);
 
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
-    uint64_t size = allocator_.getSize(poolPtr);
+    uint64_t size = allocator_.getSize(record->ptr);
     if (nElementsInBytes > size)
     {
         FatalErrorInFunction
@@ -170,15 +164,12 @@ void Foam::umpireMemoryPool::copyOut
     if (nElementsInBytes == 0) return;
 
     // check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-    {
-        raisePoolValidError(poolPtr)
-    }
+    auto record = rm_.findAllocationRecord(poolPtr);
 
     if (!ptr)
         FatalErrorInFunction << "source pointer is null" << abort(FatalError);
 
-    uint64_t size = allocator_.getSize(poolPtr);
+    uint64_t size = allocator_.getSize(record->ptr);
     if (nElementsInBytes > size)
     {
         FatalErrorInFunction
@@ -199,34 +190,27 @@ void Foam::umpireMemoryPool::memSet
     uint64_t nElementsInBytes
 )
 {
-    // check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
 
     // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
-    uint64_t size = allocator_.getSize(poolPtr);
-    if (nElementsInBytes > size)
+    // check if pointer was allocated with pool
+    auto record = rm_.findAllocationRecord(poolPtr);
+    void* allocatedPoolPtr = record->ptr;
+
+    const uint64_t size = allocator_.getSize(allocatedPoolPtr);
+    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedPoolPtr) + size)
     {
         FatalErrorInFunction
             << "Trying to assign more bytes than available in block"
             <<abort(FatalError);
     }
 
-    // workaround to delete type info in function
-    char* tmpPtr = (char*)tmpAllocator_.allocate(size);
-    char* tmpValue = (char*)value;
-    for (size_t i = 0; i < size; i+=sizeOfValue)
-    {
-        for (size_t j = 0; j < sizeOfValue; j++ )
-        {
-            tmpPtr[i+j] = tmpValue[j];
-        }
-    }
-
-    rm_.copy(poolPtr, (void*)tmpPtr, size);
-    tmpAllocator_.deallocate(tmpPtr);
+    // use memory executor
+    foamMemoryExecutor::memSet(poolPtr,nElementsInBytes,value,sizeOfValue);
 };
 
 void Foam::umpireMemoryPool::memSetScalarOne
@@ -235,30 +219,27 @@ void Foam::umpireMemoryPool::memSetScalarOne
     uint64_t nElementsInBytes
 )
 {
-    // check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
 
     // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
-    uint64_t size = allocator_.getSize(poolPtr);
-    if (nElementsInBytes > size)
+    // check if pointer was allocated with pool
+    auto record = rm_.findAllocationRecord(poolPtr);
+    void* allocatedPoolPtr = record->ptr;
+
+    const uint64_t size = allocator_.getSize(allocatedPoolPtr);
+    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedPoolPtr) + size)
     {
         FatalErrorInFunction
             << "Trying to assign more bytes than available in block"
             <<abort(FatalError);
     }
 
-    scalar* tmpPtr = (scalar*)tmpAllocator_.allocate(size);
-    const scalar one = 1.0;
-    for (size_t i = 0; i < size/sizeof(scalar); i++)
-    {
-        tmpPtr[i] = one;
-    }
-
-    rm_.copy(poolPtr, (void*)tmpPtr, size);
-    tmpAllocator_.deallocate(tmpPtr);
+    // use memory executor
+    foamMemoryExecutor::memSetScalarOne(poolPtr,nElementsInBytes);
 };
 
 void Foam::umpireMemoryPool::memSet
@@ -268,23 +249,27 @@ void Foam::umpireMemoryPool::memSet
     uint64_t nElementsInBytes
 )
 {
-    //check if pointer was allocated with pool
-    if (!this->isValid(poolPtr))
-        return;
+    //if ptr is null do nothing
+    if (poolPtr == nullptr) return;
 
     //if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
-    uint64_t size = allocator_.getSize(poolPtr);
-    if (nElementsInBytes > size)
+    // check if pointer was allocated with pool
+    auto record = rm_.findAllocationRecord(poolPtr);
+    void* allocatedPoolPtr = record->ptr;
+
+    const uint64_t size = allocator_.getSize(allocatedPoolPtr);
+    if (reinterpret_cast<uint64_t>(poolPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedPoolPtr) + size)
     {
         FatalErrorInFunction
             << "Trying to assign more bytes than available in block"
             <<abort(FatalError);
     }
 
-    // does not work with anything but int
-    rm_.memset(poolPtr,value,nElementsInBytes);
+    // use foam memory executor
+    foamMemoryExecutor::memSet(poolPtr,nElementsInBytes,value);
 };
 
 void Foam::umpireMemoryPool::memCopy
@@ -294,29 +279,33 @@ void Foam::umpireMemoryPool::memCopy
     uint64_t nElementsInBytes
 )
 {
-    // check if allocation record associated with an tgtPtr and srcPtr exist
     // if ptr is null do nothing
-    if (tgtPtr == nullptr) return;
+    if (tgtPtr == nullptr || srcPtr == nullptr) return;
 
+    // if nElementsInBytes = 0 do nothing
     if (nElementsInBytes == 0) return;
 
-    if(!this->isValid(tgtPtr) || !this->isValid(srcPtr))
-        raisePoolValidError(tgtPtr);
-
-    uint64_t srcSizeInBytes = this->allocator_.getSize(srcPtr);
-    const uint64_t tgtSizeInBytes = this->allocator_.getSize(tgtPtr);
-
-    if (nElementsInBytes > srcSizeInBytes)
-    {
-        FatalErrorInFunction
-            << "Trying to read more bytes than available in src block"
-            <<abort(FatalError);
-    }
-
-    if (nElementsInBytes > tgtSizeInBytes)
+    // check if pointer was allocated with pool
+    auto recordTgt = rm_.findAllocationRecord(tgtPtr);
+    void* allocatedTgtPtr = recordTgt->ptr;
+    const uint64_t tgtSizeInBytes = this->allocator_.getSize(allocatedTgtPtr);
+    if (reinterpret_cast<uint64_t>(tgtPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedTgtPtr) + tgtSizeInBytes)
     {
         FatalErrorInFunction
             << "Trying to assign more bytes than available in target block"
+            <<abort(FatalError);
+    }
+ 
+    // check if pointer was allocated with pool
+    auto recordSrc = rm_.findAllocationRecord(srcPtr);
+    void* allocatedSrcPtr = recordSrc->ptr;
+    const uint64_t srcSizeInBytes = this->allocator_.getSize(allocatedSrcPtr);
+    if (reinterpret_cast<uint64_t>(srcPtr) + nElementsInBytes >
+        reinterpret_cast<uint64_t>(allocatedSrcPtr) + srcSizeInBytes)
+    {
+        FatalErrorInFunction
+            << "Trying to read more bytes than available in src block"
             <<abort(FatalError);
     }
 

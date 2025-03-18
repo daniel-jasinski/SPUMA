@@ -97,19 +97,22 @@ public:
     void free(void* ptr);
 
     // check if pool pointer is valid
-    inline bool isValid(void* poolPtr);
+    inline bool isValid(void* poolPtr){
+        WarningInFunction
+        <<"Umpire performs allocation checks with findAllocationRecord"
+        <<endl;
+        NotImplemented;
+        return false;
+    };
 
     // check if ptr is in allocated blocks
-    inline bool isInBlockRange(void* ptr)
-    {
+    inline bool isInBlockRange(void* ptr){
+        WarningInFunction
+            <<"Umpire performs intra allocation checks with findAllocationRecord"
+            <<endl;
         NotImplemented;
-    }
-
-    // check if ptr is in allocated blocks
-    virtual inline bool isInRange(void* ptr)
-    {
-        NotImplemented;
-    }
+        return false;
+    };
 
     // Returns size of array (in bytes if type not specified)
     uint64_t arraySizeInBytes(void* poolPtr);
@@ -207,22 +210,6 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // inline member functions
-
-inline bool Foam::umpireMemoryPool::isValid(void* poolPtr)
-{
-    // if poolPtr is null
-    if (!poolPtr) return false;
-
-    auto record = rm_.findAllocationRecord(poolPtr);
-    bool valid = record->ptr == nullptr ? false : true;
-    if (!valid)
-    {
-        FatalErrorInFunction
-            << "MEMPOOL: pointer " << reinterpret_cast<uint64_t>(poolPtr)
-            << "is not valid" << endl;
-    }
-    return valid;
-}
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
