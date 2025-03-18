@@ -244,9 +244,9 @@ void Foam::fixedSizeMemoryPool::copyIn
     foamMemoryExecutor::memCopy
     (
         poolPtr,
-               ptr,
+        ptr,
         nElementsInBytes,
-               memCopyKind::memCopyHostToDevice
+        memCopyKind::memCopyHostToDevice
     );
 };
 
@@ -288,8 +288,8 @@ void Foam::fixedSizeMemoryPool::copyOut
     (
         ptr,
         poolPtr,
-               nElementsInBytes,
-               memCopyKind::memCopyDeviceToHost
+        nElementsInBytes,
+        memCopyKind::memCopyDeviceToHost
     );
 };
 
