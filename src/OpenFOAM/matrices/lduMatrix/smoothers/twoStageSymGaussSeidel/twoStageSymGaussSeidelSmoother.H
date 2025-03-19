@@ -33,10 +33,10 @@ Group
 
 Description
     Two-stage symmetric Gauss-Seidel smoother for GAMG.
-    Reference paper: Luc Berger-Vergiat, Brian Kelley, 
-    Sivasankaran Rajamanickam, Jonathan Hu, Katarzyna Swirydowicz, 
-    Paul Mullowney, Stephen Thomas, Ichitaro Yamazaki 
-    "Two-Stage Gauss--Seidel Preconditioners and 
+    Reference paper: Luc Berger-Vergiat, Brian Kelley,
+    Sivasankaran Rajamanickam, Jonathan Hu, Katarzyna Swirydowicz,
+    Paul Mullowney, Stephen Thomas, Ichitaro Yamazaki
+    "Two-Stage Gauss--Seidel Preconditioners and
     Smoothers for Krylov Solvers on a GPU cluster"
     DOI:10.48550/arXiv.2104.01196, 2021
 

@@ -33,7 +33,7 @@ include $(WM_PROJECT_DIR)/src/OpenFOAM/Make/umpireFiles
 ifneq (,$(findstring true,$(have_umpire)))
     LIB_LIBS += -L$(UMPIRE_HOME)/lib -L$(UMPIRE_HOME)/lib64 -lumpire
     EXE_INC += -Dhave_umpire -I$(UMPIRE_HOME)/include
-endif 
+endif
 
 /* platform specific source files */
 include $(WM_PROJECT_DIR)/src/OpenFOAM/Make/deviceFiles

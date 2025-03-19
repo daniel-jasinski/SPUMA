@@ -152,7 +152,7 @@ void Foam::twoStageSymGaussSeidelSmoother::smooth
 
         // -- Compute new residual vector (scaled by D^-1) for forward sweep
         // -- Initialize g with scaled residual
-        
+
         auto LambdaDiag = [=](label celli)
         {
             rDrPtr[celli] -= diagPtr[celli] * psiPtr[celli];
@@ -169,7 +169,7 @@ void Foam::twoStageSymGaussSeidelSmoother::smooth
 
             foamAtomic::AtomicAdd
             (
-                rDrPtr[lPtr[facei]], 
+                rDrPtr[lPtr[facei]],
                -upperPtr[facei] * psiPtr[uPtr[facei]]
             );
         };
@@ -208,7 +208,7 @@ void Foam::twoStageSymGaussSeidelSmoother::smooth
         // -- Update solution vector
         psi += g;
 
-	// --
+        // --
 
         // -- Compute new residual vector (scaled by D^-1) for backward sweep
         auto LambdaDiag2 = [=](label celli)
