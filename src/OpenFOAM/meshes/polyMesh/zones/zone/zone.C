@@ -44,7 +44,7 @@ namespace Foam
 Foam::zone::zone()
 :
     zoneIdentifier(),
-    labelList(),
+    labelList(poolSwitch(1)),
     lookupMapPtr_(nullptr)
 {}
 
@@ -52,7 +52,7 @@ Foam::zone::zone()
 Foam::zone::zone(const word& name, const label index)
 :
     zoneIdentifier(name, index),
-    labelList(),
+    labelList(poolSwitch(1)),
     lookupMapPtr_(nullptr)
 {}
 
@@ -92,9 +92,11 @@ Foam::zone::zone
 )
 :
     zoneIdentifier(name, dict, index),
-    labelList(dict.get<labelList>(labelsName)),
+    labelList(poolSwitch(1)),
     lookupMapPtr_(nullptr)
-{}
+{
+    labelList::operator=(dict.get<labelList>(labelsName));
+}
 
 
 Foam::zone::zone
@@ -105,9 +107,11 @@ Foam::zone::zone
 )
 :
     zoneIdentifier(originalZone, newIndex),
-    labelList(addr),
+    labelList(poolSwitch(1)),
     lookupMapPtr_(nullptr)
-{}
+{
+    labelList::operator=(addr);
+}
 
 
 Foam::zone::zone
@@ -118,9 +122,11 @@ Foam::zone::zone
 )
 :
     zoneIdentifier(originalZone, newIndex),
-    labelList(std::move(addr)),
+    labelList(poolSwitch(1)),
     lookupMapPtr_(nullptr)
-{}
+{
+    labelList::operator=(std::move(addr));
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
