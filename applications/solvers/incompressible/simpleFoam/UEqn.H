@@ -1,11 +1,11 @@
     // Momentum predictor
 
-    //MRF.correctBoundaryVelocity(U);
+    MRF.correctBoundaryVelocity(U);
 
     tmp<fvVectorMatrix> tUEqn
     (
         fvm::div(phi, U)
-      //+ MRF.DDt(U)
+      + MRF.DDt(U)
       + turbulence->divDevReff(U)
      //==
      //   fvOptions(U)

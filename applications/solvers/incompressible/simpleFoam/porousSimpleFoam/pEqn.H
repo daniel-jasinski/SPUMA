@@ -12,7 +12,7 @@ volVectorField& HbyA = tHbyA.ref();
 tUEqn.clear();
 surfaceScalarField phiHbyA("phiHbyA", fvc::flux(HbyA));
 
-// MRF.makeRelative(phiHbyA);
+MRF.makeRelative(phiHbyA);
 
 adjustPhi(phiHbyA, U, p);
 
