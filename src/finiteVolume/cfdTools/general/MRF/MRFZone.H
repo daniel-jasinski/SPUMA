@@ -98,10 +98,10 @@ class MRFZone
         labelList internalFaces_;
 
         //- Outside faces (per patch) that move with the MRF
-        labelListList includedFaces_;
+        PtrList<labelList> includedFaces_;
 
         //- Excluded faces (per patch) that do not move with the MRF
-        labelListList excludedFaces_;
+        PtrList<labelList> excludedFaces_;
 
         //- Origin of the axis
         vector origin_;
