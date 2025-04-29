@@ -137,23 +137,41 @@ Foam::cyclicFvPatchField<Type>::patchNeighbourField() const
     auto tpnf = tmp<Field<Type>>::New(this->size());
     auto& pnf = tpnf.ref();
 
+    foamExecutor exec;
+    auto pnf_p = pnf.begin();
+    const auto iField_p = iField.cbegin();
+    const auto nbrFaceCells_p = nbrFaceCells.cbegin();
 
     if (doTransform())
     {
-        forAll(pnf, facei)
-        {
-            pnf[facei] = transform
+
+        //const auto t1 = forwardT()[0];
+        // forAll(pnf, facei)
+        // {
+        //     pnf[facei] = transform
+        //     (
+        //         forwardT()[0], iField[nbrFaceCells[facei]]
+        //     );
+        // }
+        const auto T_p = forwardT().cbegin();
+        auto Lambda = [=](label facei){
+            pnf_p[facei] = transform
             (
-                forwardT()[0], iField[nbrFaceCells[facei]]
+                T_p[0], iField_p[nbrFaceCells_p[facei]]
             );
-        }
+        };
+        exec.parallelFor(Lambda,pnf.size());
     }
     else
     {
-        forAll(pnf, facei)
-        {
-            pnf[facei] = iField[nbrFaceCells[facei]];
-        }
+        // forAll(pnf, facei)
+        // {
+        //     pnf[facei] = iField[nbrFaceCells[facei]];
+        // }
+        auto Lambda = [=](label facei){
+            pnf_p[facei] = iField_p[nbrFaceCells_p[facei]];
+        };
+        exec.parallelFor(Lambda,pnf.size());
     }
 
     return tpnf;
