@@ -95,7 +95,7 @@ void Foam::dummyMemoryPool::free(void* ptr)
 
     DebugInFunction
         << "Deallocated block of size " << size
-        << " at address " << reinterpret_cast<uint64_t>(ptr) << nl;
+        << " at address " << std::to_string(reinterpret_cast<uint64_t>(ptr)) << nl;
 
     this->allocatedSize_   -= size;
     this->size_            -= size;
@@ -232,8 +232,8 @@ void Foam::dummyMemoryPool::memSet
         if(!this->isInBlockRange(poolPtr))
         {
             FatalErrorInFunction
-                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(poolPtr)
-                << "is not valid and not in range" << abort(FatalError);
+                << "MEMPOOL: src pointer " << std::to_string(reinterpret_cast<uint64_t>(poolPtr))
+                << " is not valid and not in range" << abort(FatalError);
         }
         uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);
 
@@ -283,8 +283,8 @@ void Foam::dummyMemoryPool::memSetScalarOne
         if(!this->isInBlockRange(poolPtr))
         {
             FatalErrorInFunction
-                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(poolPtr)
-                << "is not valid and not in range" << abort(FatalError);
+                << "MEMPOOL: src pointer " << std::to_string(reinterpret_cast<uint64_t>(poolPtr))
+                << " is not valid and not in range" << abort(FatalError);
         }
         uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);
 
@@ -336,8 +336,8 @@ void Foam::dummyMemoryPool::memSet
         if(!this->isInBlockRange(poolPtr))
         {
             FatalErrorInFunction
-                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(poolPtr)
-                << "is not valid and not in range" << abort(FatalError);
+                << "MEMPOOL: src pointer " << std::to_string(reinterpret_cast<uint64_t>(poolPtr))
+                << " is not valid and not in range" << abort(FatalError);
         }
         uint64_t ptr = reinterpret_cast<uint64_t>(poolPtr);
 
@@ -389,8 +389,8 @@ void Foam::dummyMemoryPool::memCopy
         if(!this->isInBlockRange(tgtPtr))
         {
             FatalErrorInFunction
-                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(tgtPtr)
-                << "is not valid and not in range" << abort(FatalError);
+                << "MEMPOOL: src pointer " << std::to_string(reinterpret_cast<uint64_t>(tgtPtr))
+                << " is not valid and not in range" << abort(FatalError);
         }
         uint64_t ptr = reinterpret_cast<uint64_t>(tgtPtr);
 
@@ -417,8 +417,8 @@ void Foam::dummyMemoryPool::memCopy
         if(!this->isInBlockRange(srcPtr))
         {
             FatalErrorInFunction
-                << "MEMPOOL: src pointer " << reinterpret_cast<uint64_t>(srcPtr)
-                << "is not valid and not in range" << abort(FatalError);
+                << "MEMPOOL: src pointer " << std::to_string(reinterpret_cast<uint64_t>(srcPtr))
+                << " is not valid and not in range" << abort(FatalError);
         }
 
         uint64_t ptr = reinterpret_cast<uint64_t>(srcPtr);
@@ -471,7 +471,7 @@ void Foam::dummyMemoryPool::showAllocated(bool relative)
     for (blockList::iterator ii = this->usedBlockList_.begin();
                              ii != this->usedBlockList_.end(); ii++)
         Info
-            << "At address: "<< reinterpret_cast<uint64_t>(ii->first)
+            << "At address: " << std::to_string(reinterpret_cast<uint64_t>(ii->first))
             << " allocated block of size " << ii->second << " bytes." << nl;
 }
 
@@ -480,7 +480,7 @@ void Foam::dummyMemoryPool::showUnallocated(bool relative)
     for (blockList::iterator ii = this->unusedBlockList_.begin();
                              ii != this->unusedBlockList_.end(); ii++)
         Info
-            << "At address: "<< reinterpret_cast<uint64_t>(ii->first)
+            << "At address: " << std::to_string(reinterpret_cast<uint64_t>(ii->first))
             << " allocated block of size " << ii->second << " bytes." << nl;
 };
 

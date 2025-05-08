@@ -52,8 +52,8 @@ SourceFiles
 //- macro to raise poolptr errors
 #define raisePoolValidError(poolPtr)\
     FatalErrorInFunction\
-        << "MEMPOOL: pointer " << reinterpret_cast<uint64_t>(poolPtr)\
-        << "is not valid" << abort(FatalError);
+        << "MEMPOOL: pointer " << std::to_string(reinterpret_cast<uint64_t>(poolPtr)) \
+        << " is not valid" << abort(FatalError);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
