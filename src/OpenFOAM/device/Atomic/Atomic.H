@@ -56,8 +56,8 @@ namespace Foam
 template <typename T>
 struct Atomic
 {
-    template<typename Type>
-    FOAM_DEVICE static void AtomicAdd(Type& x,const Type& y)
+    template<typename Type1, typename Type2>
+    FOAM_DEVICE static void AtomicAdd(Type1& x, const Type2& y)
     {
         T::_backendAtomicAdd(x,y);
     }

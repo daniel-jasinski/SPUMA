@@ -63,6 +63,29 @@ struct cudaAtomic
         }
     };
 
+    template<class T>
+    struct atomicMaxEqOp
+    {
+        void operator()(T& x, const T& y) const
+        {
+            _backendAtomicMax(x,y);
+        }
+    };
+
+    template<class T>
+    struct atomicMinEqOp
+    {
+        void operator()(T& x, const T& y) const
+        {
+            _backendAtomicMin(x,y);
+        }
+    };
+
+    static void _backendAtomicAdd(scalar& x, const scalar& y)
+    {
+        atomicAdd(&x,y);
+    }
+
     static void _backendAtomicAdd(solveScalar& x, const solveScalar& y)
     {
         atomicAdd(&x,y);
@@ -71,6 +94,11 @@ struct cudaAtomic
     static void _backendAtomicAdd(label& x, const label& y)
     {
         atomicAdd(&x,y);
+    }
+
+    static void  _backendAtomicMax(scalar& x, const scalar& y)
+    {
+        atomicMax(&x,y);
     }
 
     static void  _backendAtomicMax(solveScalar& x, const solveScalar& y)
@@ -83,14 +111,10 @@ struct cudaAtomic
         atomicMax(&x,y);
     }
 
-    template<class T>
-    struct atomicMaxEqOp
+    static void  _backendAtomicMin(scalar& x, const scalar& y)
     {
-        void operator()(T& x, const T& y) const
-        {
-            _backendAtomicMax(x,y);
-        }
-    };
+        atomicMin(&x,y);
+    }
 
     static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
     {
@@ -101,15 +125,6 @@ struct cudaAtomic
     {
         atomicMin(&x,y);
     }
-
-    template<class T>
-    struct atomicMinEqOp
-    {
-        void operator()(T& x, const T& y) const
-        {
-            _backendAtomicMin(x,y);
-        }
-    };
 
     template<class Form, class Cmpt, direction Ncmpts>
     static void _backendAtomicAdd
