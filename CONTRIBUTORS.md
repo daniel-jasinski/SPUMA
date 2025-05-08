@@ -4,7 +4,7 @@ The following is a list of known contributors to SPUMA.
 
 ## Contributors (alphabetical by surname)
 
-- Simone Bnà
+- Simone Bna'
 - Francesco Bottau
 - Ettore Fadiga
 - Giuseppe Giaquinto
