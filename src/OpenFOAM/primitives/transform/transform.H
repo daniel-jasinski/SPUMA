@@ -37,8 +37,8 @@ Description
 
 #include "tensor.H"
 #include "mathematicalConstants.H"
+#include "deviceM.H"
 #include <type_traits>
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -159,7 +159,7 @@ transform(const tensor&, const T val)
 
 //- No-op rotational transform for spherical tensor
 template<class Cmpt>
-inline SphericalTensor<Cmpt> transform
+FOAM_DEVICE_I SphericalTensor<Cmpt> transform
 (
     const tensor&,
     const SphericalTensor<Cmpt>& val
@@ -193,7 +193,7 @@ inline SphericalTensor<Cmpt> invTransform
 //- Use rotational tensor to transform a vector.
 //  Same as (rot & v)
 template<class Cmpt>
-inline Vector<Cmpt> transform(const tensor& tt, const Vector<Cmpt>& v)
+FOAM_DEVICE_I Vector<Cmpt> transform(const tensor& tt, const Vector<Cmpt>& v)
 {
     return (tt & v);
 }
@@ -211,7 +211,7 @@ inline Vector<Cmpt> invTransform(const tensor& tt, const Vector<Cmpt>& v)
 //- Use rotational tensor to transform a tensor.
 //  Same as (rot & input & rot.T())
 template<class Cmpt>
-inline Tensor<Cmpt> transform(const tensor& tt, const Tensor<Cmpt>& t)
+FOAM_DEVICE_I Tensor<Cmpt> transform(const tensor& tt, const Tensor<Cmpt>& t)
 {
     return Tensor<Cmpt>
     (
@@ -321,7 +321,7 @@ inline Tensor<Cmpt> invTransform(const tensor& tt, const Tensor<Cmpt>& t)
 //- Use rotational tensor to transform a symmetrical tensor.
 //  Same as (rot & input & rot.T())
 template<class Cmpt>
-inline SymmTensor<Cmpt> transform(const tensor& tt, const SymmTensor<Cmpt>& st)
+FOAM_DEVICE_I SymmTensor<Cmpt> transform(const tensor& tt, const SymmTensor<Cmpt>& st)
 {
     return SymmTensor<Cmpt>
     (
