@@ -531,7 +531,7 @@ Type sum(const UList<Type>& f1)
         {
             auto f1p = f1.begin();
             const label size = f1.size();
-            auto sumOp = [=] (label i) {return f1p[i];};
+            auto sumOp = [=] (label i) {return resultType(f1p[i]);};
             foamExecutor exec;
             exec.reductionSum(sumOp, &result, size);
         }
