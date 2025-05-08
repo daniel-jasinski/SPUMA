@@ -322,6 +322,8 @@ void Foam::cudaExecutor::_backendReductionSum
         (void*) result,
         sizeof(resultT)
     );
+
+    MemoryPool::getInstance()->free(dPtrResult);
 };
 
 template <typename F, typename Op, typename resultT>
@@ -384,6 +386,8 @@ void Foam::cudaExecutor::_backendReductionCompare
         (void*) result,
         sizeof(resultT)
     );
+
+    MemoryPool::getInstance()->free(dPtrResult);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
