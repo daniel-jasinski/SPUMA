@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -87,43 +88,54 @@ Foam::linearUpwindV<Type>::correction
         volMesh
     >& gradVf = tgradVf();
 
-    forAll(faceFlux, facei)
+    foamExecutor exec;
+    auto sfCorrPtr = sfCorr.begin();
+    const auto gradVfPtr = gradVf.cbegin();
+    const auto CPtr = C.cbegin();
+    const auto CfPtr = Cf.cbegin();
+    const auto ownPtr = own.cbegin();
+    const auto neiPtr = nei.cbegin();
+    const auto wPtr = w.cbegin();
+    const auto faceFluxPtr = faceFlux.cbegin();
+    const auto vfPtr = vf.cbegin();
+
+    auto Lambda = [=](label facei)
     {
         vector maxCorr;
 
-        if (faceFlux[facei] > 0.0)
+        if (faceFluxPtr[facei] > 0.0)
         {
             maxCorr =
-                (1.0 - w[facei])*(vf[nei[facei]] - vf[own[facei]]);
+                (1.0 - wPtr[facei])*(vfPtr[neiPtr[facei]] - vfPtr[ownPtr[facei]]);
 
-            sfCorr[facei] =
-                (Cf[facei] - C[own[facei]]) & gradVf[own[facei]];
+            sfCorrPtr[facei] =
+                (CfPtr[facei] - CPtr[ownPtr[facei]]) & gradVfPtr[ownPtr[facei]];
         }
         else
         {
             maxCorr =
-                w[facei]*(vf[own[facei]] - vf[nei[facei]]);
+                wPtr[facei]*(vfPtr[ownPtr[facei]] - vfPtr[neiPtr[facei]]);
 
-            sfCorr[facei] =
-               (Cf[facei] - C[nei[facei]]) & gradVf[nei[facei]];
+            sfCorrPtr[facei] =
+               (CfPtr[facei] - CPtr[neiPtr[facei]]) & gradVfPtr[neiPtr[facei]];
         }
 
-        scalar sfCorrs = magSqr(sfCorr[facei]);
-        scalar maxCorrs = sfCorr[facei] & maxCorr;
+        scalar sfCorrs = magSqr(sfCorrPtr[facei]);
+        scalar maxCorrs = sfCorrPtr[facei] & maxCorr;
 
         if (sfCorrs > 0)
         {
             if (maxCorrs < 0)
             {
-                sfCorr[facei] = Zero;
+                sfCorrPtr[facei] = Zero;
             }
             else if (sfCorrs > maxCorrs)
             {
-                sfCorr[facei] *= maxCorrs/(sfCorrs + VSMALL);
+                sfCorrPtr[facei] *= maxCorrs/(sfCorrs + VSMALL);
             }
         }
-    }
-
+    };
+    exec.parallelFor(Lambda, faceFlux.size());
 
     typename GeometricField<Type, fvsPatchField, surfaceMesh>::
         Boundary& bSfCorr = sfCorr.boundaryFieldRef();
@@ -155,41 +167,51 @@ Foam::linearUpwindV<Type>::correction
             // Build the d-vectors
             vectorField pd(Cf.boundaryField()[patchi].patch().delta());
 
-            forAll(pOwner, facei)
+            auto pSfCorrPtr = pSfCorr.begin();
+            const auto pOwnerPtr = pOwner.cbegin();
+            const auto pCfPtr = pCf.cbegin();
+	    const auto pWPtr = pW.cbegin();
+	    const auto pVfNeiPtr = pVfNei.cbegin();
+	    const auto pdPtr = pd.cbegin();
+	    const auto pGradVfNeiPtr = pGradVfNei.cbegin();
+            const auto pFaceFluxPtr = pFaceFlux.cbegin();
+
+	    auto LambdaPatch = [=](label facei)
             {
-                label own = pOwner[facei];
+                label own = pOwnerPtr[facei];
 
                 vector maxCorr;
 
-                if (pFaceFlux[facei] > 0)
+                if (pFaceFluxPtr[facei] > 0)
                 {
-                    pSfCorr[facei] = (pCf[facei] - C[own]) & gradVf[own];
+                    pSfCorrPtr[facei] = (pCfPtr[facei] - CPtr[own]) & gradVfPtr[own];
 
-                    maxCorr = (1.0 - pW[facei])*(pVfNei[facei] - vf[own]);
+                    maxCorr = (1.0 - pWPtr[facei])*(pVfNeiPtr[facei] - vfPtr[own]);
                 }
                 else
                 {
-                    pSfCorr[facei] =
-                        (pCf[facei] - pd[facei] - C[own]) & pGradVfNei[facei];
+                    pSfCorrPtr[facei] =
+                        (pCfPtr[facei] - pdPtr[facei] - CPtr[own]) & pGradVfNeiPtr[facei];
 
-                    maxCorr = pW[facei]*(vf[own] - pVfNei[facei]);
+                    maxCorr = pWPtr[facei]*(vfPtr[own] - pVfNeiPtr[facei]);
                 }
 
-                scalar pSfCorrs = magSqr(pSfCorr[facei]);
-                scalar maxCorrs = pSfCorr[facei] & maxCorr;
+                scalar pSfCorrs = magSqr(pSfCorrPtr[facei]);
+                scalar maxCorrs = pSfCorrPtr[facei] & maxCorr;
 
                 if (pSfCorrs > 0)
                 {
                     if (maxCorrs < 0)
                     {
-                        pSfCorr[facei] = Zero;
+                        pSfCorrPtr[facei] = Zero;
                     }
                     else if (pSfCorrs > maxCorrs)
                     {
-                        pSfCorr[facei] *= maxCorrs/(pSfCorrs + VSMALL);
+                        pSfCorrPtr[facei] *= maxCorrs/(pSfCorrs + VSMALL);
                     }
                 }
-            }
+            };
+            exec.parallelFor(LambdaPatch, pOwner.size());
         }
     }
 
