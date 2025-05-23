@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2012-2016, 2019 OpenFOAM Foundation
     Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -168,25 +169,38 @@ void Foam::kLowReWallFunctionFvPatchScalarField::updateCoeffs()
     scalarField& kw = *this;
 
     // Set k wall values
-    forAll(kw, facei)
+    foamExecutor exec;
+    auto kwPtr = kw.begin();
+    const auto kPtr = k.cbegin();
+    const auto nuwPtr = nuw.cbegin();
+    const auto yPtr = y.cbegin();
+    const labelUList& faceCells = patch().faceCells();
+    const auto faceCellsPtr = faceCells.cbegin();
+    const scalar Ck(Ck_);
+    const scalar Bk(Bk_);
+    const scalar C(C_);
+    const scalar Ceps2(Ceps2_);
+
+    auto Lambda = [=](label facei)
     {
-        const label celli = patch().faceCells()[facei];
-        const scalar uTau = Cmu25*sqrt(k[celli]);
-        const scalar yPlus = uTau*y[facei]/nuw[facei];
+        const label celli = faceCellsPtr[facei];
+        const scalar uTau = Cmu25*sqrt(kPtr[celli]);
+        const scalar yPlus = uTau*yPtr[facei]/nuwPtr[facei];
 
         if (yPlus > yPlusLam)
         {
-            kw[facei] = Ck_/kappa*log(yPlus) + Bk_;
+            kwPtr[facei] = Ck/kappa*log(yPlus) + Bk;
         }
         else
         {
-            const scalar Cf =
-                1.0/sqr(yPlus + C_) + 2.0*yPlus/pow3(C_) - 1.0/sqr(C_);
-            kw[facei] = 2400.0/sqr(Ceps2_)*Cf;
+            const scalar Cf = 
+                1.0/sqr(yPlus + C) + 2.0*yPlus/pow3(C) - 1.0/sqr(C);
+            kwPtr[facei] = 2400.0/sqr(Ceps2)*Cf;
         }
 
-        kw[facei] *= sqr(uTau);
-    }
+        kwPtr[facei] *= sqr(uTau);
+    };
+    exec.parallelFor(Lambda, kw.size());
 
     // Limit kw to avoid failure of the turbulence model due to division by kw
     kw = max(kw, SMALL);
