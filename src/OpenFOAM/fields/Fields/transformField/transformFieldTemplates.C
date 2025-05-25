@@ -39,11 +39,24 @@ void Foam::transform
     const Field<Type>& fld
 )
 {
-    // std::transform
-    TFOR_ALL_F_OP_FUNC_S_F
-    (
-        Type, result, =, transform, tensor, rot, Type, fld
-    );
+    if (result.usePool() && fld.usePool())
+    {
+        checkFields(result, fld, "f1 = tranform(s, f2)");
+        foamExecutor exec;
+        auto res_p = result.begin();
+        const auto fld_p = fld.cbegin();
+        auto Lambda = [=](label i){
+            res_p[i] = transform(rot,fld_p[i]);
+        };
+        exec.parallelFor(Lambda,result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_S_F
+        (
+            Type, result, =, transform, tensor, rot, Type, fld
+        );
+    }
 }
 
 
@@ -60,11 +73,24 @@ void Foam::transform
         return transform(result, rot.front(), fld);
     }
 
-    // std::transform
-    TFOR_ALL_F_OP_FUNC_F_F
-    (
-        Type, result, =, transform, tensor, rot, Type, fld
-    );
+    if (result.usePool() && rot.usePool() && fld.usePool())
+    {
+        checkFields(result, rot, fld, "f1 = transform(f2, f3)");
+        foamExecutor exec;
+        auto res_p = result.begin();
+        const auto rot_p = rot.cbegin();
+        const auto fld_p = fld.cbegin();
+        auto Lambda = [=](label i){
+            res_p[i] = transform(rot_p[i],fld_p[i]);
+        };
+        exec.parallelFor(Lambda,result.size());
+    }
+    else{
+        TFOR_ALL_F_OP_FUNC_F_F
+        (
+            Type, result, =, transform, tensor, rot, Type, fld
+        );
+    }
 }
 
 
