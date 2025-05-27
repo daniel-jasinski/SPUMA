@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2018 OpenFOAM Foundation
     Copyright (C) 2021 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.

@@ -9,6 +9,7 @@
     Copyright (C) 2016-2021,2023 OpenCFD Ltd.
     Copyright (C) 2023 Huawei (Yu Ankun)
     Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
