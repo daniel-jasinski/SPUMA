@@ -86,7 +86,7 @@ Foam::MemoryPool* Foam::MemoryPool::New
         else
         {
             FatalErrorInFunction
-            << type << " does not exist. " 
+            << type << " does not exist. "
             << "Please use a different memory pool." << nl
             << abort(FatalError);
         }

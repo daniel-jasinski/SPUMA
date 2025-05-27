@@ -296,7 +296,7 @@ void Foam::umpireMemoryPool::memCopy
             << "Trying to assign more bytes than available in target block"
             <<abort(FatalError);
     }
- 
+
     // check if pointer was allocated with pool
     auto recordSrc = rm_.findAllocationRecord(srcPtr);
     void* allocatedSrcPtr = recordSrc->ptr;
