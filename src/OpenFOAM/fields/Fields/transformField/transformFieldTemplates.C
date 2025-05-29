@@ -44,12 +44,12 @@ void Foam::transform
     {
         checkFields(result, fld, "f1 = tranform(s, f2)");
         foamExecutor exec;
-        auto res_p = result.begin();
-        const auto fld_p = fld.cbegin();
+        auto resPtr = result.begin();
+        const auto fldPtr = fld.cbegin();
         auto Lambda = [=](label i){
-            res_p[i] = transform(rot,fld_p[i]);
+            resPtr[i] = transform(rot, fldPtr[i]);
         };
-        exec.parallelFor(Lambda,result.size());
+        exec.parallelFor(Lambda, result.size());
     }
     else
     {
@@ -75,13 +75,13 @@ void Foam::transform
         {
             checkFields(result, rot, fld, "f1 = transform(f2, f3)");
             foamExecutor exec;
-            auto res_p = result.begin();
-            const auto rot_p = rot.cbegin();
-            const auto fld_p = fld.cbegin();
+            auto resPtr = result.begin();
+            const auto rotPtr = rot.cbegin();
+            const auto fldPtr = fld.cbegin();
             auto Lambda = [=](label i){
-                res_p[i] = transform(rot_p[0],fld_p[i]); // direct acces to avoid page fault
+                resPtr[i] = transform(rotPtr[0], fldPtr[i]); // direct acces to avoid page fault
             };
-            exec.parallelFor(Lambda,result.size());
+            exec.parallelFor(Lambda, result.size());
         }
         else
         {
@@ -93,13 +93,13 @@ void Foam::transform
     {
         checkFields(result, rot, fld, "f1 = transform(f2, f3)");
         foamExecutor exec;
-        auto res_p = result.begin();
-        const auto rot_p = rot.cbegin();
-        const auto fld_p = fld.cbegin();
+        auto resPtr = result.begin();
+        const auto rotPtr = rot.cbegin();
+        const auto fldPtr = fld.cbegin();
         auto Lambda = [=](label i){
-            res_p[i] = transform(rot_p[i],fld_p[i]);
+            resPtr[i] = transform(rotPtr[i], fldPtr[i]);
         };
-        exec.parallelFor(Lambda,result.size());
+        exec.parallelFor(Lambda, result.size());
     }
     else{
         TFOR_ALL_F_OP_FUNC_F_F
