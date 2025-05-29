@@ -29,10 +29,10 @@ the 2412 release of OpenFOAM by OpenCFD®.
 
 Usage of SPUMA is identical to that of the OpenFOAM release it is based on, with
 the exception that executables accept two additional command line arguments:
-`-pool` and `-poolsize`. These are used to specify which type of memory pool to use
+`-pool` and `-poolSize`. These are used to specify which type of memory pool to use
 and its size (if applicable):
 ```
-<executable>Foam -pool <typeOfMemoryPool> [-poolsize <sizeInGigaBytes>]
+<executable>Foam -pool <typeOfMemoryPool> [-poolSize <sizeInGigaBytes>]
 ```
 Available memory pool implementations are:
 

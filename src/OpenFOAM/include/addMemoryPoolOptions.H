@@ -45,7 +45,7 @@ argList::addOption
 
 argList::addOption
 (
-    "poolsize",
+    "poolSize",
     "size [GB]",
     "MemoryPool size (useless for dummyMemoryPool)"
 );
