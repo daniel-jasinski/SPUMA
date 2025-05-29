@@ -70,7 +70,22 @@ void Foam::transform
 {
     if (rot.size() == 1)
     {
-        return transform(result, rot.front(), fld);
+        if (result.usePool() && rot.usePool() && fld.usePool())
+        {
+            checkFields(result, rot, fld, "f1 = transform(f2, f3)");
+            foamExecutor exec;
+            auto res_p = result.begin();
+            const auto rot_p = rot.cbegin();
+            const auto fld_p = fld.cbegin();
+            auto Lambda = [=](label i){
+                res_p[i] = transform(rot_p[0],fld_p[i]); // direct acces to avoid page fault
+            };
+            exec.parallelFor(Lambda,result.size());
+        }
+        else
+        {
+            return transform(result, rot.front(), fld);
+        }
     }
 
     if (result.usePool() && rot.usePool() && fld.usePool())
