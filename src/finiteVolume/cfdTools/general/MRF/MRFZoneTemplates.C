@@ -56,18 +56,19 @@ void Foam::MRFZone::makeRelativeRhoFlux
     scalarField& phii = phi.primitiveFieldRef();
 
     foamExecutor exec;
-    auto phii_p = phii.begin();
-    const auto iFaces_p = internalFaces_.cbegin();
-    const auto Cfi_p = Cfi.cbegin();
-    const auto Sfi_p = Sfi.cbegin();
-    const auto rho_p = argWrapper::cget(rho);
+    auto phiiPtr = phii.begin();
+    const auto iFacesPtr = internalFaces_.cbegin();
+    const auto CfiPtr = Cfi.cbegin();
+    const auto SfiPtr = Sfi.cbegin();
+    const auto rhoPtr = argWrapper::cget(rho);
     const vector local_origin(origin_);
     // Internal faces
-    auto Lambda = [=](label i){
-        label facei = iFaces_p[i];
-        phii_p[facei] -= rho_p[facei]*(Omega ^ (Cfi_p[facei] - local_origin)) & Sfi_p[facei];
+    auto Lambda = [=](label i)
+    {
+        label facei = iFacesPtr[i];
+        phiiPtr[facei] -= rhoPtr[facei]*(Omega ^ (CfiPtr[facei] - local_origin)) & SfiPtr[facei];
     };
-    exec.parallelFor(Lambda,internalFaces_.size());
+    exec.parallelFor(Lambda, internalFaces_.size());
 
     makeRelativeRhoFlux(rho.boundaryField(), phi.boundaryFieldRef());
 }
@@ -95,31 +96,32 @@ void Foam::MRFZone::makeRelativeRhoFlux
     // Included patches
     forAll(includedFaces_, patchi)
     {
-        auto phi_p = phi[patchi].begin();
-        const auto incFaces_p = includedFaces_[patchi].cbegin();
+        auto phiPtr = phi[patchi].begin();
+        const auto incFacesPtr = includedFaces_[patchi].cbegin();
         // forAll(includedFaces_[patchi], i)
         // {
         //     label patchFacei = includedFaces_[patchi][i];
 
         //     phi[patchi][patchFacei] = 0.0;
         // }
-        auto Lambda = [=](label i){
-            label patchFacei = incFaces_p[i];
+        auto Lambda = [=](label i)
+        {
+            label patchFacei = incFacesPtr[i];
 
-            phi_p[patchFacei] = 0.0;
+            phiPtr[patchFacei] = 0.0;
         };
-        exec.parallelFor(Lambda,includedFaces_[patchi].size());
+        exec.parallelFor(Lambda, includedFaces_[patchi].size());
     }
 
     // Excluded patches
     const vector local_origin(origin_);
     forAll(excludedFaces_, patchi)
     {
-        auto phi_p = phi[patchi].begin();
-        const auto exclFaces_p = excludedFaces_[patchi].cbegin();
-        const auto Cf_p = Cf.boundaryField()[patchi].cbegin();
-        const auto Sf_p = Sf.boundaryField()[patchi].cbegin();
-        const auto rho_p = argWrapper::cget(rho[patchi]);
+        auto phiPtr = phi[patchi].begin();
+        const auto exclFacesPtr = excludedFaces_[patchi].cbegin();
+        const auto CfPtr = Cf.boundaryField()[patchi].cbegin();
+        const auto SfPtr = Sf.boundaryField()[patchi].cbegin();
+        const auto rhoPtr = argWrapper::cget(rho[patchi]);
         // forAll(excludedFaces_[patchi], i)
         // {
         //     label patchFacei = excludedFaces_[patchi][i];
@@ -128,15 +130,16 @@ void Foam::MRFZone::makeRelativeRhoFlux
         //       * (Omega ^ (Cf.boundaryField()[patchi][patchFacei] - origin_))
         //       & Sf.boundaryField()[patchi][patchFacei];
         // }
-        auto Lambda = [=](label i){
-            label patchFacei = exclFaces_p[i];
+        auto Lambda = [=](label i)
+        {
+            label patchFacei = exclFacesPtr[i];
 
-            phi_p[patchFacei] -=
-                rho_p[patchFacei]
-                * (Omega ^ (Cf_p[patchFacei] - local_origin))
-                & Sf_p[patchFacei];
+            phiPtr[patchFacei] -=
+                rhoPtr[patchFacei]
+                * (Omega ^ (CfPtr[patchFacei] - local_origin))
+                & SfPtr[patchFacei];
         };
-        exec.parallelFor(Lambda,excludedFaces_[patchi].size());
+        exec.parallelFor(Lambda, excludedFaces_[patchi].size());
 
     }
 }
@@ -161,32 +164,34 @@ void Foam::MRFZone::makeRelativeRhoFlux
     const vector Omega = omega_->value(mesh_.time().timeOutputValue())*axis_;
 
     foamExecutor exec;
-    auto phi_p = phi.begin();
-    const auto incFaces_p = includedFaces_[patchi].cbegin();
-    const auto exclFaces_p = excludedFaces_[patchi].cbegin();
-    const auto Cf_p = Cf.boundaryField()[patchi].cbegin();
-    const auto Sf_p = Sf.boundaryField()[patchi].cbegin();
-    const auto rho_p = argWrapper::cget(rho);
+    auto phiPtr = phi.begin();
+    const auto incFacesPtr = includedFaces_[patchi].cbegin();
+    const auto exclFacesPtr = excludedFaces_[patchi].cbegin();
+    const auto CfPtr = Cf.boundaryField()[patchi].cbegin();
+    const auto SfPtr = Sf.boundaryField()[patchi].cbegin();
+    const auto rhoPtr = argWrapper::cget(rho);
     const vector local_origin(origin_);
     // Included patches
-    auto Lambda_i = [=](label i){
-        label patchFacei = incFaces_p[i];
+    auto Lambda_i = [=](label i)
+    {
+        label patchFacei = incFacesPtr[i];
 
-        phi_p[patchFacei] = 0.0;
+        phiPtr[patchFacei] = 0.0;
     };
-    exec.parallelFor(Lambda_i,includedFaces_[patchi].size());
+    exec.parallelFor(Lambda_i, includedFaces_[patchi].size());
 
     // Excluded patches
 
-    auto Lambda_e = [=](label i){
-        label patchFacei = exclFaces_p[i];
+    auto Lambda_e = [=](label i)
+    {
+        label patchFacei = exclFacesPtr[i];
 
-        phi_p[patchFacei] -=
-            rho_p[patchFacei]
-          * (Omega ^ (Cf_p[patchFacei] - local_origin))
-          & Sf_p[patchFacei];
+        phiPtr[patchFacei] -=
+            rhoPtr[patchFacei]
+          * (Omega ^ (CfPtr[patchFacei] - local_origin))
+          & SfPtr[patchFacei];
     };
-    exec.parallelFor(Lambda_e,excludedFaces_[patchi].size());
+    exec.parallelFor(Lambda_e, excludedFaces_[patchi].size());
 }
 
 
@@ -212,19 +217,20 @@ void Foam::MRFZone::makeAbsoluteRhoFlux
     scalarField& phii = phi.primitiveFieldRef();
 
     foamExecutor exec;
-    auto phii_p = phii.begin();
-    const auto iFaces_p = internalFaces_.cbegin();
-    const auto Cfi_p = Cfi.cbegin();
-    const auto Sfi_p = Sfi.cbegin();
-    const auto rho_p = argWrapper::cget(rho);
+    auto phiiPtr = phii.begin();
+    const auto iFacesPtr = internalFaces_.cbegin();
+    const auto CfiPtr = Cfi.cbegin();
+    const auto SfiPtr = Sfi.cbegin();
+    const auto rhoPtr = argWrapper::cget(rho);
     const vector local_origin(origin_);
 
     //Internal faces
-    auto Lambda = [=](label i){
-        label facei = iFaces_p[i];
-        phii_p[facei] += rho_p[facei]*(Omega ^ (Cfi_p[facei] - local_origin)) & Sfi_p[facei];
+    auto Lambda = [=](label i)
+    {
+        label facei = iFacesPtr[i];
+        phiiPtr[facei] += rhoPtr[facei]*(Omega ^ (CfiPtr[facei] - local_origin)) & SfiPtr[facei];
     };
-    exec.parallelFor(Lambda,internalFaces_.size());
+    exec.parallelFor(Lambda, internalFaces_.size());
 
     surfaceScalarField::Boundary& phibf = phi.boundaryFieldRef();
 
@@ -232,41 +238,43 @@ void Foam::MRFZone::makeAbsoluteRhoFlux
     // Included patches
     forAll(includedFaces_, patchi)
     {
-        auto phibf_p = phibf[patchi].begin();
-        const auto incFaces_p = includedFaces_[patchi].cbegin();
-        const auto rho_p = argWrapper::cget(rho.boundaryField()[patchi]);
-        const auto Cf_p = Cf.boundaryField()[patchi].cbegin();
-        const auto Sf_p = Sf.boundaryField()[patchi].cbegin();
+        auto phibfPtr = phibf[patchi].begin();
+        const auto incFacesPtr = includedFaces_[patchi].cbegin();
+        const auto rhoPtr = argWrapper::cget(rho.boundaryField()[patchi]);
+        const auto CfPtr = Cf.boundaryField()[patchi].cbegin();
+        const auto SfPtr = Sf.boundaryField()[patchi].cbegin();
 
-        auto Lambda = [=](label i){
-            label patchFacei = incFaces_p[i];
+        auto Lambda = [=](label i)
+        {
+            label patchFacei = incFacesPtr[i];
 
-            phibf_p[patchFacei] +=
-                rho_p[patchFacei]
-              * (Omega ^ (Cf_p[patchFacei] - local_origin))
-              & Sf_p[patchFacei];
+            phibfPtr[patchFacei] +=
+                rhoPtr[patchFacei]
+              * (Omega ^ (CfPtr[patchFacei] - local_origin))
+              & SfPtr[patchFacei];
         };
-        exec.parallelFor(Lambda,includedFaces_[patchi].size());
+        exec.parallelFor(Lambda, includedFaces_[patchi].size());
     }
 
     // Excluded patches
     forAll(excludedFaces_, patchi)
     {
-        auto phibf_p = phibf[patchi].begin();
-        const auto exclFaces_p = excludedFaces_[patchi].cbegin();
-        const auto rho_p = argWrapper::cget(rho.boundaryField()[patchi]);
-        const auto Cf_p = Cf.boundaryField()[patchi].cbegin();
-        const auto Sf_p = Sf.boundaryField()[patchi].cbegin();
+        auto phibfPtr = phibf[patchi].begin();
+        const auto exclFacesPtr = excludedFaces_[patchi].cbegin();
+        const auto rhoPtr = argWrapper::cget(rho.boundaryField()[patchi]);
+        const auto CfPtr = Cf.boundaryField()[patchi].cbegin();
+        const auto SfPtr = Sf.boundaryField()[patchi].cbegin();
 
-        auto Lambda = [=](label i){
-            label patchFacei = exclFaces_p[i];
+        auto Lambda = [=](label i)
+        {
+            label patchFacei = exclFacesPtr[i];
 
-            phibf_p[patchFacei] +=
-                rho_p[patchFacei]
-              * (Omega ^ (Cf_p[patchFacei] - local_origin))
-              & Sf_p[patchFacei];
+            phibfPtr[patchFacei] +=
+                rhoPtr[patchFacei]
+              * (Omega ^ (CfPtr[patchFacei] - local_origin))
+              & SfPtr[patchFacei];
         };
-        exec.parallelFor(Lambda,excludedFaces_[patchi].size());
+        exec.parallelFor(Lambda, excludedFaces_[patchi].size());
     }
 }
 
@@ -285,36 +293,39 @@ void Foam::MRFZone::zero
     Field<Type>& phii = phi.primitiveFieldRef();
 
     foamExecutor exec;
-    auto phii_p = phii.begin();
-    const auto iFaces_p = internalFaces_.cbegin();
+    auto phiiPtr = phii.begin();
+    const auto iFacesPtr = internalFaces_.cbegin();
 
-    auto Lambda = [=](label i){
-        phii_p[iFaces_p[i]] = Zero;
+    auto Lambda = [=](label i)
+    {
+        phiiPtr[iFacesPtr[i]] = Zero;
     };
-    exec.parallelFor(Lambda,internalFaces_.size());
+    exec.parallelFor(Lambda, internalFaces_.size());
 
     auto& phibf = phi.boundaryFieldRef();
 
     forAll(includedFaces_, patchi)
     {
-        auto phibf_p = phibf[patchi].begin();
-        const auto incFaces_p = includedFaces_[patchi].cbegin();
+        auto phibfPtr = phibf[patchi].begin();
+        const auto incFacesPtr = includedFaces_[patchi].cbegin();
 
-        auto Lambda = [=](label i){
-            phibf_p[incFaces_p[i]] = Zero;
+        auto Lambda = [=](label i)
+        {
+            phibfPtr[incFacesPtr[i]] = Zero;
         };
-        exec.parallelFor(Lambda,includedFaces_[patchi].size());
+        exec.parallelFor(Lambda, includedFaces_[patchi].size());
     }
 
     forAll(excludedFaces_, patchi)
     {
-        auto phibf_p = phibf[patchi].begin();
-        const auto exclFaces_p = excludedFaces_[patchi].cbegin();
+        auto phibfPtr = phibf[patchi].begin();
+        const auto exclFacesPtr = excludedFaces_[patchi].cbegin();
 
-        auto Lambda = [=](label i){
-            phibf_p[exclFaces_p[i]] = Zero;
+        auto Lambda = [=](label i)
+        {
+            phibfPtr[exclFacesPtr[i]] = Zero;
         };
-        exec.parallelFor(Lambda,excludedFaces_[patchi].size());
+        exec.parallelFor(Lambda, excludedFaces_[patchi].size());
     }
 }
 
