@@ -75,13 +75,6 @@ Foam::tmp<Foam::vectorField> Foam::cyclicFvPatch::delta() const
     // To the transformation if necessary
     if (parallel())
     {
-        // forAll(patchD, facei)
-        // {
-        //     vector ddi = patchD[facei];
-        //     vector dni = nbrPatchD[facei];
-
-        //     pdv[facei] = ddi - dni;
-        // }
         auto Lambda = [=](label facei){
             vector ddi = patchD_p[facei];
             vector dni = nbrPatchD_p[facei];
@@ -92,13 +85,6 @@ Foam::tmp<Foam::vectorField> Foam::cyclicFvPatch::delta() const
     }
     else
     {
-        // forAll(patchD, facei)
-        // {
-        //     vector ddi = patchD[facei];
-        //     vector dni = nbrPatchD[facei];
-
-        //     pdv[facei] = ddi - transform(forwardT()[0], dni);
-        // }
         const auto T_p = forwardT().cbegin();
         auto Lambda = [=](label facei){
             vector ddi = patchD_p[facei];

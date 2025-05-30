@@ -98,12 +98,6 @@ void Foam::MRFZone::makeRelativeRhoFlux
     {
         auto phiPtr = phi[patchi].begin();
         const auto incFacesPtr = includedFaces_[patchi].cbegin();
-        // forAll(includedFaces_[patchi], i)
-        // {
-        //     label patchFacei = includedFaces_[patchi][i];
-
-        //     phi[patchi][patchFacei] = 0.0;
-        // }
         auto Lambda = [=](label i)
         {
             label patchFacei = incFacesPtr[i];
@@ -122,14 +116,6 @@ void Foam::MRFZone::makeRelativeRhoFlux
         const auto CfPtr = Cf.boundaryField()[patchi].cbegin();
         const auto SfPtr = Sf.boundaryField()[patchi].cbegin();
         const auto rhoPtr = argWrapper::cget(rho[patchi]);
-        // forAll(excludedFaces_[patchi], i)
-        // {
-        //     label patchFacei = excludedFaces_[patchi][i];
-        //     phi[patchi][patchFacei] -=
-        //         rho[patchi][patchFacei]
-        //       * (Omega ^ (Cf.boundaryField()[patchi][patchFacei] - origin_))
-        //       & Sf.boundaryField()[patchi][patchFacei];
-        // }
         auto Lambda = [=](label i)
         {
             label patchFacei = exclFacesPtr[i];

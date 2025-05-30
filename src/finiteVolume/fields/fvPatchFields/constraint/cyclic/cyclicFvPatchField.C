@@ -145,15 +145,6 @@ Foam::cyclicFvPatchField<Type>::patchNeighbourField() const
 
     if (doTransform())
     {
-
-        //const auto t1 = forwardT()[0];
-        // forAll(pnf, facei)
-        // {
-        //     pnf[facei] = transform
-        //     (
-        //         forwardT()[0], iField[nbrFaceCells[facei]]
-        //     );
-        // }
         const auto T_p = forwardT().cbegin();
         auto Lambda = [=](label facei){
             pnf_p[facei] = transform
@@ -165,10 +156,6 @@ Foam::cyclicFvPatchField<Type>::patchNeighbourField() const
     }
     else
     {
-        // forAll(pnf, facei)
-        // {
-        //     pnf[facei] = iField[nbrFaceCells[facei]];
-        // }
         auto Lambda = [=](label facei){
             pnf_p[facei] = iField_p[nbrFaceCells_p[facei]];
         };
