@@ -164,8 +164,8 @@ void Foam::MRFZone::makeRelativeRhoFlux
     auto phi_p = phi.begin();
     const auto incFaces_p = includedFaces_[patchi].cbegin();
     const auto exclFaces_p = excludedFaces_[patchi].cbegin();
-    const auto Cf_p = Cf.boundaryField()[patchi].cbegin(); 
-    const auto Sf_p = Sf.boundaryField()[patchi].cbegin(); 
+    const auto Cf_p = Cf.boundaryField()[patchi].cbegin();
+    const auto Sf_p = Sf.boundaryField()[patchi].cbegin();
     const auto rho_p = argWrapper::cget(rho);
     const vector local_origin(origin_);
     // Included patches

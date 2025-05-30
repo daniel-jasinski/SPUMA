@@ -293,7 +293,7 @@ void Foam::MRFZone::addCoriolis
 
     auto Lambda = [=](label i){
         label celli = cells_p[i];
-        ddtUc_p[celli] += (Omega ^ Uc_p[celli]); 
+        ddtUc_p[celli] += (Omega ^ Uc_p[celli]);
     };
     exec.parallelFor(Lambda,cells.size());
 
