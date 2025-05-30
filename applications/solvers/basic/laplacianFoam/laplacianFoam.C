@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
     (
         "Laplace equation solver for a scalar quantity."
     );
+
     #include "postProcess.H"
 
     #include "addCheckCaseOptions.H"
@@ -93,20 +94,22 @@ int main(int argc, char *argv[])
             fvScalarMatrix TEqn
             (
                 fvm::ddt(T) - fvm::laplacian(DT, T)
-             //==
-               //fvOptions(T)
+             ==
+                fvOptions(T)
             );
 
-            //Info<< TEqn.diag() << endl;
-            //fvOptions.constrain(TEqn);
+            fvOptions.constrain(TEqn);
             TEqn.solve();
-            //fvOptions.correct(T);
+            fvOptions.correct(T);
         }
 
-        // #include "write.H"
+        #include "write.H"
 
+        #include "poolOccupancy.H"
         runTime.printExecutionTime(Info);
     }
+
+    #include "poolMaxOccupancy.H"
 
     Info<< "End\n" << endl;
 

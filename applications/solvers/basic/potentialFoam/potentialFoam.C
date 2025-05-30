@@ -260,7 +260,10 @@ int main(int argc, char *argv[])
 
     runTime.functionObjects().end();
 
+    #include "poolOccupancy.H"
     runTime.printExecutionTime(Info);
+
+    #include "poolMaxOccupancy.H"
 
     Info<< "End\n" << endl;
 

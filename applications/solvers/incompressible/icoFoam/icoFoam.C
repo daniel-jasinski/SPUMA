@@ -63,7 +63,6 @@ Description
     \endplaintable
 
 \*---------------------------------------------------------------------------*/
-#include "MemoryPool.H"
 #include "fvCFD.H"
 #include "pisoControl.H"
 
@@ -99,7 +98,7 @@ int main(int argc, char *argv[])
     {
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-        //#include "CourantNo.H"
+        #include "CourantNo.H"
 
         // Momentum predictor
 
@@ -152,22 +151,19 @@ int main(int argc, char *argv[])
                 }
             }
 
-            //#include "continuityErrs.H"
+            #include "continuityErrs.H"
 
             U = HbyA - rAU*fvc::grad(p);
             U.correctBoundaryConditions();
         }
 
+        runTime.write();
 
-        //runTime.write();
-
+        #include "poolOccupancy.H"
         runTime.printExecutionTime(Info);
-        Info << "device Pool occupancy: " << memPool->occupancy() << nl << nl;
     }
 
-    Info
-        << "device Pool Max Occupancy: " << memPool->maxOccupancy()
-        << " / " << memPool->size() << " [bytes]" << nl;
+    #include "poolMaxOccupancy.H"
 
     Info<< "End\n" << endl;
 

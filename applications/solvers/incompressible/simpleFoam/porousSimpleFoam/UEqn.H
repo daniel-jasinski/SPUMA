@@ -7,8 +7,8 @@
         fvm::div(phi, U)
       + MRF.DDt(U)
       + turbulence->divDevReff(U)
-      // ==
-      // fvOptions(U)
+      ==
+        fvOptions(U)
     );
     fvVectorMatrix& UEqn = tUEqn.ref();
 
@@ -28,7 +28,7 @@
         trTU = inv(tTU());
         trTU.ref().rename("rAU");
 
-        // fvOptions.constrain(UEqn);
+        fvOptions.constrain(UEqn);
 
         volVectorField gradp(fvc::grad(p));
 
@@ -38,17 +38,17 @@
         }
         U.correctBoundaryConditions();
 
-        // fvOptions.correct(U);
+        fvOptions.correct(U);
     }
     else
     {
         pZones.addResistance(UEqn);
 
-        // fvOptions.constrain(UEqn);
+        fvOptions.constrain(UEqn);
 
         solve(UEqn == -fvc::grad(p));
 
-        // fvOptions.correct(U);
+        fvOptions.correct(U);
 
         trAU = 1.0/UEqn.A();
         trAU.ref().rename("rAU");

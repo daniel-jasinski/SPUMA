@@ -195,8 +195,11 @@ int main(int argc, char *argv[])
 
         runTime.write();
 
+        #include "poolOccupancy.H"
         runTime.printExecutionTime(Info);
     }
+
+    #include "poolMaxOccupancy.H"
 
     Info<< "End\n" << endl;
 

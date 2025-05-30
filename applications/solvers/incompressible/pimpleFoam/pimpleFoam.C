@@ -99,6 +99,8 @@ int main(int argc, char *argv[])
 
     #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
+    foamDeviceInit::Init();
+    #include "createMemoryPool.H"
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
     #include "initContinuityErrs.H"
@@ -148,7 +150,7 @@ int main(int argc, char *argv[])
 
                 if (mesh.changing())
                 {
-                    // MRF.update(); // MRF currently unsupported in openfoam-um
+                    MRF.update();
 
                     if (correctPhi)
                     {
@@ -186,8 +188,11 @@ int main(int argc, char *argv[])
 
         runTime.write();
 
+        #include "poolOccupancy.H"
         runTime.printExecutionTime(Info);
     }
+
+    #include "poolMaxOccupancy.H"
 
     Info<< "End\n" << endl;
 
