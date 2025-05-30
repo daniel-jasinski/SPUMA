@@ -203,4 +203,7 @@ fi
 # Cleanup variables (done as final statement for a clean exit code)
 unset foamOldDirs projectDir
 
+# Ignore headers for unused device backend source files
+source "$WM_PROJECT_DIR/src/IgnoreHeaders"
+
 #------------------------------------------------------------------------------
