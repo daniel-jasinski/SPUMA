@@ -82,6 +82,7 @@ void Foam::transform
                 resPtr[i] = transform(rotPtr[0], fldPtr[i]); // direct acces to avoid page fault
             };
             exec.parallelFor(Lambda, result.size());
+            return;
         }
         else
         {
@@ -101,7 +102,8 @@ void Foam::transform
         };
         exec.parallelFor(Lambda, result.size());
     }
-    else{
+    else
+    {
         TFOR_ALL_F_OP_FUNC_F_F
         (
             Type, result, =, transform, symmTensor, rot, Type, fld
