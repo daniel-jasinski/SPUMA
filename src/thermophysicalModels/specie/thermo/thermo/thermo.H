@@ -97,10 +97,10 @@ class thermo
     // Private data
 
         //- Convergence tolerance of energy -> temperature inversion functions
-        static const scalar tol_;
+        FOAM_DEVICE_V static const scalar tol_;
 
         //- Max number of iterations in energy->temperature inversion functions
-        static const int maxIter_;
+        FOAM_DEVICE_V static const int maxIter_;
 
 
     // Private Member Functions
@@ -183,17 +183,17 @@ public:
 
 
             //- Heat capacity at constant pressure/volume [J/(kg K)]
-            inline scalar Cpv(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar Cpv(const scalar p, const scalar T) const;
 
             //- Gamma = Cp/Cv []
-            inline scalar gamma(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar gamma(const scalar p, const scalar T) const;
 
             //- Ratio of heat capacity at constant pressure to that at
             //  constant pressure/volume []
-            inline scalar CpByCpv(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar CpByCpv(const scalar p, const scalar T) const;
 
             //- Enthalpy/Internal energy [J/kg]
-            inline scalar HE(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar HE(const scalar p, const scalar T) const;
 
             //- Gibbs free energy [J/kg]
             inline scalar G(const scalar p, const scalar T) const;
@@ -279,7 +279,7 @@ public:
 
             //- Temperature from enthalpy or internal energy
             //  given an initial temperature T0
-            inline scalar THE
+            FOAM_DEVICE inline scalar THE
             (
                 const scalar H,
                 const scalar p,
@@ -287,7 +287,7 @@ public:
             ) const;
 
             //- Temperature from sensible enthalpy given an initial T0
-            inline scalar THs
+            FOAM_DEVICE inline scalar THs
             (
                 const scalar Hs,
                 const scalar p,
@@ -296,7 +296,7 @@ public:
 
             //- Temperature from absolute enthalpy
             //  given an initial temperature T0
-            inline scalar THa
+            FOAM_DEVICE inline scalar THa
             (
                 const scalar H,
                 const scalar p,
@@ -305,7 +305,7 @@ public:
 
             //- Temperature from sensible internal energy
             //  given an initial temperature T0
-            inline scalar TEs
+            FOAM_DEVICE FOAM_DEVICE inline scalar TEs
             (
                 const scalar E,
                 const scalar p,
@@ -314,7 +314,7 @@ public:
 
             //- Temperature from absolute internal energy
             //  given an initial temperature T0
-            inline scalar TEa
+            FOAM_DEVICE inline scalar TEa
             (
                 const scalar E,
                 const scalar p,

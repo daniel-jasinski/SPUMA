@@ -81,7 +81,7 @@ Foam::eConstThermo<EquationOfState>::New(const dictionary& dict)
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class EquationOfState>
-inline Foam::scalar Foam::eConstThermo<EquationOfState>::limit
+FOAM_DEVICE inline Foam::scalar Foam::eConstThermo<EquationOfState>::limit
 (
     const scalar T
 ) const
@@ -91,7 +91,7 @@ inline Foam::scalar Foam::eConstThermo<EquationOfState>::limit
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::eConstThermo<EquationOfState>::Cv
+FOAM_DEVICE inline Foam::scalar Foam::eConstThermo<EquationOfState>::Cv
 (
     const scalar p,
     const scalar T
@@ -102,7 +102,7 @@ inline Foam::scalar Foam::eConstThermo<EquationOfState>::Cv
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::eConstThermo<EquationOfState>::Es
+FOAM_DEVICE inline Foam::scalar Foam::eConstThermo<EquationOfState>::Es
 (
     const scalar p,
     const scalar T
@@ -124,7 +124,7 @@ inline Foam::scalar Foam::eConstThermo<EquationOfState>::Ea
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::eConstThermo<EquationOfState>::Hc() const
+FOAM_DEVICE inline Foam::scalar Foam::eConstThermo<EquationOfState>::Hc() const
 {
     return Hf_;
 }

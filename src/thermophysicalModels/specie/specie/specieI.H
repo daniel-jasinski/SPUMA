@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2020 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -39,7 +40,8 @@ inline Foam::specie::specie
 :
     name_(name),
     Y_(Y),
-    molWeight_(molWeight)
+    molWeight_(molWeight),
+    RR_(Foam::constant::thermodynamic::RR)
 {}
 
 
@@ -50,7 +52,8 @@ inline Foam::specie::specie
 )
 :
     Y_(Y),
-    molWeight_(molWeight)
+    molWeight_(molWeight),
+    RR_(Foam::constant::thermodynamic::RR)
 {}
 
 
@@ -60,7 +63,8 @@ inline Foam::specie::specie(const word& name, const specie& st)
 :
     name_(name),
     Y_(st.Y_),
-    molWeight_(st.molWeight_)
+    molWeight_(st.molWeight_),
+    RR_(Foam::constant::thermodynamic::RR)
 {}
 
 
@@ -72,7 +76,7 @@ inline const Foam::word& Foam::specie::name() const
 }
 
 
-inline Foam::scalar Foam::specie::W() const
+FOAM_DEVICE inline Foam::scalar Foam::specie::W() const
 {
     return molWeight_;
 }
@@ -84,9 +88,9 @@ inline Foam::scalar Foam::specie::Y() const
 }
 
 
-inline Foam::scalar Foam::specie::R() const
+FOAM_DEVICE inline Foam::scalar Foam::specie::R() const
 {
-    return RR/molWeight_;
+	return RR_/molWeight_;
 }
 
 

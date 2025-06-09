@@ -75,7 +75,7 @@ public:
             }
 
             // Heat capacity at constant pressure [J/(kg K)]
-            scalar Cpv
+            FOAM_DEVICE scalar Cpv
             (
                 const Thermo& thermo,
                 const scalar p,
@@ -93,7 +93,7 @@ public:
             }
 
             //- Cp/Cp []
-            scalar CpByCpv
+            FOAM_DEVICE scalar CpByCpv
             (
                 const Thermo& thermo,
                 const scalar p,
@@ -104,7 +104,7 @@ public:
             }
 
             // Absolute enthalpy [J/kg]
-            scalar HE
+            FOAM_DEVICE scalar HE
             (
                 const Thermo& thermo,
                 const scalar p,
@@ -123,7 +123,7 @@ public:
 
             //- Temperature from absolute enthalpy
             //  given an initial temperature T0
-            scalar THE
+            FOAM_DEVICE scalar THE
             (
                 const Thermo& thermo,
                 const scalar h,

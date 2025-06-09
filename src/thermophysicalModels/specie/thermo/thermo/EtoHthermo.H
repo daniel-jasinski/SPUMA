@@ -1,4 +1,4 @@
-inline scalar Cp
+FOAM_DEVICE inline scalar Cp
 (
     const scalar p,
     const scalar T
@@ -13,7 +13,7 @@ inline scalar Cp
     #endif
 }
 
-inline scalar Hs
+FOAM_DEVICE inline scalar Hs
 (
     const scalar p,
     const scalar T

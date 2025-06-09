@@ -349,10 +349,10 @@ public:
     // Member Operators
 
         //- Return element of FixedList
-        inline T& operator[](const label i);
+        FOAM_DEVICE inline T& operator[](const label i);
 
         //- Return element of constant FixedList
-        inline const T& operator[](const label i) const;
+        FOAM_DEVICE inline const T& operator[](const label i) const;
 
         //- Assignment to UList operator. Takes linear time
         inline void operator=(const UList<T>& list);

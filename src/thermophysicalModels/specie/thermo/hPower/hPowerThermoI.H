@@ -121,7 +121,7 @@ inline Foam::scalar Foam::hPowerThermo<EquationOfState>::Cp
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hPowerThermo<EquationOfState>::Ha
+FOAM_DEVICE inline Foam::scalar Foam::hPowerThermo<EquationOfState>::Ha
 (
     const scalar p, const scalar T
 ) const
@@ -131,7 +131,7 @@ inline Foam::scalar Foam::hPowerThermo<EquationOfState>::Ha
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hPowerThermo<EquationOfState>::Hs
+FOAM_DEVICE inline Foam::scalar Foam::hPowerThermo<EquationOfState>::Hs
 (
     const scalar p, const scalar T
 ) const
@@ -143,7 +143,7 @@ inline Foam::scalar Foam::hPowerThermo<EquationOfState>::Hs
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hPowerThermo<EquationOfState>::Hc() const
+FOAM_DEVICE inline Foam::scalar Foam::hPowerThermo<EquationOfState>::Hc() const
 {
     return Hf_;
 }

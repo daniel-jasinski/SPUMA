@@ -403,7 +403,7 @@ inline void Foam::FixedList<T, N>::transfer(FixedList<T, N>& list)
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
 template<class T, unsigned N>
-inline T& Foam::FixedList<T, N>::operator[](const label i)
+FOAM_DEVICE inline T& Foam::FixedList<T, N>::operator[](const label i)
 {
     #ifdef FULLDEBUG
     checkIndex(i);
@@ -413,7 +413,7 @@ inline T& Foam::FixedList<T, N>::operator[](const label i)
 
 
 template<class T, unsigned N>
-inline const T& Foam::FixedList<T, N>::operator[](const label i) const
+FOAM_DEVICE inline const T& Foam::FixedList<T, N>::operator[](const label i) const
 {
     #ifdef FULLDEBUG
     checkIndex(i);

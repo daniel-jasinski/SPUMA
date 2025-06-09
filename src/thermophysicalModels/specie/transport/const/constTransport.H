@@ -133,13 +133,13 @@ public:
         }
 
         //- Dynamic viscosity [kg/ms]
-        inline scalar mu(const scalar p, const scalar T) const;
+        FOAM_DEVICE inline scalar mu(const scalar p, const scalar T) const;
 
         //- Thermal conductivity [W/mK]
-        inline scalar kappa(const scalar p, const scalar T) const;
+        FOAM_DEVICE inline scalar kappa(const scalar p, const scalar T) const;
 
         //- Thermal diffusivity of enthalpy [kg/ms]
-        inline scalar alphah(const scalar p, const scalar T) const;
+        FOAM_DEVICE inline scalar alphah(const scalar p, const scalar T) const;
 
         // Species diffusivity
         //inline scalar D(const scalar p, const scalar T) const;

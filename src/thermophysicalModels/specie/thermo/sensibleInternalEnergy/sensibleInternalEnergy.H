@@ -76,7 +76,7 @@ public:
             }
 
             //- Heat capacity at constant volume [J/(kg K)]
-            scalar Cpv
+            FOAM_DEVICE scalar Cpv
             (
                 const Thermo& thermo,
                 const scalar p,
@@ -94,7 +94,7 @@ public:
             }
 
             //- Ratio of specific heats Cp/Cv []
-            scalar CpByCpv
+            FOAM_DEVICE scalar CpByCpv
             (
                 const Thermo& thermo,
                 const scalar p,
@@ -112,7 +112,7 @@ public:
             }
 
             //- Sensible internal energy [J/kg]
-            scalar HE
+            FOAM_DEVICE scalar HE
             (
                 const Thermo& thermo,
                 const scalar p,
@@ -131,7 +131,7 @@ public:
 
             //- Temperature from sensible internal energy given an initial
             //- temperature T0 [K]
-            scalar THE
+            FOAM_DEVICE scalar THE
             (
                 const Thermo& thermo,
                 const scalar e,

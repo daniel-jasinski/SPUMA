@@ -67,7 +67,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Cp
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Ha
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Ha
 (
     const scalar p,
     const scalar T
@@ -78,7 +78,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Ha
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hs
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hs
 (
     const scalar p,
     const scalar T
@@ -89,7 +89,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hs
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hc()
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hc()
 const
 {
     return Hf_;
