@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 OpenFOAM Foundation
     Copyright (C) 2019-2021 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -93,6 +94,8 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
     solveScalarField yA(nCells);
     solveScalar* __restrict__ yAPtr = yA.begin();
 
+    foamExecutor exec;
+
     // --- Calculate A.psi
     matrix_.Amul(yA, psi, interfaceBouCoeffs_, interfaces_, cmpt);
 
@@ -175,10 +178,11 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
             // --- Update pA
             if (solverPerf.nIterations() == 0)
             {
-                for (label cell=0; cell<nCells; cell++)
+                auto Lamda1 = [=](label cell)
                 {
                     pAPtr[cell] = rAPtr[cell];
-                }
+                };
+                exec.parallelFor(Lamda1, nCells);
             }
             else
             {
@@ -190,11 +194,12 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
 
                 const solveScalar beta = (rA0rA/rA0rAold)*(alpha/omega);
 
-                for (label cell=0; cell<nCells; cell++)
+                auto Lamda2 = [=](label cell)
                 {
                     pAPtr[cell] =
-                        rAPtr[cell] + beta*(pAPtr[cell] - omega*AyAPtr[cell]);
-                }
+		        rAPtr[cell] + beta*(pAPtr[cell] - omega*AyAPtr[cell]);
+                };
+                exec.parallelFor(Lamda2, nCells);
             }
 
             // --- Precondition pA
@@ -209,10 +214,11 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
             alpha = rA0rA/rA0AyA;
 
             // --- Calculate sA
-            for (label cell=0; cell<nCells; cell++)
+            auto Lamda3 = [=](label cell)
             {
                 sAPtr[cell] = rAPtr[cell] - alpha*AyAPtr[cell];
-            }
+            };
+            exec.parallelFor(Lamda3, nCells);
 
             // --- Test sA for convergence
             solverPerf.finalResidual() =
@@ -224,10 +230,11 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
              && solverPerf.checkConvergence(tolerance_, relTol_, log_)
             )
             {
-                for (label cell=0; cell<nCells; cell++)
+		auto Lamda4 = [=](label cell)
                 {
                     psiPtr[cell] += alpha*yAPtr[cell];
-                }
+                };
+                exec.parallelFor(Lamda4, nCells);
 
                 solverPerf.nIterations()++;
 
@@ -247,11 +254,12 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
             omega = gSumProd(tA, sA, matrix().mesh().comm())/tAtA;
 
             // --- Update solution and residual
-            for (label cell=0; cell<nCells; cell++)
+            auto Lambda5 = [=](label cell)
             {
                 psiPtr[cell] += alpha*yAPtr[cell] + omega*zAPtr[cell];
                 rAPtr[cell] = sAPtr[cell] - omega*tAPtr[cell];
-            }
+            };
+            exec.parallelFor(Lambda5, nCells);
 
             solverPerf.finalResidual() =
                 gSumMag(rA, matrix().mesh().comm())
