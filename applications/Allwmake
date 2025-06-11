@@ -46,6 +46,7 @@ wmake -all $targetType utilities/thermophysical
 # wmake -all $targetType solvers
 wmake $targetType solvers/basic/laplacianFoam
 wmake $targetType solvers/basic/potentialFoam
+wmake $targetType solvers/compressible/rhoSimpleFoam
 wmake $targetType solvers/compressible/rhoPimpleFoam
 wmake $targetType solvers/incompressible/icoFoam
 wmake $targetType solvers/incompressible/pisoFoam

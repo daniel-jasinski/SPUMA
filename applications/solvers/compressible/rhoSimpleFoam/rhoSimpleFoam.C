@@ -54,6 +54,8 @@ int main(int argc, char *argv[])
 
     #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
+    foamDeviceInit::Init();
+    #include "createMemoryPool.H"
     #include "createTime.H"
     #include "createMesh.H"
     #include "createControl.H"
