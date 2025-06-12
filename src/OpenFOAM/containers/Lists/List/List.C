@@ -58,23 +58,20 @@ void Foam::List<T>::doResize(const label len)
                     (
                         MemoryPool::getInstance()->allocate(len*sizeof(T))
                     );
-            }
-            else
-            {
-                this->v_ = new T[len];
-            };
 
-            // Can dispatch with
-            // - std::execution::parallel_unsequenced_policy
-            // - std::execution::unsequenced_policy
-            std::move(old, (old + overlap), this->v_);
+                MemoryPool::getInstance()->memCopy(this->v_,old,overlap*sizeof(T));
 
-            if (this->usePool_)
-            {
                 MemoryPool::getInstance()->free(old);
             }
             else
             {
+                this->v_ = new T[len];
+
+                // Can dispatch with
+                // - std::execution::parallel_unsequenced_policy
+                // - std::execution::unsequenced_policy
+                std::move(old, (old + overlap), this->v_);
+
                 delete[] old;
             };
         }
