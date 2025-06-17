@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -367,6 +368,7 @@ Foam::fv::cellSetOption::cellSetOption
     points_(),
     movingPoints_(),
     geometricSelection_(),
+    cells_(poolSwitch(1)),
     V_(0)
 {
     Info<< incrIndent;

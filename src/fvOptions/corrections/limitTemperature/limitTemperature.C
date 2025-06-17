@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2012-2017 OpenFOAM Foundation
     Copyright (C) 2018-2022 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -165,25 +166,35 @@ void Foam::fv::limitTemperature::correct(volScalarField& he)
 
     // Count nTotCells ourselves
     // (maybe only applying on a subset)
-    label nBelowMin(0);
-    label nAboveMax(0);
+    labelField nBelowMinFld(1,0);
+    labelField nAboveMaxFld(1,0);
     const label nTotCells(returnReduce(cells_.size(), sumOp<label>()));
 
-    forAll(cells_, i)
-    {
-        const label celli = cells_[i];
-        if (hec[celli] < heMin[i])
-        {
-            hec[celli] = heMin[i];
-            ++nBelowMin;
-        }
-        else if (hec[celli] > heMax[i])
-        {
-            hec[celli] = heMax[i];
-            ++nAboveMax;
-        }
-    }
+    foamExecutor exec;
+    auto hecPtr = hec.begin();
+    const auto heMinPtr = heMin.cbegin();
+    const auto heMaxPtr = heMax.cbegin();
+    auto nAboveMaxPtr = nAboveMaxFld.begin();
+    auto nBelowMinPtr = nBelowMinFld.begin();
+    const auto cellsPtr = cells_.cbegin();
 
+    auto Lambda = [=](label i){
+        const label celli = cellsPtr[i];
+        if (hecPtr[celli] < heMinPtr[i])
+        {
+            hecPtr[celli] = heMinPtr[i];
+            foamAtomic::AtomicAdd(nBelowMinPtr[0],1);
+        }
+        else if (hecPtr[celli] > heMaxPtr[i])
+        {
+            hecPtr[celli] = heMaxPtr[i];
+            foamAtomic::AtomicAdd(nAboveMaxPtr[0],1);
+        }
+    };
+    exec.parallelFor(Lambda,cells_.size());
+
+    label nBelowMin = nBelowMinFld[0];
+    label nAboveMax = nAboveMaxFld[0];
     reduce(nBelowMin, sumOp<label>());
     reduce(nAboveMax, sumOp<label>());
 
@@ -227,7 +238,8 @@ void Foam::fv::limitTemperature::correct(volScalarField& he)
 
 
     // Handle boundaries in the case of 'all'
-    bool changedValues = (nBelowMin || nAboveMax);
+    labelField changedValuesFld(1,0);
+	changedValuesFld[0] = (nBelowMin || nAboveMax);
     if (!cellSetOption::useSubMesh())
     {
         volScalarField::Boundary& bf = he.boundaryFieldRef();
@@ -235,6 +247,7 @@ void Foam::fv::limitTemperature::correct(volScalarField& he)
         forAll(bf, patchi)
         {
             fvPatchScalarField& hep = bf[patchi];
+            auto hepPtr = hep.begin();
 
             if (!hep.fixesValue())
             {
@@ -246,23 +259,27 @@ void Foam::fv::limitTemperature::correct(volScalarField& he)
                 scalarField heMinp(thermo.he(pp, Tminp, patchi));
                 scalarField heMaxp(thermo.he(pp, Tmaxp, patchi));
 
-                forAll(hep, facei)
-                {
-                    if (hep[facei] < heMinp[facei])
+                const auto heMinpPtr = heMinp.cbegin();
+                const auto heMaxpPtr = heMaxp.cbegin();
+                auto changedValuesPtr = changedValuesFld.begin();
+                auto Lambda2 = [=](label facei){
+                    if (hepPtr[facei] < heMinpPtr[facei])
                     {
-                        hep[facei] = heMinp[facei];
-                        changedValues = true;
+                        hepPtr[facei] = heMinpPtr[facei];
+                        changedValuesPtr[0] = 1;
                     }
-                    else if (hep[facei] > heMaxp[facei])
+                    else if (hepPtr[facei] > heMaxpPtr[facei])
                     {
-                        hep[facei] = heMaxp[facei];
-                        changedValues = true;
+                        hepPtr[facei] = heMaxpPtr[facei];
+                        changedValuesPtr[0] = 1;
                     }
-                }
+                };
+                exec.parallelFor(Lambda2,hep.size());
             }
         }
     }
 
+    bool changedValues = changedValuesFld[0];
 
     if (returnReduceOr(changedValues))
     {
