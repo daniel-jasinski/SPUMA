@@ -8,6 +8,7 @@
     Copyright (C) 2011-2018 OpenFOAM Foundation
     Copyright (C) 2020 ENERCON GmbH
     Copyright (C) 2020-2022 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -85,18 +86,26 @@ tmp<scalarField> atmNutkWallFunctionFvPatchScalarField::calcNut() const
     #endif
 
     const labelList& faceCells = patch().faceCells();
+    const auto faceCellsPtr = faceCells.cbegin();
+    const auto kPtr = k.cbegin();
+    const auto yPtr = y.cbegin();
+    const auto nuwPtr = nuw.cbegin();
+    const auto z0Ptr = z0.cbegin();
+    auto nutwPtr = nutw.begin();
 
+    foamExecutor exec;
     // (HW:Eq. 5)
-    forAll(nutw, facei)
+    auto Lambda = [=](label facei)
     {
-        const label celli = faceCells[facei];
+        const label celli = faceCellsPtr[facei];
 
-        const scalar uStar = Cmu25*sqrt(k[celli]);
-        const scalar yPlus = uStar*y[facei]/nuw[facei];
-        const scalar Edash = (y[facei] + z0[facei])/z0[facei];
+        const scalar uStar = Cmu25*sqrt(kPtr[celli]);
+        const scalar yPlus = uStar*yPtr[facei]/nuwPtr[facei];
+        const scalar Edash = (yPtr[facei] + z0Ptr[facei])/z0Ptr[facei];
 
-        nutw[facei] = nuw[facei]*(yPlus*kappa/log(max(Edash, 1 + 1e-4)) - 1);
-    }
+        nutwPtr[facei] = nuwPtr[facei]*(yPlus*kappa/log(max(Edash, 1 + 1e-4)) - 1);
+    };
+    exec.parallelFor(Lambda, nutw.size());
 
     if (boundNut_)
     {
