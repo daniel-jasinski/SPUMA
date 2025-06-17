@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -164,18 +165,29 @@ void Foam::fv::limitTurbulenceViscosity::correct(volScalarField& nut)
 
     const label nTotCells(returnReduce(cells_.size(), sumOp<label>()));
 
-    label nAboveMax = 0;
-    for (const label celli : cells_)
-    {
-        const scalar nutLim = c_*nu[celli];
+    labelField nAboveMaxField(1,0);
 
-        if (nut[celli] > nutLim)
+    foamExecutor exec;
+    auto nuPtr = nu.begin();
+    auto nutPtr = nut.begin();
+    auto nAboveMaxPtr = nAboveMaxField.begin();
+    const auto cellsPtr = cells_.cbegin();
+    const scalar localC(c_);
+
+    auto Lambda = [=](label i){
+        const label celli = cellsPtr[i];
+        const scalar nutLim = localC*nuPtr[celli];
+
+        if (nutPtr[celli] > nutLim)
         {
-            nut[celli] = nutLim;
-            ++nAboveMax;
+            nutPtr[celli] = nutLim;
+            foamAtomic::AtomicAdd(nAboveMaxPtr[0],1);
         }
-    }
+    };
+    exec.parallelFor(Lambda,cells_.size());
 
+
+    label nAboveMax(nAboveMaxField[0]);
     reduce(nAboveMax, sumOp<label>());
 
     // Percent, max 2 decimal places
@@ -211,14 +223,16 @@ void Foam::fv::limitTurbulenceViscosity::correct(volScalarField& nut)
             {
                 const scalarField& nup = nubf[nutp.patch().index()];
 
-                forAll(nutp, facei)
-                {
-                    scalar nutLim = c_*nup[facei];
-                    if (nutp[facei] > nutLim)
+                auto nutpPtr = nutp.begin();
+                const auto nupPtr = nup.begin();
+                auto Lambda = [=](label facei){
+                    scalar nutLim = localC*nupPtr[facei];
+                    if (nutpPtr[facei] > nutLim)
                     {
-                        nutp[facei] = nutLim;
+                        nutpPtr[facei] = nutLim;
                     }
-                }
+                };
+                exec.parallelFor(Lambda,nutp.size());
             }
         }
     }

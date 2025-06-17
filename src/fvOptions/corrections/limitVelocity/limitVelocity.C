@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 OpenFOAM Foundation
     Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -117,27 +118,34 @@ void Foam::fv::limitVelocity::correct(volVectorField& U)
 
     // Count nTotCells ourselves
     // (maybe only applying on a subset)
-    label nCellsAbove(0);
+    labelField nCellsAboveField(1,0);
+
     const label nTotCells(returnReduce(cells_.size(), sumOp<label>()));
 
     vectorField& Uif = U.primitiveFieldRef();
 
-    for (const label celli : cells_)
-    {
-        auto& Uval = Uif[celli];
+    foamExecutor exec;
+    auto UifPtr = Uif.begin();
+    auto nCellsAbovePtr = nCellsAboveField.begin();
+    const auto cellsPtr = cells_.cbegin();
 
-        const scalar magSqrUi = magSqr(Uval);
+    auto Lambda = [=](label i){
+        const label celli = cellsPtr[i];
+        const scalar magSqrUi = magSqr(UifPtr[celli]);
 
         if (magSqrUi > maxSqrU)
         {
-            Uval *= sqrt(maxSqrU/magSqrUi);
-            ++nCellsAbove;
+            UifPtr[celli] *= sqrt(maxSqrU/magSqrUi);
+            foamAtomic::AtomicAdd(nCellsAbovePtr[0],1);
         }
-    }
+    };
+    exec.parallelFor(Lambda,cells_.size());
 
     // Handle boundaries in the case of 'all'
 
-    label nFacesAbove(0);
+    labelField nFacesAboveField(1,0);
+    auto nFacesAbovePtr = nFacesAboveField.begin();
+
     label nTotFaces(0);
 
     if (!cellSetOption::useSubMesh())
@@ -149,16 +157,17 @@ void Foam::fv::limitVelocity::correct(volVectorField& U)
                 // Do not count patches that fix velocity themselves
                 nTotFaces += Up.size();
 
-                for (auto& Uval : Up)
-                {
-                    const scalar magSqrUi = magSqr(Uval);
+                auto UpPtr = Up.begin();
+                auto Lambda = [=](label i){
+                    const scalar magSqrUi = magSqr(UpPtr[i]);
 
                     if (magSqrUi > maxSqrU)
                     {
-                        Uval *= sqrt(maxSqrU/magSqrUi);
-                        ++nFacesAbove;
+                        UpPtr[i] *= sqrt(maxSqrU/magSqrUi);
+                        foamAtomic::AtomicAdd(nFacesAbovePtr[0],1);
                     }
-                }
+                };
+                exec.parallelFor(Lambda,Up.size());
             }
         }
     }
@@ -169,6 +178,8 @@ void Foam::fv::limitVelocity::correct(volVectorField& U)
         return (denom ? 1e-2*round(1e4*num/denom) : 0);
     };
 
+    label nCellsAbove(nCellsAboveField[0]);
+    label nFacesAbove(nFacesAboveField[0]);
 
     reduce(nCellsAbove, sumOp<label>());
 

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2015 OpenFOAM Foundation
     Copyright (C) 2015-2022 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -65,22 +66,47 @@ void Foam::fv::velocityDampingConstraint::addDamping(fvMatrix<vector>& eqn)
 
     // Count nTotCells ourselves
     // (maybe only applying on a subset)
-    label nDamped(0);
+    //label nDamped(0);
+    labelField nDampedField(1,0);
     const label nTotCells(returnReduce(cells_.size(), sumOp<label>()));
 
-    for (const label celli : cells_)
-    {
-        const scalar magU = mag(U[celli]);
-        if (magU > UMax_)
+    // for (const label celli : cells_)
+    // {
+    //     const scalar magU = mag(U[celli]);
+    //     if (magU > UMax_)
+    //     {
+    //         const scalar scale = sqr(Foam::cbrt(vol[celli]));
+
+    //         diag[celli] += C_*scale*(magU-UMax_);
+
+    //         ++nDamped;
+    //     }
+    // }
+
+    foamExecutor exec;
+    auto diagPtr = diag.begin();
+    auto nDampedPtr = nDampedField.begin();
+    const auto UPtr = U.cbegin();
+    const auto volPtr = vol.cbegin();
+    const auto cellsPtr = cells_.cbegin();
+    const scalar localUMax(UMax_);
+    const scalar localC(C_);
+
+    auto Lambda = [=](label i){
+        const label celli = cellsPtr[i];
+        const scalar magU = mag(UPtr[celli]);
+        if (magU > localUMax)
         {
-            const scalar scale = sqr(Foam::cbrt(vol[celli]));
+            const scalar scale = sqr(Foam::cbrt(volPtr[celli]));
 
-            diag[celli] += C_*scale*(magU-UMax_);
+            foamAtomic::AtomicAdd(diagPtr[celli], localC*scale*(magU-localUMax));
 
-            ++nDamped;
+            foamAtomic::AtomicAdd(nDampedPtr[0],1);
         }
-    }
+    };
+    exec.parallelFor(Lambda,cells_.size());
 
+    label nDamped(nDampedField[0]);
     reduce(nDamped, sumOp<label>());
 
     // Percent, max 2 decimal places
