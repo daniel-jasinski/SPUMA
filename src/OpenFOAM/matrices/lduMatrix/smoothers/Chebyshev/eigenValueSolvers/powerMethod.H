@@ -5,8 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011 OpenFOAM Foundation
-    Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2025 CINECA.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,23 +24,23 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::DILUGaussSeidelSmoother
+    Foam::powerMethod
+
+Group
+    grpEigenValueSolvers
 
 Description
-    Combined DILU/GaussSeidel smoother for asymmetric matrices in which
-    DILU smoothing is followed by GaussSeidel to ensure that any "spikes"
-    created by the DILU sweeps are smoothed-out.
+    Computation of the maximum eigenvalue using the Power method.
 
 SourceFiles
-    DILUGaussSeidelSmoother.C
+    powerMethod.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef DILUGaussSeidelSmoother_H
-#define DILUGaussSeidelSmoother_H
+#ifndef powerMethod_H
+#define powerMethod_H
 
-#include "DILUSmoother.H"
-#include "GaussSeidelSmoother.H"
+#include "lduMatrix.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,59 +48,32 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                   Class DILUGaussSeidelSmoother Declaration
+                           Class powerMethod Declaration
 \*---------------------------------------------------------------------------*/
 
-class DILUGaussSeidelSmoother
-:
-    public lduMatrix::smoother
+class powerMethod
 {
-    // Private data
-
-        DILUSmoother diluSmoother_;
-
-        GaussSeidelSmoother gsSmoother_;
-
 
 public:
 
     //- Runtime type information
-    TypeName("DILUGaussSeidel");
+    TypeName("powerMethod");
 
 
     // Constructors
 
-        //- Construct from matrix components
-        DILUGaussSeidelSmoother
-        (
-            const word& fieldName,
-            const lduMatrix& matrix,
-            const FieldField<Field, scalar>& interfaceBouCoeffs,
-            const FieldField<Field, scalar>& interfaceIntCoeffs,
-            const lduInterfaceFieldPtrsList& interfaces,
-            const dictionary& solverControls
-        );
-
+        //- default constructor
+        powerMethod() = default;
 
     // Member Functions
 
-        //- Smooth the solution for a given number of sweeps
-        virtual void smooth
+	static scalar maxEigenvalue
         (
-            solveScalarField& psi,
-            const scalarField& Source,
-            const direction cmpt,
-            const label nSweeps
-        ) const;
-
-        //- Smooth the solution for a given number of sweeps
-        void scalarSmooth
-        (
-            solveScalarField& psi,
-            const solveScalarField& source,
-            const direction cmpt,
-            const label nSweeps
-        ) const;
+            const lduMatrix& matrix_,
+            const FieldField<Field, scalar>& interfaceBouCoeffs_,
+            const lduInterfaceFieldPtrsList& interfaces_,
+            const direction cmpt
+        );
 };
 
 

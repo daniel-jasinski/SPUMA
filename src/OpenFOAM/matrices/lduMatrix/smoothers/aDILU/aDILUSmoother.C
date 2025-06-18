@@ -51,7 +51,8 @@ Foam::aDILUSmoother::aDILUSmoother
     const lduMatrix& matrix,
     const FieldField<Field, scalar>& interfaceBouCoeffs,
     const FieldField<Field, scalar>& interfaceIntCoeffs,
-    const lduInterfaceFieldPtrsList& interfaces
+    const lduInterfaceFieldPtrsList& interfaces,
+    const dictionary& solverControls
 )
 :
     lduMatrix::smoother
@@ -60,7 +61,8 @@ Foam::aDILUSmoother::aDILUSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     ),
     rD_(matrix_.diag().size())
 {

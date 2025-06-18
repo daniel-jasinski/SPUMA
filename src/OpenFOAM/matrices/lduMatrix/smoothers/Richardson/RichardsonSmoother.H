@@ -58,6 +58,13 @@ class RichardsonSmoother
 :
     public lduMatrix::smoother
 {
+private:
+
+    //- damping parameter
+    scalar omega_;
+
+    //- Read the control parameters from the controlDict_
+    void readControls();
 
 public:
 
@@ -74,14 +81,15 @@ public:
             const lduMatrix& matrix,
             const FieldField<Field, scalar>& interfaceBouCoeffs,
             const FieldField<Field, scalar>& interfaceIntCoeffs,
-            const lduInterfaceFieldPtrsList& interfaces
+            const lduInterfaceFieldPtrsList& interfaces,
+            const dictionary& solverControls
         );
 
 
     // Member Functions
 
         //- Smooth for the given number of sweeps
-        static void smooth
+        void smooth_
         (
             const word& fieldName,
             solveScalarField& psi,
@@ -91,7 +99,7 @@ public:
             const lduInterfaceFieldPtrsList& interfaces,
             const direction cmpt,
             const label nSweeps
-        );
+        ) const;
 
 
         //- Smooth the solution for a given number of sweeps

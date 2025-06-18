@@ -49,7 +49,8 @@ Foam::FDICSmoother::FDICSmoother
     const lduMatrix& matrix,
     const FieldField<Field, scalar>& interfaceBouCoeffs,
     const FieldField<Field, scalar>& interfaceIntCoeffs,
-    const lduInterfaceFieldPtrsList& interfaces
+    const lduInterfaceFieldPtrsList& interfaces,
+    const dictionary& solverControls
 )
 :
     lduMatrix::smoother
@@ -58,7 +59,8 @@ Foam::FDICSmoother::FDICSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     ),
     rD_(matrix_.diag().size()),
     rDuUpper_(matrix_.upper().size()),

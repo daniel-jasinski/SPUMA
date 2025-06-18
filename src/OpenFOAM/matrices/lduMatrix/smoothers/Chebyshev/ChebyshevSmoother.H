@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2025 CINECA
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,23 +26,27 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::DILUGaussSeidelSmoother
+    Foam::ChebyshevSmoother
+
+Group
+    grpLduMatrixSmoothers
 
 Description
-    Combined DILU/GaussSeidel smoother for asymmetric matrices in which
-    DILU smoothing is followed by GaussSeidel to ensure that any "spikes"
-    created by the DILU sweeps are smoothed-out.
+    A lduMatrix::smoother implementing the Chebyshev smoother, a preconditioner 
+    with a Chebyshev polynomial for symmetric positive definite matrices. 
+    This preconditioner is based on an iteration of an inner preconditioner (Jacobi) 
+    with coefficients that are adapted to optimally cover an eigenvalue range 
+    between the largest eigenvalue λmax down to a given lower eigenvalue λmin.
 
 SourceFiles
-    DILUGaussSeidelSmoother.C
+    ChebyshevSmoother.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef DILUGaussSeidelSmoother_H
-#define DILUGaussSeidelSmoother_H
+#ifndef ChebyshevSmoother_H
+#define ChebyshevSmoother_H
 
-#include "DILUSmoother.H"
-#include "GaussSeidelSmoother.H"
+#include "lduMatrix.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,30 +54,46 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                   Class DILUGaussSeidelSmoother Declaration
+                           Class ChebyshevSmoother Declaration
 \*---------------------------------------------------------------------------*/
 
-class DILUGaussSeidelSmoother
+class ChebyshevSmoother
 :
     public lduMatrix::smoother
 {
-    // Private data
+private:
 
-        DILUSmoother diluSmoother_;
+    //- Chebyshev polynomial degree
+    label pDegree_;
 
-        GaussSeidelSmoother gsSmoother_;
+    //- Method to estimate the maximum eigenValue
+    // 0: Power method
+    // 1: Estimate based on the Gershgorin theorem
+    // 2: User-defined value
+    label lambdaMode_;
 
+    //- (User-defined) maximum eigenValue
+    scalar lambdaMax_;
+
+    //- (User-defined) minimum eigenValue
+    scalar lambdaMin_;
+
+    //- Log level verbosity
+    label log_;
+
+    //- Read the control parameters from the controlDict_
+    void readControls();
 
 public:
 
     //- Runtime type information
-    TypeName("DILUGaussSeidel");
+    TypeName("Chebyshev");
 
 
     // Constructors
 
-        //- Construct from matrix components
-        DILUGaussSeidelSmoother
+        //- Construct from components
+        ChebyshevSmoother
         (
             const word& fieldName,
             const lduMatrix& matrix,
@@ -85,6 +106,20 @@ public:
 
     // Member Functions
 
+        //- Smooth for the given number of sweeps
+        void smooth_
+        (
+            const word& fieldName,
+            solveScalarField& psi,
+            const lduMatrix& matrix,
+            const solveScalarField& source,
+            const FieldField<Field, scalar>& interfaceBouCoeffs,
+            const lduInterfaceFieldPtrsList& interfaces,
+            const direction cmpt,
+            const label nSweeps
+        ) const;
+
+
         //- Smooth the solution for a given number of sweeps
         virtual void smooth
         (
@@ -95,10 +130,10 @@ public:
         ) const;
 
         //- Smooth the solution for a given number of sweeps
-        void scalarSmooth
+        virtual void scalarSmooth
         (
             solveScalarField& psi,
-            const solveScalarField& source,
+            const solveScalarField& Source,
             const direction cmpt,
             const label nSweeps
         ) const;

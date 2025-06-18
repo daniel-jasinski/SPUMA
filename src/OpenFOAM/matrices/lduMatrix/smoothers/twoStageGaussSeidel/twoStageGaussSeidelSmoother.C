@@ -52,7 +52,8 @@ Foam::twoStageGaussSeidelSmoother::twoStageGaussSeidelSmoother
     const lduMatrix& matrix,
     const FieldField<Field, scalar>& interfaceBouCoeffs,
     const FieldField<Field, scalar>& interfaceIntCoeffs,
-    const lduInterfaceFieldPtrsList& interfaces
+    const lduInterfaceFieldPtrsList& interfaces,
+    const dictionary& solverControls
 )
 :
     lduMatrix::smoother
@@ -61,14 +62,24 @@ Foam::twoStageGaussSeidelSmoother::twoStageGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     )
-{}
+{
+    readControls();
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::twoStageGaussSeidelSmoother::smooth
+void Foam::twoStageGaussSeidelSmoother::readControls()
+{
+    nInnerIter_ = controlDict_.getOrDefault<label>("nInnerIter", 1);
+    omega_ = controlDict_.getOrDefault<scalar>("omega", 0.9);
+}
+
+
+void Foam::twoStageGaussSeidelSmoother::smooth_
 (
     const word& fieldName_,
     solveScalarField& psi,
@@ -78,7 +89,7 @@ void Foam::twoStageGaussSeidelSmoother::smooth
     const lduInterfaceFieldPtrsList& interfaces_,
     const direction cmpt,
     const label nSweeps
-)
+) const
 {
     solveScalar* __restrict__ psiPtr = psi.begin();
     const solveScalar* const __restrict__ bPtr = source.cbegin();
@@ -110,6 +121,8 @@ void Foam::twoStageGaussSeidelSmoother::smooth
     scalarField rD(nCells);
     scalar* __restrict__ rDPtr = rD.begin();
 
+    const scalar omega = this->omega_;
+
     foamExecutor exec;
 
     // -- Calculate the inverse of the diagonal matrix (D^-1)
@@ -135,11 +148,8 @@ void Foam::twoStageGaussSeidelSmoother::smooth
         };
         exec.parallelFor(LambdarDr, nCells);
 
-        // --- Perform local inner (nj) Jacobi iterations
-        const label nj = 1;
-        const scalar omega = 0.9;
-
-        for (label j=0; j<nj; ++j)
+        // --- Perform local inner (nInnerIter) Jacobi iterations
+        for (label j=0; j<this->nInnerIter_; ++j)
         {
             gOld = g;
 
@@ -172,7 +182,7 @@ void Foam::twoStageGaussSeidelSmoother::smooth
     const label nSweeps
 ) const
 {
-    smooth
+    smooth_
     (
         fieldName_,
         psi,
@@ -194,7 +204,7 @@ void Foam::twoStageGaussSeidelSmoother::scalarSmooth
     const label nSweeps
 ) const
 {
-    smooth
+    smooth_
     (
         fieldName_,
         psi,
