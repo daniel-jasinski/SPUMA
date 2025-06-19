@@ -48,7 +48,17 @@ namespace Foam
 {
 
 __device__ __forceinline__
-double hipAtomicMinDouble(double *address, double val)
+float hipAtomicMin(float *address, float val)
+{
+    float old;
+    old = !signbit(val) ? __int_as_float(atomicMin((int*)address, __float_as_int(val))) :
+        __uint_as_float(atomicMax((unsigned int*)address, __float_as_uint(val)));
+
+    return old;
+}
+
+__device__ __forceinline__
+double hipAtomicMin(double *address, double val)
 {
     unsigned long long ret = __double_as_longlong(*address);
 
@@ -75,7 +85,17 @@ double hipAtomicMinDouble(double *address, double val)
 }
 
 __device__ __forceinline__
-double hipAtomicMaxDouble(double *address, double val)
+float hipAtomicMax(float *address, float val)
+{
+    float old;
+    old = !signbit(val) ? __int_as_float(atomicMax((int*)address, __float_as_int(val))) :
+        __uint_as_float(atomicMin((unsigned int*)address, __float_as_uint(val)));
+
+    return old;
+}
+
+__device__ __forceinline__
+double hipAtomicMax(double *address, double val)
 {
     unsigned long long ret = __double_as_longlong(*address);
 

@@ -59,26 +59,6 @@ struct hipAtomic
         }
     };
 
-    FOAM_DEVICE static void  _backendAtomicAdd(solveScalar& x, const solveScalar& y)
-    {
-        atomicAdd(&x,y);
-    }
-
-    FOAM_DEVICE static void  _backendAtomicAdd(label& x, const label& y)
-    {
-        atomicAdd(&x,y);
-    }
-
-    FOAM_DEVICE static void  _backendAtomicMax(solveScalar& x, const solveScalar& y)
-    {
-        hipAtomicMaxDouble(&x,y);
-    }
-
-    FOAM_DEVICE static void  _backendAtomicMax(label& x, const label& y)
-    {
-        atomicMax(&x, y);
-    }
-
     template<class T>
     struct atomicMaxEqOp
     {
@@ -88,16 +68,6 @@ struct hipAtomic
         }
     };
 
-    FOAM_DEVICE static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
-    {
-        hipAtomicMinDouble(&x,y);
-    }
-
-    FOAM_DEVICE static void  _backendAtomicMin(label& x, const label& y)
-    {
-        atomicMin(&x, y);
-    }
-
     template<class T>
     struct atomicMinEqOp
     {
@@ -106,6 +76,57 @@ struct hipAtomic
             _backendAtomicMin(x,y);
         }
     };
+
+    FOAM_DEVICE static void _backendAtomicAdd(scalar& x, const scalar& y)
+    {
+        atomicAdd(&x, y);
+    }
+
+#ifdef WM_SPDP
+    FOAM_DEVICE static void _backendAtomicAdd(solveScalar& x, const solveScalar& y)
+    {
+        atomicAdd(&x, y);
+    }
+#endif
+
+    FOAM_DEVICE static void _backendAtomicAdd(label& x, const label& y)
+    {
+        atomicAdd(&x,y);
+    }
+
+    FOAM_DEVICE static void  _backendAtomicMax(scalar& x, const scalar& y)
+    {
+        hipAtomicMax(&x, y);
+    }
+
+#ifdef WM_SPDP
+    FOAM_DEVICE static void _backendAtomicMax(solveScalar& x, const solveScalar& y)
+    {
+        hipAtomicMax(&x, y);
+    }
+#endif
+
+    FOAM_DEVICE static void  _backendAtomicMax(label& x, const label& y)
+    {
+        atomicMax(&x, y);
+    }
+
+    FOAM_DEVICE static void  _backendAtomicMin(scalar& x, const scalar& y)
+    {
+        hipAtomicMin(&x, y);
+    }
+
+#ifdef WM_SPDP
+    FOAM_DEVICE static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
+    {
+        hipAtomicMin(&x, y);
+    }
+#endif
+
+    FOAM_DEVICE static void  _backendAtomicMin(label& x, const label& y)
+    {
+        atomicMin(&x, y);
+    }
 
     template<class Form, class Cmpt, direction Ncmpts>
     FOAM_DEVICE static void _backendAtomicAdd
