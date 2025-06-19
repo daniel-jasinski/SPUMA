@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2019 OpenFOAM Foundation
     Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -105,10 +106,16 @@ void Foam::epsilonWallFunctionFvPatchScalarField::createAveragingWeights()
             epsilonPatches.append(patchi);
 
             const labelUList& faceCells = bf[patchi].patch().faceCells();
-            for (const auto& faceCell : faceCells)
+            const auto faceCellsPtr = faceCells.cbegin();
+            auto weightsPtr = weights.begin();
+
+            foamExecutor exec;
+            auto Lambda = [=](label id)
             {
-                ++weights[faceCell];
-            }
+                const label celli = faceCellsPtr[id];
+                foamAtomic::AtomicAdd(weightsPtr[celli], 1.0);
+            };
+            exec.parallelFor(Lambda, faceCells.size());
         }
     }
 
@@ -204,32 +211,41 @@ void Foam::epsilonWallFunctionFvPatchScalarField::calculate
     const tmp<volScalarField> tk = turbModel.k();
     const volScalarField& k = tk();
 
+    foamExecutor exec;
+    auto epsilon0Ptr = epsilon0.begin();
+    const auto cornerWeightsPtr = cornerWeights.cbegin();
+    const auto faceCellsPtr = faceCells.cbegin();
+    const auto nuwPtr = nuw.cbegin();
+    const auto kPtr = k.cbegin();
+    const auto yPtr = y.cbegin();
+    const bool lowReCorrection(lowReCorrection_);
+
     // Calculate y-plus
-    const auto yPlus = [&](const label facei) -> scalar
+    const auto yPlus = [=](const label facei) -> scalar
     {
         return
         (
-            Cmu25*y[facei]*sqrt(k[faceCells[facei]])/nuw[facei]
+            Cmu25*yPtr[facei]*sqrt(kPtr[faceCellsPtr[facei]])/nuwPtr[facei]
         );
     };
 
     // Contribution from the viscous sublayer
-    const auto epsilonVis = [&](const label facei) -> scalar
+    const auto epsilonVis = [=](const label facei) -> scalar
     {
         return
         (
-            2.0*k[faceCells[facei]]*nuw[facei]
-          / sqr(y[facei])
+            2.0*kPtr[faceCellsPtr[facei]]*nuwPtr[facei]
+          / sqr(yPtr[facei])
         );
     };
 
     // Contribution from the inertial sublayer
-    const auto epsilonLog = [&](const label facei) -> scalar
+    const auto epsilonLog = [=](const label facei) -> scalar
     {
         return
         (
-            Cmu75*pow(k[faceCells[facei]], 1.5)
-          / (kappa*y[facei])
+            Cmu75*pow(kPtr[faceCellsPtr[facei]], 1.5)
+          / (kappa*yPtr[facei])
         );
     };
 
@@ -237,55 +253,69 @@ void Foam::epsilonWallFunctionFvPatchScalarField::calculate
     {
         case blenderType::STEPWISE:
         {
-            forAll(faceCells, facei)
+            auto Lambda = [=](label facei)
             {
-                if (lowReCorrection_ && yPlus(facei) < yPlusLam)
+                if (lowReCorrection && yPlus(facei) < yPlusLam)
                 {
-                    epsilon0[faceCells[facei]] +=
-                        cornerWeights[facei]
-                      * epsilonVis(facei);
+                    foamAtomic::AtomicAdd
+                    (
+                        epsilon0Ptr[faceCellsPtr[facei]],
+                        cornerWeightsPtr[facei] * epsilonVis(facei)
+                    );
                 }
                 else
                 {
-                    epsilon0[faceCells[facei]] +=
-                        cornerWeights[facei]
-                      * epsilonLog(facei);
+                    foamAtomic::AtomicAdd
+                    (
+                        epsilon0Ptr[faceCellsPtr[facei]],
+                        cornerWeightsPtr[facei] * epsilonLog(facei)
+                    );
                 }
-            }
+            };
+            exec.parallelFor(Lambda, faceCells.size());
             break;
         }
 
         case blenderType::BINOMIAL:
         {
-            forAll(faceCells, facei)
+            const scalar n(n_);
+            auto Lambda = [=](label facei)
             {
                 // (ME:Eqs. 15-16)
-                epsilon0[faceCells[facei]] +=
-                    cornerWeights[facei]
-                  * pow
-                    (
-                        pow(epsilonVis(facei), n_) + pow(epsilonLog(facei), n_),
-                        scalar(1)/n_
-                    );
-            }
+                foamAtomic::AtomicAdd
+                (
+                    epsilon0Ptr[faceCellsPtr[facei]],
+                    cornerWeightsPtr[facei]
+                      * pow
+                        (
+                            pow(epsilonVis(facei), n) + pow(epsilonLog(facei), n),
+                            scalar(1)/n
+                        )
+                );
+            };
+            exec.parallelFor(Lambda, faceCells.size());
             break;
         }
 
         case blenderType::MAX:
         {
-            forAll(faceCells, facei)
+            auto Lambda = [=](label facei)
             {
                 // (PH:Eq. 27)
-                epsilon0[faceCells[facei]] +=
-                    cornerWeights[facei]
-                  * max(epsilonVis(facei), epsilonLog(facei));
-            }
+                foamAtomic::AtomicAdd
+                (
+                    epsilon0Ptr[faceCellsPtr[facei]],
+                    cornerWeightsPtr[facei]
+                      * max(epsilonVis(facei), epsilonLog(facei))
+                );
+            };
+            exec.parallelFor(Lambda, faceCells.size());
             break;
         }
 
         case blenderType::EXPONENTIAL:
         {
-            forAll(faceCells, facei)
+            auto Lambda = [=](label facei)
             {
                 // (PH:p. 193)
                 const scalar yPlusFace = yPlus(facei);
@@ -293,19 +323,23 @@ void Foam::epsilonWallFunctionFvPatchScalarField::calculate
                     0.001*pow4(yPlusFace)/(scalar(1) + yPlusFace);
                 const scalar invGamma = scalar(1)/(Gamma + ROOTVSMALL);
 
-                epsilon0[faceCells[facei]] +=
-                    cornerWeights[facei]
-                  * (
-                        epsilonVis(facei)*exp(-Gamma)
-                      + epsilonLog(facei)*exp(-invGamma)
-                    );
-            }
+                foamAtomic::AtomicAdd
+                (
+                    epsilon0Ptr[faceCellsPtr[facei]],
+                    cornerWeightsPtr[facei]
+                      * (
+                            epsilonVis(facei)*exp(-Gamma)
+                          + epsilonLog(facei)*exp(-invGamma)
+                        )
+                );
+            };
+            exec.parallelFor(Lambda, faceCells.size());
             break;
         }
 
         case blenderType::TANH:
         {
-            forAll(faceCells, facei)
+            auto Lambda = [=](label facei)
             {
                 // (KAS:Eqs. 33-34)
                 const scalar epsilonVisFace = epsilonVis(facei);
@@ -319,10 +353,14 @@ void Foam::epsilonWallFunctionFvPatchScalarField::calculate
                     );
                 const scalar phiTanh = tanh(pow4(0.1*yPlus(facei)));
 
-                epsilon0[faceCells[facei]] +=
-                    cornerWeights[facei]
-                  * (phiTanh*b1 + (1 - phiTanh)*b2);
-            }
+                foamAtomic::AtomicAdd
+                (
+                    epsilon0Ptr[faceCellsPtr[facei]],
+                    cornerWeightsPtr[facei]
+                      * (phiTanh*b1 + (1 - phiTanh)*b2)
+                );
+            };
+            exec.parallelFor(Lambda, faceCells.size());
             break;
         }
     }
@@ -333,18 +371,28 @@ void Foam::epsilonWallFunctionFvPatchScalarField::calculate
     const tmp<scalarField> tnutw = turbModel.nut(patchi);
     const scalarField& nutw = tnutw();
 
-    forAll(faceCells, facei)
+    auto G0Ptr = G0.begin();
+    const auto magGradUwPtr = magGradUw.cbegin();
+    const auto nutwPtr = nutw.cbegin();
+
+    auto Lambda = [=](label facei)
     {
-        if (!lowReCorrection_ || (yPlus(facei) > yPlusLam))
+        if (!lowReCorrection || yPlus(facei) > yPlusLam)
         {
-            G0[faceCells[facei]] +=
-                cornerWeights[facei]
-               *(nutw[facei] + nuw[facei])
-               *magGradUw[facei]
-               *Cmu25*sqrt(k[faceCells[facei]])
-               /(kappa*y[facei]);
+            const auto rhs = cornerWeightsPtr[facei]
+               *(nutwPtr[facei] + nuwPtr[facei])
+               *magGradUwPtr[facei]
+               *Cmu25*sqrt(kPtr[faceCellsPtr[facei]])
+               /(kappa*yPtr[facei]);
+
+            foamAtomic::AtomicAdd
+            (
+                G0Ptr[faceCellsPtr[facei]],
+                rhs
+            );
         }
-    }
+    };
+    exec.parallelFor(Lambda, faceCells.size());
 }
 
 
@@ -534,14 +582,22 @@ void Foam::epsilonWallFunctionFvPatchScalarField::updateCoeffs()
 
     FieldType& epsilon = const_cast<FieldType&>(internalField());
 
-    forAll(*this, facei)
+    const auto pFaceCellsPtr = patch().faceCells().cbegin();
+    auto GPtr = G.begin();
+    const auto G0Ptr = G0.cbegin();
+    auto epsilonPtr = epsilon.begin();
+    const auto epsilon0Ptr = epsilon0.cbegin();
+
+    foamExecutor exec;
+    auto Lambda = [=](label facei)
     {
-        const label celli = patch().faceCells()[facei];
+        const label celli = pFaceCellsPtr[facei];
 
-        G[celli] = G0[celli];
-        epsilon[celli] = epsilon0[celli];
-    }
-
+        GPtr[celli] = G0Ptr[celli];
+        epsilonPtr[celli] = epsilon0Ptr[celli];
+    };
+    exec.parallelFor(Lambda, this->size());
+    
     fvPatchField<scalar>::updateCoeffs();
 }
 
