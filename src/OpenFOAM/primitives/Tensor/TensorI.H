@@ -42,7 +42,7 @@ inline Foam::Tensor<Cmpt>::Tensor(const Foam::zero)
 
 template<class Cmpt>
 template<class Cmpt2>
-inline Foam::Tensor<Cmpt>::Tensor
+FOAM_DEVICE inline Foam::Tensor<Cmpt>::Tensor
 (
     const MatrixSpace<Tensor<Cmpt2>, Cmpt2, 3, 3>& vs
 )
@@ -53,7 +53,7 @@ inline Foam::Tensor<Cmpt>::Tensor
 
 template<class Cmpt>
 template<class Cmpt2>
-inline Foam::Tensor<Cmpt>::Tensor
+FOAM_DEVICE inline Foam::Tensor<Cmpt>::Tensor
 (
     const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>& vs
 )

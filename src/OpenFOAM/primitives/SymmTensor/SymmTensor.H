@@ -99,7 +99,7 @@ public:
 
         //- Construct given VectorSpace of the same rank
         template<class Cmpt2>
-        inline SymmTensor(const VectorSpace<SymmTensor<Cmpt2>, Cmpt2, 6>&);
+        FOAM_DEVICE inline SymmTensor(const VectorSpace<SymmTensor<Cmpt2>, Cmpt2, 6>&);
 
         //- Construct given SphericalTensor
         inline SymmTensor(const SphericalTensor<Cmpt>&);
