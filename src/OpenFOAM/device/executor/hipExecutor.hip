@@ -348,7 +348,7 @@ void Foam::hipExecutor::_backendReductionSum(
         size
     );
 
-    //deviceSync();
+    deviceSync();
     CHECK_LAST_HIP_ERROR();
 
     MemoryPool::getInstance()->copyOut(dPtrResult, result, sizeof(resultT));
@@ -413,6 +413,7 @@ void Foam::hipExecutor::_backendReductionCompare
         size
     );
 
+    deviceSync();
     CHECK_LAST_HIP_ERROR();
 
     MemoryPool::getInstance()->copyOut(dPtrResult, result, sizeof(resultT));

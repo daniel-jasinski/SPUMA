@@ -316,6 +316,7 @@ void Foam::cudaExecutor::_backendReductionSum
         size
     );
 
+    deviceSync();
     CHECK_LAST_CUDA_ERROR();
 
     MemoryPool::getInstance()->copyOut
@@ -380,6 +381,7 @@ void Foam::cudaExecutor::_backendReductionCompare
         size
     );
 
+    deviceSync();
     CHECK_LAST_CUDA_ERROR();
 
     MemoryPool::getInstance()->copyOut
