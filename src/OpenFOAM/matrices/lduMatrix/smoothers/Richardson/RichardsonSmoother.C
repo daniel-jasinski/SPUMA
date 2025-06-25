@@ -52,7 +52,8 @@ Foam::RichardsonSmoother::RichardsonSmoother
     const lduMatrix& matrix,
     const FieldField<Field, scalar>& interfaceBouCoeffs,
     const FieldField<Field, scalar>& interfaceIntCoeffs,
-    const lduInterfaceFieldPtrsList& interfaces
+    const lduInterfaceFieldPtrsList& interfaces,
+    const dictionary& solverControls
 )
 :
     lduMatrix::smoother
@@ -61,14 +62,23 @@ Foam::RichardsonSmoother::RichardsonSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     )
-{}
+{
+    readControls();
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::RichardsonSmoother::smooth
+void Foam::RichardsonSmoother::readControls()
+{
+    omega_ = controlDict_.getOrDefault<scalar>("omega", 0.75);
+}
+
+
+void Foam::RichardsonSmoother::smooth_
 (
     const word& fieldName_,
     solveScalarField& psi,
@@ -78,7 +88,7 @@ void Foam::RichardsonSmoother::smooth
     const lduInterfaceFieldPtrsList& interfaces_,
     const direction cmpt,
     const label nSweeps
-)
+) const
 {
     solveScalar* __restrict__ psiPtr = psi.begin();
     const solveScalar* const __restrict__ bPtr = source.cbegin();
@@ -102,7 +112,7 @@ void Foam::RichardsonSmoother::smooth
     };
     exec.parallelFor(Lambda1, nCells);
 
-    const scalar omega = 0.75;
+    const scalar omega(omega_);
 
     for (label sweep=0; sweep<nSweeps; sweep++)
     {
@@ -127,7 +137,7 @@ void Foam::RichardsonSmoother::smooth
     const label nSweeps
 ) const
 {
-    smooth
+    smooth_
     (
         fieldName_,
         psi,
@@ -149,7 +159,7 @@ void Foam::RichardsonSmoother::scalarSmooth
     const label nSweeps
 ) const
 {
-    smooth
+    smooth_
     (
         fieldName_,
         psi,

@@ -361,7 +361,9 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_;
             const FieldField<Field, scalar>& interfaceIntCoeffs_;
             const lduInterfaceFieldPtrsList& interfaces_;
-
+            
+            //- Dictionary of solution controls
+            dictionary controlDict_;
 
     public:
 
@@ -384,14 +386,16 @@ public:
                     const lduMatrix& matrix,
                     const FieldField<Field, scalar>& interfaceBouCoeffs,
                     const FieldField<Field, scalar>& interfaceIntCoeffs,
-                    const lduInterfaceFieldPtrsList& interfaces
+                    const lduInterfaceFieldPtrsList& interfaces,
+                    const dictionary& solverControls
                 ),
                 (
                     fieldName,
                     matrix,
                     interfaceBouCoeffs,
                     interfaceIntCoeffs,
-                    interfaces
+                    interfaces,
+                    solverControls
                 )
             );
 
@@ -405,14 +409,16 @@ public:
                     const lduMatrix& matrix,
                     const FieldField<Field, scalar>& interfaceBouCoeffs,
                     const FieldField<Field, scalar>& interfaceIntCoeffs,
-                    const lduInterfaceFieldPtrsList& interfaces
+                    const lduInterfaceFieldPtrsList& interfaces,
+                    const dictionary& solverControls
                 ),
                 (
                     fieldName,
                     matrix,
                     interfaceBouCoeffs,
                     interfaceIntCoeffs,
-                    interfaces
+                    interfaces,
+                    solverControls
                 )
             );
 
@@ -426,7 +432,8 @@ public:
                 const lduMatrix& matrix,
                 const FieldField<Field, scalar>& interfaceBouCoeffs,
                 const FieldField<Field, scalar>& interfaceIntCoeffs,
-                const lduInterfaceFieldPtrsList& interfaces
+                const lduInterfaceFieldPtrsList& interfaces,
+                const dictionary& solverControls
             );
 
 

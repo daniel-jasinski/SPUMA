@@ -52,7 +52,8 @@ Foam::twoStageSymGaussSeidelSmoother::twoStageSymGaussSeidelSmoother
     const lduMatrix& matrix,
     const FieldField<Field, scalar>& interfaceBouCoeffs,
     const FieldField<Field, scalar>& interfaceIntCoeffs,
-    const lduInterfaceFieldPtrsList& interfaces
+    const lduInterfaceFieldPtrsList& interfaces,
+    const dictionary& solverControls
 )
 :
     lduMatrix::smoother
@@ -61,14 +62,24 @@ Foam::twoStageSymGaussSeidelSmoother::twoStageSymGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     )
-{}
+{
+    readControls();
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::twoStageSymGaussSeidelSmoother::smooth
+void Foam::twoStageSymGaussSeidelSmoother::readControls()
+{
+    nInnerIter_ = controlDict_.getOrDefault<label>("nInnerIter", 1);
+    omega_ = controlDict_.getOrDefault<scalar>("omega", 0.9);
+}
+
+
+void Foam::twoStageSymGaussSeidelSmoother::smooth_
 (
     const word& fieldName_,
     solveScalarField& psi,
@@ -78,7 +89,7 @@ void Foam::twoStageSymGaussSeidelSmoother::smooth
     const lduInterfaceFieldPtrsList& interfaces_,
     const direction cmpt,
     const label nSweeps
-)
+) const
 {
     solveScalar* __restrict__ psiPtr = psi.begin();
     const solveScalar* const __restrict__ bPtr = source.cbegin();
@@ -112,6 +123,8 @@ void Foam::twoStageSymGaussSeidelSmoother::smooth
 
     scalarField rD(nCells);
     scalar* __restrict__ rDPtr = rD.begin();
+
+    const scalar omega(omega_);
 
     foamExecutor exec;
 
@@ -183,10 +196,7 @@ void Foam::twoStageSymGaussSeidelSmoother::smooth
         exec.parallelFor(LambdaScale, nCells);
 
         // -- Perform local inner Jacobi iteration
-        const label nj = 1;
-        const scalar omega = 0.9;
-
-        for (label j=0; j<nj; ++j)
+        for (label j=0; j<this->nInnerIter_; ++j)
         {
             gOld = g;
 
@@ -237,7 +247,7 @@ void Foam::twoStageSymGaussSeidelSmoother::smooth
         g = rDr;
 
         // -- Perform local inner Jacobi iteration
-        for (label j=0; j<nj; ++j)
+        for (label j=0; j<this->nInnerIter_; ++j)
         {
             gOld = g;
 
@@ -270,7 +280,7 @@ void Foam::twoStageSymGaussSeidelSmoother::smooth
     const label nSweeps
 ) const
 {
-    smooth
+    smooth_
     (
         fieldName_,
         psi,
@@ -292,7 +302,7 @@ void Foam::twoStageSymGaussSeidelSmoother::scalarSmooth
     const label nSweeps
 ) const
 {
-    smooth
+    smooth_
     (
         fieldName_,
         psi,

@@ -53,7 +53,8 @@ Foam::nonBlockingGaussSeidelSmoother::nonBlockingGaussSeidelSmoother
     const lduMatrix& matrix,
     const FieldField<Field, scalar>& interfaceBouCoeffs,
     const FieldField<Field, scalar>& interfaceIntCoeffs,
-    const lduInterfaceFieldPtrsList& interfaces
+    const lduInterfaceFieldPtrsList& interfaces,
+    const dictionary& solverControls
 )
 :
     lduMatrix::smoother
@@ -62,7 +63,8 @@ Foam::nonBlockingGaussSeidelSmoother::nonBlockingGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     )
 {
     // Check that all interface addressing is sorted to be after the

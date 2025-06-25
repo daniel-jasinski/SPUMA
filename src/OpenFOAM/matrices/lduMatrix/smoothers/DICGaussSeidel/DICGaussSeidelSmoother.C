@@ -47,7 +47,8 @@ Foam::DICGaussSeidelSmoother::DICGaussSeidelSmoother
     const lduMatrix& matrix,
     const FieldField<Field, scalar>& interfaceBouCoeffs,
     const FieldField<Field, scalar>& interfaceIntCoeffs,
-    const lduInterfaceFieldPtrsList& interfaces
+    const lduInterfaceFieldPtrsList& interfaces,
+    const dictionary& solverControls
 )
 :
     lduMatrix::smoother
@@ -56,7 +57,8 @@ Foam::DICGaussSeidelSmoother::DICGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     ),
     dicSmoother_
     (
@@ -64,7 +66,8 @@ Foam::DICGaussSeidelSmoother::DICGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     ),
     gsSmoother_
     (
@@ -72,7 +75,8 @@ Foam::DICGaussSeidelSmoother::DICGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     )
 {}
 
