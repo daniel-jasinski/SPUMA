@@ -124,21 +124,15 @@ void Foam::GAMGAgglomeration::restrictFaceField
 
     cf = Zero;
 
-    const label* const __restrict__ fineToCoarsePtr = fineToCoarse.cbegin();
-    const Type* const __restrict__ ffPtr = ff.cbegin();
-    Type* __restrict__ cfPtr = cf.begin();
-    const label size = fineToCoarse.size();
-
-    foamExecutor exec;
-    auto Lambda = [=](label ffacei)
+    forAll(fineToCoarse, ffacei)
     {
-        label cFace = fineToCoarsePtr[ffacei];
+        label cFace = fineToCoarse[ffacei];
+
         if (cFace >= 0)
         {
-            foamAtomic::AtomicAdd(cfPtr[cFace], ffPtr[ffacei]);
+            cf[cFace] += ff[ffacei];
         }
-    };
-    exec.parallelFor(Lambda, size);
+    }
 }
 
 

@@ -166,20 +166,23 @@ void Foam::GAMGSolver::agglomerateMatrix
                     // coarse face it is being agglomerated into
                     if (!faceFlipMapPtr[fineFacei])
                     {
-                        coarseUpperPtr[cFace] += fineUpperPtr[fineFacei];
-                        coarseLowerPtr[cFace] += fineLowerPtr[fineFacei];
+                        foamAtomic::AtomicAdd(coarseUpperPtr[cFace], fineUpperPtr[fineFacei]);
+                        foamAtomic::AtomicAdd(coarseLowerPtr[cFace], fineLowerPtr[fineFacei]);
                     }
                     else
                     {
-                        coarseUpperPtr[cFace] += fineLowerPtr[fineFacei];
-                        coarseLowerPtr[cFace] += fineUpperPtr[fineFacei];
+                        foamAtomic::AtomicAdd(coarseUpperPtr[cFace], fineLowerPtr[fineFacei]);
+                        foamAtomic::AtomicAdd(coarseLowerPtr[cFace], fineUpperPtr[fineFacei]);
                     }
                 }
                 else
                 {
                     // Add the fine face coefficients into the diagonal.
-                    coarseDiagPtr[-1 - cFace] +=
-                        fineUpperPtr[fineFacei] + fineLowerPtr[fineFacei];
+                    foamAtomic::AtomicAdd
+                    (
+                        coarseDiagPtr[-1 - cFace],
+                        fineUpperPtr[fineFacei] + fineLowerPtr[fineFacei]
+                    );
                 }
             };
 
