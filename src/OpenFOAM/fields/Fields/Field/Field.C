@@ -322,20 +322,36 @@ void Foam::Field<Type>::map
 
     if (mapF.size() > 0)
     {
-        auto fPtr = f.begin();
-        auto mapFPtr = mapF.cbegin();
-        auto mapAddressingPtr = mapAddressing.cbegin();
-
-        foamExecutor exec;
-        auto mapAddr = [=] (label i)
+        if(f.usePool() && mapF.usePool() && mapAddressing.usePool())
         {
-            const label mapI = mapAddressingPtr[i];
-            if (mapI >= 0)
+            auto fPtr = f.begin();
+            auto mapFPtr = mapF.cbegin();
+            auto mapAddressingPtr = mapAddressing.cbegin();
+
+            foamExecutor exec;
+            auto mapAddr = [=] (label i)
             {
-                fPtr[i] = mapFPtr[mapI];
+                const label mapI = mapAddressingPtr[i];
+                if (mapI >= 0)
+                {
+                    fPtr[i] = mapFPtr[mapI];
+                }
+            };
+            exec.parallelFor(mapAddr, f.size());
+        }
+        else
+        {
+            forAll(f, i)
+            {
+                const label mapI = mapAddressing[i];
+
+                if (mapI >= 0)
+                {
+                    f[i] = mapF[mapI];
+                }
             }
-        };
-        exec.parallelFor(mapAddr, f.size());
+
+        }
     }
 }
 

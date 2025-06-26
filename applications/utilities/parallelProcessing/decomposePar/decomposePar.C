@@ -416,8 +416,10 @@ int main(int argc, char *argv[])
 
     // Allow explicit -constant, have zero from time range
     timeSelector::addOptions(true, false);  // constant(true), zero(false)
-
+    #include "addMemoryPoolOptions.H"
     #include "setRootCase.H"
+    foamDeviceInit::Init();
+    #include "createMemoryPool.H"
 
     const bool writeCellDist    = args.found("cellDist");
 
