@@ -97,6 +97,10 @@ void Foam::hipMemoryExecutor::_backendMemCopy
     {
         err = CHECK_HIP_ERROR(hipMemcpy(dst, src, (size_t) size, hipMemcpyDeviceToHost));
     }
+    else if (kind == memCopyKind::memCopyDefault)
+    {
+        err = CHECK_HIP_ERROR(hipMemcpy(dst, src, (size_t) size, hipMemcpyDefault));
+    }
     else if (kind == memCopyKind::memCopyDeviceToDevice)
     {
         label numblocks = SET_NUM_BLOCKS(size);

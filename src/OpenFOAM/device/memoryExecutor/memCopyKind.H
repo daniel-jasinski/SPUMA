@@ -44,7 +44,8 @@ enum memCopyKind
     memCopyHostToHost = 0,
     memCopyHostToDevice = 1,
     memCopyDeviceToHost = 2,
-    memCopyDeviceToDevice = 3
+    memCopyDeviceToDevice = 3,
+    memCopyDefault = 4
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

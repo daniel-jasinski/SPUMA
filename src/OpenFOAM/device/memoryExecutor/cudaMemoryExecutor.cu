@@ -75,6 +75,8 @@ void Foam::cudaMemoryExecutor::_backendMemCopy
         err = CHECK_CUDA_ERROR(cudaMemcpy(dst, src, (size_t) size, cudaMemcpyDeviceToHost));
     else if (kind == memCopyKind::memCopyDeviceToDevice)
         err = CHECK_CUDA_ERROR(cudaMemcpy(dst, src, (size_t) size, cudaMemcpyDeviceToDevice));
+    else if (kind == memCopyKind::memCopyDefault)
+        err = CHECK_CUDA_ERROR(cudaMemcpy(dst, src, (size_t) size, cudaMemcpyDefault));
     else
         FatalErrorInFunction << "ERROR: memCopyKind not found" << abort(FatalError);
 
