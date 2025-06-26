@@ -40,26 +40,26 @@ Foam::scalar Foam::powerMethod::maxEigenvalue
 )
 {
     const scalar* const __restrict__ diagPtr = matrix_.diag().begin();
-    
-    scalar nCells = matrix_.diag().size();
 
-    scalarField lambda(nCells);
-    scalar* __restrict__ lambdaPtr = lambda.begin();
+    label nCells = matrix_.diag().size();
+
+    solveScalarField lambda(nCells);
+    solveScalar* __restrict__ lambdaPtr = lambda.begin();
 
     solveScalarField Alambda(nCells, 0.0);
     solveScalar* __restrict__ AlambdaPtr = Alambda.begin();
 
     /* initialize random seed: */
     srand (time(NULL));
-    
+
     // We choose a random vector as starting point
     // to decrease the change that our vector (lambda)
     // is orthogonal to the eigenvector
-    scalar rlambdaNorm = 0.;
+    solveScalar rlambdaNorm = 0.;
     for (label celli=0; celli<nCells; ++celli)
     {
         lambdaPtr[celli] = rand() % 10 + 0;
-	rlambdaNorm += lambdaPtr[celli] * lambdaPtr[celli];
+        rlambdaNorm += lambdaPtr[celli] * lambdaPtr[celli];
     }
     rlambdaNorm = 1.0 / sqrt(rlambdaNorm);
 
@@ -78,62 +78,62 @@ Foam::scalar Foam::powerMethod::maxEigenvalue
     }
 
     // --- Compute D^-1*A
-    lduMatrix Pminus1Amat(matrix_); 
+    lduMatrix Pminus1Amat(matrix_);
     Pminus1Amat *= rD;
 
-    scalar lmax = 0.;
+    solveScalar lmax = 0.;
     const label maxIters = 128;
-    const scalar tol = 1.e-2;
+    const solveScalar tol = 1.e-2;
 
     for (label nIter=0; nIter<maxIters; ++nIter)
     {
-	lmax = 1.e-20;
-        scalar rAlambdaNorm = 1.e-20;
-        scalar AlambdaminuslmaxlambdaNorm = 0.;
+        lmax = 1.e-20;
+        solveScalar rAlambdaNorm = 1.e-20;
+        solveScalar AlambdaminuslmaxlambdaNorm = 0.;
 
-	// --- Calculate (D^-1*A)*lambda
+        // --- Calculate (D^-1*A)*lambda
         Pminus1Amat.Amul(Alambda, lambda, interfaceBouCoeffs_, interfaces_, cmpt);
 
-	// --- Compute l2 norm of (D^-1*A)*lambda: |(D^-1*A)*lambda|_2
+        // --- Compute l2 norm of (D^-1*A)*lambda: |(D^-1*A)*lambda|_2
         for (label celli=0; celli<nCells; ++celli)
         {
             rAlambdaNorm += AlambdaPtr[celli] * AlambdaPtr[celli];
         }
-	rAlambdaNorm = 1.0 / sqrt(rAlambdaNorm);
+        rAlambdaNorm = 1.0 / sqrt(rAlambdaNorm);
 
-	// --- Compute lambdaMax
+        // --- Compute lambdaMax
         for (label celli=0; celli<nCells; ++celli)
         {
-	    lmax += lambdaPtr[celli] * AlambdaPtr[celli];
+            lmax += lambdaPtr[celli] * AlambdaPtr[celli];
         }
 
-	//---  Recompute (normalized) lambda
-	for (label celli=0; celli<nCells; ++celli)
-	{
-	    AlambdaminuslmaxlambdaNorm += 
-	        (AlambdaPtr[celli] - lmax * lambdaPtr[celli]) * 
-		(AlambdaPtr[celli] - lmax * lambdaPtr[celli]);
-	    lambdaPtr[celli] = rAlambdaNorm * AlambdaPtr[celli];
+        //---  Recompute (normalized) lambda
+        for (label celli=0; celli<nCells; ++celli)
+        {
+            AlambdaminuslmaxlambdaNorm +=
+                (AlambdaPtr[celli] - lmax * lambdaPtr[celli]) *
+                (AlambdaPtr[celli] - lmax * lambdaPtr[celli]);
+            lambdaPtr[celli] = rAlambdaNorm * AlambdaPtr[celli];
         }
         AlambdaminuslmaxlambdaNorm = sqrt(AlambdaminuslmaxlambdaNorm);
 
-	// Convergence check
-	if (AlambdaminuslmaxlambdaNorm / lmax < tol)
-	{
-	    if (lduMatrix::debug >= 2)
+        // Convergence check
+        if (AlambdaminuslmaxlambdaNorm / lmax < tol)
+        {
+            if (lduMatrix::debug >= 2)
             {
-	        Info << "  powerMethod converged in " << nIter << " iterations" << nl;
-	    }
-	    
-	    return lmax;
-	}
+                Info << "  powerMethod converged in " << nIter << " iterations" << nl;
+            }
+
+            return lmax;
+        }
     }
 
     if (lduMatrix::debug >= 2)
     {
         Info << "  powerMethod failed to converge" << nl;
     }
-    
+
     return lmax;
 }
 
