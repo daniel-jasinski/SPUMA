@@ -41,9 +41,9 @@ as standard OpenFOAM). This option should not be used when running on GPUs as it
 affects performance negatively.
 * `fixedSizeMemoryPool` : allocates a fixed size block of memory and places data
 objects inside it.
-* `umpireMemoryPool` : uses the Umpire[^3] library for memory management (see
-[SPUMA/Wiki/Umpire](https://gitlab.hpc.cineca.it/exafoam/spuma/-/wikis/Umpire) for
-more information on compiling SPUMA with Umpire support)
+* `umpireMemoryPool` : uses the Umpire[^3] library for memory management
+(see [below](#compile-with-umpire-support) for more information on compiling SPUMA
+with Umpire support)
 
 `fixedSizeMemoryPool` requires the specification of the memory block's size. Care
 should be taken to ensure that enough memory is allocated for the intended
@@ -115,6 +115,21 @@ Finally, run the `./Allwmake` script from the main folder to compile SPUMA.
 
 More information on compiling SPUMA for AMD GPUs can be found at
 [SPUMA/Wiki/How-to-build](https://gitlab.hpc.cineca.it/exafoam/spuma/-/wikis/How-to-build).
+
+#### Compile with Umpire support
+
+To compile SPUMA with support enabled for the Umpire library, you need to set the
+following environment variables as:
+```
+export have_umpire=true
+export UMPIRE_HOME=<umpire library installation directory>
+```
+Note that you need a distribution of Umpire with CUDA support enabled or HIP support
+enabled to run SPUMA on Nvidia or AMD GPUs respectively.
+
+More information on how to compile the Umpire library with GPU support on specific
+systems can be found at:
+[SPUMA/Wiki/Umpire](https://gitlab.hpc.cineca.it/exafoam/spuma/-/wikis/Umpire)
 
 #### Multi-GPU
 
