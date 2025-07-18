@@ -35,6 +35,11 @@ namespace Foam
     makeLduMatrix(sphericalTensor, scalar, scalar);
     makeLduMatrix(symmTensor, scalar, scalar);
     makeLduMatrix(tensor, scalar, scalar);
+
+    makeLduMatrix(vector, vector, scalar);
+    makeLduMatrix(sphericalTensor, sphericalTensor, scalar);
+    makeLduMatrix(symmTensor, symmTensor, scalar);
+    makeLduMatrix(tensor, tensor, scalar);
 };
 
 

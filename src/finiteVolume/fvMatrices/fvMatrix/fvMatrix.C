@@ -157,6 +157,34 @@ void Foam::fvMatrix<Type>::addBoundaryDiag
     }
 }
 
+template<class Type>
+void Foam::fvMatrix<Type>::addBoundaryDiag
+(
+    Field<Type>& diag
+) const
+{
+    for (label fieldi = 0; fieldi < nMatrices(); ++fieldi)
+    {
+        const auto& bpsi = this->psi(fieldi).boundaryField();
+
+        forAll(bpsi, ptfi)
+        {
+            const label patchi = globalPatchID(fieldi, ptfi);
+
+            const Field<Type>& pic = internalCoeffs_[patchi];
+
+            if (patchi != -1)
+            {
+                addToInternalField
+                (
+                    lduAddr().patchAddr(patchi),
+                    pic,
+                    diag
+                );
+            }
+        }
+    }
+}
 
 template<class Type>
 void Foam::fvMatrix<Type>::addCmptAvBoundaryDiag(scalarField& diag) const

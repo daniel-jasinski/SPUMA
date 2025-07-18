@@ -722,7 +722,17 @@ Type sumCmptMag(const UList<Type>& f1)
     Type result = Zero;
     if (f1.size())
     {
-        TFOR_ALL_S_OP_FUNC_F(Type, result, +=, cmptMag, Type, f1)
+        if (f1.usePool())
+        {
+            auto f1p = f1.begin();
+            auto sumCmptMagOp = [=] (label i) {return cmptMag(f1p[i]);};
+            foamExecutor exec;
+            exec.reductionSum(sumCmptMagOp, &result, f1.size());
+        }
+        else
+        {
+            TFOR_ALL_S_OP_FUNC_F(Type, result, +=, cmptMag, Type, f1)
+        }
     }
     return result;
 }
