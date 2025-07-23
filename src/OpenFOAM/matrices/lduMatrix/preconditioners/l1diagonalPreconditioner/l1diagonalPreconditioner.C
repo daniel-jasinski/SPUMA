@@ -26,27 +26,27 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "diagonalPreconditioner.H"
+#include "l1diagonalPreconditioner.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
-    defineTypeNameAndDebug(diagonalPreconditioner, 0);
+    defineTypeNameAndDebug(l1diagonalPreconditioner, 0);
 
     lduMatrix::preconditioner::
-        addsymMatrixConstructorToTable<diagonalPreconditioner>
-        adddiagonalPreconditionerSymMatrixConstructorToTable_;
+        addsymMatrixConstructorToTable<l1diagonalPreconditioner>
+        addl1diagonalPreconditionerSymMatrixConstructorToTable_;
 
     lduMatrix::preconditioner::
-        addasymMatrixConstructorToTable<diagonalPreconditioner>
-        adddiagonalPreconditionerAsymMatrixConstructorToTable_;
+        addasymMatrixConstructorToTable<l1diagonalPreconditioner>
+        addl1diagonalPreconditionerAsymMatrixConstructorToTable_;
 }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diagonalPreconditioner::diagonalPreconditioner
+Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
 (
     const lduMatrix::solver& sol,
     const dictionary&
@@ -58,18 +58,42 @@ Foam::diagonalPreconditioner::diagonalPreconditioner
     solveScalar* __restrict__ rDPtr = rD.begin();
     const scalar* __restrict__ DPtr = solver_.matrix().diag().begin();
 
+
+    const label* const __restrict__ uPtr =
+        solver_.matrix().lduAddr().upperAddr().cbegin();
+    const label* const __restrict__ lPtr =
+        solver_.matrix().lduAddr().lowerAddr().cbegin();
+    
+    const scalar* const __restrict__ upperPtr =
+        solver_.matrix().upper().cbegin();
+    const scalar* const __restrict__ lowerPtr =
+        solver_.matrix().lower().cbegin();
+    
     const label nCells = rD.size();
 
-    auto Lambda = [=](label cell)
-    {
-        rDPtr[cell] = 1.0/DPtr[cell];
-    };
     foamExecutor exec;
-    exec.parallelFor(Lambda, nCells);
+
+    auto LambdarD = [=](label celli)
+    {
+        rDPtr[celli] = mag(DPtr[celli]);
+    };
+    exec.parallelFor(LambdarD, nCells);
+    
+    const label nFaces = solver_.matrix().lduAddr().lowerAddr().size();
+    auto LambdaOffDiag = [=](label face)
+    {
+        foamAtomic::AtomicAdd(rDPtr[uPtr[face]], mag(lowerPtr[face]));
+        foamAtomic::AtomicAdd(rDPtr[lPtr[face]], mag(upperPtr[face]));
+    };
+
+    exec.parallelFor(LambdaOffDiag,nFaces);
+
+    rD = sign(solver_.matrix().diag())/rD;
+
 }
 
 
-Foam::diagonalPreconditioner::diagonalPreconditioner
+Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
 (
     const lduMatrix& matrix,
     const dictionary&
@@ -79,21 +103,46 @@ Foam::diagonalPreconditioner::diagonalPreconditioner
     rD(matrix.diag().size())
 {
     solveScalar* __restrict__ rDPtr = rD.begin();
-    const scalar* __restrict__ DPtr = matrix.diag().begin();
+    const scalar* __restrict__ DPtr = matrix.diag().cbegin();
+
+    
+    const label* const __restrict__ uPtr =
+        matrix.lduAddr().upperAddr().cbegin();
+    const label* const __restrict__ lPtr =
+        matrix.lduAddr().lowerAddr().cbegin();
+    
+    const scalar* const __restrict__ upperPtr =
+        matrix.upper().cbegin();
+    const scalar* const __restrict__ lowerPtr =
+        matrix.lower().cbegin();
+    
+    foamExecutor exec;
 
     const label nCells = rD.size();
 
-    auto Lambda = [=](label cell)
+
+    auto LambdarD = [=](label celli)
     {
-        rDPtr[cell] = 1.0/DPtr[cell];
+        rDPtr[celli] = mag(DPtr[celli]);
     };
-    foamExecutor exec;
-    exec.parallelFor(Lambda, nCells);
+    exec.parallelFor(LambdarD, nCells);
+    
+    const label nFaces = matrix.lduAddr().lowerAddr().size();
+    auto LambdaOffDiag = [=](label face)
+    {
+        foamAtomic::AtomicAdd(rDPtr[uPtr[face]], mag(lowerPtr[face]));
+        foamAtomic::AtomicAdd(rDPtr[lPtr[face]], mag(upperPtr[face]));
+    };
+
+    exec.parallelFor(LambdaOffDiag,nFaces);
+
+    rD = sign(matrix.diag())/rD;
+    
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diagonalPreconditioner::precondition
+void Foam::l1diagonalPreconditioner::precondition
 (
     solveScalarField& wA,
     const solveScalarField& rA,

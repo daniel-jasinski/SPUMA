@@ -559,6 +559,10 @@ public:
                 solver_(sol)
             {}
 
+            preconditioner()
+            :
+                solver_(NullObjectRef<solver>()) // works but extremely dangerous
+            {};
 
         // Selectors
 
