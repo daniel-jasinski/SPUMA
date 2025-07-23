@@ -34,9 +34,28 @@ Group
 Description
     A lduMatrix::smoother implementing the Chebyshev smoother, a preconditioner 
     with a Chebyshev polynomial for symmetric positive definite matrices. 
-    This preconditioner is based on an iteration of an inner preconditioner (Jacobi) 
+    This preconditioner is based on an iteration of an inner preconditioner (Jacobi or L1-jacobi)
     with coefficients that are adapted to optimally cover an eigenvalue range 
-    between the largest eigenvalue λmax down to a given lower eigenvalue λmin.
+    between the largest eigenvalue λmax down to a given lower eigenvalue λmin 
+    or given by the optimal values for GAMG error projection using V-cycle with N pre and post
+    sweeps of polynomal smoother of 1-th kind Chebyshev of fixed degree k described in:
+    \verbatim
+        D’Ambra, P., Durastante, F., Filippone, S. et al. 
+        Optimal polynomial smoothers for parallel AMG. Numer Algor (2025). 
+        https://doi.org/10.1007/s11075-025-02117-6
+    \endverbatim
+
+Usage:
+    \table
+        Property              | Description               | Required    | Default value
+        pDegree               | polynomial degree         | no          | 1
+        lambdaMode            | polynomial scaling bounds | yes         |
+        preconditionerName    | preconditioner Type       | yes         |
+        lambdaMax             | max eigen value           | optional    | 2.0
+        lambdaMin             | min eigen value           | optional    | -1
+        log                   | log verbosity value       | optional    | 0
+    \endtable
+
 
 SourceFiles
     ChebyshevSmoother.C
@@ -70,6 +89,7 @@ private:
     // 0: Power method
     // 1: Estimate based on the Gershgorin theorem
     // 2: User-defined value
+    // 3: optimal mode for V-cycle GAMG projection error
     label lambdaMode_;
 
     //- (User-defined) maximum eigenValue
@@ -78,6 +98,15 @@ private:
     //- (User-defined) minimum eigenValue
     scalar lambdaMin_;
 
+    //- list of optimal values for V-cycle error bound
+    static scalarList a_;
+
+    //- preconditioner name
+    word preconditionerName_;
+
+    //- ptr of preconditioner
+    autoPtr<lduMatrix::preconditioner> preconditioner_;
+    
     //- Log level verbosity
     label log_;
 
