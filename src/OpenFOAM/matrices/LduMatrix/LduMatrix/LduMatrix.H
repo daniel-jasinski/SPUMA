@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -100,6 +101,9 @@ class LduMatrix
 
         //- Off-diagonal coefficients
         std::unique_ptr<Field<LUType>> lowerPtr_;
+
+        //- Off-diagonal coefficients (not including interfaces) in CSR ordering
+        mutable std::unique_ptr<Field<LUType>> lowerCSRPtr_;
 
         //- Source
         std::unique_ptr<Field<Type>> sourcePtr_;
@@ -554,6 +558,21 @@ public:
         Field<LUType>& upper();
         Field<LUType>& lower();
         Field<Type>& source();
+
+
+     // CSR
+
+        bool hasLowerCSR() const noexcept 
+        {
+            // We hardcoded the adoption of the CSR data structure
+            // From some numerical tests it looks faster.
+            return true;
+            // return bool(lowerCSRPtr_); 
+        }
+
+        const Field<LUType>& lowerCSR() const;
+
+        Field<LUType>& lowerCSR();
 
 
     // Interfaces

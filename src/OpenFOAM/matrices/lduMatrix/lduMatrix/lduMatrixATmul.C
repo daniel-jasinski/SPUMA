@@ -92,8 +92,8 @@ void Foam::lduMatrix::Amul
         //       so is handling symmetric()
         const scalar* const __restrict__ lowercsrPtr = lowerCSR().begin();
 
-        for (label cell=0; cell<nCells; cell++)
-        {
+        auto LambdaAmul = [=](label cell)
+	{
             auto& val = ApsiPtr[cell];
 
             val = diagPtr[cell]*psiPtr[cell];
@@ -120,16 +120,17 @@ void Foam::lduMatrix::Amul
                     val += upperPtr[i]*psiPtr[nbrCell];
                 }
             }
-        }
+        };
+        exec.parallelFor(LambdaAmul, nCells);
     }
     else
     {
         const label nFaces = upper().size();
-        auto LamdaDiag = [=](label cell)
+        auto LambdaDiag = [=](label cell)
         {
             ApsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
         };
-        exec.parallelFor(LamdaDiag, nCells);
+        exec.parallelFor(LambdaDiag, nCells);
 
         auto LambdaOffDiag = [=](label face)
         {

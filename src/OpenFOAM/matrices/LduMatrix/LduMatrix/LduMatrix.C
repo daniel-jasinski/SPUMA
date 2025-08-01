@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -58,6 +59,11 @@ Foam::LduMatrix<Type, DType, LUType>::LduMatrix(const LduMatrix& A)
         lowerPtr_ = std::make_unique<Field<LUType>>(*(A.lowerPtr_));
     }
 
+    if (A.lowerCSRPtr_)
+    {
+        lowerCSRPtr_ = std::make_unique<Field<LUType>>(*(A.lowerCSRPtr_));
+    }
+
     if (A.sourcePtr_)
     {
         sourcePtr_ = std::make_unique<Field<Type>>(*(A.sourcePtr_));
@@ -72,6 +78,7 @@ Foam::LduMatrix<Type, DType, LUType>::LduMatrix(LduMatrix&& A)
     diagPtr_(std::move(A.diagPtr_)),
     lowerPtr_(std::move(A.lowerPtr_)),
     upperPtr_(std::move(A.upperPtr_)),
+    lowerCSRPtr_(std::move(A.lowerCSRPtr_)),
     sourcePtr_(std::move(A.sourcePtr_))
 {
     // Clear the old interfaces?
@@ -89,6 +96,7 @@ Foam::LduMatrix<Type, DType, LUType>::LduMatrix(LduMatrix& A, bool reuse)
         diagPtr_ = std::move(A.diagPtr_);
         upperPtr_ = std::move(A.upperPtr_);
         lowerPtr_ = std::move(A.lowerPtr_);
+	lowerCSRPtr_ = std::move(A.lowerCSRPtr_);
         sourcePtr_ = std::move(A.sourcePtr_);
 
         // Clear the old interfaces?
@@ -111,6 +119,13 @@ Foam::LduMatrix<Type, DType, LUType>::LduMatrix(LduMatrix& A, bool reuse)
             lowerPtr_ = std::make_unique<Field<LUType>>(*(A.lowerPtr_));
         }
 
+        // Note: no real need to keep lowerCSR except we use it (hasLowerCSR())
+        //       to trigger certain actions
+        if (A.lowerCSRPtr_)
+        {
+            lowerCSRPtr_ = std::make_unique<Field<LUType>>(*(A.lowerCSRPtr_));
+        }
+
         if (A.sourcePtr_)
         {
             sourcePtr_ = std::make_unique<Field<Type>>(*(A.sourcePtr_));
@@ -130,6 +145,7 @@ Foam::LduMatrix<Type, DType, LUType>::LduMatrix
     diagPtr_(new Field<DType>(is)),
     upperPtr_(new Field<LUType>(is)),
     lowerPtr_(new Field<LUType>(is)),
+    lowerCSRPtr_(new Field<LUType>(is)),
     sourcePtr_(new Field<Type>(is))
 {}
 
@@ -271,6 +287,63 @@ Foam::Field<LUType>& Foam::LduMatrix<Type, DType, LUType>::lower()
 
 
 template<class Type, class DType, class LUType>
+const Foam::Field<LUType>& Foam::LduMatrix<Type, DType, LUType>::lowerCSR() const
+{
+    if (!lowerCSRPtr_)
+    {
+        const label nLower = lduAddr().losortAddr().size();
+
+        lowerCSRPtr_ = std::make_unique<Field<LUType>>(nLower);
+
+        if (lowerPtr_)
+        {
+            lduAddr().map(*lowerPtr_, *lowerCSRPtr_);
+        }
+        else if (upperPtr_)
+        {
+            lduAddr().map(*upperPtr_, *lowerCSRPtr_);
+        }
+        else
+        {
+            FatalErrorInFunction
+                << "lowerPtr_ and upperPtr_ unallocated"
+                << abort(FatalError);
+        }
+    }
+
+    return *lowerCSRPtr_;
+}
+
+template<class Type, class DType, class LUType>
+Foam::Field<LUType>& Foam::LduMatrix<Type, DType, LUType>::lowerCSR()
+{
+    if (!lowerCSRPtr_)
+    {
+        const label nLower = lduAddr().losortAddr().size();
+
+        lowerCSRPtr_ = std::make_unique<Field<LUType>>(nLower);
+
+        if (lowerPtr_)
+        {
+            lduAddr().map(*lowerPtr_, *lowerCSRPtr_);
+        }
+        else if (upperPtr_)
+        {
+            lduAddr().map(*upperPtr_, *lowerCSRPtr_);
+        }
+        else
+        {
+            FatalErrorInFunction
+                << "lowerPtr_ and upperPtr_ unallocated"
+                << abort(FatalError);
+        }
+    }
+
+    return *lowerCSRPtr_;
+}
+
+
+template<class Type, class DType, class LUType>
 const Foam::Field<Type>& Foam::LduMatrix<Type, DType, LUType>::source() const
 {
     if (!sourcePtr_)
@@ -335,6 +408,12 @@ Foam::Ostream& Foam::operator<<
     if (mat.hasLower())
     {
         os  << "Lower triangle = " << mat.lower() << nl << nl;
+    }
+
+    if (mat.hasLowerCSR() && !mat.hasLower())
+    {
+        // Only send over if can not be reconstructed locally
+        os  << mat.lowerCSR();
     }
 
     if (mat.hasSource())

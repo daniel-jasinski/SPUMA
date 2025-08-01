@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,6 +27,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "lduAddressing.H"
+#include "executors.H"
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -43,17 +45,26 @@ void Foam::lduAddressing::map
 
     vals.resize_nocopy(faceVals.size());
 
-    for (label celli = 0; celli < n; celli++)
+    const label* const __restrict__ offsetsPtr = offsets.cbegin();
+    const label* const __restrict__ indexToFacePtr = indexToFace.cbegin();
+    const Type* const __restrict__ faceValsPtr = faceVals.cbegin();
+    Type* __restrict valsPtr = vals.begin();
+
+    foamExecutor exec;
+
+    // for (label celli = 0; celli < n; celli++)
+    auto LambdaMap = [=](label celli)
     {
-        const label start = offsets[celli];
-        const label end = offsets[celli+1];
+        const label start = offsetsPtr[celli];
+        const label end = offsetsPtr[celli+1];
 
         for (label i = start; i < end; i++)
         {
-            const label facei = indexToFace[i];
-            vals[i] = faceVals[facei];
+            const label facei = indexToFacePtr[i];
+            valsPtr[i] = faceValsPtr[facei];
         }
-    }
+    };
+    exec.parallelFor(LambdaMap, n);
 }
 
 

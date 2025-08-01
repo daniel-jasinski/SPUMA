@@ -74,7 +74,7 @@ void Foam::lduAddressing::calcLosort() const
     }
 
     // Gather the neighbours into the losort array //why fill whith -1? it means that that face has no neighbour
-    losortPtr_ = std::make_unique<labelList>(nbr.size(), -1,poolSwitch(1)); //to allocate on pool
+    losortPtr_ = std::make_unique<labelList>(nbr.size(), -1, poolSwitch(1));
     auto& lst = *losortPtr_;
 
     // Set counter for losort
@@ -104,7 +104,7 @@ void Foam::lduAddressing::calcOwnerStart() const
 
     const labelList& own = lowerAddr();
 
-    ownerStartPtr_ = std::make_unique<labelList>(size() + 1, own.size(),poolSwitch(1)); //to allocate on pool
+    ownerStartPtr_ = std::make_unique<labelList>(size() + 1, own.size(), poolSwitch(1));
     auto& ownStart = *ownerStartPtr_;
 
     // Set up first lookup by hand
@@ -139,7 +139,7 @@ void Foam::lduAddressing::calcLosortStart() const
     }
 
 
-    losortStartPtr_ = std::make_unique<labelList>(size() + 1, Foam::zero{},poolSwitch(1)); //to allocate on pool
+    losortStartPtr_ = std::make_unique<labelList>(size() + 1, Foam::zero{}, poolSwitch(1));
     auto& lsrtStart = *losortStartPtr_;
 
     const labelList& nbr = upperAddr();
@@ -181,7 +181,7 @@ void Foam::lduAddressing::calcLoCSR() const
             << abort(FatalError);
     }
 
-    lowerCSRAddrPtr_ = std::make_unique<labelList>(lowerAddr().size());
+    lowerCSRAddrPtr_ = std::make_unique<labelList>(lowerAddr().size(), poolSwitch(1));
     map(lowerAddr(), *lowerCSRAddrPtr_);
 }
 
