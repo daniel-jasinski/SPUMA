@@ -106,11 +106,11 @@ public:
 
         //- Construct given MatrixSpace of the same rank
         template<class Cmpt2>
-        inline Tensor(const MatrixSpace<Tensor<Cmpt2>, Cmpt2, 3, 3>& vs);
+        FOAM_DEVICE inline Tensor(const MatrixSpace<Tensor<Cmpt2>, Cmpt2, 3, 3>& vs);
 
         //- Construct given VectorSpace of the same rank
         template<class Cmpt2>
-        inline Tensor(const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>& vs);
+        FOAM_DEVICE inline Tensor(const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>& vs);
 
         //- Construct given SphericalTensor
         inline Tensor(const SphericalTensor<Cmpt>& st);

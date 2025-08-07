@@ -73,17 +73,17 @@ constexpr floatScalar floatScalarROOTVSMALL = 1.0e-18;
 #define ScalarRead readFloat
 
 
-inline Scalar mag(const Scalar s)
+FOAM_DEVICE inline Scalar mag(const Scalar s)
 {
     return ::fabsf(s);
 }
 
-inline Scalar hypot(const Scalar x, const Scalar y)
+FOAM_DEVICE inline Scalar hypot(const Scalar x, const Scalar y)
 {
     return ::hypotf(x, y);
 }
 
-inline Scalar atan2(const Scalar y, const Scalar x)
+FOAM_DEVICE inline Scalar atan2(const Scalar y, const Scalar x)
 {
     return ::atan2f(y, x);
 }

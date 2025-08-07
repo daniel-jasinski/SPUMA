@@ -40,7 +40,7 @@ inline Foam::SymmTensor<Cmpt>::SymmTensor(const Foam::zero)
 
 template<class Cmpt>
 template<class Cmpt2>
-inline Foam::SymmTensor<Cmpt>::SymmTensor
+FOAM_DEVICE inline Foam::SymmTensor<Cmpt>::SymmTensor
 (
     const VectorSpace<SymmTensor<Cmpt2>, Cmpt2, 6>& vs
 )

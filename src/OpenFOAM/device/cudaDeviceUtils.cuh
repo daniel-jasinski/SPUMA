@@ -44,6 +44,16 @@ SourceFiles
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 __device__ __forceinline__
+float atomicMin(float *address, float val)
+{
+    float old;
+    old = !signbit(val) ? __int_as_float(atomicMin((int*)address, __float_as_int(val))) :
+        __uint_as_float(atomicMax((unsigned int*)address, __float_as_uint(val)));
+
+    return old;
+}
+
+__device__ __forceinline__
 double atomicMin(double *address, double val)
 {
     unsigned long long ret = __double_as_longlong(*address);
@@ -68,6 +78,16 @@ double atomicMin(double *address, double val)
     }
 
     return __longlong_as_double(ret);
+}
+
+__device__ __forceinline__
+float atomicMax(float *address, float val)
+{
+    float old;
+    old = !signbit(val) ? __int_as_float(atomicMax((int*)address, __float_as_int(val))) :
+        __uint_as_float(atomicMin((unsigned int*)address, __float_as_uint(val)));
+
+    return old;
 }
 
 __device__ __forceinline__

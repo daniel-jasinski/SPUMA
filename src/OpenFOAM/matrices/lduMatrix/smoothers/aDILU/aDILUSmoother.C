@@ -66,8 +66,16 @@ Foam::aDILUSmoother::aDILUSmoother
     ),
     rD_(matrix_.diag().size())
 {
-    const scalarField& diag = matrix_.diag();
-    rD_ = diag;
+    const label nCells = rD_.size();
+    const scalar* const __restrict__ diagPtr = matrix_.diag().cbegin();
+    solveScalar* __restrict__ rDPtr = rD_.begin();
+
+    foamExecutor exec;
+    auto Lambda1 = [=](label celli)
+    {
+        rDPtr[celli] = diagPtr[celli];
+    };
+    exec.parallelFor(Lambda1, nCells);
 
     aDILUPreconditioner::calcReciprocalD(rD_, matrix_);
 }
@@ -119,8 +127,8 @@ void Foam::aDILUSmoother::smooth
         };
         exec.parallelFor(Lambda1, nCells);
 
-        tmp<scalarField> rATmp = tmp<scalarField>::New(rA);
-        scalarField& rAtmp = rATmp.ref();
+        tmp<solveScalarField> rATmp = tmp<solveScalarField>::New(rA);
+        solveScalarField& rAtmp = rATmp.ref();
         solveScalar* __restrict__ rAtmpPtr = rAtmp.begin();
 
         auto Lambda2 = [=](label face)

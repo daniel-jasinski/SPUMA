@@ -54,8 +54,16 @@ Foam::aDILUPreconditioner::aDILUPreconditioner
     lduMatrix::preconditioner(sol),
     rD_(sol.matrix().diag().size())
 {
-    const scalarField& diag = sol.matrix().diag();
-    rD_ = diag;
+    const label nCells = rD_.size();
+    const scalar* const __restrict__ diagPtr = sol.matrix().diag().cbegin();
+    solveScalar* __restrict__ rDPtr = rD_.begin();
+
+    foamExecutor exec;
+    auto Lambda1 = [=](label celli)
+    {
+        rDPtr[celli] = diagPtr[celli];
+    };
+    exec.parallelFor(Lambda1, nCells);
 
     calcReciprocalD(rD_, sol.matrix());
 }
@@ -71,8 +79,8 @@ void Foam::aDILUPreconditioner::calcReciprocalD
 {
     solveScalar* __restrict__ rDPtr = rD.begin();
 
-    tmp<scalarField> rDTmp = tmp<scalarField>::New(rD);
-    scalarField& rDtmp = rDTmp.ref();
+    tmp<solveScalarField> rDTmp = tmp<solveScalarField>::New(rD);
+    solveScalarField& rDtmp = rDTmp.ref();
     solveScalar* __restrict__ rDtmpPtr = rDtmp.begin();
 
     const label* const __restrict__ uPtr = matrix.lduAddr().upperAddr().cbegin();
@@ -136,8 +144,8 @@ void Foam::aDILUPreconditioner::precondition
     };
     exec.parallelFor(Lambda1, nCells);
 
-    tmp<scalarField> wATmp = tmp<scalarField>::New(wA);
-    scalarField& wAtmp = wATmp.ref();
+    tmp<solveScalarField> wATmp = tmp<solveScalarField>::New(wA);
+    solveScalarField& wAtmp = wATmp.ref();
     solveScalar* __restrict__ wAtmpPtr = wAtmp.begin();
 
     auto Lambda2 = [=](label face)
@@ -197,8 +205,8 @@ void Foam::aDILUPreconditioner::preconditionT
     };
     exec.parallelFor(Lambda1, nCells);
 
-    tmp<scalarField> wTTmp = tmp<scalarField>::New(wT);
-    scalarField& wTtmp = wTTmp.ref();
+    tmp<solveScalarField> wTTmp = tmp<solveScalarField>::New(wT);
+    solveScalarField& wTtmp = wTTmp.ref();
     solveScalar* __restrict__ wTtmpPtr = wTtmp.begin();
 
     auto Lambda2 = [=](label face)

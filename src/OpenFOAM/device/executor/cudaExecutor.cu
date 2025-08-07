@@ -111,7 +111,7 @@ void reductionLambdaSumKernel
 
     __syncthreads();
 
-    if constexpr(std::is_same<resultType,double>::value)
+    if constexpr(std::is_same<resultType,double>::value || std::is_same<resultType,float>::value)
     {
         if(tid == 0)
         {

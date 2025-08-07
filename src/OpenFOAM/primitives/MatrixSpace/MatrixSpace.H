@@ -214,7 +214,7 @@ public:
 
         //- Construct as copy of a VectorSpace with the same size
         template<class Form2, class Cmpt2>
-        inline explicit MatrixSpace
+        FOAM_DEVICE inline explicit MatrixSpace
         (
             const VectorSpace<Form2, Cmpt2, Mrows*Ncols>&
         );
