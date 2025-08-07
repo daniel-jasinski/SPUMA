@@ -31,6 +31,8 @@ License
 #include "diagonalPreconditioner.H"
 #include "l1diagonalPreconditioner.H"
 #include "addToRunTimeSelectionTable.H"
+#include "PrecisionAdaptor.H"
+
 
 namespace Foam
 {
@@ -49,10 +51,10 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
     const direction cmpt
 )
 {    
-    const solveScalar* const __restrict__ lowerPtr =
+    const scalar* const __restrict__ lowerPtr =
         matrix_.lower().cbegin();
 
-    const solveScalar* const __restrict__ upperPtr =
+    const scalar* const __restrict__ upperPtr =
         matrix_.upper().cbegin();
 
     const label* const __restrict__ lPtr =
@@ -63,8 +65,8 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
 
     scalar nFaces = matrix_.upper().size();
 
-    solveScalarField lambda(matrix_.diag());
-    solveScalar* __restrict__ lambdaPtr = lambda.begin();
+    scalarField lambda(matrix_.diag());
+    scalar* __restrict__ lambdaPtr = lambda.begin();
 
    
     foamExecutor exec;
@@ -100,10 +102,10 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
 )
 {
     
-    const solveScalar* const __restrict__ lowerPtr =
+    const scalar* const __restrict__ lowerPtr =
         matrix_.lower().cbegin();
 
-    const solveScalar* const __restrict__ upperPtr =
+    const scalar* const __restrict__ upperPtr =
         matrix_.upper().cbegin();
 
     const label* const __restrict__ lPtr =
@@ -117,8 +119,11 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
     const solveScalar* const __restrict__ rDPtr = 
         preconditioner_.getReciprocalD().cbegin();
 
-    solveScalarField lambda(preconditioner_.getReciprocalD()*matrix_.diag());
-    solveScalar* __restrict__ lambdaPtr = lambda.begin();
+    scalarField lambda
+        (
+            ConstPrecisionAdaptor<scalar,solveScalar>(preconditioner_.getReciprocalD())()*matrix_.diag()
+        );
+    scalar* __restrict__ lambdaPtr = lambda.begin();
 
    
     foamExecutor exec;

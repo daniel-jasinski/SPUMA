@@ -33,6 +33,7 @@ License
 #include "diagonalPreconditioner.H"
 #include "l1diagonalPreconditioner.H"
 #include "addToRunTimeSelectionTable.H"
+#include "PrecisionAdaptor.H"
 
 namespace Foam
 {
@@ -119,7 +120,7 @@ Foam::scalar Foam::powerMethod::maxEigenvalue
 {
     // --- Compute D^-1*A
     lduMatrix Pminus1Amat(matrix_); 
-    Pminus1Amat *= preconditioner_.getReciprocalD();
+    Pminus1Amat *= ConstPrecisionAdaptor<scalar,solveScalar>(preconditioner_.getReciprocalD())();
 
     return powerMethod::maxEigenvalue
     (

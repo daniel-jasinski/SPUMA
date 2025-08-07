@@ -60,9 +60,9 @@ void Foam::l1diagonalPreconditioner::calcReciprocalD
     const label* const __restrict__ lPtr =
         matrix.lduAddr().lowerAddr().cbegin();
     
-    const solveScalar* const __restrict__ upperPtr =
+    const scalar* const __restrict__ upperPtr =
         matrix.upper().cbegin();
-    const solveScalar* const __restrict__ lowerPtr =
+    const scalar* const __restrict__ lowerPtr =
         matrix.lower().cbegin();
     
     foamExecutor exec;
@@ -85,7 +85,10 @@ void Foam::l1diagonalPreconditioner::calcReciprocalD
 
     exec.parallelFor(LambdaOffDiag,nFaces);
 
-    rD = sign(matrix.diag())/rD;
+    auto Lambda = [=](label celli){
+        rDPtr[celli] = sign(DPtr[celli])/rDPtr[celli];
+    };
+    exec.parallelFor(Lambda,nCells);
 }
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //

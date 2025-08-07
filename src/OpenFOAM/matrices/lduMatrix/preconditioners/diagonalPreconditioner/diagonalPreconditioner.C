@@ -52,7 +52,7 @@ void Foam::diagonalPreconditioner::calcReciprocalD
 )
 {
     solveScalar* __restrict__ rDPtr = rD.begin();
-    const solveScalar* __restrict__ DPtr = matrix.diag().begin();
+    const scalar* __restrict__ DPtr = matrix.diag().begin();
 
     const label nCells = rD.size();
 
