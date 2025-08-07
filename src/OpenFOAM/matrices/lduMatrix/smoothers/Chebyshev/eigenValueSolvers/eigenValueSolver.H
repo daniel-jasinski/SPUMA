@@ -24,24 +24,25 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::powerMethod
+    Foam::eigenValueSolver
 
 Group
     grpEigenValueSolvers
 
 Description
-    Computation of the maximum eigenvalue using the Power method.
+    base class of eigenvalue Solvers
 
 SourceFiles
-    powerMethod.C
+    eigenValueSolver.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef powerMethod_H
-#define powerMethod_H
+#ifndef eigenValueSolver_H
+#define eigenValueSolver_H
 
 #include "lduMatrix.H"
-#include "eigenValueSolver.H"
+#include "autoPtr.H"
+#include "runTimeSelectionTables.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -52,21 +53,39 @@ namespace Foam
                            Class powerMethod Declaration
 \*---------------------------------------------------------------------------*/
 
-class powerMethod
-: 
-    public eigenValueSolver
+class eigenValueSolver
 {
 
 public:
 
     //- Runtime type information
-    TypeName("powerMethod");
+    TypeName("eigenValueSolver");
+
+
+    declareRunTimeSelectionTable
+    (
+        autoPtr,
+        eigenValueSolver,
+        word,
+        (),
+        ()
+    );
 
 
     // Constructors
 
         //- default constructor
-        powerMethod() = default;
+        eigenValueSolver() = default;
+
+    // Destructor
+        virtual ~eigenValueSolver(){};
+
+    // selector
+
+    static autoPtr<eigenValueSolver> New
+    (
+        const word& type
+    );
 
     // Member Functions
 
@@ -77,7 +96,7 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        );
+        ) = 0;
         
         //- get maximum eigenvalue of a matrix preconditioned
         //  with a diagonal preconditioner
@@ -88,7 +107,7 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        );
+        ) = 0;
 };
 
 

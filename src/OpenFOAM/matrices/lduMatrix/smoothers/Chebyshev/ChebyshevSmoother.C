@@ -31,6 +31,7 @@ License
 #include <stdlib.h>
 #include "GershgorinTheorem.H"
 #include "powerMethod.H"
+#include "fixedEigenValue.H"
 #include "ChebyshevSmoother.H"
 #include "PrecisionAdaptor.H"
 
@@ -99,30 +100,58 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
 {
     readControls();
 
-    if(pDegree_ > a_.size() && lambdaMode_ == 3)
+
+    // select rescaling values
+    if (normalization_ == "userDefined")
     {
-        FatalErrorInFunction
-            <<"poly degree greater of max supported in lambdaMode: "
-            << lambdaMode_ <<
-            ", max poly degree supported is: "<<a_.size()
-            <<abort(FatalError);
-    };
+        lambdaMin_ = controlDict_.getOrDefault<scalar>("lambdaMin", 1./8);
+        if( lambdaMin_ < 0 || lambdaMin_ > lambdaMax_ )
+        {
+            FatalErrorInFunction
+                <<"invalid value for lambdaMin, it must be 0<lambdaMin<1"
+                <<abort(FatalError);
+        }
+
+    }
+    else if (normalization_ == "optimalVCycle")
+    {
+        if(pDegree_ > a_.size())
+        {
+            FatalErrorInFunction
+                <<"poly degree greater of max supported of : "<<a_.size()
+                <<abort(FatalError);
+        };
+        lambdaMin_ = a_[pDegree_ -1];
+    }
+    else
+    {
+        FatalErrorInFunction<<"invalid value for LambdaMode"<<abort(FatalError);
+    }
+
 
     // select preconditioner
     if(preconditionerName_ == "diagonal")
     {
         preconditioner_ = autoPtr<diagonalPreconditioner>::New(matrix,solverControls);
+        // select spectral radius estimator
+        spRadiusEstimator_ = eigenValueSolver::New
+        (
+            controlDict_.getOrDefault<word>("spectralRadius", "Gershgorin")
+        );
 
     }
     else if (preconditionerName_ == "l1diagonal")
     {
         preconditioner_ = autoPtr<l1diagonalPreconditioner>::New(matrix,solverControls);
+        // select spectral radius estimator
+        spRadiusEstimator_ = autoPtr<fixedEigenValue>::New(1.0);
     }
     else 
     {
         FatalErrorInFunction<<"precondtioner type: " <<
             preconditionerName_ << " not supported"<<abort(FatalError);
     }
+
 }
 
 
@@ -131,9 +160,7 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
 void Foam::ChebyshevSmoother::readControls()
 {
     pDegree_ = controlDict_.getOrDefault<label>("pDegree", 1);
-    lambdaMode_ = controlDict_.get<label>("lambdaMode");
-    lambdaMax_ = controlDict_.getOrDefault<scalar>("lambdaMax", 2.0);
-    lambdaMin_ = controlDict_.getOrDefault<scalar>("lambdaMin", -1);
+    normalization_ = controlDict_.get<word>("normalization");
     preconditionerName_ = controlDict_.get<word>("preconditionerName");
     log_ = controlDict_.getOrDefault<label>("log", 0);
 }
@@ -163,100 +190,30 @@ void Foam::ChebyshevSmoother::smooth_
     solveScalarField wA(nCells);
     solveScalar* __restrict__ wAPtr = wA.begin();
 
-    // lambda max and lambda min estimate
-    scalar lambdaMax;
-    scalar lambdaMin;
-    // spectral radius
-    scalar spRadius = 1.0;
 
-    //TODO: clean up the Mode selection and spectral radius estimate
-    if (lambdaMode_ == 0)
-    {
-        if ((log_ >= 2) || (lduMatrix::debug >= 2))
-        {
-            Info << "   Using the powerMethod to estimate the largest eigenvalue" << nl;
-        }
+    const scalar lambdaMax = lambdaMax_;
+    const scalar lambdaMin = lambdaMin_;
 
-        // power method (experimental)
-        lambdaMax = powerMethod::maxEigenvalue
-	    (
-            matrix_, 
-            interfaceBouCoeffs_, 
-            interfaces_, 
-            cmpt
-	    );
-    }
-    else if (lambdaMode_ == 1)
-    {
-        if ((log_ >= 2) || (lduMatrix::debug >= 2))
-        {   
-            Info << "   Using the GershgorinTheorem to estimate the largest eigenvalue" << nl;
-        }
-
-        // Gershgorin upper bound
-        lambdaMax = GershgorinTheorem::maxEigenvalue
+    const scalar spRadius = const_cast<eigenValueSolver&>(spRadiusEstimator_()).maxEigenvalue
         (
             matrix_,
+            preconditioner_(),
             interfaceBouCoeffs_,
             interfaces_,
             cmpt
         );
-    }
-    else if (lambdaMode_ == 2)
-    {
-        if ((log_ >= 2) || (lduMatrix::debug >= 2))
-        {
-            Info << "   User-defined values for the largest and smallest eigenvalue" << nl;
-        }
-
-        // User-defined upper-bound and lower-bound
-        lambdaMax = lambdaMax_;
-	    lambdaMin = lambdaMin_;
-    }
-    else if (lambdaMode_ == 3)
-    {
-        if ((log_ >= 2) || (lduMatrix::debug >= 2))
-        {
-            Info << "Use optimal values for MG projection error" << nl;
-        }
-        lambdaMax = 1.0;
-        lambdaMin = a_[pDegree_ -1];
-        if (preconditionerName_ != "l1diagonal")
-        {
-            spRadius = GershgorinTheorem::maxEigenvalue
-            (
-                matrix_,
-                interfaceBouCoeffs_,
-                interfaces_,
-                cmpt
-            );
-        }
-    }
-    else
-    {
-        FatalErrorInFunction<<"invalid value for LambdaMode"<<abort(FatalError);
-    }
-
-
-    // Set the minimum eigenvalue to 1/8 of the maximum eigenvalue 
-    // (if not set by the user)
-    if (lambdaMin_ == -1 && lambdaMode_ != 3)
-    {
-        lambdaMin = (1./8.) * lambdaMax;
-    }
 
     if ((log_ >= 2) || (lduMatrix::debug >= 2))
     {
         Info << "lambdaMin: " << lambdaMin << nl;
 	    Info << "lambdaMax: " << lambdaMax << nl;
+        Info << "spRadius: " << spRadius << nl;
     }
 
     foamExecutor exec;
 
     scalar rho0 = (lambdaMax - lambdaMin) / (lambdaMax + lambdaMin);
-    scalar alpha1 = 2 * rho0 / (lambdaMax - lambdaMin);
-
-    if (lambdaMode_ == 3) alpha1/=spRadius;
+    const scalar alpha1 = 2 * rho0 / (lambdaMax - lambdaMin) /spRadius;
 
     // --- Calculate A.psi
     matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
@@ -294,9 +251,7 @@ void Foam::ChebyshevSmoother::smooth_
     {
         scalar rhon = 1. / (rhok - rhonminus1);
         scalar alpha0n = rhon * rhonminus1;
-        scalar alpha1n = 4.* rhon / (lambdaMax - lambdaMin);
-
-        if (lambdaMode_ == 3) alpha1n/=spRadius;
+        scalar alpha1n = 4.* rhon / (lambdaMax - lambdaMin)/spRadius;
 
         // --- Calculate A.psi
         matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);

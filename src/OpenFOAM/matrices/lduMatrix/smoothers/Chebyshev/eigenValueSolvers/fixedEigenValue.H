@@ -24,7 +24,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::powerMethod
+    Foam::fixedEigenValue
 
 Group
     grpEigenValueSolvers
@@ -33,12 +33,12 @@ Description
     Computation of the maximum eigenvalue using the Power method.
 
 SourceFiles
-    powerMethod.C
+    fixedEigenValue.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef powerMethod_H
-#define powerMethod_H
+#ifndef fixedEigenValue_H
+#define fixedEigenValue_H
 
 #include "lduMatrix.H"
 #include "eigenValueSolver.H"
@@ -49,24 +49,28 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class powerMethod Declaration
+                           Class fixedEigenValue Declaration
 \*---------------------------------------------------------------------------*/
 
-class powerMethod
+class fixedEigenValue
 : 
     public eigenValueSolver
 {
+private:
+    scalar value_;
 
 public:
 
     //- Runtime type information
-    TypeName("powerMethod");
+    TypeName("fixedEigenValue");
 
 
     // Constructors
 
-        //- default constructor
-        powerMethod() = default;
+        //- constructor
+        fixedEigenValue(const scalar value)
+        : value_(value)
+        {};
 
     // Member Functions
 
@@ -77,7 +81,7 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        );
+        ){ return value_;};
         
         //- get maximum eigenvalue of a matrix preconditioned
         //  with a diagonal preconditioner
@@ -88,7 +92,7 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        );
+        ){ return value_;};
 };
 
 

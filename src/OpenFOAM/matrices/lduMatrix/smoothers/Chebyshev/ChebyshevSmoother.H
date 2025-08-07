@@ -33,7 +33,11 @@ Group
 
 Description
     A lduMatrix::smoother implementing the Chebyshev smoother, a preconditioner 
-    with a Chebyshev polynomial for symmetric positive definite matrices. 
+    with a Chebyshev polynomial for symmetric positive definite matrices.
+    The implementation take form a 3 therm recurrence as stated in 
+    \verbatim
+        https://www.dealii.org/current/doxygen/deal.II/classPreconditionChebyshev.html
+    \verbatim
     This preconditioner is based on an iteration of an inner preconditioner (Jacobi or L1-jacobi)
     with coefficients that are adapted to optimally cover an eigenvalue range 
     between the largest eigenvalue λmax down to a given lower eigenvalue λmin 
@@ -49,10 +53,10 @@ Usage:
     \table
         Property              | Description               | Required    | Default value
         pDegree               | polynomial degree         | no          | 1
-        lambdaMode            | polynomial scaling bounds | yes         |
+        rescaling             | polynomial scaling bounds | yes         | userDefined
+        spRadius              | spectral Radius estimate  | no          | Ghershgorin theorem
         preconditionerName    | preconditioner Type       | yes         |
-        lambdaMax             | max eigen value           | optional    | 2.0
-        lambdaMin             | min eigen value           | optional    | -1
+        lambdaMin             | lower rescaling value     | optional    | 1./8
         log                   | log verbosity value       | optional    | 0
     \endtable
 
@@ -82,31 +86,33 @@ class ChebyshevSmoother
 {
 private:
 
-    //- Chebyshev polynomial degree
-    label pDegree_;
-
-    //- Method to estimate the maximum eigenValue
-    // 0: Power method
-    // 1: Estimate based on the Gershgorin theorem
-    // 2: User-defined value
-    // 3: optimal mode for V-cycle GAMG projection error
-    label lambdaMode_;
-
-    //- (User-defined) maximum eigenValue
-    scalar lambdaMax_;
-
-    //- (User-defined) minimum eigenValue
-    scalar lambdaMin_;
 
     //- list of optimal values for V-cycle error bound
     static scalarList a_;
 
+    //- Chebyshev polynomial degree
+    label pDegree_;
+
+    //- Method used for rescaling
+    // userDefined: User-defined value
+    // optimalVCycle: optimal mode for V-cycle GAMG projection error
+    word normalization_;
+
+    //- (User-defined) maximum eigenValue
+    const scalar lambdaMax_ = 1.0;
+
+    //- (User-defined) minimum eigenValue
+    scalar lambdaMin_;
+
     //- preconditioner name
     word preconditionerName_;
-
+    
     //- ptr of preconditioner
     autoPtr<lduMatrix::preconditioner> preconditioner_;
-    
+
+    //- spectral radius estimator
+    autoPtr<eigenValueSolver> spRadiusEstimator_;
+
     //- Log level verbosity
     label log_;
 

@@ -41,6 +41,7 @@ SourceFiles
 #define gershgorinTheorem_H
 
 #include "lduMatrix.H"
+#include "eigenValueSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -52,27 +53,42 @@ namespace Foam
 \*---------------------------------------------------------------------------*/
 
 class GershgorinTheorem
+:
+    public eigenValueSolver
 {
 
 public:
 
     //- Runtime type information
-    TypeName("GershgorinTheorem");
+    TypeName("Gershgorin");
 
     // Constructors
 
         //- default constructor
         GershgorinTheorem() = default;
 
-    // Member Functions
+    // static Member Functions
 
-	static scalar maxEigenvalue
+        //- get upper bound to max eigenvalue of a matrix
+        virtual scalar maxEigenvalue
         (
             const lduMatrix& matrix_,
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
         );
+
+        //- get upper bound to max eigenvalue of a matrix 
+        // preconditioned with a diagonal preconditioner
+        virtual scalar maxEigenvalue
+        (
+            const lduMatrix& matrix_,
+            const lduMatrix::preconditioner& preconditioner_,
+            const FieldField<Field, scalar>& interfaceBouCoeffs_,
+            const lduInterfaceFieldPtrsList& interfaces_,
+            const direction cmpt
+        );
+
 };
 
 

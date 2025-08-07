@@ -28,6 +28,16 @@ License
 #include <time.h>
 #include <stdlib.h>
 #include "GershgorinTheorem.H"
+#include "diagonalPreconditioner.H"
+#include "l1diagonalPreconditioner.H"
+#include "addToRunTimeSelectionTable.H"
+
+namespace Foam
+{
+    defineTypeNameAndDebug(GershgorinTheorem, 0);
+    addToRunTimeSelectionTable(eigenValueSolver,GershgorinTheorem,word);
+
+}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -38,13 +48,11 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
     const lduInterfaceFieldPtrsList& interfaces_,
     const direction cmpt
 )
-{
-    const scalar* const __restrict__ DPtr = matrix_.diag().cbegin();
-    
-    const scalar* const __restrict__ lowerPtr =
+{    
+    const solveScalar* const __restrict__ lowerPtr =
         matrix_.lower().cbegin();
 
-    const scalar* const __restrict__ upperPtr =
+    const solveScalar* const __restrict__ upperPtr =
         matrix_.upper().cbegin();
 
     const label* const __restrict__ lPtr =
@@ -53,24 +61,69 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
     const label* const __restrict__ uPtr =
         matrix_.lduAddr().upperAddr().cbegin();
 
-    scalar nCells = matrix_.diag().size();
     scalar nFaces = matrix_.upper().size();
 
-    scalarField lambda(nCells, 1.0);
-    scalar* __restrict__ lambdaPtr = lambda.begin();
+    solveScalarField lambda(matrix_.diag());
+    solveScalar* __restrict__ lambdaPtr = lambda.begin();
 
-    scalarField rD(nCells);
-    scalar* __restrict__ rDPtr = rD.begin();
    
     foamExecutor exec;
 
-    auto LambdarD = [=](label celli)
+    auto Lambda = [=](label facei)
     {
-        rDPtr[celli] = 1.0 / DPtr[celli];
-    };
-    exec.parallelFor(LambdarD, nCells);
+        foamAtomic::AtomicAdd
+        (
+            lambdaPtr[lPtr[facei]], 
+            mag(upperPtr[facei])
+        );
 
-    auto LambdaL = [=](label facei)
+        foamAtomic::AtomicAdd
+        (
+            lambdaPtr[uPtr[facei]],
+            mag(lowerPtr[facei])
+        );
+    };
+    exec.parallelFor(Lambda, nFaces);
+
+    const scalar lmax = max(lambda);
+
+    return lmax;
+}
+
+Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
+(
+    const lduMatrix& matrix_,
+    const lduMatrix::preconditioner& preconditioner_,
+    const FieldField<Field, scalar>& interfaceBouCoeffs_,
+    const lduInterfaceFieldPtrsList& interfaces_,
+    const direction cmpt
+)
+{
+    
+    const solveScalar* const __restrict__ lowerPtr =
+        matrix_.lower().cbegin();
+
+    const solveScalar* const __restrict__ upperPtr =
+        matrix_.upper().cbegin();
+
+    const label* const __restrict__ lPtr =
+        matrix_.lduAddr().lowerAddr().cbegin();
+
+    const label* const __restrict__ uPtr =
+        matrix_.lduAddr().upperAddr().cbegin();
+
+    label nFaces = matrix_.upper().size();
+
+    const solveScalar* const __restrict__ rDPtr = 
+        preconditioner_.getReciprocalD().cbegin();
+
+    solveScalarField lambda(preconditioner_.getReciprocalD()*matrix_.diag());
+    solveScalar* __restrict__ lambdaPtr = lambda.begin();
+
+   
+    foamExecutor exec;
+
+    auto Lambda = [=](label facei)
     {
         foamAtomic::AtomicAdd
         (
@@ -84,9 +137,9 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
             mag(rDPtr[uPtr[facei]]*lowerPtr[facei])
         );
     };
-    exec.parallelFor(LambdaL, nFaces);
+    exec.parallelFor(Lambda, nFaces);
 
-    scalar lmax = 1. + max(lambda);
+    const scalar lmax = max(lambda);
 
     return lmax;
 }

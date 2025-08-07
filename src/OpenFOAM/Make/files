@@ -468,6 +468,8 @@ $(lduMatrix)/smoothers/DILU/DILUSmoother.C
 $(lduMatrix)/smoothers/aDILU/aDILUSmoother.C
 $(lduMatrix)/smoothers/DILUGaussSeidel/DILUGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/Richardson/RichardsonSmoother.C
+$(lduMatrix)/smoothers/Chebyshev/eigenValueSolvers/eigenValueSolver.C
+$(lduMatrix)/smoothers/Chebyshev/eigenValueSolvers/fixedEigenValue.C
 $(lduMatrix)/smoothers/Chebyshev/eigenValueSolvers/powerMethod.C
 $(lduMatrix)/smoothers/Chebyshev/eigenValueSolvers/GershgorinTheorem.C
 $(lduMatrix)/smoothers/Chebyshev/ChebyshevSmoother.C

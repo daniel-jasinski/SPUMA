@@ -24,7 +24,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::powerMethod
+    Foam::fixedEigenValue
 
 Group
     grpEigenValueSolvers
@@ -33,66 +33,21 @@ Description
     Computation of the maximum eigenvalue using the Power method.
 
 SourceFiles
-    powerMethod.C
+    fixedEigenValue.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef powerMethod_H
-#define powerMethod_H
+#ifndef fixedEigenValue_C
+#define fixedEigenValue_C
 
 #include "lduMatrix.H"
-#include "eigenValueSolver.H"
+#include "fixedEigenValue.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-
-/*---------------------------------------------------------------------------*\
-                           Class powerMethod Declaration
-\*---------------------------------------------------------------------------*/
-
-class powerMethod
-: 
-    public eigenValueSolver
-{
-
-public:
-
-    //- Runtime type information
-    TypeName("powerMethod");
-
-
-    // Constructors
-
-        //- default constructor
-        powerMethod() = default;
-
-    // Member Functions
-
-        //- get maximum eigenvalue of a matrix
-        virtual scalar maxEigenvalue
-        (
-            const lduMatrix& matrix_,
-            const FieldField<Field, scalar>& interfaceBouCoeffs_,
-            const lduInterfaceFieldPtrsList& interfaces_,
-            const direction cmpt
-        );
-        
-        //- get maximum eigenvalue of a matrix preconditioned
-        //  with a diagonal preconditioner
-        virtual scalar maxEigenvalue
-        (
-            const lduMatrix& matrix_,
-            const lduMatrix::preconditioner& preconditioner_,
-            const FieldField<Field, scalar>& interfaceBouCoeffs_,
-            const lduInterfaceFieldPtrsList& interfaces_,
-            const direction cmpt
-        );
-};
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+    defineTypeNameAndDebug(fixedEigenValue, 0);
 
 } // End namespace Foam
 
