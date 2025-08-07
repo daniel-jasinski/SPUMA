@@ -474,6 +474,7 @@ $(lduMatrix)/smoothers/Chebyshev/ChebyshevSmoother.C
 
 $(lduMatrix)/preconditioners/noPreconditioner/noPreconditioner.C
 $(lduMatrix)/preconditioners/diagonalPreconditioner/diagonalPreconditioner.C
+$(lduMatrix)/preconditioners/l1diagonalPreconditioner/l1diagonalPreconditioner.C
 $(lduMatrix)/preconditioners/DICPreconditioner/DICPreconditioner.C
 $(lduMatrix)/preconditioners/aDICPreconditioner/aDICPreconditioner.C
 $(lduMatrix)/preconditioners/FDICPreconditioner/FDICPreconditioner.C

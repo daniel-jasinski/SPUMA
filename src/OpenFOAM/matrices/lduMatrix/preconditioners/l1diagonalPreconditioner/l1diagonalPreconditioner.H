@@ -73,6 +73,7 @@ class l1diagonalPreconditioner
         //- No copy assignment
         void operator=(const l1diagonalPreconditioner&) = delete;
 
+        void calcReciprocalD(solveScalarField&, const lduMatrix&);
 
 public:
 
@@ -120,6 +121,12 @@ public:
         {
             return precondition(wT, rT, cmpt);
         }
+
+        virtual const solveScalarField& getReciprocalD() const 
+        {
+            return rD;
+        }
+
 };
 
 

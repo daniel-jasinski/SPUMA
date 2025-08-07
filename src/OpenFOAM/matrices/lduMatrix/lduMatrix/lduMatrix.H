@@ -605,6 +605,12 @@ public:
             {
                 NotImplemented;
             }
+            
+            virtual const solveScalarField& getReciprocalD() const
+            {
+                NotImplemented;
+                return solveScalarField::null();
+            }
 
             //- Signal end of solver
             virtual void setFinished(const solverPerformance& perf) const

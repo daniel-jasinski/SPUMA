@@ -43,64 +43,13 @@ namespace Foam
         addl1diagonalPreconditionerAsymMatrixConstructorToTable_;
 }
 
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
-
-Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
+void Foam::l1diagonalPreconditioner::calcReciprocalD
 (
-    const lduMatrix::solver& sol,
-    const dictionary&
+    solveScalarField& rD,
+    const lduMatrix& matrix
 )
-:
-    lduMatrix::preconditioner(sol),
-    rD(sol.matrix().diag().size())
-{
-    solveScalar* __restrict__ rDPtr = rD.begin();
-    const scalar* __restrict__ DPtr = solver_.matrix().diag().begin();
-
-
-    const label* const __restrict__ uPtr =
-        solver_.matrix().lduAddr().upperAddr().cbegin();
-    const label* const __restrict__ lPtr =
-        solver_.matrix().lduAddr().lowerAddr().cbegin();
-    
-    const scalar* const __restrict__ upperPtr =
-        solver_.matrix().upper().cbegin();
-    const scalar* const __restrict__ lowerPtr =
-        solver_.matrix().lower().cbegin();
-    
-    const label nCells = rD.size();
-
-    foamExecutor exec;
-
-    auto LambdarD = [=](label celli)
-    {
-        rDPtr[celli] = mag(DPtr[celli]);
-    };
-    exec.parallelFor(LambdarD, nCells);
-    
-    const label nFaces = solver_.matrix().lduAddr().lowerAddr().size();
-    auto LambdaOffDiag = [=](label face)
-    {
-        foamAtomic::AtomicAdd(rDPtr[uPtr[face]], mag(lowerPtr[face]));
-        foamAtomic::AtomicAdd(rDPtr[lPtr[face]], mag(upperPtr[face]));
-    };
-
-    exec.parallelFor(LambdaOffDiag,nFaces);
-
-    rD = sign(solver_.matrix().diag())/rD;
-
-}
-
-
-Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
-(
-    const lduMatrix& matrix,
-    const dictionary&
-)
-:
-    lduMatrix::preconditioner(),
-    rD(matrix.diag().size())
 {
     solveScalar* __restrict__ rDPtr = rD.begin();
     const scalar* __restrict__ DPtr = matrix.diag().cbegin();
@@ -111,9 +60,9 @@ Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
     const label* const __restrict__ lPtr =
         matrix.lduAddr().lowerAddr().cbegin();
     
-    const scalar* const __restrict__ upperPtr =
+    const solveScalar* const __restrict__ upperPtr =
         matrix.upper().cbegin();
-    const scalar* const __restrict__ lowerPtr =
+    const solveScalar* const __restrict__ lowerPtr =
         matrix.lower().cbegin();
     
     foamExecutor exec;
@@ -137,7 +86,33 @@ Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
     exec.parallelFor(LambdaOffDiag,nFaces);
 
     rD = sign(matrix.diag())/rD;
-    
+}
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
+(
+    const lduMatrix::solver& sol,
+    const dictionary&
+)
+:
+    lduMatrix::preconditioner(sol),
+    rD(sol.matrix().diag().size())
+{
+    this->calcReciprocalD(rD,sol.matrix());
+}
+
+
+Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
+(
+    const lduMatrix& matrix,
+    const dictionary&
+)
+:
+    lduMatrix::preconditioner(),
+    rD(matrix.diag().size())
+{
+    this->calcReciprocalD(rD,matrix);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
