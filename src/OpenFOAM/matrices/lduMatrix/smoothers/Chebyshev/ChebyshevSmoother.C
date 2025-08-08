@@ -130,7 +130,7 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
 
 
     // select preconditioner
-    if(preconditionerName_ == "diagonal")
+    if(preconditionerName_ == diagonalPreconditioner::typeName)
     {
         preconditioner_ = autoPtr<diagonalPreconditioner>::New(matrix,solverControls);
         // select spectral radius estimator
@@ -140,7 +140,7 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
         );
 
     }
-    else if (preconditionerName_ == "l1diagonal")
+    else if (preconditionerName_ == l1diagonalPreconditioner::typeName)
     {
         preconditioner_ = autoPtr<l1diagonalPreconditioner>::New(matrix,solverControls);
         // select spectral radius estimator
@@ -161,7 +161,7 @@ void Foam::ChebyshevSmoother::readControls()
 {
     pDegree_ = controlDict_.getOrDefault<label>("pDegree", 1);
     normalization_ = controlDict_.get<word>("normalization");
-    preconditionerName_ = controlDict_.get<word>("preconditionerName");
+    preconditionerName_ = controlDict_.get<word>("smootherPreconditioner");
     log_ = controlDict_.getOrDefault<label>("log", 0);
 }
 
