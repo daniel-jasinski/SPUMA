@@ -63,6 +63,12 @@ private:
     //- damping parameter
     scalar omega_;
 
+    //- preconditioner name
+    word preconditionerName_;
+    
+    //- ptr of preconditioner
+    autoPtr<lduMatrix::preconditioner> preconditioner_;
+
     //- Read the control parameters from the controlDict_
     void readControls();
 
