@@ -200,6 +200,11 @@ public:
             return false;
         }
 
+        //- True if the patch field is coupled (ICSFoam custom)
+        virtual bool coupledDeleteRecv() const
+        {
+            return false;
+        }
 
     // Access
 

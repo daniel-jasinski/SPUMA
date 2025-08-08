@@ -188,8 +188,24 @@ public:
         //- Retrieve neighbour field
         virtual void patchNeighbourField(UList<Type>& pnf) const;
 
+	// WARNING: ICSFOAM additions to processorFvPatchField
+	virtual label& sendRequest() const
+	{
+	    return sendRequest_;
+	}
+	
+	virtual label& recvRequest() const
+	{
+	    return recvRequest_;
+	}
 
-    // Evaluation
+        inline Field<Type>& receiveBuf() const
+	{
+	    return recvBuf_;
+	}
+	//END WARNING
+    
+	// Evaluation
 
         //- Initialise the evaluation of the patch field
         virtual void initEvaluate(const Pstream::commsTypes commsType);
