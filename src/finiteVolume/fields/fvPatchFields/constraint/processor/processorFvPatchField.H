@@ -185,8 +185,24 @@ public:
         //- Return neighbour field given internal field
         virtual tmp<Field<Type>> patchNeighbourField() const;
 
+	// WARNING: ICSFOAM additions to processorFvPatchField
+	virtual label& sendRequest() const
+	{
+	    return sendRequest_;
+	}
+	
+	virtual label& recvRequest() const
+	{
+	    return recvRequest_;
+	}
 
-    // Evaluation
+        inline Field<Type>& receiveBuf() const
+	{
+	    return recvBuf_;
+	}
+	//END WARNING
+    
+	// Evaluation
 
         //- Initialise the evaluation of the patch field
         virtual void initEvaluate(const Pstream::commsTypes commsType);
@@ -292,10 +308,15 @@ public:
             return procPatch_.neighbProcNo();
         }
 
+//        //- Does the patch field perform the transformation
+//        virtual bool doTransform() const
+//        {
+//            return (pTraits<Type>::rank && !procPatch_.parallel());
+//        }
         //- Does the patch field perform the transformation
         virtual bool doTransform() const
         {
-            return (pTraits<Type>::rank && !procPatch_.parallel());
+            return (!procPatch_.parallel());
         }
 
         //- Return face transformation tensor
