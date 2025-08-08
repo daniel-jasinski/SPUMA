@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,11 +41,20 @@ void Foam::LduMatrix<Type, DType, LUType>::sumDiag()
     const labelUList& l = lduAddr().lowerAddr();
     const labelUList& u = lduAddr().upperAddr();
 
-    for (label face=0; face<l.size(); face++)
+    foamExecutor exec;
+
+    DType* __restrict__ DiagPtr = Diag.begin();
+    const LUType* const __restrict__ LowerPtr = Lower.cbegin();
+    const LUType* const __restrict__ UpperPtr = Upper.cbegin();
+    const label* const __restrict__ lPtr = l.cbegin();
+    const label* const __restrict__ uPtr = u.cbegin();
+    
+    auto LambdaSumDiag = [=](label face)
     {
-        Diag[l[face]] += Lower[face];
-        Diag[u[face]] += Upper[face];
-    }
+        foamAtomic::AtomicAdd(DiagPtr[lPtr[face]], LowerPtr[face]);
+        foamAtomic::AtomicAdd(DiagPtr[uPtr[face]], UpperPtr[face]);
+    };
+    exec.parallelFor(LambdaSumDiag, l.size());
 }
 
 
@@ -58,11 +68,20 @@ void Foam::LduMatrix<Type, DType, LUType>::negSumDiag()
     const labelUList& l = lduAddr().lowerAddr();
     const labelUList& u = lduAddr().upperAddr();
 
-    for (label face=0; face<l.size(); face++)
+    foamExecutor exec;
+
+    DType* __restrict__ DiagPtr = Diag.begin();
+    const LUType* const __restrict__ LowerPtr = Lower.cbegin();
+    const LUType* const __restrict__ UpperPtr = Upper.cbegin();
+    const label* const __restrict__ lPtr = l.cbegin();
+    const label* const __restrict__ uPtr = u.cbegin();
+    
+    auto LambdaNegSumDiag = [=](label face)
     {
-        Diag[l[face]] -= Lower[face];
-        Diag[u[face]] -= Upper[face];
-    }
+        foamAtomic::AtomicAdd(DiagPtr[lPtr[face]], -LowerPtr[face]);
+        foamAtomic::AtomicAdd(DiagPtr[uPtr[face]], -UpperPtr[face]);
+    };
+    exec.parallelFor(LambdaNegSumDiag, l.size());
 }
 
 
@@ -78,11 +97,18 @@ void Foam::LduMatrix<Type, DType, LUType>::sumMagOffDiag
     const labelUList& l = lduAddr().lowerAddr();
     const labelUList& u = lduAddr().upperAddr();
 
-    for (label face = 0; face < l.size(); face++)
+    LUType* __restrict__ sumOffPtr = sumOff.begin();
+    const LUType* const __restrict__ LowerPtr = Lower.cbegin();
+    const LUType* const __restrict__ UpperPtr = Upper.cbegin();
+    const label* const __restrict__ lPtr = l.cbegin();
+    const label* const __restrict__ uPtr = u.cbegin();
+
+    auto LambdaSumMagOffDiag = [=](label face)
     {
-        sumOff[u[face]] += cmptMag(Lower[face]);
-        sumOff[l[face]] += cmptMag(Upper[face]);
-    }
+        foamAtomic::AtomicAdd(sumOffPtr[uPtr[face]], cmptMag(LowerPtr[face]));
+        foamAtomic::AtomicAdd(sumOffPtr[lPtr[face]], cmptMag(UpperPtr[face]));
+    };
+    exec.parallelFor(LambdaSumMagOffDiag, l.size());
 }
 
 
