@@ -686,14 +686,14 @@ inline Form minMod
 
 
 template<class Type>
-inline Type dot(const scalar s, const Type& t)
+FOAM_DEVICE inline Type dot(const scalar s, const Type& t)
 {
     return s * t;
 }
 
 
 template<class Type>
-inline Type dot(const Type& t, const scalar s)
+FOAM_DEVICE inline Type dot(const Type& t, const scalar s)
 {
     return t * s;
 }

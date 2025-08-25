@@ -373,13 +373,13 @@ FOAM_DEVICE inline Scalar pow025(const Scalar s)
 }
 
 
-inline Scalar inv(const Scalar s)
+FOAM_DEVICE inline Scalar inv(const Scalar s)
 {
     return 1.0/s;
 }
 
 
-inline Scalar dot(const Scalar s1, const Scalar s2)
+FOAM_DEVICE inline Scalar dot(const Scalar s1, const Scalar s2)
 {
     return s1*s2;
 }
