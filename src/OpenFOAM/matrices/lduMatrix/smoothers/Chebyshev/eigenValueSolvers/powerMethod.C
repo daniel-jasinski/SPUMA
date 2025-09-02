@@ -38,8 +38,7 @@ License
 namespace Foam
 {
     defineTypeNameAndDebug(powerMethod, 0);
-    addToRunTimeSelectionTable(eigenValueSolver,powerMethod,word);
-
+    addToRunTimeSelectionTable(eigenValueSolver, powerMethod, word);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -64,7 +63,7 @@ Foam::scalar Foam::powerMethod::maxEigenvalue
     (
         lambda,
         lambda,
-        Random::uniformGeneratorOp<scalar>(time(NULL),-1, 1)
+        Random::uniformGeneratorOp<scalar>(time(NULL), -1, 1)
     );
 
     //- evaluate normalization factor
@@ -79,14 +78,13 @@ Foam::scalar Foam::powerMethod::maxEigenvalue
 
     for (label nIter=0; nIter<maxIters; ++nIter)
     {
-
-	    // --- Calculate (D^-1*A)*lambda
+        // --- Calculate (D^-1*A)*lambda
         matrix_.Amul(Alambda, lambda, interfaceBouCoeffs_, interfaces_, cmpt);
 
-	    // --- Compute l2 norm of (D^-1*A)*lambda: |(D^-1*A)*lambda|_2
-	    const scalar rAlambdaNorm = 1.0 / sqrt(sumSqr(Alambda));
+        // --- Compute l2 norm of (D^-1*A)*lambda: |(D^-1*A)*lambda|_2
+        const scalar rAlambdaNorm = 1.0 / sqrt(sumSqr(Alambda));
 
-	    // --- Compute lambdaMax
+        // --- Compute lambdaMax
         lmax = sumProd(lambda,Alambda);
 
         const scalar err = sqrt(sumSqr(Alambda - lmax*lambda));
@@ -129,7 +127,6 @@ Foam::scalar Foam::powerMethod::maxEigenvalue
         interfaces_,
         cmpt
     );
-
 }
 
 // ************************************************************************* //

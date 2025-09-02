@@ -48,8 +48,7 @@ SourceFiles
 namespace Foam
 {
     defineTypeNameAndDebug(fixedEigenValue, 0);
-
-} // End namespace Foam
+}
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

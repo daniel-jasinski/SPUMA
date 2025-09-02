@@ -81,7 +81,10 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        ){ return value_;};
+        )
+        { 
+            return value_;
+        };
         
         //- get maximum eigenvalue of a matrix preconditioned
         //  with a diagonal preconditioner
@@ -92,7 +95,10 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        ){ return value_;};
+        )
+        { 
+            return value_;
+        };
 };
 
 

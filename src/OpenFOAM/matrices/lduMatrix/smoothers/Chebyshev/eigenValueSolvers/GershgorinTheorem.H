@@ -88,7 +88,6 @@ public:
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
         );
-
 };
 
 

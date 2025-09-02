@@ -38,7 +38,6 @@ namespace Foam
 {
     defineTypeNameAndDebug(GershgorinTheorem, 0);
     addToRunTimeSelectionTable(eigenValueSolver,GershgorinTheorem,word);
-
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -68,7 +67,6 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
     scalarField lambda(matrix_.diag());
     scalar* __restrict__ lambdaPtr = lambda.begin();
 
-   
     foamExecutor exec;
 
     auto Lambda = [=](label facei)
@@ -101,7 +99,6 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
     const direction cmpt
 )
 {
-    
     const scalar* const __restrict__ lowerPtr =
         matrix_.lower().cbegin();
 
@@ -116,16 +113,16 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
 
     label nFaces = matrix_.upper().size();
 
+    const solveScalarField& rD = preconditioner_.getReciprocalD();
     const solveScalar* const __restrict__ rDPtr = 
-        preconditioner_.getReciprocalD().cbegin();
+        rD.cbegin();
 
     scalarField lambda
-        (
-            ConstPrecisionAdaptor<scalar,solveScalar>(preconditioner_.getReciprocalD())()*matrix_.diag()
-        );
+    (
+        ConstPrecisionAdaptor<scalar,solveScalar>(rD)()*matrix_.diag()
+    );
     scalar* __restrict__ lambdaPtr = lambda.begin();
 
-   
     foamExecutor exec;
 
     auto Lambda = [=](label facei)
