@@ -71,18 +71,18 @@ Foam::RichardsonSmoother::RichardsonSmoother
     readControls();
 
     // select preconditioner
-    if(preconditionerName_ == diagonalPreconditioner::typeName)
+    if(subPreconditionerName_ == diagonalPreconditioner::typeName)
     {
         preconditioner_ = autoPtr<diagonalPreconditioner>::New(matrix,solverControls);
     }
-    else if (preconditionerName_ == l1diagonalPreconditioner::typeName)
+    else if (subPreconditionerName_ == l1diagonalPreconditioner::typeName)
     {
         preconditioner_ = autoPtr<l1diagonalPreconditioner>::New(matrix,solverControls);
     }
     else 
     {
         FatalErrorInFunction<<"precondtioner type: " <<
-            preconditionerName_ << " not supported"<<abort(FatalError);
+            subPreconditionerName_ << " not supported"<<abort(FatalError);
     }
 }
 
@@ -92,8 +92,8 @@ Foam::RichardsonSmoother::RichardsonSmoother
 void Foam::RichardsonSmoother::readControls()
 {
     omega_ = controlDict_.getOrDefault<scalar>("omega", 0.75);
-    preconditionerName_ = 
-        controlDict_.get<word>("smootherPreconditioner");
+    subPreconditionerName_ = 
+        controlDict_.get<word>("subPreconditioner");
 }
 
 

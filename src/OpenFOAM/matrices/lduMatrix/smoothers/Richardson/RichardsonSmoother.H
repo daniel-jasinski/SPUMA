@@ -64,7 +64,7 @@ private:
     scalar omega_;
 
     //- preconditioner name
-    word preconditionerName_;
+    word subPreconditionerName_;
     
     //- ptr of preconditioner
     autoPtr<lduMatrix::preconditioner> preconditioner_;
