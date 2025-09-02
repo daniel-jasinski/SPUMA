@@ -34,6 +34,7 @@ License
 #include "fixedEigenValue.H"
 #include "ChebyshevSmoother.H"
 #include "PrecisionAdaptor.H"
+#include "lambdaOptMinList.H"
 
 #include "diagonalPreconditioner.H"
 #include "l1diagonalPreconditioner.H"
@@ -49,29 +50,6 @@ namespace Foam
 
     lduMatrix::smoother::addasymMatrixConstructorToTable<ChebyshevSmoother>
         addChebyshevSmootherAsymMatrixConstructorToTable_;
-
-    scalarList ChebyshevSmoother::a_ = {
-        0.3333333264963328,
-        0.1805358974013031,
-        0.1159278474090664,
-        0.0820780023852334,
-        0.0618496081203676,
-        0.0486605907936455,
-        0.0395132940691538,
-        0.0328701015026835,
-        0.0278702889449934,
-        0.0239987636410016,
-        0.0209304530155615,
-        0.0184513099814704,
-        0.0164152156249015,
-        0.0147195630514484,
-        0.0132900883942254,
-        0.0120723317797092,
-        0.0110250964662371,
-        0.0101170167811085,
-        0.0093237783639166,
-        0.0086261852644572
-    };
 
 }
 
@@ -114,13 +92,14 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
     }
     else if (normalization_ == "optimalVCycle")
     {
-        if(pDegree_ > a_.size())
+        using Chebyshev::FirstKind::lambdaOptMinList;
+        if(pDegree_ > lambdaOptMinList.size())
         {
             FatalErrorInFunction
-                << "poly degree greater of max supported of : " << a_.size()
+                << "poly degree greater of max supported of : " << lambdaOptMinList.size()
                 << abort(FatalError);
         };
-        lambdaMin_ = a_[pDegree_ -1];
+        lambdaMin_ = lambdaOptMinList[pDegree_ -1];
     }
     else
     {
@@ -128,16 +107,16 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
     }
 
     // select preconditioner
-    if(preconditionerName_ == diagonalPreconditioner::typeName)
+    if(subPreconditionerName_ == diagonalPreconditioner::typeName)
     {
         preconditioner_ = autoPtr<diagonalPreconditioner>::New(matrix, solverControls);
         // select spectral radius estimator
         spRadiusEstimator_ = eigenValueSolver::New
         (
-            controlDict_.getOrDefault<word>("spectralRadius", "Gershgorin")
+            controlDict_.lookup("spectralRadius")
         );
     }
-    else if (preconditionerName_ == l1diagonalPreconditioner::typeName)
+    else if (subPreconditionerName_ == l1diagonalPreconditioner::typeName)
     {
         preconditioner_ = autoPtr<l1diagonalPreconditioner>::New(matrix, solverControls);
         // select spectral radius estimator
@@ -145,8 +124,8 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
     }
     else 
     {
-        FatalErrorInFunction << "precondtioner type: " <<
-        preconditionerName_ << " not supported" << abort(FatalError);
+        FatalErrorInFunction<< "precondtioner type: " <<
+        subPreconditionerName_ << " not supported" << abort(FatalError);
     }
 }
 
@@ -156,8 +135,16 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
 void Foam::ChebyshevSmoother::readControls()
 {
     pDegree_ = controlDict_.getOrDefault<label>("pDegree", 1);
-    normalization_ = controlDict_.get<word>("normalization");
-    preconditionerName_ = controlDict_.get<word>("smootherPreconditioner");
+    normalization_ = controlDict_.getOrDefault<word>
+                     (
+                        "normalization",
+                        "optimalVCycle"
+                     );
+    subPreconditionerName_ = controlDict_.getOrDefault<word>
+                             (
+                                "subPreconditioner",
+                                l1diagonalPreconditioner::typeName
+                             );
     log_ = controlDict_.getOrDefault<label>("log", 0);
 }
 

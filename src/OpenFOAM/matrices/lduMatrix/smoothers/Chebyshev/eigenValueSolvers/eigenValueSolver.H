@@ -67,8 +67,8 @@ public:
         autoPtr,
         eigenValueSolver,
         word,
-        (),
-        ()
+        (Istream& stream),
+        (stream)
     );
 
 
@@ -84,7 +84,7 @@ public:
 
     static autoPtr<eigenValueSolver> New
     (
-        const word& type
+        Istream&
     );
 
     // Member Functions

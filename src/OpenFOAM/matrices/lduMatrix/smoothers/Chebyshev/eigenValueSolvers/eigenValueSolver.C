@@ -38,9 +38,12 @@ namespace Foam
 
 Foam::autoPtr<Foam::eigenValueSolver> Foam::eigenValueSolver::New
 (
-    const word& type
+    Istream& stream
 )
 {
+
+    const word type(stream);
+
     auto* ctorPtr = wordConstructorTable(type);
 
     if (!ctorPtr)
@@ -55,7 +58,7 @@ Foam::autoPtr<Foam::eigenValueSolver> Foam::eigenValueSolver::New
 
     return autoPtr<eigenValueSolver>
     (
-        ctorPtr()
+        ctorPtr(stream)
     );
 };
 

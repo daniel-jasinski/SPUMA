@@ -42,13 +42,15 @@ SourceFiles
 
 #include "lduMatrix.H"
 #include "fixedEigenValue.H"
+#include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
     defineTypeNameAndDebug(fixedEigenValue, 0);
-}
+    addToRunTimeSelectionTable(eigenValueSolver,fixedEigenValue,word);
+} // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

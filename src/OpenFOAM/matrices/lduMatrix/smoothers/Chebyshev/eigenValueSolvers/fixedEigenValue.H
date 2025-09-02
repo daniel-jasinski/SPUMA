@@ -69,7 +69,13 @@ public:
 
         //- constructor
         fixedEigenValue(const scalar value)
-        : value_(value)
+        :   eigenValueSolver(),
+            value_(value)
+        {};
+
+        fixedEigenValue(Istream& streamData)
+        :   eigenValueSolver(),
+            value_(readScalar(streamData))
         {};
 
     // Member Functions

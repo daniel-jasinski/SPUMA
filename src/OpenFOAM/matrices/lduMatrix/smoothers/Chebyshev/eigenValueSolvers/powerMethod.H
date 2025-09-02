@@ -65,8 +65,11 @@ public:
 
     // Constructors
 
-        //- default constructor
-        powerMethod() = default;
+        //- constructor
+
+        powerMethod(Istream&)
+        : eigenValueSolver()
+        {};
 
     // Member Functions
 

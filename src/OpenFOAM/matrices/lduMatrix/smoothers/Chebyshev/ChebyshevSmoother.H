@@ -86,10 +86,6 @@ class ChebyshevSmoother
 {
 private:
 
-
-    //- list of optimal values for V-cycle error bound
-    static scalarList a_;
-
     //- Chebyshev polynomial degree
     label pDegree_;
 
@@ -105,7 +101,7 @@ private:
     scalar lambdaMin_;
 
     //- preconditioner name
-    word preconditionerName_;
+    word subPreconditionerName_;
     
     //- ptr of preconditioner
     autoPtr<lduMatrix::preconditioner> preconditioner_;

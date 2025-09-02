@@ -64,8 +64,11 @@ public:
 
     // Constructors
 
-        //- default constructor
-        GershgorinTheorem() = default;
+        //- constructor
+
+        GershgorinTheorem(Istream&)
+        : eigenValueSolver()
+        {};
 
     // static Member Functions
 
