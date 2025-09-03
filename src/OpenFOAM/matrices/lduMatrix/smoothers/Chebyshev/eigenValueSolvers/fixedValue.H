@@ -24,7 +24,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::fixedEigenValue
+    Foam::fixedValue
 
 Group
     grpEigenValueSolvers
@@ -33,12 +33,12 @@ Description
     Computation of the maximum eigenvalue using the Power method.
 
 SourceFiles
-    fixedEigenValue.C
+    fixedValue.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef fixedEigenValue_H
-#define fixedEigenValue_H
+#ifndef fixedValue_H
+#define fixedValue_H
 
 #include "lduMatrix.H"
 #include "eigenValueSolver.H"
@@ -49,10 +49,10 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class fixedEigenValue Declaration
+                           Class fixedValue Declaration
 \*---------------------------------------------------------------------------*/
 
-class fixedEigenValue
+class fixedValue
 : 
     public eigenValueSolver
 {
@@ -62,18 +62,18 @@ private:
 public:
 
     //- Runtime type information
-    TypeName("fixedEigenValue");
+    TypeName("fixedValue");
 
 
     // Constructors
 
         //- constructor
-        fixedEigenValue(const scalar value)
+        fixedValue(const scalar value)
         :   eigenValueSolver(),
             value_(value)
         {};
 
-        fixedEigenValue(Istream& streamData)
+        fixedValue(Istream& streamData)
         :   eigenValueSolver(),
             value_(readScalar(streamData))
         {};

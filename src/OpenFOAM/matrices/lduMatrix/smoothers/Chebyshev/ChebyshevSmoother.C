@@ -31,7 +31,7 @@ License
 #include <stdlib.h>
 #include "GershgorinTheorem.H"
 #include "powerMethod.H"
-#include "fixedEigenValue.H"
+#include "fixedValue.H"
 #include "ChebyshevSmoother.H"
 #include "PrecisionAdaptor.H"
 #include "lambdaOptMinList.H"
@@ -120,7 +120,7 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
     {
         preconditioner_ = autoPtr<l1diagonalPreconditioner>::New(matrix, solverControls);
         // select spectral radius estimator
-        spRadiusEstimator_ = autoPtr<fixedEigenValue>::New(1.0);
+        spRadiusEstimator_ = autoPtr<fixedValue>::New(1.0);
     }
     else 
     {
