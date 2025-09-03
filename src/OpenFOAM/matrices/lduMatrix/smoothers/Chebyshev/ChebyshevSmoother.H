@@ -53,10 +53,9 @@ Usage:
     \table
         Property              | Description               | Required    | Default value
         pDegree               | polynomial degree         | no          | 1
-        rescaling             | polynomial scaling bounds | yes         | userDefined
-        spRadius              | spectral Radius estimate  | no          | Ghershgorin theorem
-        preconditionerName    | preconditioner Type       | yes         |
-        lambdaMin             | lower rescaling value     | optional    | 1./8
+        normalization         | polynomial scaling bounds | yes         | optimalVCycle
+        spectralRadius        | spectral Radius estimate  | no          | 
+        subPreconditioner     | preconditioner Type       | yes         | l1diagonal
         log                   | log verbosity value       | optional    | 0
     \endtable
 
