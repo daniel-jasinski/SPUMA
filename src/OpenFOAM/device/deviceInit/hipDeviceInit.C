@@ -25,90 +25,21 @@ License
     You should have received a copy of the GNU General Public License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
-Class
-    Foam::hipDeviceInit
-
-Description
-    Hip (AMD ROCm) device initialization backend
-
-SourceFiles
-    hipDeviceInit.hpp
-
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_hip_deviceInit_H
-#define Foam_hip_deviceInit_H
+#ifndef Foam_hipDeviceInit_C
+#define Foam_hipDeviceInit_C
 
-#include "deviceInit.H"
-#include "label.H"
-#include "IPstream.H"
-#include "OPstream.H"
-#ifdef have_hip
-    #include <hip/hip_runtime.h>
-    #include "hipError.hpp"
-#endif
+#include "hipDeviceInit.hpp"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-/*---------------------------------------------------------------------------*\
-                          Class hipDeviceInit Declaration
-\*---------------------------------------------------------------------------*/
-
-class hipDeviceInit
-: public deviceInit<hipDeviceInit>
-{
-    static int devID_;
-
-    // max shared memory per block
-    static int sharedMemPerBlock_;
-
-    // percentage of max shared memory per block usable
-    static double sharedMemPerBlockP_;
-public:
-
-    static void _backendInit()
-    {
-        if (!initDeviceFlag_)
-        {
-            Info << "Initializing hip devices..." << nl << nl;
-
-            label nDevs;
-            hipGetDeviceCount(&nDevs);
-
-            devID_ = Pstream::myProcNo() % nDevs;
-            hipSetDevice(devID_);
-
-            initDeviceFlag_ = true;
-        }   
-    };
-
-    static void setSharedMemP(const scalar p)
-    {
-        sharedMemPerBlockP_ = p;
-    };
-    
-    static int getSharedMemPerBlock()
-    {
-        if(sharedMemPerBlock_ == -1)
-        {
-            // get device prop
-            hipDeviceProp_t prop;
-            CHECK_HIP_ERROR
-            (
-                hipGetDeviceProperties(&prop, devID_)
-            );
-
-            sharedMemPerBlock_ = prop.sharedMemPerBlockOptin ;
-        }
-
-        // note use a percentage of max allowable dynamic shared memory 
-        // because driver always reserve some of the total shared memory for static allocated object
-        return sharedMemPerBlock_* sharedMemPerBlockP_ ;
-    }
-};
+int hipDeviceInit::devID_ = -1; 
+int hipDeviceInit::sharedMemPerBlock_ = -1;
+double hipDeviceInit::sharedMemPerBlockP_ = 0.9;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

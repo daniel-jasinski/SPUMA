@@ -63,9 +63,6 @@ SourceFiles
 // Number of streaming multiprocessor per device (124 on A100)
 #define NUM_SM 124
 
-// Max shared memory addressable by a block on c.u 8.0, 132 kB
-#define MAX_SMEM 135168
-
 #elif have_hip
 
 // Number of threads per block
@@ -73,9 +70,6 @@ SourceFiles
 
 // Number of streaming multiprocessor per device
 #define NUM_SM 110
-
-// Max shared memory addressable by a block
-#define MAX_SMEM 65536
 
 #endif
 

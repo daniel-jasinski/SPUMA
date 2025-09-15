@@ -33,6 +33,7 @@ License
 #include "cudaExecutor.cuh"
 #include "deviceM.H"
 #include "cudaDeviceUtils.cuh"
+#include "deviceInits.H"
 #include "cudaError.cuh"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -295,7 +296,7 @@ void Foam::cudaExecutor::_backendReductionSum
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM;
+    const int maxbytes = cudaDeviceInit::getSharedMemPerBlock();
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
     CHECK_CUDA_ERROR
     (
@@ -358,9 +359,9 @@ void Foam::cudaExecutor::_backendReductionCompare
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM;
+    int maxbytes =cudaDeviceInit::getSharedMemPerBlock();
 
-    // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
+    // declare that this kernel can use up to maxbytes of dynamically allocated shared memory
     CHECK_CUDA_ERROR
     (
         cudaFuncSetAttribute
