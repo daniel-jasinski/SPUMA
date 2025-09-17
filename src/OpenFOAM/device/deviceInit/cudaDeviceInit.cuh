@@ -46,6 +46,7 @@ SourceFiles
 #ifdef have_cuda
     #include <cuda.h>
     #include <cuda_runtime_api.h>
+    #include "cudaError.cuh"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -60,6 +61,14 @@ namespace Foam
 class cudaDeviceInit
 : public deviceInit<cudaDeviceInit>
 {
+    static int devID_;
+
+    // max shared memory per block
+    static int sharedMemPerBlock_;
+
+    // percentage of max shared memory per block usable
+    static double sharedMemPerBlockP_;
+
 public:
 
     static void _backendInit()
@@ -71,12 +80,36 @@ public:
             label nDevs;
             cudaGetDeviceCount(&nDevs);
 
-            label devID = Pstream::myProcNo() % nDevs;
-            cudaSetDevice(devID);
+            devID_ = Pstream::myProcNo() % nDevs;
+            cudaSetDevice(devID_);
 
             initDeviceFlag_ = true;
         }
     }
+
+    static void setSharedMemP(const scalar p)
+    {
+        sharedMemPerBlockP_ = p;
+    };
+
+    static int getSharedMemPerBlock()
+    {
+        if(sharedMemPerBlock_ == -1)
+        {
+            // get device properties
+            cudaDeviceProp prop;
+            CHECK_CUDA_ERROR(
+                cudaGetDeviceProperties(&prop,devID_)
+            );
+
+            sharedMemPerBlock_ = prop.sharedMemPerBlockOptin;
+        }
+
+        // note use a percentage of max allowable dynamic shared memory 
+        // because driver always reserve some of the total shared memory for static allocated object
+        return sharedMemPerBlock_ * sharedMemPerBlockP_;
+    }
+
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

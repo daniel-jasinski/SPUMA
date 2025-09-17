@@ -33,6 +33,7 @@ License
 #include "hipExecutor.hpp"
 #include "deviceM.H"
 #include "hipDeviceUtils.hpp"
+#include "deviceInits.H"
 #include "hipError.hpp"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -321,9 +322,9 @@ void Foam::hipExecutor::_backendReductionSum(
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM;
+    const int maxbytes = hipDeviceInit::getSharedMemPerBlock();
 
-    // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
+    // declare that this kernel can use up to maxbytes of dynamically allocated shared memory
     CHECK_HIP_ERROR
     (
         hipFuncSetAttribute
@@ -385,9 +386,9 @@ void Foam::hipExecutor::_backendReductionCompare
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM;
+    int maxbytes = hipDeviceInit::getSharedMemPerBlock();
 
-    // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
+    // declare that this kernel can use up to maxbytes of dynamically allocated shared memory
     CHECK_HIP_ERROR
     (
         hipFuncSetAttribute
