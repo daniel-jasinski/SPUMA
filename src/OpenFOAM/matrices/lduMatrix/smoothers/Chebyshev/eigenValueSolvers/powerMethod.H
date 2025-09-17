@@ -67,6 +67,10 @@ public:
 
         //- constructor
 
+        powerMethod()
+        : eigenValueSolver()
+        {};
+
         powerMethod(Istream&)
         : eigenValueSolver()
         {};

@@ -141,9 +141,25 @@ Foam::scalar Foam::GershgorinTheorem::maxEigenvalue
     };
     exec.parallelFor(Lambda, nFaces);
 
-    const scalar lmax = max(lambda);
+    // add off proc contributions
+    forAll(interfaces_, i)
+    {
+        auto* intf = interfaces_.get(i);
+        if(intf)
+        {
+            const labelUList& faceCell = (intf->interface()).faceCells();
+            const auto faceCellsPtr=faceCell.cbegin();
+            const auto coeffsPtr = interfaceBouCoeffs_[i].cbegin();
 
-    return lmax;
+            auto LambdaOffProc = [=](label elemI)
+            {
+                foamAtomic::AtomicAdd(lambdaPtr[faceCellsPtr[elemI]], mag(coeffsPtr[elemI]));
+            };
+            exec.parallelFor(LambdaOffProc, faceCell.size());
+        }
+    }
+
+    return max(lambda);
 }
 
 // ************************************************************************* //

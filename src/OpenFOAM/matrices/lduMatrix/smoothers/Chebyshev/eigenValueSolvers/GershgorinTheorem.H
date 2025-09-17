@@ -66,6 +66,10 @@ public:
 
         //- constructor
 
+        GershgorinTheorem()
+        : eigenValueSolver()
+        {};
+
         GershgorinTheorem(Istream&)
         : eigenValueSolver()
         {};

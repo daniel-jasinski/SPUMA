@@ -48,7 +48,9 @@ namespace Foam
 void Foam::l1diagonalPreconditioner::calcReciprocalD
 (
     solveScalarField& rD,
-    const lduMatrix& matrix
+    const lduMatrix& matrix,
+    const FieldField<Field, scalar>& interfaceBouCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces
 )
 {
     solveScalar* __restrict__ rDPtr = rD.begin();
@@ -75,7 +77,7 @@ void Foam::l1diagonalPreconditioner::calcReciprocalD
         rDPtr[celli] = mag(DPtr[celli]);
     };
     exec.parallelFor(LambdarD, nCells);
-    
+
     const label nFaces = matrix.lduAddr().lowerAddr().size();
     auto LambdaOffDiag = [=](label face)
     {
@@ -85,9 +87,31 @@ void Foam::l1diagonalPreconditioner::calcReciprocalD
 
     exec.parallelFor(LambdaOffDiag,nFaces);
 
+    // add off proc contribution
+    if(!interfaces.empty())
+    {
+        forAll(interfaces, i)
+        {
+            auto* intf = interfaces.get(i);
+            if(intf)
+            {
+                const labelUList& faceCell = (intf->interface()).faceCells();
+                const auto faceCellsPtr = faceCell.cbegin();
+                const auto coeffsPtr = interfaceBouCoeffs[i].cbegin();
+
+                auto LambdaOffProc = [=](label elemI)
+                {
+                    foamAtomic::AtomicAdd(rDPtr[faceCellsPtr[elemI]], mag(coeffsPtr[elemI]));
+                };
+                exec.parallelFor(LambdaOffProc, faceCell.size());
+            }
+        }
+    }
+
     auto Lambda = [=](label celli){
         rDPtr[celli] = sign(DPtr[celli])/rDPtr[celli];
     };
+
     exec.parallelFor(Lambda,nCells);
 }
 
@@ -102,20 +126,28 @@ Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
     lduMatrix::preconditioner(sol),
     rD(sol.matrix().diag().size())
 {
-    this->calcReciprocalD(rD,sol.matrix());
+    this->calcReciprocalD
+    (
+        rD,
+        sol.matrix(),
+        sol.interfaceBouCoeffs(),
+        sol.interfaces()
+    );
 }
 
 
 Foam::l1diagonalPreconditioner::l1diagonalPreconditioner
 (
     const lduMatrix& matrix,
+    const FieldField<Field, scalar>& interfaceBouCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces,
     const dictionary&
 )
 :
     lduMatrix::preconditioner(),
     rD(matrix.diag().size())
 {
-    this->calcReciprocalD(rD,matrix);
+    this->calcReciprocalD(rD,matrix,interfaceBouCoeffs,interfaces);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

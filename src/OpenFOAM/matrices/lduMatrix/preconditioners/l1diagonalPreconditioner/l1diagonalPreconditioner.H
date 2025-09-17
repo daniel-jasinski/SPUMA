@@ -73,7 +73,13 @@ class l1diagonalPreconditioner
         //- No copy assignment
         void operator=(const l1diagonalPreconditioner&) = delete;
 
-        void calcReciprocalD(solveScalarField&, const lduMatrix&);
+        void calcReciprocalD
+        (
+            solveScalarField&,
+            const lduMatrix&,
+            const FieldField<Field, scalar>&,
+            const lduInterfaceFieldPtrsList&
+        );
 
 public:
 
@@ -92,8 +98,10 @@ public:
 
         l1diagonalPreconditioner
         (
-            const lduMatrix&,
-            const dictionary& solverControlsUnused
+            const lduMatrix& matrix,
+            const FieldField<Field, scalar>& interfaceBouCoeffs_,
+            const lduInterfaceFieldPtrsList& interfaces_,
+            const dictionary& solverControlUnused
         );
 
 

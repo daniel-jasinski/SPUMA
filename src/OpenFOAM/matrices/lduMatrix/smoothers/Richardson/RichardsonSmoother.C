@@ -77,7 +77,13 @@ Foam::RichardsonSmoother::RichardsonSmoother
     }
     else if (subPreconditionerName_ == l1diagonalPreconditioner::typeName)
     {
-        preconditioner_ = autoPtr<l1diagonalPreconditioner>::New(matrix,solverControls);
+        preconditioner_ = autoPtr<l1diagonalPreconditioner>::New
+            (
+                matrix,
+                interfaceBouCoeffs,
+                interfaces,
+                solverControls
+            );
     }
     else 
     {

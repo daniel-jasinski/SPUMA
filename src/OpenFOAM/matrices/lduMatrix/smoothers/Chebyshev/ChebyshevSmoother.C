@@ -118,7 +118,13 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
     }
     else if (subPreconditionerName_ == l1diagonalPreconditioner::typeName)
     {
-        preconditioner_ = autoPtr<l1diagonalPreconditioner>::New(matrix, solverControls);
+        preconditioner_ = autoPtr<l1diagonalPreconditioner>::New
+            (
+                matrix,
+                interfaceBouCoeffs,
+                interfaces,
+                solverControls
+            );
         // select spectral radius estimator
         spRadiusEstimator_ = autoPtr<fixedValue>::New(1.0);
     }
@@ -176,6 +182,7 @@ void Foam::ChebyshevSmoother::smooth_
     const scalar lambdaMax = lambdaMax_;
     const scalar lambdaMin = lambdaMin_;
 
+    // get spectral radius estimate
     const scalar spRadius = const_cast<eigenValueSolver&>(spRadiusEstimator_()).maxEigenvalue
     (
         matrix_,
@@ -242,7 +249,7 @@ void Foam::ChebyshevSmoother::smooth_
 
         // p-th iteration of the Chebyshev method 
         auto LambdapDegN = [=](label celli)
-	{
+	    {
             const scalar tmp = psiPtr[celli];
 
             psiPtr[celli] += alpha0n * (psiPtr[celli] - psiOldPtr[celli])
