@@ -40,7 +40,7 @@ SourceFiles
 #define Foam_hip_Atomic_H
 
 #include "Atomic.H"
-#include "hipDeviceUtils.hpp"
+#include "hipAtomicMinMax.hpp"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

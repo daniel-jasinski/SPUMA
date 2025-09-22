@@ -40,7 +40,7 @@ SourceFiles
 #define Foam_cuda_Atomic_H
 
 #include "Atomic.H"
-#include "cudaDeviceUtils.cuh"
+#include "cudaAtomicMinMax.cuh"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

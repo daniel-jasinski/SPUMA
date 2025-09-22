@@ -40,110 +40,12 @@ SourceFiles
 
 #include "cudaError.cuh"
 #include <cuda_runtime_api.h>
+#include "mutex.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-__device__ __forceinline__
-float atomicMin(float *address, float val)
-{
-    float old;
-    old = !signbit(val) ? __int_as_float(atomicMin((int*)address, __float_as_int(val))) :
-        __uint_as_float(atomicMax((unsigned int*)address, __float_as_uint(val)));
-
-    return old;
-}
-
-__device__ __forceinline__
-double atomicMin(double *address, double val)
-{
-    unsigned long long ret = __double_as_longlong(*address);
-
-    while(val < __longlong_as_double(ret))
-    {
-        unsigned long long old = ret;
-
-        if
-        (
-            (
-                ret = atomicCAS
-                (
-                    (
-                        unsigned long long *)address,
-                        old,
-                        __double_as_longlong(val)
-                )
-            ) == old
-        )
-            break;
-    }
-
-    return __longlong_as_double(ret);
-}
-
-__device__ __forceinline__
-float atomicMax(float *address, float val)
-{
-    float old;
-    old = !signbit(val) ? __int_as_float(atomicMax((int*)address, __float_as_int(val))) :
-        __uint_as_float(atomicMin((unsigned int*)address, __float_as_uint(val)));
-
-    return old;
-}
-
-__device__ __forceinline__
-double atomicMax(double *address, double val)
-{
-    unsigned long long ret = __double_as_longlong(*address);
-
-    while(val > __longlong_as_double(ret))
-    {
-        unsigned long long old = ret;
-
-        if
-        (
-            (
-                ret = atomicCAS
-                (
-                    (unsigned long long *)address,
-                    old,
-                    __double_as_longlong(val)
-                )
-            ) == old
-        )
-           break;
-    }
-
-    return __longlong_as_double(ret);
-}
-
 namespace Foam
 {
-
-/*---------------------------------------------------------------------------*\
-                           Struct Mutex Declaration
-\*---------------------------------------------------------------------------*/
-
-struct Mutex
-{
-    Mutex()
-    {
-        mutex_ = static_cast<int*>(MemoryPool::getInstance()->allocate(sizeof(int)));
-        Foam::MemoryPool::getInstance()->memSet(mutex_, 0, sizeof(int));
-    }
-
-    ~Mutex()
-    {
-        MemoryPool::getInstance()->free(mutex_);
-    }
-
-    __host__ __device__ inline int* getMutex()
-    {
-        return mutex_;
-    }
-
-private:
-    int* mutex_;
-};
 
 /*---------------------------------------------------------------------------*\
                            Struct spinLock Declaration
