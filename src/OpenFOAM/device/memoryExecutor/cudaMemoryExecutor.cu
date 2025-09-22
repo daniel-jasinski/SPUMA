@@ -117,7 +117,8 @@ void Foam::cudaMemoryExecutor::_backendMemSet
         (char*)ptr + sizeOfValue,
         (const char*) ptr
     );
-    deviceSync();
+    
+    cudaDeviceSynchronize();
     CHECK_LAST_CUDA_ERROR();
 }
 
@@ -134,7 +135,8 @@ void Foam::cudaMemoryExecutor::_backendMemSetScalarOne
         sizeInBytes/sizeof(scalar),
         (scalar*)ptr
     );
-    deviceSync();
+    
+    cudaDeviceSynchronize();
     CHECK_LAST_CUDA_ERROR();
 }
 

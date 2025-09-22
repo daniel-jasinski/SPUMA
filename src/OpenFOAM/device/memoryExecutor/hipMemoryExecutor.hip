@@ -118,7 +118,8 @@ void Foam::hipMemoryExecutor::_backendMemCopy
             reinterpret_cast<char*>(dst),
             reinterpret_cast<const char*>(src)
         );
-        deviceSync();
+
+        hipDeviceSynchronize();
         CHECK_LAST_HIP_ERROR();
     }
     else
@@ -159,7 +160,8 @@ void Foam::hipMemoryExecutor::_backendMemSet
         (char*)ptr + sizeOfValue,
         (const char*) ptr
     );
-    deviceSync();
+
+    hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 }
 
@@ -176,7 +178,8 @@ void Foam::hipMemoryExecutor::_backendMemSetScalarOne
         sizeInBytes/sizeof(scalar),
         (scalar*)ptr
     );
-    deviceSync();
+
+    hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 }
 

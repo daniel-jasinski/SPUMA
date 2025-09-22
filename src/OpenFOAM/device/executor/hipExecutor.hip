@@ -272,7 +272,7 @@ void Foam::hipExecutor::_backendFor(F& lambda, const label& size)
         size
     );
 
-    deviceSync();
+    hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 };
 
@@ -293,7 +293,7 @@ void Foam::hipExecutor::_backendSerialFor(F& lambda, const label& size)
         size
     );
 
-    deviceSync();
+    hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 };
 
@@ -354,7 +354,7 @@ void Foam::hipExecutor::_backendReductionSum(
         size
     );
 
-    deviceSync();
+    hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 
     MemoryPool::getInstance()->copyOut(dPtrResult, result, sizeof(resultT));
@@ -421,7 +421,7 @@ void Foam::hipExecutor::_backendReductionCompare
         size
     );
 
-    deviceSync();
+    hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 
     MemoryPool::getInstance()->copyOut(dPtrResult, result, sizeof(resultT));

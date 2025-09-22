@@ -254,7 +254,7 @@ void Foam::cudaExecutor::_backendFor(F& lambda, const label& size)
     <<<numblocks,nThreads>>>
     (lambda,size);
 
-    deviceSync();
+    cudaDeviceSynchronize();
     CHECK_LAST_CUDA_ERROR();
 };
 
@@ -266,7 +266,7 @@ void Foam::cudaExecutor::_backendSerialFor(F& lambda, const label& size)
 
     Foam::cuda::lambdaKernel<F><<<1,1>>>(lambda, size);
 
-    deviceSync();
+    cudaDeviceSynchronize();
     CHECK_LAST_CUDA_ERROR();
 };
 
@@ -321,7 +321,7 @@ void Foam::cudaExecutor::_backendReductionSum
         size
     );
 
-    deviceSync();
+    cudaDeviceSynchronize();
     CHECK_LAST_CUDA_ERROR();
 
     MemoryPool::getInstance()->copyOut
@@ -388,7 +388,7 @@ void Foam::cudaExecutor::_backendReductionCompare
         size
     );
 
-    deviceSync();
+    cudaDeviceSynchronize();
     CHECK_LAST_CUDA_ERROR();
 
     MemoryPool::getInstance()->copyOut
