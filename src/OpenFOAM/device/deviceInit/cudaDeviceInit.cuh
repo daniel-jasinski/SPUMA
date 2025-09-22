@@ -82,7 +82,8 @@ public:
     static int getSharedMemPerBlock()
     {
         // note use a percentage of max allowable dynamic shared memory 
-        // because driver always reserve some of the total shared memory for static allocated object
+        // because driver always reserve some of the total shared memory 
+	// for static allocated object
         return prop_.sharedMemPerBlockOptin * sharedMemPerBlockP_;
     }
 
@@ -97,7 +98,6 @@ public:
     {
         return threadBlock_;
     }
-
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

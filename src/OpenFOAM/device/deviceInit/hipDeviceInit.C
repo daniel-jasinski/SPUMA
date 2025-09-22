@@ -33,6 +33,7 @@ License
 #include "hipDeviceInit.hpp"
 #include "IPstream.H"
 #include "OPstream.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -49,11 +50,12 @@ hipDeviceProp_t hipDeviceInit::prop_{};
 
 void Foam::hipDeviceInit::_backendInit()
 {
-  if (!initDeviceFlag_)
-  {
-    Info << "Initializing HIP devices..." << nl << nl;
+    if (initDeviceFlag_)  return;
 
-    label driverVersion = 0, runtimeVersion = 0;
+    Info << "Initializing HIP devices" << nl << nl;
+
+    label driverVersion = 0;
+    label runtimeVersion = 0;
     hipDriverGetVersion(&driverVersion);
     hipRuntimeGetVersion(&runtimeVersion);
 
@@ -62,32 +64,54 @@ void Foam::hipDeviceInit::_backendInit()
     const label majorRuntimeVersion = runtimeVersion/1000;
     const label minorRuntimeVersion = (runtimeVersion % 100) / 10;
 
-    Info << "HIP Driver Version / Runtime Version:  " <<
-      majorDriverVersion << "." << minorDriverVersion << " / " <<
-      majorRuntimeVersion << "." << minorRuntimeVersion << nl;
+    Info << "HIP Driver Version / Runtime Version:  "
+        << majorDriverVersion << "." << minorDriverVersion << " / "
+        << majorRuntimeVersion << "." << minorRuntimeVersion << nl;
 
     label nDevs;
     hipGetDeviceCount(&nDevs);
 
     devID_ = Pstream::myProcNo() % nDevs;
+    
+    label managedMemory = 0;
+    CHECK_HIP_ERROR
+    (
+        hipDeviceGetAttribute
+        (
+            &managedMemory,
+            hipDeviceAttributeManagedMemory,
+            devID_
+        )
+    );
+
+    if (!managedMemory)
+    {
+        FatalErrorInFunction
+            << "managed memory access not supported "
+            << "on device " << devID_
+            << exit(FatalError);
+    }
+    
     hipSetDevice(devID_);
 
-    CHECK_HIP_ERROR(
-      hipGetDeviceProperties(&prop_,devID_)
+    CHECK_HIP_ERROR
+    (
+        hipGetDeviceProperties(&prop_,devID_)
     );
 
     initDeviceFlag_ = true;
-  }
 }
 
-void Foam::hipDeviceInit::_setNThreadsPerBlock(const int tBlock){
+void Foam::hipDeviceInit::_setNThreadsPerBlock(const int tBlock)
+{
     if (tBlock > prop_.maxThreadsPerBlock)
     {
-        FatalErrorInFunction<<
-            "trying to set a number of thread per block greater than max, "<<
-            "max number of thread per block is: " <<
-            prop_.maxThreadsPerBlock << abort(FatalError);
+        FatalErrorInFunction
+            << "trying to set a number of thread per block greater than max, "
+            << "max number of thread per block is: "
+            << prop_.maxThreadsPerBlock << abort(FatalError);
     }
+
     threadBlock_ = tBlock;
 }
 

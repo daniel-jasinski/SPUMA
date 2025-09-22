@@ -51,11 +51,12 @@ cudaDeviceProp cudaDeviceInit::prop_{};
 
 void Foam::cudaDeviceInit::_backendInit()
 {
-  if (!initDeviceFlag_)
-  {
-    Info << "Initializing CUDA devices..." << nl << nl;
+    if (initDeviceFlag_)  return;
 
-    label driverVersion = 0, runtimeVersion = 0;
+    Info << "Initializing CUDA devices" << nl << nl;
+
+    label driverVersion = 0;
+    label runtimeVersion = 0;
     cudaDriverGetVersion(&driverVersion);
     cudaRuntimeGetVersion(&runtimeVersion);
 
@@ -64,33 +65,55 @@ void Foam::cudaDeviceInit::_backendInit()
     const label majorRuntimeVersion = runtimeVersion/1000;
     const label minorRuntimeVersion = (runtimeVersion % 100) / 10;
 
-    Info << "CUDA Driver Version / Runtime Version:  " <<
-      majorDriverVersion << "." << minorDriverVersion << " / " <<
-      majorRuntimeVersion << "." << minorRuntimeVersion << nl;
+    Info << "CUDA Driver Version / Runtime Version:  "
+        << majorDriverVersion << "." << minorDriverVersion << " / "
+        << majorRuntimeVersion << "." << minorRuntimeVersion << nl;
 
     label nDevs;
     cudaGetDeviceCount(&nDevs);
 
     devID_ = Pstream::myProcNo() % nDevs;
+    
+    label managedMemory = 0;
+    CHECK_CUDA_ERROR
+    (
+        cudaDeviceGetAttribute
+        (
+            &managedMemory,
+            cudaDeviceAttrManagedMemory,
+            devID_
+        )
+    );
+
+    if (!managedMemory)
+    {
+        FatalErrorInFunction
+            << "managed memory access not supported "
+            << "on device " << devID_
+            << exit(FatalError);
+    }
+    
     cudaSetDevice(devID_);
 
-    CHECK_CUDA_ERROR(
-      cudaGetDeviceProperties(&prop_,devID_)
+    CHECK_CUDA_ERROR
+    (
+        cudaGetDeviceProperties(&prop_,devID_)
     );
 
     initDeviceFlag_ = true;
-  }
 }
 
 
-void Foam::cudaDeviceInit::_setNThreadsPerBlock(const int tBlock){
+void Foam::cudaDeviceInit::_setNThreadsPerBlock(const int tBlock)
+{
     if (tBlock > prop_.maxThreadsPerBlock)
     {
-        FatalErrorInFunction<<
-            "trying to set a number of thread per block greater than max, "<<
-            "max number of thread per block is: " <<
-            prop_.maxThreadsPerBlock << abort(FatalError);
+        FatalErrorInFunction
+            << "trying to set a number of thread per block greater than max, "
+            << "max number of thread per block is: "
+            << prop_.maxThreadsPerBlock << abort(FatalError);
     }
+    
     threadBlock_ = tBlock;
 }
 
