@@ -26,48 +26,39 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Struct
-    Foam::spinLock
+    Foam::SharedMemory
 
 Description
-    A struct to lock and unlock a mutex variable.
+    Simple wrapper to allow use of extern linked shared memory by simply
+    casting the same pointer to the desired type. This prevent multiple definition
+    of the same shared pointer of different type.
 
 SourceFiles
-    spinLock.cuh
+    sharedMemory.H
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_spinLock_cuh
-#define Foam_spinLock_cuh
-
+#ifndef Foam_SharedMemory_H
+#define Foam_SharedMemory_H
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-namespace cuda
-{
-
 /*---------------------------------------------------------------------------*\
-                           Struct spinLock Declaration
+                           Struct SharedMemory Declaration
 \*---------------------------------------------------------------------------*/
 
-struct spinLock
+template <typename T>
+struct SharedMemory
 {
-    __device__ static inline void lock(int* mutex)
+    __device__ inline T *getPointer()
     {
-        while (atomicCAS(mutex, 0, 1) == 1) {};
-    }
-
-    __device__ static inline void unlock(int* mutex)
-    {
-       atomicExch(mutex, 0);
+        extern __shared__ __align__(8) char smem[];
+        return reinterpret_cast<T*>(smem);
     }
 };
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-} // End namespace cuda
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

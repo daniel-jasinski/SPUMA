@@ -31,10 +31,12 @@ License
 #define Foam_hip_executor_cu
 
 #include "hipExecutor.hpp"
-#include "deviceM.H"
-#include "hipDeviceUtils.hpp"
-#include "spinLock.hpp"
 #include "deviceInits.H"
+#include "deviceM.H"
+#include "sharedMemory.H"
+#include "mutex.H"
+#include "warpReduce.hpp"
+#include "spinLock.hpp"
 #include "hipError.hpp"
 #include "deviceUtils.H"
 

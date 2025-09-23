@@ -26,85 +26,63 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Description
-    Collection of CUDA global utility functions
+    Warp reduce utility functions for HIP reductions.
 
 SourceFiles
-    cudaDeviceUtils.H
+    warpReduce.hpp
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_cuda_Device_Utils_H
-#define Foam_cuda_Device_Utils_H
-
-#ifdef have_cuda
-
-#include "cudaError.cuh"
-#include <cuda_runtime_api.h>
-#include "mutex.H"
+#ifndef Foam_warpReduce_hpp
+#define Foam_warpReduce_hpp
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-namespace cuda
+namespace hip
 {
+
 template <typename T>
 __device__
 void warpReduceNoVolatile( T* sdata, const unsigned int tid, const unsigned int blockSize)
 {
     T tmp;
-    if (blockSize >= 64) { tmp = sdata[tid + 32];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >= 32) { tmp = sdata[tid + 16];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >= 16) { tmp = sdata[tid +  8];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >=  8) { tmp = sdata[tid +  4];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >=  4) { tmp = sdata[tid +  2];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >=  2) { tmp = sdata[tid +  1];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >= 64) { tmp = sdata[tid + 32];  __threadfence_block(); sdata[tid]+=tmp; __threadfence_block(); }
+    if (blockSize >= 32) { tmp = sdata[tid + 16];  __threadfence_block(); sdata[tid]+=tmp; __threadfence_block(); }
+    if (blockSize >= 16) { tmp = sdata[tid +  8];  __threadfence_block(); sdata[tid]+=tmp; __threadfence_block(); }
+    if (blockSize >=  8) { tmp = sdata[tid +  4];  __threadfence_block(); sdata[tid]+=tmp; __threadfence_block(); }
+    if (blockSize >=  4) { tmp = sdata[tid +  2];  __threadfence_block(); sdata[tid]+=tmp; __threadfence_block(); }
+    if (blockSize >=  2) { tmp = sdata[tid +  1];  __threadfence_block(); sdata[tid]+=tmp; __threadfence_block(); }
 };
 
 template <typename T,typename Op>
 __device__
-void warpReduceCompareNoVolatile( T* sdata, Op& op,const unsigned int tid, const unsigned int blockSize)
+void warpReduceCompareNoVolatile( T* sdata, Op& op, const unsigned int tid, const unsigned int blockSize)
 {
     T tmp;
-    if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__syncwarp();
-        sdata[tid]= tmp;  __syncwarp(); }
-    if (blockSize >= 32) { tmp = op(sdata[tid],sdata[tid + 16]);__syncwarp();
-        sdata[tid]= tmp;  __syncwarp(); }
-    if (blockSize >= 16) { tmp = op(sdata[tid],sdata[tid + 8] );__syncwarp();
-        sdata[tid]= tmp;   __syncwarp(); }
-    if (blockSize >= 8)  { tmp = op(sdata[tid],sdata[tid + 4] ); __syncwarp();
-        sdata[tid]= tmp;  __syncwarp(); }
-    if (blockSize >= 4)  { tmp = op(sdata[tid],sdata[tid + 2] ); __syncwarp();
-        sdata[tid]= tmp;   __syncwarp(); }
-    if (blockSize >= 2)  { tmp = op(sdata[tid],sdata[tid + 1] ); __syncwarp();
-        sdata[tid]= tmp;  __syncwarp();  }
-};
-
-//- simple wrapper to allow use of extern linked shared memory by simply
-// casting the same pointer to the desired type. This prevent multiple definition
-// of the same shared pointer of different type.
-template <typename T>
-struct SharedMemory
-{
-    __device__ inline T *getPointer()
-    {
-        extern __shared__ __align__(8) char smem[];
-        return reinterpret_cast<T*>(smem);
-    }
+    if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__threadfence_block();
+        sdata[tid]= tmp;  __threadfence_block(); }
+    if (blockSize >= 32) { tmp = op(sdata[tid],sdata[tid + 16]);__threadfence_block();
+        sdata[tid]= tmp;  __threadfence_block(); }
+    if (blockSize >= 16) { tmp = op(sdata[tid],sdata[tid + 8] );__threadfence_block();
+        sdata[tid]= tmp;   __threadfence_block(); }
+    if (blockSize >= 8)  { tmp = op(sdata[tid],sdata[tid + 4] ); __threadfence_block();
+        sdata[tid]= tmp;  __threadfence_block(); }
+    if (blockSize >= 4)  { tmp = op(sdata[tid],sdata[tid + 2] ); __threadfence_block();
+        sdata[tid]= tmp;   __threadfence_block(); }
+    if (blockSize >= 2)  { tmp = op(sdata[tid],sdata[tid + 1] ); __threadfence_block();
+        sdata[tid]= tmp;  __threadfence_block();  }
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-} // End namespace cuda
+} // End namespace hip
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-} // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#endif
+} //end namespace Foam
 
 // ************************************************************************* //
 

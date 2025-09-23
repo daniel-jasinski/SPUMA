@@ -25,20 +25,16 @@ License
     You should have received a copy of the GNU General Public License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
-Struct
-    Foam::spinLock
-
 Description
-    A struct to lock and unlock a mutex variable.
+    Warp reduce utility functions for CUDA reductions.
 
 SourceFiles
-    spinLock.cuh
+    warpReduce.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_spinLock_cuh
-#define Foam_spinLock_cuh
-
+#ifndef Foam_warpReduce_cuh
+#define Foam_wardReduce_cuh
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -47,22 +43,36 @@ namespace Foam
 
 namespace cuda
 {
-
-/*---------------------------------------------------------------------------*\
-                           Struct spinLock Declaration
-\*---------------------------------------------------------------------------*/
-
-struct spinLock
+template <typename T>
+__device__
+void warpReduceNoVolatile( T* sdata, const unsigned int tid, const unsigned int blockSize)
 {
-    __device__ static inline void lock(int* mutex)
-    {
-        while (atomicCAS(mutex, 0, 1) == 1) {};
-    }
+    T tmp;
+    if (blockSize >= 64) { tmp = sdata[tid + 32];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >= 32) { tmp = sdata[tid + 16];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >= 16) { tmp = sdata[tid +  8];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  8) { tmp = sdata[tid +  4];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  4) { tmp = sdata[tid +  2];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  2) { tmp = sdata[tid +  1];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+};
 
-    __device__ static inline void unlock(int* mutex)
-    {
-       atomicExch(mutex, 0);
-    }
+template <typename T,typename Op>
+__device__
+void warpReduceCompareNoVolatile( T* sdata, Op& op,const unsigned int tid, const unsigned int blockSize)
+{
+    T tmp;
+    if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 32) { tmp = op(sdata[tid],sdata[tid + 16]);__syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 16) { tmp = op(sdata[tid],sdata[tid + 8] );__syncwarp();
+        sdata[tid]= tmp;   __syncwarp(); }
+    if (blockSize >= 8)  { tmp = op(sdata[tid],sdata[tid + 4] ); __syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 4)  { tmp = op(sdata[tid],sdata[tid + 2] ); __syncwarp();
+        sdata[tid]= tmp;   __syncwarp(); }
+    if (blockSize >= 2)  { tmp = op(sdata[tid],sdata[tid + 1] ); __syncwarp();
+        sdata[tid]= tmp;  __syncwarp();  }
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -75,6 +85,9 @@ struct spinLock
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// ************************************************************************* //
+
 #endif
 
 // ************************************************************************* //
+

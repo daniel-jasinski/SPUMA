@@ -31,10 +31,12 @@ License
 #define Foam_cuda_executor_cu
 
 #include "cudaExecutor.cuh"
-#include "deviceM.H"
-#include "spinLock.cuh"
-#include "cudaDeviceUtils.cuh"
 #include "deviceInits.H"
+#include "deviceM.H"
+#include "sharedMemory.H"
+#include "mutex.H"
+#include "spinLock.cuh"
+#include "warpReduce.cuh"
 #include "cudaError.cuh"
 #include "deviceUtils.H"
 

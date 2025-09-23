@@ -33,10 +33,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_hipAtomicMinMax_H
-#define Foam_hipAtomicMinMax_H
-
-#ifdef have_hip
+#ifndef Foam_hipAtomicMinMax_hpp
+#define Foam_hipAtomicMinMax_hpp
 
 #include "MemoryPool.H"
 #include "hipError.hpp"
@@ -45,6 +43,9 @@ SourceFiles
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
+{
+
+namespace hip
 {
 
 __device__ __forceinline__
@@ -122,11 +123,11 @@ double hipAtomicMax(double *address, double val)
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-} //end namespace Foam
+} // End namespace hip
 
-// ************************************************************************* //
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#endif
+} // End namespace Foam
 
 // ************************************************************************* //
 

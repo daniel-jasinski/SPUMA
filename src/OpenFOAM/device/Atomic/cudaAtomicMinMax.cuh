@@ -33,10 +33,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_cudaAtomicMinMax_H
-#define Foam_cudaAtomicMinMax_H
-
-#ifdef have_cuda
+#ifndef Foam_cudaAtomicMinMax_cuh
+#define Foam_cudaAtomicMinMax_cuh
 
 #include "cudaError.cuh"
 #include <cuda_runtime_api.h>
@@ -44,6 +42,9 @@ SourceFiles
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
+{
+
+namespace cuda
 {
 
 __device__ __forceinline__
@@ -121,11 +122,11 @@ double atomicMax(double *address, double val)
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-} //end namespace Foam
+} // End namespace cuda
 
-// ************************************************************************* //
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#endif
+} // End namespace Foam
 
 // ************************************************************************* //
 
