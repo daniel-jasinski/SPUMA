@@ -83,7 +83,7 @@ void Foam::cudaDeviceInit::_backendInit()
 }
 
 
-void Foam::cudaDeviceInit::_setNThreads(const int tBlock){
+void Foam::cudaDeviceInit::_setNThreadsPerBlock(const int tBlock){
     if (tBlock > prop_.maxThreadsPerBlock)
     {
         FatalErrorInFunction<<

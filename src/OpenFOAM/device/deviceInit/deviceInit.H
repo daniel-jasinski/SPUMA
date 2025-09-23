@@ -72,9 +72,9 @@ public:
         T::_backendInit();
     }
 
-    static void setNThreads(int nThreads)
+    static void setNThreadsPerBlock(int nThreads)
     {
-        T::_setNThreads(nThreads);
+        T::_setNThreadsPerBlock(nThreads);
     }
 
 };

@@ -36,7 +36,7 @@ foamDeviceInit::Init();
 const label nThread = args.getOrDefault<label>("nThreads", 0);
 if(nThread)
 {
-    foamDeviceInit::setNThreads(nThread);
+    foamDeviceInit::setNThreadsPerBlock(nThread);
 }
 
 Info<<"number of Threads: " << nThread << endl;

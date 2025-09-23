@@ -79,7 +79,7 @@ void Foam::hipDeviceInit::_backendInit()
   }
 }
 
-void Foam::hipDeviceInit::_setNThreads(const int tBlock){
+void Foam::hipDeviceInit::_setNThreadsPerBlock(const int tBlock){
     if (tBlock > prop_.maxThreadsPerBlock)
     {
         FatalErrorInFunction<<

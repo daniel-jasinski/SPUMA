@@ -91,7 +91,7 @@ public:
         return prop_.multiProcessorCount;
     }
 
-    static void _setNThreads(const int tBlock);
+    static void _setNThreadsPerBlock(const int tBlock);
 
     static int getThreadsPerBlock()
     {
