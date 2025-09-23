@@ -41,8 +41,6 @@ SourceFiles
 
 #include "deviceInit.H"
 #include "label.H"
-#include "IPstream.H"
-#include "OPstream.H"
 #ifdef have_cuda
     #include <cuda.h>
     #include <cuda_runtime_api.h>
@@ -63,29 +61,18 @@ class cudaDeviceInit
 {
     static int devID_;
 
-    // max shared memory per block
-    static int sharedMemPerBlock_;
-
     // percentage of max shared memory per block usable
     static double sharedMemPerBlockP_;
 
+    // number of thread per block
+    static int threadBlock_;
+
+    // cuda property struct
+    static cudaDeviceProp prop_;
+
 public:
 
-    static void _backendInit()
-    {
-        if (!initDeviceFlag_)
-        {
-            Info << "Initializing CUDA devices..." << nl << nl;
-
-            label nDevs;
-            cudaGetDeviceCount(&nDevs);
-
-            devID_ = Pstream::myProcNo() % nDevs;
-            cudaSetDevice(devID_);
-
-            initDeviceFlag_ = true;
-        }
-    }
+    static void _backendInit();
 
     static void setSharedMemP(const scalar p)
     {
@@ -94,20 +81,21 @@ public:
 
     static int getSharedMemPerBlock()
     {
-        if(sharedMemPerBlock_ == -1)
-        {
-            // get device properties
-            cudaDeviceProp prop;
-            CHECK_CUDA_ERROR(
-                cudaGetDeviceProperties(&prop,devID_)
-            );
-
-            sharedMemPerBlock_ = prop.sharedMemPerBlockOptin;
-        }
-
         // note use a percentage of max allowable dynamic shared memory 
         // because driver always reserve some of the total shared memory for static allocated object
-        return sharedMemPerBlock_ * sharedMemPerBlockP_;
+        return prop_.sharedMemPerBlockOptin * sharedMemPerBlockP_;
+    }
+
+    static int getSM()
+    {
+        return prop_.multiProcessorCount;
+    }
+
+    static void _setNThreads(const int tBlock);
+
+    static int getThreadsPerBlock()
+    {
+        return threadBlock_;
     }
 
 };

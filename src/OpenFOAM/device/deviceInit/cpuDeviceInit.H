@@ -62,6 +62,8 @@ public:
             initDeviceFlag_ = true;
         }
     }
+
+    static void _setNThreads(const int nthreads){};
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
