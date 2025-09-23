@@ -164,20 +164,6 @@ struct spinLock
 
 namespace cuda
 {
-
-template <typename T,int blockSize>
-__device__
-void warpReduceNoVolatile( T* sdata,const unsigned int tid)
-{
-    T tmp;
-    if (blockSize >= 64) { tmp = sdata[tid + 32];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >= 32) { tmp = sdata[tid + 16];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >= 16) { tmp = sdata[tid +  8];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >=  8) { tmp = sdata[tid +  4];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >=  4) { tmp = sdata[tid +  2];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-    if (blockSize >=  2) { tmp = sdata[tid +  1];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-};
-
 template <typename T>
 __device__
 void warpReduceNoVolatile( T* sdata, const unsigned int tid, const unsigned int blockSize)
@@ -189,25 +175,6 @@ void warpReduceNoVolatile( T* sdata, const unsigned int tid, const unsigned int 
     if (blockSize >=  8) { tmp = sdata[tid +  4];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
     if (blockSize >=  4) { tmp = sdata[tid +  2];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
     if (blockSize >=  2) { tmp = sdata[tid +  1];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
-};
-
-template <typename T,typename Op,int blockSize>
-__device__
-void warpReduceCompareNoVolatile( T* sdata, Op& op,int tid)
-{
-    T tmp;
-    if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__syncwarp();
-        sdata[tid]= tmp;  __syncwarp(); }
-    if (blockSize >= 32) { tmp = op(sdata[tid],sdata[tid + 16]);__syncwarp();
-        sdata[tid]= tmp;  __syncwarp(); }
-    if (blockSize >= 16) { tmp = op(sdata[tid],sdata[tid + 8] );__syncwarp();
-        sdata[tid]= tmp;   __syncwarp(); }
-    if (blockSize >= 8)  { tmp = op(sdata[tid],sdata[tid + 4] ); __syncwarp();
-        sdata[tid]= tmp;  __syncwarp(); }
-    if (blockSize >= 4)  { tmp = op(sdata[tid],sdata[tid + 2] ); __syncwarp();
-        sdata[tid]= tmp;   __syncwarp(); }
-    if (blockSize >= 2)  { tmp = op(sdata[tid],sdata[tid + 1] ); __syncwarp();
-        sdata[tid]= tmp;  __syncwarp();  }
 };
 
 template <typename T,typename Op>
@@ -228,61 +195,6 @@ void warpReduceCompareNoVolatile( T* sdata, Op& op,const unsigned int tid, const
     if (blockSize >= 2)  { tmp = op(sdata[tid],sdata[tid + 1] ); __syncwarp();
         sdata[tid]= tmp;  __syncwarp();  }
 };
-
-template <typename T,int blockSize>
-__device__
-void newWarpReduceNoVolatile(T* sdata, int tid)
-{
-    // cuda memory model do not guarantee that reads
-    // are perfomed before write: separate them
-
-    T temp(Zero);
-
-    if (blockSize >= 64)
-    {
-        temp += sdata[tid + 32]; __syncwarp();
-        sdata[tid] = temp; __syncwarp();
-    }
-    if (blockSize >= 32)
-    {
-        temp += sdata[tid + 16]; __syncwarp();
-        sdata[tid] = temp; __syncwarp();
-    }
-    if (blockSize >= 16)
-    {
-        temp += sdata[tid + 8]; __syncwarp();
-        sdata[tid] = temp; __syncwarp();
-    }
-    if (blockSize >= 8)
-    {
-        temp += sdata[tid + 4]; __syncwarp();
-        sdata[tid] = temp; __syncwarp();
-    }
-    if (blockSize >= 4)
-    {
-        temp += sdata[tid + 2]; __syncwarp();
-        sdata[tid] = temp; __syncwarp();
-    }
-    if (blockSize >= 2)
-    {
-        temp += sdata[tid + 1]; __syncwarp();
-        sdata[tid] = temp; __syncwarp();
-    }
-
-};
-
-template <typename T, int blockSize>
-__device__
-void warpReduce(volatile T* sdata, int tid) // volataile to ensure visibility of memory operations
-{
-    if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
-    if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
-    if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
-    if (blockSize >= 8)  sdata[tid] += sdata[tid + 4];
-    if (blockSize >= 4)  sdata[tid] += sdata[tid + 2];
-    if (blockSize >= 2)  sdata[tid] += sdata[tid + 1];
-};
-
 
 //- simple wrapper to allow use of extern linked shared memory by simply
 // casting the same pointer to the desired type. This prevent multiple definition
