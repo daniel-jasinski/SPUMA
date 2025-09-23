@@ -167,7 +167,20 @@ namespace cuda
 
 template <typename T,int blockSize>
 __device__
-void warpReduceNoVolatile( T* sdata, int tid)
+void warpReduceNoVolatile( T* sdata,const unsigned int tid)
+{
+    T tmp;
+    if (blockSize >= 64) { tmp = sdata[tid + 32];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >= 32) { tmp = sdata[tid + 16];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >= 16) { tmp = sdata[tid +  8];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  8) { tmp = sdata[tid +  4];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  4) { tmp = sdata[tid +  2];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  2) { tmp = sdata[tid +  1];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+};
+
+template <typename T>
+__device__
+void warpReduceNoVolatile( T* sdata, const unsigned int tid, const unsigned int blockSize)
 {
     T tmp;
     if (blockSize >= 64) { tmp = sdata[tid + 32];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
@@ -181,6 +194,25 @@ void warpReduceNoVolatile( T* sdata, int tid)
 template <typename T,typename Op,int blockSize>
 __device__
 void warpReduceCompareNoVolatile( T* sdata, Op& op,int tid)
+{
+    T tmp;
+    if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 32) { tmp = op(sdata[tid],sdata[tid + 16]);__syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 16) { tmp = op(sdata[tid],sdata[tid + 8] );__syncwarp();
+        sdata[tid]= tmp;   __syncwarp(); }
+    if (blockSize >= 8)  { tmp = op(sdata[tid],sdata[tid + 4] ); __syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 4)  { tmp = op(sdata[tid],sdata[tid + 2] ); __syncwarp();
+        sdata[tid]= tmp;   __syncwarp(); }
+    if (blockSize >= 2)  { tmp = op(sdata[tid],sdata[tid + 1] ); __syncwarp();
+        sdata[tid]= tmp;  __syncwarp();  }
+};
+
+template <typename T,typename Op>
+__device__
+void warpReduceCompareNoVolatile( T* sdata, Op& op,const unsigned int tid, const unsigned int blockSize)
 {
     T tmp;
     if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__syncwarp();

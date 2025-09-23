@@ -35,6 +35,7 @@ License
 #include "cudaDeviceUtils.cuh"
 #include "deviceInits.H"
 #include "cudaError.cuh"
+#include "deviceUtils.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -71,7 +72,7 @@ void reductionLambdaSumKernel
     unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x;
     const unsigned int tid = threadIdx.x;
     const label gsize = size;
-    const unsigned int blockSize = NUM_THREADS_PER_BLOCK;
+    const unsigned int blockSize = blockDim.x;
     const unsigned int gridSize = blockDim.x*2*gridDim.x;
 
     SharedMemory<resultType> smem;
@@ -107,7 +108,7 @@ void reductionLambdaSumKernel
     // in warp: syncthread guaranteed
     if (tid < 32)
     {
-        warpReduceNoVolatile<resultType,blockSize>(sdata, tid);
+        warpReduceNoVolatile<resultType>(sdata, tid, blockSize);
     }
 
     __syncthreads();
@@ -148,7 +149,7 @@ void reductionLambdaCompareKernel
     unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x;
     const unsigned int tid = threadIdx.x;
     const label gsize = size;
-    const unsigned int blockSize = NUM_THREADS_PER_BLOCK;
+    const unsigned int blockSize = blockDim.x;
     const unsigned int gridSize = blockDim.x*2*gridDim.x;
 
     SharedMemory<resultType> smem;
@@ -212,7 +213,7 @@ void reductionLambdaCompareKernel
     // warp wise reduction step
     if (tid < 32)
     {
-        warpReduceCompareNoVolatile<resultType,Op,blockSize>(sdata,op,tid);
+        warpReduceCompareNoVolatile<resultType,Op>(sdata, op, tid, blockSize);
     }
 
     __syncthreads();
@@ -246,10 +247,11 @@ void Foam::cudaExecutor::_backendFor(F& lambda, const label& size)
     if (size <= 0)
         return;
 
-    label numblocks = SET_NUM_BLOCKS(size);
+    const label nThreads = cudaDeviceInit::getThreadsPerBlock();
+    const label numblocks = device::setNumBlocks(size,nThreads);
 
     Foam::cuda::lambdaKernel<F>
-    <<<numblocks,NUM_THREADS_PER_BLOCK>>>
+    <<<numblocks,nThreads>>>
     (lambda,size);
 
     deviceSync();
@@ -294,9 +296,11 @@ void Foam::cudaExecutor::_backendReductionSum
     // create mutex
     Foam::Mutex mutex;
 
-    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
+    const label nThreads = cudaDeviceInit::getThreadsPerBlock();
+    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreads);
+    const label nSM = cudaDeviceInit::getSM();
 
-    const int maxbytes = cudaDeviceInit::getSharedMemPerBlock();
+    const label maxbytes = cudaDeviceInit::getSharedMemPerBlock();
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
     CHECK_CUDA_ERROR
     (
@@ -309,7 +313,7 @@ void Foam::cudaExecutor::_backendReductionSum
     );
 
     Foam::cuda::reductionLambdaSumKernel<resultT, F>
-    <<<(numBlocks + NUM_SM -1)/NUM_SM,NUM_THREADS_PER_BLOCK, maxbytes>>>
+    <<<(numBlocks + nSM -1)/nSM,nThreads, maxbytes>>>
     (
         dPtrResult,
         lambda,
@@ -357,9 +361,11 @@ void Foam::cudaExecutor::_backendReductionCompare
     // create mutex
     Foam::Mutex mutex;
 
-    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
+    const label nThreads = cudaDeviceInit::getThreadsPerBlock();
+    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreads);
+    const label nSM = cudaDeviceInit::getSM();
 
-    int maxbytes =cudaDeviceInit::getSharedMemPerBlock();
+    const label maxbytes = cudaDeviceInit::getSharedMemPerBlock();
 
     // declare that this kernel can use up to maxbytes of dynamically allocated shared memory
     CHECK_CUDA_ERROR
@@ -373,7 +379,7 @@ void Foam::cudaExecutor::_backendReductionCompare
     );
 
     Foam::cuda::reductionLambdaCompareKernel<resultT, F, Op>
-    <<<(numBlocks + NUM_SM -1)/NUM_SM,NUM_THREADS_PER_BLOCK, maxbytes>>>
+    <<<(numBlocks + nSM -1)/nSM,nThreads, maxbytes>>>
     (
         dPtrResult,
         lambda,

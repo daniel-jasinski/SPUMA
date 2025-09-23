@@ -65,6 +65,21 @@ namespace argWrapper
     }
 }; //namespace argWrapper
 
+
+namespace device
+{
+
+    inline label setNumBlocks(const label size, const label nThreads)
+    {
+        return (size + nThreads - 1) / nThreads;
+    }
+
+    inline label setTreeReduceNumBlocks(const label size, const label nThreads)
+    {
+        return (size + 2*nThreads- 1) / (2*nThreads);
+    }
+}
+
 } // namespace Foam
 
 #endif
