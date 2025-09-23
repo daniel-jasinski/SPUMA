@@ -47,22 +47,6 @@ SourceFiles
 namespace Foam
 {
 
-/*---------------------------------------------------------------------------*\
-                          Struct spinLock Declaration
-\*---------------------------------------------------------------------------*/
-
-struct spinLock
-{
-    __device__ static inline void lock(int* mutex)
-    {
-        while (atomicCAS(mutex, 0, 1) == 1) {};
-    }
-    __device__ static inline void unlock(int* mutex)
-    {
-        atomicExch(mutex, 0);
-    }
-};
-
 namespace hip
 {
 

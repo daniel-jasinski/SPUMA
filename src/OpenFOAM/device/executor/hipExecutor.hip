@@ -33,6 +33,7 @@ License
 #include "hipExecutor.hpp"
 #include "deviceM.H"
 #include "hipDeviceUtils.hpp"
+#include "spinLock.hpp"
 #include "deviceInits.H"
 #include "hipError.hpp"
 #include "deviceUtils.H"

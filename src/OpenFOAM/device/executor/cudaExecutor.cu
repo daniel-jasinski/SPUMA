@@ -32,6 +32,7 @@ License
 
 #include "cudaExecutor.cuh"
 #include "deviceM.H"
+#include "spinLock.cuh"
 #include "cudaDeviceUtils.cuh"
 #include "deviceInits.H"
 #include "cudaError.cuh"
