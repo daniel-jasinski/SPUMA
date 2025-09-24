@@ -41,8 +41,6 @@ SourceFiles
 
 #include "deviceInit.H"
 #include "label.H"
-#include "IPstream.H"
-#include "OPstream.H"
 #ifdef have_hip
     #include <hip/hip_runtime.h>
     #include "hipError.hpp"

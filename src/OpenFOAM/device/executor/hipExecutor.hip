@@ -35,6 +35,7 @@ License
 #include "hipDeviceUtils.hpp"
 #include "deviceInits.H"
 #include "hipError.hpp"
+#include "deviceUtils.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -71,7 +72,7 @@ void reductionLambdaSumKernel
     unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x;
     const unsigned int tid = threadIdx.x;
     const label gsize = size;
-    const unsigned int blockSize = NUM_THREADS_PER_BLOCK;
+    const unsigned int blockSize = blockDim.x;
     const unsigned int gridSize = blockDim.x*2*gridDim.x;
 
     SharedMemory<resultType> smem;
@@ -108,7 +109,7 @@ void reductionLambdaSumKernel
     //in warp: syncthread guaranteed
     if (tid < 32)
     {
-        warpReduceNoVolatile<resultType,blockSize>(sdata, tid);
+        warpReduceNoVolatile<resultType>(sdata, tid, blockSize);
     }
 
     __syncthreads();
@@ -150,7 +151,7 @@ void reductionLambdaCompareKernel
     unsigned int id  = blockIdx.x * (2*blockDim.x) + threadIdx.x;
     const unsigned int tid = threadIdx.x;
     const label gsize = size;
-    const unsigned int blockSize = NUM_THREADS_PER_BLOCK;
+    const unsigned int blockSize = blockDim.x;
     const unsigned int gridSize = blockDim.x*2*gridDim.x;
 
     SharedMemory<resultType> smem;
@@ -224,7 +225,7 @@ void reductionLambdaCompareKernel
     // warp wise reduction step
     if (tid < 32)
     {
-        warpReduceCompareNoVolatile<resultType,Op,blockSize>(sdata,op,tid);
+        warpReduceCompareNoVolatile<resultType,Op>(sdata,op,tid,blockSize);
     }
 
     __syncthreads();
@@ -257,13 +258,14 @@ void Foam::hipExecutor::_backendFor(F& lambda, const label& size)
     if (size <= 0)
         return;
 
-    label numblocks = SET_NUM_BLOCKS(size);
+    const label nThreads = hipDeviceInit::getThreadsPerBlock();
+    const label numBlocks = device::setNumBlocks(size,nThreads);
 
     hipLaunchKernelGGL
     (
         Foam::hip::lambdaKernel<F>,
-        numblocks,
-        NUM_THREADS_PER_BLOCK,
+        numBlocks,
+        nThreads,
         0,
         0,
         lambda,
@@ -320,7 +322,9 @@ void Foam::hipExecutor::_backendReductionSum(
     // create mutex
     Foam::Mutex mutex;
 
-    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
+    const label nThreads = hipDeviceInit::getThreadsPerBlock();
+    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreads);
+    const label nSM = hipDeviceInit::getSM();
 
     const int maxbytes = hipDeviceInit::getSharedMemPerBlock();
 
@@ -340,8 +344,8 @@ void Foam::hipExecutor::_backendReductionSum(
     hipLaunchKernelGGL
     (
         (Foam::hip::reductionLambdaSumKernel<resultT,F>),
-        (numBlocks + NUM_SM - 1)/NUM_SM,
-        NUM_THREADS_PER_BLOCK,
+        (numBlocks + nSM - 1)/nSM,
+        nThreads,
         maxbytes,
         0,
         dPtrResult,
@@ -384,9 +388,11 @@ void Foam::hipExecutor::_backendReductionCompare
     // create mutex
     Foam::Mutex mutex;
 
-    const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
+    const label nThreads = hipDeviceInit::getThreadsPerBlock();
+    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreads);
+    const label nSM = hipDeviceInit::getSM();
 
-    int maxbytes = hipDeviceInit::getSharedMemPerBlock();
+    const label maxbytes = hipDeviceInit::getSharedMemPerBlock();
 
     // declare that this kernel can use up to maxbytes of dynamically allocated shared memory
     CHECK_HIP_ERROR
@@ -404,8 +410,8 @@ void Foam::hipExecutor::_backendReductionCompare
     hipLaunchKernelGGL
     (
         (Foam::hip::reductionLambdaCompareKernel<resultT,F,Op>),
-        (numBlocks + NUM_SM - 1)/NUM_SM,
-        NUM_THREADS_PER_BLOCK,
+        (numBlocks + nSM - 1)/nSM,
+        nThreads,
         maxbytes,
         0,
         dPtrResult,

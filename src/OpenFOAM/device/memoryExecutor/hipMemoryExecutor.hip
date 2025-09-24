@@ -33,6 +33,8 @@ License
 #include "memoryKernels.H"
 #include "error.H"
 #include "hipError.hpp"
+#include "hipDeviceInit.hpp"
+#include "deviceUtils.H"
 
 // * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * * //
 
@@ -103,12 +105,13 @@ void Foam::hipMemoryExecutor::_backendMemCopy
     }
     else if (kind == memCopyKind::memCopyDeviceToDevice)
     {
-        label numblocks = SET_NUM_BLOCKS(size);
+        const label nThreads = hipDeviceInit::getThreadsPerBlock();
+        const label numBlocks = device::setNumBlocks(size, nThreads); 
         hipLaunchKernelGGL
         (
             memCopyKernel,
-            numblocks,
-            NUM_THREADS_PER_BLOCK,
+            numBlocks,
+            nThreads,
             0,
             0,
             size,
@@ -146,9 +149,10 @@ void Foam::hipMemoryExecutor::_backendMemSet
     if (err != 0)
         FatalErrorInFunction << "ERROR: hipMemcpy returned " << err << abort(FatalError);
 
-    int numBlocks = SET_NUM_BLOCKS(sizeInBytes - sizeOfValue);
+    const int nThreads = hipDeviceInit::getThreadsPerBlock();
+    int numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreads);
     numBlocks = numBlocks == 0 ? 1 : numBlocks;
-    Foam::device::memSetKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+    Foam::device::memSetKernel<<<numBlocks, nThreads>>>
     (
         sizeInBytes - sizeOfValue,
         (int) sizeOfValue,
@@ -165,8 +169,9 @@ void Foam::hipMemoryExecutor::_backendMemSetScalarOne
     const size_t sizeInBytes
 )
 {
-    const int numBlocks = SET_NUM_BLOCKS(sizeInBytes);
-    Foam::device::memSetOneKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+    const int nThreads = hipDeviceInit::getThreadsPerBlock();
+    const int numBlocks = device::setNumBlocks(sizeInBytes, nThreads);
+    Foam::device::memSetOneKernel<<<numBlocks, nThreads>>>
     (
         sizeInBytes/sizeof(scalar),
         (scalar*)ptr

@@ -49,7 +49,7 @@ void memSetKernel(uint64_t nElementsInBytes, int dataSize, char *target, const c
 {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = gridDim.x * blockDim.x;
-    for(int ii = idx; ii < nElementsInBytes; ii += stride)
+    for(uint64_t ii = idx; ii < nElementsInBytes; ii += stride)
     {
         int jj = ii % dataSize;
         target[ii] = source[jj];
@@ -62,7 +62,7 @@ void memSetOneKernel(uint64_t nElements, scalar *target)
     const scalar one = 1.0;
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = gridDim.x * blockDim.x;
-    for(int ii = idx; ii < nElements; ii += stride)
+    for(uint64_t ii = idx; ii < nElements; ii += stride)
     {
         target[ii] = one;
     }

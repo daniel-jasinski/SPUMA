@@ -166,9 +166,9 @@ struct spinLock
 namespace hip
 {
 
-template <typename T,int blockSize>
+template <typename T>
 __device__
-void warpReduceNoVolatile( T* sdata, int tid)
+void warpReduceNoVolatile( T* sdata, const unsigned int tid, const unsigned int blockSize)
 {
     T tmp;
     if (blockSize >= 64) { tmp = sdata[tid + 32];  __threadfence_block(); sdata[tid]+=tmp; __threadfence_block(); }
@@ -179,10 +179,9 @@ void warpReduceNoVolatile( T* sdata, int tid)
     if (blockSize >=  2) { tmp = sdata[tid +  1];  __threadfence_block(); sdata[tid]+=tmp; __threadfence_block(); }
 };
 
-
-template <typename T,typename Op,int blockSize>
+template <typename T,typename Op>
 __device__
-void warpReduceCompareNoVolatile( T* sdata, Op& op,int tid)
+void warpReduceCompareNoVolatile( T* sdata, Op& op, const unsigned int tid, const unsigned int blockSize)
 {
     T tmp;
     if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__threadfence_block();
@@ -197,59 +196,6 @@ void warpReduceCompareNoVolatile( T* sdata, Op& op,int tid)
         sdata[tid]= tmp;   __threadfence_block(); }
     if (blockSize >= 2)  { tmp = op(sdata[tid],sdata[tid + 1] ); __threadfence_block();
         sdata[tid]= tmp;  __threadfence_block();  }
-};
-
-template <typename T,int blockSize>
-__device__
-void newWarpReduceNoVolatile( T* sdata, int tid)
-{
-    // hip memory model do not guarantee that reads
-    // are perfomed before write: separate them
-
-    T temp(Zero);
-
-    if (blockSize >= 64)
-    {
-        temp += sdata[tid + 32]; __threadfence_block();
-        sdata[tid] = temp; __threadfence_block();
-    }
-    if (blockSize >= 32)
-    {
-        temp += sdata[tid + 16]; __threadfence_block();
-        sdata[tid] = temp; __threadfence_block();
-    }
-    if (blockSize >= 16)
-    {
-        temp += sdata[tid + 8]; __threadfence_block();
-        sdata[tid] = temp; __threadfence_block();
-    }
-    if (blockSize >= 8)
-    {
-        temp += sdata[tid + 4]; __threadfence_block();
-        sdata[tid] = temp; __threadfence_block();
-    }
-    if (blockSize >= 4)
-    {
-        temp += sdata[tid + 2]; __threadfence_block();
-        sdata[tid] = temp; __threadfence_block();
-    }
-    if (blockSize >= 2)
-    {
-        temp += sdata[tid + 1]; __threadfence_block();
-        sdata[tid] = temp; __threadfence_block();
-    }
-};
-
-template <typename T, int blockSize>
-__device__
-void warpReduce(volatile T* sdata, int tid) // volataile to ensure visibility of memory operations
-{
-    if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
-    if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
-    if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
-    if (blockSize >= 8)  sdata[tid] += sdata[tid + 4];
-    if (blockSize >= 4)  sdata[tid] += sdata[tid + 2];
-    if (blockSize >= 2)  sdata[tid] += sdata[tid + 1];
 };
 
 // Simple wrapper to allow the use of extern linked shared memory by

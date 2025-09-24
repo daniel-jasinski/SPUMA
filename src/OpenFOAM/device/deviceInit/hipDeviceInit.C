@@ -31,7 +31,8 @@ License
 #define Foam_hipDeviceInit_C
 
 #include "hipDeviceInit.hpp"
-
+#include "IPstream.H"
+#include "OPstream.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
