@@ -67,16 +67,20 @@ class deviceInit
     deviceInit(const deviceInit&) = delete;
 public:
 
-    static void Init()
+    static void init()
     {
         T::_backendInit();
     }
 
-    static void setNThreadsPerBlock(int nThreads)
+    static void setNumberOfThreadsPerBlock(int nThreadsPerBlock)
     {
-        T::_setNThreadsPerBlock(nThreads);
+        T::_setNumberOfThreadsPerBlock(nThreadsPerBlock);
     }
 
+    static int getNumberOfThreadsPerBlock()
+    {
+        return T::_getNumberOfThreadsPerBlock();
+    }
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

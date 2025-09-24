@@ -41,11 +41,9 @@ SourceFiles
 
 #include "deviceInit.H"
 #include "label.H"
-#ifdef have_cuda
-    #include <cuda.h>
-    #include <cuda_runtime_api.h>
-    #include "cudaError.cuh"
-#endif
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include "cudaError.cuh"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -62,10 +60,10 @@ class cudaDeviceInit
     static int devID_;
 
     // percentage of max shared memory per block usable
-    static double sharedMemPerBlockP_;
+    static double sharedMemoryPerBlockPercentage_;
 
     // number of thread per block
-    static int threadBlock_;
+    static int nThreadsPerBlock_;
 
     // cuda property struct
     static cudaDeviceProp prop_;
@@ -74,29 +72,35 @@ public:
 
     static void _backendInit();
 
-    static void setSharedMemP(const scalar p)
+    static void setSharedMemoryPercentage
+    (
+        const scalar percentage
+    )
     {
-        sharedMemPerBlockP_ = p;
+        sharedMemoryPerBlockPercentage_ = percentage;
     };
 
-    static int getSharedMemPerBlock()
+    static int getSharedMemoryPerBlock()
     {
         // note use a percentage of max allowable dynamic shared memory 
         // because driver always reserve some of the total shared memory 
 	// for static allocated object
-        return prop_.sharedMemPerBlockOptin * sharedMemPerBlockP_;
+        return prop_.sharedMemPerBlockOptin * sharedMemoryPerBlockPercentage_;
     }
 
-    static int getSM()
+    static int getNumberOfStreamingMultiprocessors()
     {
         return prop_.multiProcessorCount;
     }
 
-    static void _setNThreadsPerBlock(const int tBlock);
+    static void _setNumberOfThreadsPerBlock
+    (
+        const int nThreadsPerBlock
+    );
 
-    static int getThreadsPerBlock()
+    static int _getNumberOfThreadsPerBlock()
     {
-        return threadBlock_;
+        return nThreadsPerBlock_;
     }
 };
 

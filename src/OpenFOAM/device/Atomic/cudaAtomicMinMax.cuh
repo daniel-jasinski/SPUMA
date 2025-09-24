@@ -48,7 +48,7 @@ namespace cuda
 {
 
 __device__ __forceinline__
-float atomicMin(float *address, float val)
+float cudaAtomicMin(float *address, float val)
 {
     float old;
     old = !signbit(val) ? __int_as_float(atomicMin((int*)address, __float_as_int(val))) :
@@ -58,7 +58,7 @@ float atomicMin(float *address, float val)
 }
 
 __device__ __forceinline__
-double atomicMin(double *address, double val)
+double cudaAtomicMin(double *address, double val)
 {
     unsigned long long ret = __double_as_longlong(*address);
 
@@ -85,7 +85,7 @@ double atomicMin(double *address, double val)
 }
 
 __device__ __forceinline__
-float atomicMax(float *address, float val)
+float cudaAtomicMax(float *address, float val)
 {
     float old;
     old = !signbit(val) ? __int_as_float(atomicMax((int*)address, __float_as_int(val))) :
@@ -95,7 +95,7 @@ float atomicMax(float *address, float val)
 }
 
 __device__ __forceinline__
-double atomicMax(double *address, double val)
+double cudaAtomicMax(double *address, double val)
 {
     unsigned long long ret = __double_as_longlong(*address);
 

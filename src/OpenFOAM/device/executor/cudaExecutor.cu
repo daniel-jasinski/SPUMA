@@ -250,11 +250,11 @@ void Foam::cudaExecutor::_backendFor(F& lambda, const label& size)
     if (size <= 0)
         return;
 
-    const label nThreads = cudaDeviceInit::getThreadsPerBlock();
-    const label numblocks = device::setNumBlocks(size,nThreads);
+    const label nThreadsPerBlock = cudaDeviceInit::getNumberOfThreadsPerBlock();
+    const label numblocks = device::setNumBlocks(size, nThreadsPerBlock);
 
     Foam::cuda::lambdaKernel<F>
-    <<<numblocks,nThreads>>>
+    <<<numblocks, nThreadsPerBlock>>>
     (lambda,size);
 
     cudaDeviceSynchronize();
@@ -299,11 +299,11 @@ void Foam::cudaExecutor::_backendReductionSum
     // create mutex
     Foam::Mutex mutex;
 
-    const label nThreads = cudaDeviceInit::getThreadsPerBlock();
-    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreads);
-    const label nSM = cudaDeviceInit::getSM();
+    const label nThreadsPerBlock = cudaDeviceInit::getNumberOfThreadsPerBlock();
+    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreadsPerBlock);
+    const label nStreamingMultiprocessors = cudaDeviceInit::getNumberOfStreamingMultiprocessors();
 
-    const label maxbytes = cudaDeviceInit::getSharedMemPerBlock();
+    const label maxbytes = cudaDeviceInit::getSharedMemoryPerBlock();
     // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
     CHECK_CUDA_ERROR
     (
@@ -316,7 +316,7 @@ void Foam::cudaExecutor::_backendReductionSum
     );
 
     Foam::cuda::reductionLambdaSumKernel<resultT, F>
-    <<<(numBlocks + nSM -1)/nSM,nThreads, maxbytes>>>
+    <<<(numBlocks + nStreamingMultiprocessors -1)/nStreamingMultiprocessors, nThreadsPerBlock, maxbytes>>>
     (
         dPtrResult,
         lambda,
@@ -364,11 +364,11 @@ void Foam::cudaExecutor::_backendReductionCompare
     // create mutex
     Foam::Mutex mutex;
 
-    const label nThreads = cudaDeviceInit::getThreadsPerBlock();
-    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreads);
-    const label nSM = cudaDeviceInit::getSM();
+    const label nThreadsPerBlock = cudaDeviceInit::getNumberOfThreadsPerBlock();
+    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreadsPerBlock);
+    const label nStreamingMultiprocessors = cudaDeviceInit::getNumberOfStreamingMultiprocessors();
 
-    const label maxbytes = cudaDeviceInit::getSharedMemPerBlock();
+    const label maxbytes = cudaDeviceInit::getSharedMemoryPerBlock();
 
     // declare that this kernel can use up to maxbytes of dynamically allocated shared memory
     CHECK_CUDA_ERROR
@@ -382,7 +382,7 @@ void Foam::cudaExecutor::_backendReductionCompare
     );
 
     Foam::cuda::reductionLambdaCompareKernel<resultT, F, Op>
-    <<<(numBlocks + nSM -1)/nSM,nThreads, maxbytes>>>
+    <<<(numBlocks + nStreamingMultiprocessors -1)/nStreamingMultiprocessors, nThreadsPerBlock, maxbytes>>>
     (
         dPtrResult,
         lambda,

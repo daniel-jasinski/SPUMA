@@ -43,9 +43,15 @@ namespace Foam
 
 namespace cuda
 {
+
 template <typename T>
 __device__
-void warpReduceNoVolatile( T* sdata, const unsigned int tid, const unsigned int blockSize)
+void warpReduceNoVolatile
+(
+    T* sdata, 
+    const unsigned int tid, 
+    const unsigned int blockSize
+)
 {
     T tmp;
     if (blockSize >= 64) { tmp = sdata[tid + 32];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
@@ -58,7 +64,12 @@ void warpReduceNoVolatile( T* sdata, const unsigned int tid, const unsigned int 
 
 template <typename T,typename Op>
 __device__
-void warpReduceCompareNoVolatile( T* sdata, Op& op,const unsigned int tid, const unsigned int blockSize)
+void warpReduceCompareNoVolatile
+(
+    T* sdata, Op& op, 
+    const unsigned int tid, 
+    const unsigned int blockSize
+)
 {
     T tmp;
     if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__syncwarp();

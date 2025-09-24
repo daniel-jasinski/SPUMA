@@ -40,8 +40,8 @@ namespace Foam
 {
 
 int cudaDeviceInit::devID_ = -1; 
-int cudaDeviceInit::threadBlock_ = 128;
-double cudaDeviceInit::sharedMemPerBlockP_ = 0.9;
+int cudaDeviceInit::nThreadsPerBlock_ = 128;
+double cudaDeviceInit::sharedMemoryPerBlockPercentage_ = 0.9;
 cudaDeviceProp cudaDeviceInit::prop_{};
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -80,7 +80,7 @@ void Foam::cudaDeviceInit::_backendInit()
         cudaDeviceGetAttribute
         (
             &managedMemory,
-            cudaDeviceAttrManagedMemory,
+            cudaDevAttrManagedMemory,
             devID_
         )
     );
@@ -104,17 +104,26 @@ void Foam::cudaDeviceInit::_backendInit()
 }
 
 
-void Foam::cudaDeviceInit::_setNThreadsPerBlock(const int tBlock)
+void Foam::cudaDeviceInit::_setNumberOfThreadsPerBlock
+(
+    const int nThreadsPerBlock
+)
 {
-    if (tBlock > prop_.maxThreadsPerBlock)
+    if (nThreadsPerBlock > prop_.maxThreadsPerBlock)
     {
         FatalErrorInFunction
-            << "trying to set a number of thread per block greater than max, "
+            << "trying to set a number of threads per block greater than max, "
             << "max number of thread per block is: "
             << prop_.maxThreadsPerBlock << abort(FatalError);
     }
+    else if (nThreadsPerBlock <= 0)
+    {
+        FatalErrorInFunction
+            << "trying to set a number of threads less or equal to zero"
+	    << abort(FatalError);
+    }
     
-    threadBlock_ = tBlock;
+    nThreadsPerBlock_ = nThreadsPerBlock;
 }
 
 

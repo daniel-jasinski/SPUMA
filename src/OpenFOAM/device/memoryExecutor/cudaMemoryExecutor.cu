@@ -107,10 +107,10 @@ void Foam::cudaMemoryExecutor::_backendMemSet
     if (err != 0)
         FatalErrorInFunction << "ERROR: cudaMemcpy returned " << err << abort(FatalError);
 
-    const int nThreads = cudaDeviceInit::getThreadsPerBlock();
-    int numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreads);
+    const int nThreadsPerBlock = cudaDeviceInit::getNumberOfThreadsPerBlock();
+    int numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreadsPerBlock);
     numBlocks = numBlocks == 0 ? 1 : numBlocks;
-    Foam::device::memSetKernel<<<numBlocks, nThreads>>>
+    Foam::device::memSetKernel<<<numBlocks, nThreadsPerBlock>>>
     (
         sizeInBytes - sizeOfValue,
         (int) sizeOfValue,
@@ -128,9 +128,9 @@ void Foam::cudaMemoryExecutor::_backendMemSetScalarOne
     const size_t sizeInBytes
 )
 {
-    const int nThreads = cudaDeviceInit::getThreadsPerBlock();
-    const int numBlocks = device::setNumBlocks(sizeInBytes, nThreads);
-    Foam::device::memSetOneKernel<<<numBlocks, nThreads>>>
+    const int nThreadsPerBlock = cudaDeviceInit::getNumberOfThreadsPerBlock();
+    const int numBlocks = device::setNumBlocks(sizeInBytes, nThreadsPerBlock);
+    Foam::device::memSetOneKernel<<<numBlocks, nThreadsPerBlock>>>
     (
         sizeInBytes/sizeof(scalar),
         (scalar*)ptr

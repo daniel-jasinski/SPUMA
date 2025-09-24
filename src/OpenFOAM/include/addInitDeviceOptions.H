@@ -26,7 +26,7 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Description
-    Add device init pool options
+    Add device initialization options
 
 \*---------------------------------------------------------------------------*/
 
@@ -34,14 +34,13 @@ Description
 #define addInitDeviceOptions_H
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 // Declare device init options
-
-
 argList::addOption
 (
-    "nThreads",
-    "number-of-threads",
-    "set number of threads"
+    "nThreadsPerBlock",
+    "number-of-threads-per-block",
+    "Set the number of threads per block"
 );
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

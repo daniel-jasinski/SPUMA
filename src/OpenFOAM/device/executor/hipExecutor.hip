@@ -261,14 +261,14 @@ void Foam::hipExecutor::_backendFor(F& lambda, const label& size)
     if (size <= 0)
         return;
 
-    const label nThreads = hipDeviceInit::getThreadsPerBlock();
-    const label numBlocks = device::setNumBlocks(size,nThreads);
+    const label nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
+    const label numBlocks = device::setNumBlocks(size, nThreadsPerBlock);
 
     hipLaunchKernelGGL
     (
         Foam::hip::lambdaKernel<F>,
         numBlocks,
-        nThreads,
+        nThreadsPerBlock,
         0,
         0,
         lambda,
@@ -325,11 +325,11 @@ void Foam::hipExecutor::_backendReductionSum(
     // create mutex
     Foam::Mutex mutex;
 
-    const label nThreads = hipDeviceInit::getThreadsPerBlock();
-    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreads);
-    const label nSM = hipDeviceInit::getSM();
+    const label nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
+    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreadsPerBlock);
+    const label nStreamingMultiprocessors = hipDeviceInit::getNumberOfStreamingMultiprocessors();
 
-    const int maxbytes = hipDeviceInit::getSharedMemPerBlock();
+    const int maxbytes = hipDeviceInit::getSharedMemoryPerBlock();
 
     // declare that this kernel can use up to maxbytes of dynamically allocated shared memory
     CHECK_HIP_ERROR
@@ -347,8 +347,8 @@ void Foam::hipExecutor::_backendReductionSum(
     hipLaunchKernelGGL
     (
         (Foam::hip::reductionLambdaSumKernel<resultT,F>),
-        (numBlocks + nSM - 1)/nSM,
-        nThreads,
+        (numBlocks + nStreamingMultiprocessors - 1)/nStreamingMultiprocessors,
+        nThreadsPerBlock,
         maxbytes,
         0,
         dPtrResult,
@@ -391,11 +391,11 @@ void Foam::hipExecutor::_backendReductionCompare
     // create mutex
     Foam::Mutex mutex;
 
-    const label nThreads = hipDeviceInit::getThreadsPerBlock();
-    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreads);
-    const label nSM = hipDeviceInit::getSM();
+    const label nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
+    const label numBlocks = device::setTreeReduceNumBlocks(size, nThreadsPerBlock);
+    const label nStreamingMultiprocessors = hipDeviceInit::getNumberOfStreamingMultiprocessors();
 
-    const label maxbytes = hipDeviceInit::getSharedMemPerBlock();
+    const label maxbytes = hipDeviceInit::getSharedMemoryPerBlock();
 
     // declare that this kernel can use up to maxbytes of dynamically allocated shared memory
     CHECK_HIP_ERROR
@@ -413,8 +413,8 @@ void Foam::hipExecutor::_backendReductionCompare
     hipLaunchKernelGGL
     (
         (Foam::hip::reductionLambdaCompareKernel<resultT,F,Op>),
-        (numBlocks + nSM - 1)/nSM,
-        nThreads,
+        (numBlocks + nStreamingMultiprocessors - 1)/nStreamingMultiprocessors,
+        nThreadsPerBlock,
         maxbytes,
         0,
         dPtrResult,

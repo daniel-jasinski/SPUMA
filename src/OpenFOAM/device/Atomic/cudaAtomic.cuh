@@ -100,13 +100,13 @@ struct cudaAtomic
 
     static void  _backendAtomicMax(scalar& x, const scalar& y)
     {
-        cuda::atomicMax(&x, y);
+        cuda::cudaAtomicMax(&x, y);
     }
 
 #ifdef WM_SPDP
     static void  _backendAtomicMax(solveScalar& x, const solveScalar& y)
     {
-        cuda::atomicMax(&x, y);
+        cuda::cudaAtomicMax(&x, y);
     }
 #endif
 
@@ -117,13 +117,13 @@ struct cudaAtomic
 
     static void  _backendAtomicMin(scalar& x, const scalar& y)
     {
-        cuda::atomicMin(&x, y);
+        cuda::cudaAtomicMin(&x, y);
     }
 
 #ifdef WM_SPDP
     static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
     {
-        cuda::atomicMin(&x, y);
+        cuda::cudaAtomicMin(&x, y);
     }
 #endif
 

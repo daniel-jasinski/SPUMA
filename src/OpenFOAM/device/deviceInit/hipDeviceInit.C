@@ -40,8 +40,8 @@ namespace Foam
 {
 
 int hipDeviceInit::devID_ = -1;
-int hipDeviceInit::threadBlock_ = 128;
-double hipDeviceInit::sharedMemPerBlockP_ = 0.9;
+int hipDeviceInit::nThreadsPerBlock_ = 128;
+double hipDeviceInit::sharedMemoryPerBlockPercentage_ = 0.9;
 hipDeviceProp_t hipDeviceInit::prop_{};
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -102,17 +102,26 @@ void Foam::hipDeviceInit::_backendInit()
     initDeviceFlag_ = true;
 }
 
-void Foam::hipDeviceInit::_setNThreadsPerBlock(const int tBlock)
+void Foam::hipDeviceInit::_setNumberOfThreadsPerBlock
+(
+    const int nThreadsPerBlock
+)
 {
-    if (tBlock > prop_.maxThreadsPerBlock)
+    if (nThreadsPerBlock > prop_.maxThreadsPerBlock)
     {
         FatalErrorInFunction
             << "trying to set a number of thread per block greater than max, "
             << "max number of thread per block is: "
             << prop_.maxThreadsPerBlock << abort(FatalError);
     }
+    else if (nThreadsPerBlock <= 0)
+    {
+        FatalErrorInFunction
+            << "trying to set a number of threads less or equal to zero"
+            << abort(FatalError);
+    }
 
-    threadBlock_ = tBlock;
+    nThreadsPerBlock_ = nThreadsPerBlock;
 }
 
 

@@ -26,20 +26,21 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Description
-    initialize device
+    Device initialization.
 
 \*---------------------------------------------------------------------------*/
 
+foamDeviceInit::init();
 
-foamDeviceInit::Init();
+const label nThreadsPerBlock = args.getOrDefault<label>
+(
+    "nThreadsPerBlock", 
+    foamDeviceInit::getNumberOfThreadsPerBlock()
+);
+foamDeviceInit::setNumberOfThreadsPerBlock(nThreadsPerBlock);
 
-const label nThread = args.getOrDefault<label>("nThreads", 0);
-if(nThread)
-{
-    foamDeviceInit::setNThreadsPerBlock(nThread);
-}
-
-Info<<"number of Threads: " << nThread << endl;
+Info << "Number of threads per block: " 
+     << foamDeviceInit::getNumberOfThreadsPerBlock() << nl << nl;
 
 
 // ************************************************************************* //

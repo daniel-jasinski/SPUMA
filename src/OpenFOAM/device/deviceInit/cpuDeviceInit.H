@@ -63,7 +63,15 @@ public:
         }
     }
 
-    static void _setNThreads(const int nthreads){};
+    static void _setNumberOfThreadsPerBlock
+    (
+        const int nThreadsPerBlock
+    ) {};
+
+    static int _getNumberOfThreadsPerBlock()
+    {
+        return 1;
+    };
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
