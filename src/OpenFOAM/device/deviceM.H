@@ -55,34 +55,6 @@ SourceFiles
     #define deviceSync()
 #endif
 
-#ifdef have_cuda
-
-// Number of threads per block
-#define NUM_THREADS_PER_BLOCK 128
-
-// Number of streaming multiprocessor per device (124 on A100)
-#define NUM_SM 124
-
-#elif have_hip
-
-// Number of threads per block
-#define NUM_THREADS_PER_BLOCK 1024
-
-// Number of streaming multiprocessor per device
-#define NUM_SM 110
-
-#endif
-
-//- calc the number of block for a generic kernel
-#define SET_NUM_BLOCKS(size)           \
-    (size + NUM_THREADS_PER_BLOCK - 1) \
-    / NUM_THREADS_PER_BLOCK
-
-//- calc the number of block for binary tree reduction algorithm
-#define SET_TREE_REDUCE_NUM_BLOCKS(size)           \
-    (size + 2*NUM_THREADS_PER_BLOCK - 1) \
-    / (2*NUM_THREADS_PER_BLOCK)
-
 
 // Macro for loops over cells with ldu addressing
 #define forAllOwner(ownStart,idCell,idFace,expression) \
