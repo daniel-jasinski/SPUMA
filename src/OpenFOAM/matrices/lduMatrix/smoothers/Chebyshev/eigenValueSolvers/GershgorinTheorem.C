@@ -33,11 +33,12 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "PrecisionAdaptor.H"
 
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
     defineTypeNameAndDebug(GershgorinTheorem, 0);
-    addToRunTimeSelectionTable(eigenValueSolver,GershgorinTheorem,word);
+    addToRunTimeSelectionTable(eigenValueSolver, GershgorinTheorem, word);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

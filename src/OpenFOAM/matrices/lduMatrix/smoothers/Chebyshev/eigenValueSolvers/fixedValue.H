@@ -30,15 +30,15 @@ Group
     grpEigenValueSolvers
 
 Description
-    Computation of the maximum eigenvalue using the Power method.
+    Fixed value for maximum eigenvalue.
 
 SourceFiles
     fixedValue.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef fixedValue_H
-#define fixedValue_H
+#ifndef Foam_fixedValue_H
+#define Foam_fixedValue_H
 
 #include "lduMatrix.H"
 #include "eigenValueSolver.H"

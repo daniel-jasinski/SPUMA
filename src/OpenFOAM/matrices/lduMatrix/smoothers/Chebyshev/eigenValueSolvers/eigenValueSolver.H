@@ -30,15 +30,15 @@ Group
     grpEigenValueSolvers
 
 Description
-    base class of eigenvalue Solvers
+    Base class of eigenvalue Solvers.
 
 SourceFiles
     eigenValueSolver.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef eigenValueSolver_H
-#define eigenValueSolver_H
+#ifndef Foam_eigenValueSolver_H
+#define Foam_eigenValueSolver_H
 
 #include "lduMatrix.H"
 #include "autoPtr.H"
@@ -50,7 +50,7 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class powerMethod Declaration
+                           Class eigenValueSolver Declaration
 \*---------------------------------------------------------------------------*/
 
 class eigenValueSolver
@@ -61,7 +61,6 @@ public:
     //- Runtime type information
     TypeName("eigenValueSolver");
 
-
     declareRunTimeSelectionTable
     (
         autoPtr,
@@ -70,7 +69,6 @@ public:
         (Istream& stream),
         (stream)
     );
-
 
     // Constructors
 

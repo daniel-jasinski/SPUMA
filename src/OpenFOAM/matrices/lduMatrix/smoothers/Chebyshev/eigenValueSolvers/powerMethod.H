@@ -37,8 +37,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef powerMethod_H
-#define powerMethod_H
+#ifndef Foam_powerMethod_H
+#define Foam_powerMethod_H
 
 #include "lduMatrix.H"
 #include "eigenValueSolver.H"
@@ -61,7 +61,6 @@ public:
 
     //- Runtime type information
     TypeName("powerMethod");
-
 
     // Constructors
 
@@ -97,7 +96,6 @@ public:
             const direction cmpt
         );
 };
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -24,10 +24,10 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 \*---------------------------------------------------------------------------*/
-#ifndef eigenValueSolver_C
-#define eigenValueSolver_C
 
 #include "eigenValueSolver.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
@@ -35,13 +35,13 @@ namespace Foam
     defineRunTimeSelectionTable(eigenValueSolver, word);
 }
 
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * /
 
 Foam::autoPtr<Foam::eigenValueSolver> Foam::eigenValueSolver::New
 (
     Istream& stream
 )
 {
-
     const word type(stream);
 
     auto* ctorPtr = wordConstructorTable(type);
@@ -62,4 +62,4 @@ Foam::autoPtr<Foam::eigenValueSolver> Foam::eigenValueSolver::New
     );
 };
 
-#endif
+// ************************************************************************* //

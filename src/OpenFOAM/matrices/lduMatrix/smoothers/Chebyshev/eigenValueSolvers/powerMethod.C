@@ -35,6 +35,8 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "PrecisionAdaptor.H"
 
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
 namespace Foam
 {
     defineTypeNameAndDebug(powerMethod, 0);

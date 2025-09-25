@@ -37,8 +37,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef gershgorinTheorem_H
-#define gershgorinTheorem_H
+#ifndef Foam_gershgorinTheorem_H
+#define Foam_gershgorinTheorem_H
 
 #include "lduMatrix.H"
 #include "eigenValueSolver.H"
