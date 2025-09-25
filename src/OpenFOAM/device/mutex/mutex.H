@@ -25,52 +25,53 @@ License
     You should have received a copy of the GNU General Public License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
+Struct
+    Foam::Mutex
+
 Description
-     Collection of memset kernels.
+    Synchronization primitive to prevent multiple threads or processes 
+    from simultaneously accessing a shared resource. 
 
 SourceFiles
-    memoryKernels.H
+    mutex.H
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_memory_Kernels_H
-#define Foam_memory_Kernels_H
+#ifndef Foam_Mutex_H
+#define Foam_Mutex_H
 
-// * * * * * * * * * * * * * * * * CUDA Kernels  * * * * * * * * * * * * * * //
+#include "MemoryPool.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-namespace device
-{
+/*---------------------------------------------------------------------------*\
+                           Struct Mutex Declaration
+\*---------------------------------------------------------------------------*/
 
-__global__
-void memSetKernel(uint64_t nElementsInBytes, int dataSize, char *target, const char *source)
+struct Mutex
 {
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElementsInBytes; ii += stride)
+    Mutex()
     {
-        int jj = ii % dataSize;
-        target[ii] = source[jj];
+        mutex_ = static_cast<int*>(MemoryPool::getInstance()->allocate(sizeof(int)));
+        Foam::MemoryPool::getInstance()->memSet(mutex_, 0, sizeof(int));
     }
+
+    ~Mutex()
+    {
+        MemoryPool::getInstance()->free(mutex_);
+    }
+
+    __host__ __device__ inline int* getMutex()
+    {
+        return mutex_;
+    }
+
+private:
+    int* mutex_;
 };
-
-__global__
-void memSetOneKernel(uint64_t nElements, scalar *target)
-{
-    const scalar one = 1.0;
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElements; ii += stride)
-    {
-        target[ii] = one;
-    }
-}
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-} // End namespace device
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

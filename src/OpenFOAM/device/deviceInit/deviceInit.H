@@ -63,11 +63,23 @@ template <typename T>
 class deviceInit
 : public deviceInitBase
 {
+    deviceInit() = delete;
+    deviceInit(const deviceInit&) = delete;
 public:
 
-    static void Init()
+    static void init()
     {
         T::_backendInit();
+    }
+
+    static void setNumberOfThreadsPerBlock(int nThreadsPerBlock)
+    {
+        T::_setNumberOfThreadsPerBlock(nThreadsPerBlock);
+    }
+
+    static int getNumberOfThreadsPerBlock()
+    {
+        return T::_getNumberOfThreadsPerBlock();
     }
 };
 

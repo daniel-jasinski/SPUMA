@@ -26,51 +26,69 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Description
-     Collection of memset kernels.
+    Warp reduce utility functions for CUDA reductions.
 
 SourceFiles
-    memoryKernels.H
+    warpReduce.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_memory_Kernels_H
-#define Foam_memory_Kernels_H
+#ifndef Foam_warpReduce_cuh
+#define Foam_wardReduce_cuh
 
-// * * * * * * * * * * * * * * * * CUDA Kernels  * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-namespace device
+namespace cuda
 {
 
-__global__
-void memSetKernel(uint64_t nElementsInBytes, int dataSize, char *target, const char *source)
+template <typename T>
+__device__
+void warpReduceNoVolatile
+(
+    T* sdata, 
+    const unsigned int tid, 
+    const unsigned int blockSize
+)
 {
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElementsInBytes; ii += stride)
-    {
-        int jj = ii % dataSize;
-        target[ii] = source[jj];
-    }
+    T tmp;
+    if (blockSize >= 64) { tmp = sdata[tid + 32];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >= 32) { tmp = sdata[tid + 16];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >= 16) { tmp = sdata[tid +  8];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  8) { tmp = sdata[tid +  4];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  4) { tmp = sdata[tid +  2];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
+    if (blockSize >=  2) { tmp = sdata[tid +  1];  __syncwarp(); sdata[tid]+=tmp; __syncwarp(); }
 };
 
-__global__
-void memSetOneKernel(uint64_t nElements, scalar *target)
+template <typename T,typename Op>
+__device__
+void warpReduceCompareNoVolatile
+(
+    T* sdata, Op& op, 
+    const unsigned int tid, 
+    const unsigned int blockSize
+)
 {
-    const scalar one = 1.0;
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElements; ii += stride)
-    {
-        target[ii] = one;
-    }
-}
+    T tmp;
+    if (blockSize >= 64) { tmp = op(sdata[tid],sdata[tid + 32]);__syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 32) { tmp = op(sdata[tid],sdata[tid + 16]);__syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 16) { tmp = op(sdata[tid],sdata[tid + 8] );__syncwarp();
+        sdata[tid]= tmp;   __syncwarp(); }
+    if (blockSize >= 8)  { tmp = op(sdata[tid],sdata[tid + 4] ); __syncwarp();
+        sdata[tid]= tmp;  __syncwarp(); }
+    if (blockSize >= 4)  { tmp = op(sdata[tid],sdata[tid + 2] ); __syncwarp();
+        sdata[tid]= tmp;   __syncwarp(); }
+    if (blockSize >= 2)  { tmp = op(sdata[tid],sdata[tid + 1] ); __syncwarp();
+        sdata[tid]= tmp;  __syncwarp();  }
+};
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-} // End namespace device
+} // End namespace cuda
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -78,6 +96,9 @@ void memSetOneKernel(uint64_t nElements, scalar *target)
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// ************************************************************************* //
+
 #endif
 
 // ************************************************************************* //
+

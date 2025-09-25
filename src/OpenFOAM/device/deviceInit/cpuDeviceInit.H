@@ -62,6 +62,16 @@ public:
             initDeviceFlag_ = true;
         }
     }
+
+    static void _setNumberOfThreadsPerBlock
+    (
+        const int nThreadsPerBlock
+    ) {};
+
+    static int _getNumberOfThreadsPerBlock()
+    {
+        return 1;
+    };
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

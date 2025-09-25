@@ -26,58 +26,21 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Description
-     Collection of memset kernels.
-
-SourceFiles
-    memoryKernels.H
+    Device initialization.
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_memory_Kernels_H
-#define Foam_memory_Kernels_H
+foamDeviceInit::init();
 
-// * * * * * * * * * * * * * * * * CUDA Kernels  * * * * * * * * * * * * * * //
+const label nThreadsPerBlock = args.getOrDefault<label>
+(
+    "nThreadsPerBlock", 
+    foamDeviceInit::getNumberOfThreadsPerBlock()
+);
+foamDeviceInit::setNumberOfThreadsPerBlock(nThreadsPerBlock);
 
-namespace Foam
-{
+Info << "Number of threads per block: " 
+     << foamDeviceInit::getNumberOfThreadsPerBlock() << nl << nl;
 
-namespace device
-{
-
-__global__
-void memSetKernel(uint64_t nElementsInBytes, int dataSize, char *target, const char *source)
-{
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElementsInBytes; ii += stride)
-    {
-        int jj = ii % dataSize;
-        target[ii] = source[jj];
-    }
-};
-
-__global__
-void memSetOneKernel(uint64_t nElements, scalar *target)
-{
-    const scalar one = 1.0;
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElements; ii += stride)
-    {
-        target[ii] = one;
-    }
-}
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-} // End namespace device
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-} // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#endif
 
 // ************************************************************************* //

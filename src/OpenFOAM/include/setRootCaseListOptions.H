@@ -28,6 +28,10 @@ argList::addBoolOption
 // memoryPoolOptions
 #include "addMemoryPoolOptions.H"
 
+// device Init Options
+#include "addInitDeviceOptions.H"
+
+
 #ifdef Foam_fvPatchField_H
 argList::addBoolOption
 (

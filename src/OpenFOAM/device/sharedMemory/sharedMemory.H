@@ -25,52 +25,40 @@ License
     You should have received a copy of the GNU General Public License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
+Struct
+    Foam::SharedMemory
+
 Description
-     Collection of memset kernels.
+    Simple wrapper to allow use of extern linked shared memory by simply
+    casting the same pointer to the desired type. This prevent multiple definition
+    of the same shared pointer of different type.
 
 SourceFiles
-    memoryKernels.H
+    sharedMemory.H
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_memory_Kernels_H
-#define Foam_memory_Kernels_H
+#ifndef Foam_SharedMemory_H
+#define Foam_SharedMemory_H
 
-// * * * * * * * * * * * * * * * * CUDA Kernels  * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-namespace device
-{
+/*---------------------------------------------------------------------------*\
+                           Struct SharedMemory Declaration
+\*---------------------------------------------------------------------------*/
 
-__global__
-void memSetKernel(uint64_t nElementsInBytes, int dataSize, char *target, const char *source)
+template <typename T>
+struct SharedMemory
 {
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElementsInBytes; ii += stride)
+    __device__ inline T *getPointer()
     {
-        int jj = ii % dataSize;
-        target[ii] = source[jj];
+        extern __shared__ __align__(8) char smem[];
+        return reinterpret_cast<T*>(smem);
     }
 };
-
-__global__
-void memSetOneKernel(uint64_t nElements, scalar *target)
-{
-    const scalar one = 1.0;
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElements; ii += stride)
-    {
-        target[ii] = one;
-    }
-}
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-} // End namespace device
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

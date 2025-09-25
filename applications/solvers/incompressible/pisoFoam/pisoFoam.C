@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
     #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
-    foamDeviceInit::Init();
+    #include "initDevice.H"
     #include "createMemoryPool.H"
     #include "createTime.H"
     #include "createMesh.H"

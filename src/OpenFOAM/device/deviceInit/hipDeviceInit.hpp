@@ -41,12 +41,8 @@ SourceFiles
 
 #include "deviceInit.H"
 #include "label.H"
-#include "IPstream.H"
-#include "OPstream.H"
-#ifdef have_hip
-    #include <hip/hip_runtime.h>
-    #include "hipError.hpp"
-#endif
+#include <hip/hip_runtime.h>
+#include "hipError.hpp"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -62,51 +58,47 @@ class hipDeviceInit
 {
     static int devID_;
 
-    // max shared memory per block
-    static int sharedMemPerBlock_;
-
     // percentage of max shared memory per block usable
-    static double sharedMemPerBlockP_;
+    static double sharedMemoryPerBlockPercentage_;
+
+    // number of threads per block
+    static int nThreadsPerBlock_;
+
+    // hip property struct
+    static hipDeviceProp_t prop_;
+
 public:
 
-    static void _backendInit()
+    static void _backendInit();
+
+    static void setSharedMemoryPercentage
+    (
+        const scalar percentage
+    )
     {
-        if (!initDeviceFlag_)
-        {
-            Info << "Initializing hip devices..." << nl << nl;
-
-            label nDevs;
-            hipGetDeviceCount(&nDevs);
-
-            devID_ = Pstream::myProcNo() % nDevs;
-            hipSetDevice(devID_);
-
-            initDeviceFlag_ = true;
-        }   
-    };
-
-    static void setSharedMemP(const scalar p)
-    {
-        sharedMemPerBlockP_ = p;
+        sharedMemoryPerBlockPercentage_ = percentage;
     };
     
-    static int getSharedMemPerBlock()
+    static int getSharedMemoryPerBlock()
     {
-        if(sharedMemPerBlock_ == -1)
-        {
-            // get device prop
-            hipDeviceProp_t prop;
-            CHECK_HIP_ERROR
-            (
-                hipGetDeviceProperties(&prop, devID_)
-            );
-
-            sharedMemPerBlock_ = prop.sharedMemPerBlockOptin ;
-        }
-
         // note use a percentage of max allowable dynamic shared memory 
         // because driver always reserve some of the total shared memory for static allocated object
-        return sharedMemPerBlock_* sharedMemPerBlockP_ ;
+        return prop_.sharedMemPerBlockOptin * sharedMemoryPerBlockPercentage_;
+    }
+
+    static int getNumberOfStreamingMultiprocessors()
+    {
+        return prop_.multiProcessorCount;
+    }
+
+    static void _setNumberOfThreadsPerBlock
+    (
+        const int nThreadsPerBlock
+    );
+
+    static int _getNumberOfThreadsPerBlock()
+    {
+        return nThreadsPerBlock_;
     }
 };
 

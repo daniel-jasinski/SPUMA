@@ -39,8 +39,8 @@ Description
 #define Foam_ops_H
 
 #include "stdFoam.H"    // For FOAM_NODISCARD
-
 #include "deviceM.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam

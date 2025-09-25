@@ -40,7 +40,7 @@ SourceFiles
 #define Foam_hip_Atomic_H
 
 #include "Atomic.H"
-#include "hipDeviceUtils.hpp"
+#include "hipAtomicMinMax.hpp"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -55,7 +55,7 @@ struct hipAtomic
     {
         FOAM_DEVICE void operator()(T& x, const T& y) const
         {
-            atomicAdd(&x,y);
+            atomicAdd(&x, y);
         }
     };
 
@@ -64,7 +64,7 @@ struct hipAtomic
     {
         FOAM_DEVICE void operator()(T& x, const T& y) const
         {
-            _backendAtomicMax(x,y);
+            _backendAtomicMax(x, y);
         }
     };
 
@@ -73,7 +73,7 @@ struct hipAtomic
     {
         FOAM_DEVICE void operator()(T& x, const T& y) const
         {
-            _backendAtomicMin(x,y);
+            _backendAtomicMin(x, y);
         }
     };
 
@@ -91,18 +91,18 @@ struct hipAtomic
 
     FOAM_DEVICE static void _backendAtomicAdd(label& x, const label& y)
     {
-        atomicAdd(&x,y);
+        atomicAdd(&x, y);
     }
 
     FOAM_DEVICE static void  _backendAtomicMax(scalar& x, const scalar& y)
     {
-        hipAtomicMax(&x, y);
+        hip::hipAtomicMax(&x, y);
     }
 
 #ifdef WM_SPDP
     FOAM_DEVICE static void _backendAtomicMax(solveScalar& x, const solveScalar& y)
     {
-        hipAtomicMax(&x, y);
+        hip::hipAtomicMax(&x, y);
     }
 #endif
 
@@ -113,13 +113,13 @@ struct hipAtomic
 
     FOAM_DEVICE static void  _backendAtomicMin(scalar& x, const scalar& y)
     {
-        hipAtomicMin(&x, y);
+        hip::hipAtomicMin(&x, y);
     }
 
 #ifdef WM_SPDP
     FOAM_DEVICE static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
     {
-        hipAtomicMin(&x, y);
+        hip::hipAtomicMin(&x, y);
     }
 #endif
 
@@ -165,7 +165,7 @@ struct hipAtomic
         const label& y
     )
     {
-        return atomicCAS(&x,compare,y);
+        return atomicCAS(&x, compare, y);
     }
 };
 

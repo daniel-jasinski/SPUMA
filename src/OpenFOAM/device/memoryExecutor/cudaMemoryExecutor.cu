@@ -32,6 +32,8 @@ License
 #include "memoryKernels.H"
 #include "error.H"
 #include "cudaError.cuh"
+#include "cudaDeviceInit.cuh"
+#include "deviceUtils.H"
 
 // * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * * //
 
@@ -105,16 +107,18 @@ void Foam::cudaMemoryExecutor::_backendMemSet
     if (err != 0)
         FatalErrorInFunction << "ERROR: cudaMemcpy returned " << err << abort(FatalError);
 
-    int numBlocks = SET_NUM_BLOCKS(sizeInBytes - sizeOfValue);
+    const int nThreadsPerBlock = cudaDeviceInit::getNumberOfThreadsPerBlock();
+    int numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreadsPerBlock);
     numBlocks = numBlocks == 0 ? 1 : numBlocks;
-    Foam::device::memSetKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+    Foam::device::memSetKernel<<<numBlocks, nThreadsPerBlock>>>
     (
         sizeInBytes - sizeOfValue,
         (int) sizeOfValue,
         (char*)ptr + sizeOfValue,
         (const char*) ptr
     );
-    deviceSync();
+    
+    cudaDeviceSynchronize();
     CHECK_LAST_CUDA_ERROR();
 }
 
@@ -124,13 +128,15 @@ void Foam::cudaMemoryExecutor::_backendMemSetScalarOne
     const size_t sizeInBytes
 )
 {
-    const int numBlocks = SET_NUM_BLOCKS(sizeInBytes);
-    Foam::device::memSetOneKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+    const int nThreadsPerBlock = cudaDeviceInit::getNumberOfThreadsPerBlock();
+    const int numBlocks = device::setNumBlocks(sizeInBytes, nThreadsPerBlock);
+    Foam::device::memSetOneKernel<<<numBlocks, nThreadsPerBlock>>>
     (
         sizeInBytes/sizeof(scalar),
         (scalar*)ptr
     );
-    deviceSync();
+    
+    cudaDeviceSynchronize();
     CHECK_LAST_CUDA_ERROR();
 }
 

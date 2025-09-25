@@ -418,7 +418,7 @@ int main(int argc, char *argv[])
     timeSelector::addOptions(true, false);  // constant(true), zero(false)
     #include "addMemoryPoolOptions.H"
     #include "setRootCase.H"
-    foamDeviceInit::Init();
+    #include "initDevice.H"
     #include "createMemoryPool.H"
 
     const bool writeCellDist    = args.found("cellDist");

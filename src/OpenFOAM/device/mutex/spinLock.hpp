@@ -25,52 +25,49 @@ License
     You should have received a copy of the GNU General Public License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
+Struct
+    Foam::spinLock
+
 Description
-     Collection of memset kernels.
+    A struct to lock and unlock a mutex variable.
 
 SourceFiles
-    memoryKernels.H
+    spinLock.hpp
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_memory_Kernels_H
-#define Foam_memory_Kernels_H
+#ifndef Foam_spinLock_hpp
+#define Foam_spinLock_hpp
 
-// * * * * * * * * * * * * * * * * CUDA Kernels  * * * * * * * * * * * * * * //
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-namespace device
+namespace hip
 {
 
-__global__
-void memSetKernel(uint64_t nElementsInBytes, int dataSize, char *target, const char *source)
+/*---------------------------------------------------------------------------*\
+                           Struct spinLock Declaration
+\*---------------------------------------------------------------------------*/
+
+struct spinLock
 {
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElementsInBytes; ii += stride)
+    __device__ static inline void lock(int* mutex)
     {
-        int jj = ii % dataSize;
-        target[ii] = source[jj];
+        while (atomicCAS(mutex, 0, 1) == 1) {};
+    }
+
+    __device__ static inline void unlock(int* mutex)
+    {
+       atomicExch(mutex, 0);
     }
 };
 
-__global__
-void memSetOneKernel(uint64_t nElements, scalar *target)
-{
-    const scalar one = 1.0;
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = gridDim.x * blockDim.x;
-    for(uint64_t ii = idx; ii < nElements; ii += stride)
-    {
-        target[ii] = one;
-    }
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-} // End namespace device
+} // End namespace hip
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -33,6 +33,8 @@ License
 #include "memoryKernels.H"
 #include "error.H"
 #include "hipError.hpp"
+#include "hipDeviceInit.hpp"
+#include "deviceUtils.H"
 
 // * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * * //
 
@@ -103,19 +105,21 @@ void Foam::hipMemoryExecutor::_backendMemCopy
     }
     else if (kind == memCopyKind::memCopyDeviceToDevice)
     {
-        label numblocks = SET_NUM_BLOCKS(size);
+        const label nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
+        const label numBlocks = device::setNumBlocks(size, nThreadsPerBlock); 
         hipLaunchKernelGGL
         (
             memCopyKernel,
-            numblocks,
-            NUM_THREADS_PER_BLOCK,
+            numBlocks,
+            nThreadsPerBlock,
             0,
             0,
             size,
             reinterpret_cast<char*>(dst),
             reinterpret_cast<const char*>(src)
         );
-        deviceSync();
+
+        hipDeviceSynchronize();
         CHECK_LAST_HIP_ERROR();
     }
     else
@@ -146,16 +150,18 @@ void Foam::hipMemoryExecutor::_backendMemSet
     if (err != 0)
         FatalErrorInFunction << "ERROR: hipMemcpy returned " << err << abort(FatalError);
 
-    int numBlocks = SET_NUM_BLOCKS(sizeInBytes - sizeOfValue);
+    const int nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
+    int numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreadsPerBlock);
     numBlocks = numBlocks == 0 ? 1 : numBlocks;
-    Foam::device::memSetKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+    Foam::device::memSetKernel<<<numBlocks, nThreadsPerBlock>>>
     (
         sizeInBytes - sizeOfValue,
         (int) sizeOfValue,
         (char*)ptr + sizeOfValue,
         (const char*) ptr
     );
-    deviceSync();
+
+    hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 }
 
@@ -165,13 +171,15 @@ void Foam::hipMemoryExecutor::_backendMemSetScalarOne
     const size_t sizeInBytes
 )
 {
-    const int numBlocks = SET_NUM_BLOCKS(sizeInBytes);
-    Foam::device::memSetOneKernel<<<numBlocks, NUM_THREADS_PER_BLOCK>>>
+    const int nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
+    const int numBlocks = device::setNumBlocks(sizeInBytes, nThreadsPerBlock);
+    Foam::device::memSetOneKernel<<<numBlocks, nThreadsPerBlock>>>
     (
         sizeInBytes/sizeof(scalar),
         (scalar*)ptr
     );
-    deviceSync();
+
+    hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 }
 
