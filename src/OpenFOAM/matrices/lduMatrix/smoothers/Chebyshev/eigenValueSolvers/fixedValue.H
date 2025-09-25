@@ -24,21 +24,21 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::powerMethod
+    Foam::fixedValue
 
 Group
     grpEigenValueSolvers
 
 Description
-    Computation of the maximum eigenvalue using the Power method.
+    Fixed value for maximum eigenvalue.
 
 SourceFiles
-    powerMethod.C
+    fixedValue.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_powerMethod_H
-#define Foam_powerMethod_H
+#ifndef Foam_fixedValue_H
+#define Foam_fixedValue_H
 
 #include "lduMatrix.H"
 #include "eigenValueSolver.H"
@@ -49,29 +49,33 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class powerMethod Declaration
+                           Class fixedValue Declaration
 \*---------------------------------------------------------------------------*/
 
-class powerMethod
+class fixedValue
 : 
     public eigenValueSolver
 {
+private:
+    scalar value_;
 
 public:
 
     //- Runtime type information
-    TypeName("powerMethod");
+    TypeName("fixedValue");
+
 
     // Constructors
 
         //- constructor
-
-        powerMethod()
-        : eigenValueSolver()
+        fixedValue(const scalar value)
+        :   eigenValueSolver(),
+            value_(value)
         {};
 
-        powerMethod(Istream&)
-        : eigenValueSolver()
+        fixedValue(Istream& streamData)
+        :   eigenValueSolver(),
+            value_(readScalar(streamData))
         {};
 
     // Member Functions
@@ -83,7 +87,10 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        );
+        )
+        { 
+            return value_;
+        };
         
         //- get maximum eigenvalue of a matrix preconditioned
         //  with a diagonal preconditioner
@@ -94,8 +101,12 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        );
+        )
+        { 
+            return value_;
+        };
 };
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

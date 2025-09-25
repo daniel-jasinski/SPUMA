@@ -37,10 +37,11 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef gershgorinTheorem_H
-#define gershgorinTheorem_H
+#ifndef Foam_gershgorinTheorem_H
+#define Foam_gershgorinTheorem_H
 
 #include "lduMatrix.H"
+#include "eigenValueSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -52,23 +53,44 @@ namespace Foam
 \*---------------------------------------------------------------------------*/
 
 class GershgorinTheorem
+:
+    public eigenValueSolver
 {
 
 public:
 
     //- Runtime type information
-    TypeName("GershgorinTheorem");
+    TypeName("Gershgorin");
 
     // Constructors
 
-        //- default constructor
-        GershgorinTheorem() = default;
+        //- constructor
 
-    // Member Functions
+        GershgorinTheorem()
+        : eigenValueSolver()
+        {};
 
-	static scalar maxEigenvalue
+        GershgorinTheorem(Istream&)
+        : eigenValueSolver()
+        {};
+
+    // static Member Functions
+
+        //- get upper bound to max eigenvalue of a matrix
+        virtual scalar maxEigenvalue
         (
             const lduMatrix& matrix_,
+            const FieldField<Field, scalar>& interfaceBouCoeffs_,
+            const lduInterfaceFieldPtrsList& interfaces_,
+            const direction cmpt
+        );
+
+        //- get upper bound to max eigenvalue of a matrix 
+        // preconditioned with a diagonal preconditioner
+        virtual scalar maxEigenvalue
+        (
+            const lduMatrix& matrix_,
+            const lduMatrix::preconditioner& preconditioner_,
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt

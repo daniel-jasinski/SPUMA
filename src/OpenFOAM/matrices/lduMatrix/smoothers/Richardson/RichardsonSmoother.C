@@ -29,6 +29,8 @@ License
 
 #include "RichardsonSmoother.H"
 #include "PrecisionAdaptor.H"
+#include "diagonalPreconditioner.H"
+#include "l1diagonalPreconditioner.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -67,6 +69,27 @@ Foam::RichardsonSmoother::RichardsonSmoother
     )
 {
     readControls();
+
+    // select preconditioner
+    if(subPreconditionerName_ == diagonalPreconditioner::typeName)
+    {
+        preconditioner_ = autoPtr<diagonalPreconditioner>::New(matrix,solverControls);
+    }
+    else if (subPreconditionerName_ == l1diagonalPreconditioner::typeName)
+    {
+        preconditioner_ = autoPtr<l1diagonalPreconditioner>::New
+            (
+                matrix,
+                interfaceBouCoeffs,
+                interfaces,
+                solverControls
+            );
+    }
+    else 
+    {
+        FatalErrorInFunction<<"precondtioner type: " <<
+            subPreconditionerName_ << " not supported"<<abort(FatalError);
+    }
 }
 
 
@@ -75,6 +98,8 @@ Foam::RichardsonSmoother::RichardsonSmoother
 void Foam::RichardsonSmoother::readControls()
 {
     omega_ = controlDict_.getOrDefault<scalar>("omega", 0.75);
+    subPreconditionerName_ = 
+        controlDict_.get<word>("subPreconditioner");
 }
 
 
@@ -90,41 +115,19 @@ void Foam::RichardsonSmoother::smooth_
     const label nSweeps
 ) const
 {
-    solveScalar* __restrict__ psiPtr = psi.begin();
-    const solveScalar* const __restrict__ bPtr = source.cbegin();
 
     const label nCells = psi.size();
 
-    const scalar* const __restrict__ diagPtr = matrix_.diag().cbegin();
-
     solveScalarField Apsi(nCells);
-    solveScalar* __restrict__ ApsiPtr = Apsi.begin();
-
-    scalarField rD(nCells);
-    scalar* __restrict__ rDPtr = rD.begin();
-
-    foamExecutor exec;
-
-    // -- Calculate the inverse of the diagonal matrix (D^-1)
-    auto Lambda1 = [=](label celli)
-    {
-        rDPtr[celli] = 1. / diagPtr[celli];
-    };
-    exec.parallelFor(Lambda1, nCells);
-
-    const scalar omega(omega_);
 
     for (label sweep=0; sweep<nSweeps; sweep++)
     {
         // --- Calculate A.psi
         matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
 
-        // --- Update solution (iteration of the damped jacobi method)
-        auto Lambda2 = [=](label celli)
-        {
-            psiPtr[celli] += omega * rDPtr[celli] * (bPtr[celli] - ApsiPtr[celli]);
-        };
-        exec.parallelFor(Lambda2, nCells);
+        preconditioner_().precondition(Apsi, source - Apsi);
+
+        psi += omega_*Apsi;
     }
 }
 

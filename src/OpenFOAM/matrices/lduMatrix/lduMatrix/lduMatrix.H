@@ -559,6 +559,10 @@ public:
                 solver_(sol)
             {}
 
+            preconditioner()
+            :
+                solver_(NullObjectRef<solver>()) // works but extremely dangerous
+            {};
 
         // Selectors
 
@@ -600,6 +604,12 @@ public:
             ) const
             {
                 NotImplemented;
+            }
+            
+            virtual const solveScalarField& getReciprocalD() const
+            {
+                NotImplemented;
+                return solveScalarField::null();
             }
 
             //- Signal end of solver

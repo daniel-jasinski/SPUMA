@@ -31,8 +31,13 @@ License
 #include <stdlib.h>
 #include "GershgorinTheorem.H"
 #include "powerMethod.H"
+#include "fixedValue.H"
 #include "ChebyshevSmoother.H"
 #include "PrecisionAdaptor.H"
+#include "lambdaOptMinList.H"
+
+#include "diagonalPreconditioner.H"
+#include "l1diagonalPreconditioner.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -45,6 +50,7 @@ namespace Foam
 
     lduMatrix::smoother::addasymMatrixConstructorToTable<ChebyshevSmoother>
         addChebyshevSmootherAsymMatrixConstructorToTable_;
+
 }
 
 
@@ -67,10 +73,66 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
         interfaceBouCoeffs,
         interfaceIntCoeffs,
         interfaces,
-	solverControls
+        solverControls
     )
 {
     readControls();
+
+    // select rescaling values
+    if (normalization_ == "userDefined")
+    {
+        lambdaMin_ = controlDict_.getOrDefault<scalar>("lambdaMin", 1./8);
+        if( lambdaMin_ < 0 || lambdaMin_ > lambdaMax_ )
+        {
+            FatalErrorInFunction
+                << "invalid value for lambdaMin, it must be 0 < lambdaMin < 1"
+                << abort(FatalError);
+        }
+
+    }
+    else if (normalization_ == "optimalVCycle")
+    {
+        using Chebyshev::FirstKind::lambdaOptMinList;
+        if(pDegree_ > lambdaOptMinList.size())
+        {
+            FatalErrorInFunction
+                << "poly degree greater of max supported of : " << lambdaOptMinList.size()
+                << abort(FatalError);
+        };
+        lambdaMin_ = lambdaOptMinList[pDegree_ -1];
+    }
+    else
+    {
+        FatalErrorInFunction << "invalid value for LambdaMode" << abort(FatalError);
+    }
+
+    // select preconditioner
+    if(subPreconditionerName_ == diagonalPreconditioner::typeName)
+    {
+        preconditioner_ = autoPtr<diagonalPreconditioner>::New(matrix, solverControls);
+        // select spectral radius estimator
+        spRadiusEstimator_ = eigenValueSolver::New
+        (
+            controlDict_.lookup("spectralRadius")
+        );
+    }
+    else if (subPreconditionerName_ == l1diagonalPreconditioner::typeName)
+    {
+        preconditioner_ = autoPtr<l1diagonalPreconditioner>::New
+            (
+                matrix,
+                interfaceBouCoeffs,
+                interfaces,
+                solverControls
+            );
+        // select spectral radius estimator
+        spRadiusEstimator_ = autoPtr<fixedValue>::New(1.0);
+    }
+    else 
+    {
+        FatalErrorInFunction<< "precondtioner type: " <<
+        subPreconditionerName_ << " not supported" << abort(FatalError);
+    }
 }
 
 
@@ -79,9 +141,16 @@ Foam::ChebyshevSmoother::ChebyshevSmoother
 void Foam::ChebyshevSmoother::readControls()
 {
     pDegree_ = controlDict_.getOrDefault<label>("pDegree", 1);
-    lambdaMode_ = controlDict_.getOrDefault<label>("lambdaMode", 2);
-    lambdaMax_ = controlDict_.getOrDefault<scalar>("lambdaMax", 2.0);
-    lambdaMin_ = controlDict_.getOrDefault<scalar>("lambdaMin", -1);
+    normalization_ = controlDict_.getOrDefault<word>
+                     (
+                        "normalization",
+                        "optimalVCycle"
+                     );
+    subPreconditionerName_ = controlDict_.getOrDefault<word>
+                             (
+                                "subPreconditioner",
+                                l1diagonalPreconditioner::typeName
+                             );
     log_ = controlDict_.getOrDefault<label>("log", 0);
 }
 
@@ -103,104 +172,54 @@ void Foam::ChebyshevSmoother::smooth_
 
     solveScalarField psiOld(nCells);
     solveScalar* __restrict__ psiOldPtr = psiOld.begin();
-
-    const solveScalar* const __restrict__ bPtr = source.begin();
-
-    scalarField rD(nCells);
-    scalar* __restrict__ rDPtr = rD.begin();
-    const scalar* const __restrict__ DPtr = matrix_.diag().cbegin();
    
     solveScalarField Apsi(nCells);
     solveScalar* __restrict__ ApsiPtr = Apsi.begin();
 
-    // lambda max and lambda min estimate
-    scalar lambdaMax;
-    scalar lambdaMin;
+    solveScalarField wA(nCells);
+    solveScalar* __restrict__ wAPtr = wA.begin();
 
-    if (lambdaMode_ == 0)
-    {
-        if ((log_ >= 2) || (lduMatrix::debug >= 2))
-        {
-            Info << "   Using the powerMethod to estimate the largest eigenvalue" << nl;
-        }
+    const scalar lambdaMax = lambdaMax_;
+    const scalar lambdaMin = lambdaMin_;
 
-        // power method (experimental)
-        lambdaMax = powerMethod::maxEigenvalue
-	(
-	    matrix_, 
-	    interfaceBouCoeffs_, 
-	    interfaces_, 
-	    cmpt
-	);
-    }
-    else if (lambdaMode_ == 1)
-    {
-        if ((log_ >= 2) || (lduMatrix::debug >= 2))
-        {   
-            Info << "   Using the GershgorinTheorem to estimate the largest eigenvalue" << nl;
-        }
-
-        // Gershgorin upper bound
-        lambdaMax = GershgorinTheorem::maxEigenvalue
-        (
-            matrix_,
-            interfaceBouCoeffs_,
-            interfaces_,
-            cmpt
-        );
-    }
-    else
-    {
-        if ((log_ >= 2) || (lduMatrix::debug >= 2))
-        {
-            Info << "   User-defined values for the largest and smallest eigenvalue" << nl;
-        }
-
-        // User-defined upper-bound and lower-bound
-        lambdaMax = lambdaMax_;
-	lambdaMin = lambdaMin_;
-    }
-
-    // Set the minimum eigenvalue to 1/8 of the maximum eigenvalue 
-    // (if not set by the user)
-    if (lambdaMin_ == -1)
-    {
-        lambdaMin = (1./8.) * lambdaMax;
-    }
+    // get spectral radius estimate
+    const scalar spRadius = const_cast<eigenValueSolver&>(spRadiusEstimator_()).maxEigenvalue
+    (
+        matrix_,
+        preconditioner_(),
+        interfaceBouCoeffs_,
+        interfaces_,
+        cmpt
+    );
 
     if ((log_ >= 2) || (lduMatrix::debug >= 2))
     {
         Info << "lambdaMin: " << lambdaMin << nl;
-	Info << "lambdaMax: " << lambdaMax << nl;
+        Info << "lambdaMax: " << lambdaMax << nl;
+        Info << "spRadius: " << spRadius << nl;
     }
 
     foamExecutor exec;
 
-    // We use the Jacobi preconditioner in the Chebyshev iterations
-    // Generate reciprocal diagonal
-    auto LambdarD = [=](label celli)
-    {
-        rDPtr[celli] = 1.0 / DPtr[celli];
-    };
-    exec.parallelFor(LambdarD, nCells);
-    
     scalar rho0 = (lambdaMax - lambdaMin) / (lambdaMax + lambdaMin);
-    scalar alpha1 = 2 * rho0 / (lambdaMax - lambdaMin);
+    const scalar alpha1 = 2 * rho0 / ((lambdaMax - lambdaMin) * spRadius);
 
     // --- Calculate A.psi
     matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
 
+    preconditioner_->precondition(wA,source - Apsi);
+
     // Solution update related to the first iteration 
     // of the semi-iterative chebyshev algorithm
     // If the degree variable is set to one, the Chebyshev iteration corresponds 
-    // to a Jacobi preconditioner with relaxation parameter 
+    // to a preconditioner with relaxation parameter 
     // according to the specified smoothing range
     if (pDegree_ > 1)
     {
         auto LambdapDeg1 = [=](label celli)
         {
             psiOldPtr[celli] = psiPtr[celli];
-            psiPtr[celli] += alpha1*rDPtr[celli]*(bPtr[celli] - ApsiPtr[celli]);
+            psiPtr[celli] += alpha1*wAPtr[celli];
         };
         exec.parallelFor(LambdapDeg1, nCells);
     }
@@ -208,7 +227,7 @@ void Foam::ChebyshevSmoother::smooth_
     {
         auto LambdapDeg1 = [=](label celli)
         {   
-            psiPtr[celli] += alpha1*rDPtr[celli]*(bPtr[celli] - ApsiPtr[celli]);
+            psiPtr[celli] += alpha1*wAPtr[celli];
         };
         exec.parallelFor(LambdapDeg1, nCells);
     }
@@ -221,18 +240,20 @@ void Foam::ChebyshevSmoother::smooth_
     {
         scalar rhon = 1. / (rhok - rhonminus1);
         scalar alpha0n = rhon * rhonminus1;
-        scalar alpha1n = 4.* rhon / (lambdaMax - lambdaMin);
+        scalar alpha1n = 4.* rhon / ((lambdaMax - lambdaMin) * spRadius);
 
         // --- Calculate A.psi
         matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
         
+        preconditioner_->precondition(wA, source - Apsi);
+
         // p-th iteration of the Chebyshev method 
         auto LambdapDegN = [=](label celli)
-	{
+	    {
             const scalar tmp = psiPtr[celli];
 
             psiPtr[celli] += alpha0n * (psiPtr[celli] - psiOldPtr[celli])
-                          + alpha1n*rDPtr[celli]*(bPtr[celli] - ApsiPtr[celli]);
+                          + alpha1n*wAPtr[celli];
 
             psiOldPtr[celli] = tmp;
         };
@@ -284,6 +305,5 @@ void Foam::ChebyshevSmoother::scalarSmooth
         nSweeps
     );
 }
-
 
 // ************************************************************************* //

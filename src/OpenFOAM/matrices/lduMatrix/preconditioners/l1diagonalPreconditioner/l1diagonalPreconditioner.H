@@ -25,7 +25,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::diagonalPreconditioner
+    Foam::l1diagonalPreconditioner
 
 Group
     grpLduMatrixPreconditioners
@@ -37,12 +37,12 @@ Description
     because on most systems '*' is faster than '/'.
 
 SourceFiles
-    diagonalPreconditioner.C
+    l1diagonalPreconditioner.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef diagonalPreconditioner_H
-#define diagonalPreconditioner_H
+#ifndef l1diagonalPreconditioner_H
+#define l1diagonalPreconditioner_H
 
 #include "lduMatrix.H"
 
@@ -52,10 +52,10 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class diagonalPreconditioner Declaration
+                           Class l1diagonalPreconditioner Declaration
 \*---------------------------------------------------------------------------*/
 
-class diagonalPreconditioner
+class l1diagonalPreconditioner
 :
     public lduMatrix::preconditioner
 {
@@ -68,36 +68,45 @@ class diagonalPreconditioner
     // Private Member Functions
 
         //- No copy construct
-        diagonalPreconditioner(const diagonalPreconditioner&) = delete;
+        l1diagonalPreconditioner(const l1diagonalPreconditioner&) = delete;
 
         //- No copy assignment
-        void operator=(const diagonalPreconditioner&) = delete;
+        void operator=(const l1diagonalPreconditioner&) = delete;
 
-        void calcReciprocalD(solveScalarField&, const lduMatrix&);
+        void calcReciprocalD
+        (
+            solveScalarField&,
+            const lduMatrix&,
+            const FieldField<Field, scalar>&,
+            const lduInterfaceFieldPtrsList&
+        );
+
 public:
 
     //- Runtime type information
-    TypeName("diagonal");
+    TypeName("l1diagonal");
 
 
     // Constructors
 
         //- Construct from matrix components and preconditioner solver controls
-        diagonalPreconditioner
+        l1diagonalPreconditioner
         (
             const lduMatrix::solver&,
             const dictionary& solverControlsUnused
         );
 
-        diagonalPreconditioner
+        l1diagonalPreconditioner
         (
-            const lduMatrix&,
-            const dictionary& solverControlsUnused
+            const lduMatrix& matrix,
+            const FieldField<Field, scalar>& interfaceBouCoeffs_,
+            const lduInterfaceFieldPtrsList& interfaces_,
+            const dictionary& solverControlUnused
         );
 
 
     //- Destructor
-    virtual ~diagonalPreconditioner() = default;
+    virtual ~l1diagonalPreconditioner() = default;
 
 
     // Member Functions
@@ -125,7 +134,7 @@ public:
         {
             return rD;
         }
-        
+
 };
 
 

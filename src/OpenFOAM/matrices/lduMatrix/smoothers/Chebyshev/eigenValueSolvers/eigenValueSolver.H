@@ -24,24 +24,25 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::powerMethod
+    Foam::eigenValueSolver
 
 Group
     grpEigenValueSolvers
 
 Description
-    Computation of the maximum eigenvalue using the Power method.
+    Base class of eigenvalue Solvers.
 
 SourceFiles
-    powerMethod.C
+    eigenValueSolver.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_powerMethod_H
-#define Foam_powerMethod_H
+#ifndef Foam_eigenValueSolver_H
+#define Foam_eigenValueSolver_H
 
 #include "lduMatrix.H"
-#include "eigenValueSolver.H"
+#include "autoPtr.H"
+#include "runTimeSelectionTables.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,30 +50,40 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class powerMethod Declaration
+                           Class eigenValueSolver Declaration
 \*---------------------------------------------------------------------------*/
 
-class powerMethod
-: 
-    public eigenValueSolver
+class eigenValueSolver
 {
 
 public:
 
     //- Runtime type information
-    TypeName("powerMethod");
+    TypeName("eigenValueSolver");
+
+    declareRunTimeSelectionTable
+    (
+        autoPtr,
+        eigenValueSolver,
+        word,
+        (Istream& stream),
+        (stream)
+    );
 
     // Constructors
 
-        //- constructor
+        //- default constructor
+        eigenValueSolver() = default;
 
-        powerMethod()
-        : eigenValueSolver()
-        {};
+    // Destructor
+        virtual ~eigenValueSolver(){};
 
-        powerMethod(Istream&)
-        : eigenValueSolver()
-        {};
+    // selector
+
+    static autoPtr<eigenValueSolver> New
+    (
+        Istream&
+    );
 
     // Member Functions
 
@@ -83,7 +94,7 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        );
+        ) = 0;
         
         //- get maximum eigenvalue of a matrix preconditioned
         //  with a diagonal preconditioner
@@ -94,8 +105,9 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_,
             const lduInterfaceFieldPtrsList& interfaces_,
             const direction cmpt
-        );
+        ) = 0;
 };
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

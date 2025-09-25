@@ -43,6 +43,26 @@ namespace Foam
         adddiagonalPreconditionerAsymMatrixConstructorToTable_;
 }
 
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+
+void Foam::diagonalPreconditioner::calcReciprocalD
+(
+    solveScalarField& rD,
+    const lduMatrix& matrix
+)
+{
+    solveScalar* __restrict__ rDPtr = rD.begin();
+    const scalar* __restrict__ DPtr = matrix.diag().begin();
+
+    const label nCells = rD.size();
+
+    auto Lambda = [=](label cell)
+    {
+        rDPtr[cell] = 1.0/DPtr[cell];
+    };
+    foamExecutor exec;
+    exec.parallelFor(Lambda, nCells);
+}
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -55,19 +75,21 @@ Foam::diagonalPreconditioner::diagonalPreconditioner
     lduMatrix::preconditioner(sol),
     rD(sol.matrix().diag().size())
 {
-    solveScalar* __restrict__ rDPtr = rD.begin();
-    const scalar* __restrict__ DPtr = solver_.matrix().diag().begin();
-
-    const label nCells = rD.size();
-
-    auto Lambda = [=](label cell)
-    {
-        rDPtr[cell] = 1.0/DPtr[cell];
-    };
-    foamExecutor exec;
-    exec.parallelFor(Lambda, nCells);
+    this->calcReciprocalD(rD,sol.matrix());
 }
 
+
+Foam::diagonalPreconditioner::diagonalPreconditioner
+(
+    const lduMatrix& matrix,
+    const dictionary&
+)
+:
+    lduMatrix::preconditioner(),
+    rD(matrix.diag().size())
+{
+    this->calcReciprocalD(rD,matrix);
+}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 

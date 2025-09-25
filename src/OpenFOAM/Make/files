@@ -468,12 +468,15 @@ $(lduMatrix)/smoothers/DILU/DILUSmoother.C
 $(lduMatrix)/smoothers/aDILU/aDILUSmoother.C
 $(lduMatrix)/smoothers/DILUGaussSeidel/DILUGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/Richardson/RichardsonSmoother.C
+$(lduMatrix)/smoothers/Chebyshev/eigenValueSolvers/eigenValueSolver.C
+$(lduMatrix)/smoothers/Chebyshev/eigenValueSolvers/fixedValue.C
 $(lduMatrix)/smoothers/Chebyshev/eigenValueSolvers/powerMethod.C
 $(lduMatrix)/smoothers/Chebyshev/eigenValueSolvers/GershgorinTheorem.C
 $(lduMatrix)/smoothers/Chebyshev/ChebyshevSmoother.C
 
 $(lduMatrix)/preconditioners/noPreconditioner/noPreconditioner.C
 $(lduMatrix)/preconditioners/diagonalPreconditioner/diagonalPreconditioner.C
+$(lduMatrix)/preconditioners/l1diagonalPreconditioner/l1diagonalPreconditioner.C
 $(lduMatrix)/preconditioners/DICPreconditioner/DICPreconditioner.C
 $(lduMatrix)/preconditioners/aDICPreconditioner/aDICPreconditioner.C
 $(lduMatrix)/preconditioners/FDICPreconditioner/FDICPreconditioner.C

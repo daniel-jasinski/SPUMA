@@ -28,6 +28,20 @@ License
 #include <time.h>
 #include <stdlib.h>
 #include "powerMethod.H"
+#include "FieldOps.H"
+#include "Random.H"
+#include "diagonalPreconditioner.H"
+#include "l1diagonalPreconditioner.H"
+#include "addToRunTimeSelectionTable.H"
+#include "PrecisionAdaptor.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+    defineTypeNameAndDebug(powerMethod, 0);
+    addToRunTimeSelectionTable(eigenValueSolver, powerMethod, word);
+}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -39,93 +53,50 @@ Foam::scalar Foam::powerMethod::maxEigenvalue
     const direction cmpt
 )
 {
-    const scalar* const __restrict__ diagPtr = matrix_.diag().begin();
-
     label nCells = matrix_.diag().size();
 
     solveScalarField lambda(nCells);
-    solveScalar* __restrict__ lambdaPtr = lambda.begin();
-
     solveScalarField Alambda(nCells, 0.0);
-    solveScalar* __restrict__ AlambdaPtr = Alambda.begin();
-
-    /* initialize random seed: */
-    srand (time(NULL));
 
     // We choose a random vector as starting point
-    // to decrease the change that our vector (lambda)
+    // to decrease the chance that our vector (lambda)
     // is orthogonal to the eigenvector
-    solveScalar rlambdaNorm = 0.;
-    for (label celli=0; celli<nCells; ++celli)
-    {
-        lambdaPtr[celli] = rand() % 10 + 0;
-        rlambdaNorm += lambdaPtr[celli] * lambdaPtr[celli];
-    }
-    rlambdaNorm = 1.0 / sqrt(rlambdaNorm);
+    Foam::FieldOps::assign
+    (
+        lambda,
+        lambda,
+        Random::uniformGeneratorOp<scalar>(time(NULL), -1, 1)
+    );
+
+    //- evaluate normalization factor
+    const scalar rlambdaNorm = 1.0/sqrt(sumSqr(lambda));
 
     //--- Normalize the initial vector (lambda)
-    for (label celli=0; celli<nCells; ++celli)
-    {
-        lambdaPtr[celli] *= rlambdaNorm;
-    }
+    lambda *= rlambdaNorm;
 
-    // --- Compute D^-1
-    scalarField rD(nCells);
-    scalar* __restrict__ rDPtr = rD.begin();
-    for (label cell=0; cell<nCells; cell++)
-    {
-        rDPtr[cell] = 1.0/diagPtr[cell];
-    }
-
-    // --- Compute D^-1*A
-    lduMatrix Pminus1Amat(matrix_);
-    Pminus1Amat *= rD;
-
-    solveScalar lmax = 0.;
     const label maxIters = 128;
-    const solveScalar tol = 1.e-2;
+    const scalar tol = 1.e-2;
+    scalar lmax = 0.0;
 
     for (label nIter=0; nIter<maxIters; ++nIter)
     {
-        lmax = 1.e-20;
-        solveScalar rAlambdaNorm = 1.e-20;
-        solveScalar AlambdaminuslmaxlambdaNorm = 0.;
-
         // --- Calculate (D^-1*A)*lambda
-        Pminus1Amat.Amul(Alambda, lambda, interfaceBouCoeffs_, interfaces_, cmpt);
+        matrix_.Amul(Alambda, lambda, interfaceBouCoeffs_, interfaces_, cmpt);
 
         // --- Compute l2 norm of (D^-1*A)*lambda: |(D^-1*A)*lambda|_2
-        for (label celli=0; celli<nCells; ++celli)
-        {
-            rAlambdaNorm += AlambdaPtr[celli] * AlambdaPtr[celli];
-        }
-        rAlambdaNorm = 1.0 / sqrt(rAlambdaNorm);
+        const scalar rAlambdaNorm = 1.0 / sqrt(sumSqr(Alambda));
 
         // --- Compute lambdaMax
-        for (label celli=0; celli<nCells; ++celli)
-        {
-            lmax += lambdaPtr[celli] * AlambdaPtr[celli];
-        }
+        lmax = sumProd(lambda,Alambda);
 
-        //---  Recompute (normalized) lambda
-        for (label celli=0; celli<nCells; ++celli)
-        {
-            AlambdaminuslmaxlambdaNorm +=
-                (AlambdaPtr[celli] - lmax * lambdaPtr[celli]) *
-                (AlambdaPtr[celli] - lmax * lambdaPtr[celli]);
-            lambdaPtr[celli] = rAlambdaNorm * AlambdaPtr[celli];
-        }
-        AlambdaminuslmaxlambdaNorm = sqrt(AlambdaminuslmaxlambdaNorm);
-
+        const scalar err = sqrt(sumSqr(Alambda - lmax*lambda));
+        //- reassign normalized approximate eigenvector
+        lambda = rAlambdaNorm*Alambda;
+        
         // Convergence check
-        if (AlambdaminuslmaxlambdaNorm / lmax < tol)
+        if ( err / (lmax + SMALL ) < tol)
         {
-            if (lduMatrix::debug >= 2)
-            {
-                Info << "  powerMethod converged in " << nIter << " iterations" << nl;
-            }
-
-            return lmax;
+            break;
         }
     }
 
@@ -135,6 +106,29 @@ Foam::scalar Foam::powerMethod::maxEigenvalue
     }
 
     return lmax;
+}
+
+
+Foam::scalar Foam::powerMethod::maxEigenvalue
+(
+    const lduMatrix& matrix_,
+    const lduMatrix::preconditioner& preconditioner_,
+    const FieldField<Field, scalar>& interfaceBouCoeffs_,
+    const lduInterfaceFieldPtrsList& interfaces_,
+    const direction cmpt
+)
+{
+    // --- Compute D^-1*A
+    lduMatrix Pminus1Amat(matrix_); 
+    Pminus1Amat *= ConstPrecisionAdaptor<scalar,solveScalar>(preconditioner_.getReciprocalD())();
+
+    return powerMethod::maxEigenvalue
+    (
+        Pminus1Amat,
+        interfaceBouCoeffs_,
+        interfaces_,
+        cmpt
+    );
 }
 
 // ************************************************************************* //
