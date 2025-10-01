@@ -40,7 +40,7 @@ namespace Foam
 {
 
 int hipDeviceInit::devID_ = -1;
-int hipDeviceInit::nThreadsPerBlock_ = 128;
+int hipDeviceInit::nThreadsPerBlock_ = 1024;
 double hipDeviceInit::sharedMemoryPerBlockPercentage_ = 0.9;
 hipDeviceProp_t hipDeviceInit::prop_{};
 
