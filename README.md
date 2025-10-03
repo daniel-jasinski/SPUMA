@@ -139,6 +139,12 @@ Additional compiler flags may be required when compiling the code to enable
 inter-GPU communication. Refer to your cluster's documentation for additional
 information.
 
+## Tutorials
+
+We created some tutorials already set up to be run on GPUs using SPUMA.
+The complete list can be found at:
+[SPUMA/Wiki/Tutorials](https://gitlab.hpc.cineca.it/exafoam/spuma/-/wikis/Tutorials)
+
 ## GPU Support
 
 **SPUMA is a work in progress**.  Not all solvers and functionalities of OpenFOAM
