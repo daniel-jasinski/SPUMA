@@ -1,0 +1,38 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2312                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+Umean           0.2;
+
+cylinderRadius  0.05;
+L               0.1; // D
+A               0.041; // D*H
+
+forceCoeffs1
+{
+    type            forceCoeffs;
+
+    libs            (forces);
+
+    writeControl    timeStep;
+    timeInterval    1;
+
+    log             yes;
+
+    patches         (cylinder);  // Patches on which to calculate forces
+    rho             rhoInf;      // Indicates incompressible
+    rhoInf          1;           // Required when rho = rhoInf
+    liftDir         (0 -1 0);
+    dragDir         (1 0 0);
+    CofR            (0 0 0);     // Centre of rotation; e.g., (0 0 0)
+    pitchAxis       (0 0 1);
+    magUInf         $Umean;
+    lRef            $L;          // cylinder diameter
+    Aref            $A;          // cylinder surface
+}
+
+// ************************************************************************* //
