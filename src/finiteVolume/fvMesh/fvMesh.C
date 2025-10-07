@@ -33,6 +33,7 @@ License
 #include "slicedSurfaceFields.H"
 #include "SubField.H"
 #include "fvMeshLduAddressing.H"
+#include "fvMeshCsrAddressing.H"
 #include "mapPolyMesh.H"
 #include "MapFvFields.H"
 #include "fvMeshMapper.H"
@@ -158,6 +159,7 @@ void Foam::fvMesh::clearAddressing(const bool isMeshUpdate)
     }
 
     lduPtr_.reset(nullptr);
+    csrPtr_.reset(nullptr);
 }
 
 
@@ -728,6 +730,23 @@ const Foam::lduAddressing& Foam::fvMesh::lduAddr() const
 }
 
 
+const Foam::fvMeshCsrAddressing& Foam::fvMesh::csrAddr() const
+{
+    if (!csrPtr_)
+    {
+        DebugInFunction
+            << "Calculating fvMeshCsrAddressing from nFaces:"
+            << nFaces() << endl;
+
+        csrPtr_ = std::make_unique<fvMeshCsrAddressing>(*this);
+
+        return *csrPtr_;
+    }
+
+    return *csrPtr_;
+}
+
+
 Foam::lduInterfacePtrsList Foam::fvMesh::interfaces() const
 {
     return boundary().interfaces();
@@ -973,6 +992,8 @@ void Foam::fvMesh::updateMesh(const mapPolyMesh& mpm)
 
     // Our slice of the addressing is no longer valid
     lduPtr_.reset(nullptr);
+    csrPtr_.reset(nullptr);
+
 
     if (VPtr_)
     {
