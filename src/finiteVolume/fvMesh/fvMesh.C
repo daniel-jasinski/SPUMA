@@ -34,6 +34,7 @@ License
 #include "SubField.H"
 #include "demandDrivenData.H"
 #include "fvMeshLduAddressing.H"
+#include "fvMeshCsrAddressing.H"
 #include "mapPolyMesh.H"
 #include "MapFvFields.H"
 #include "fvMeshMapper.H"
@@ -157,6 +158,8 @@ void Foam::fvMesh::clearAddressing(const bool isMeshUpdate)
         meshObject::clear<fvMesh, TopologicalMeshObject>(*this);
         meshObject::clear<lduMesh, TopologicalMeshObject>(*this);
     }
+
+    deleteDemandDrivenData(csrPtr_);
     deleteDemandDrivenData(lduPtr_);
 }
 
@@ -256,6 +259,7 @@ Foam::fvMesh::fvMesh(const IOobject& io, const bool doInit)
     fvSolution(static_cast<const objectRegistry&>(*this)),
     boundary_(*this, boundaryMesh()),
     lduPtr_(nullptr),
+    csrPtr_(nullptr),
     curTimeIndex_(time().timeIndex()),
     VPtr_(nullptr),
     V0Ptr_(nullptr),
@@ -396,6 +400,7 @@ Foam::fvMesh::fvMesh
     fvSolution(static_cast<const objectRegistry&>(*this)),
     boundary_(*this),
     lduPtr_(nullptr),
+    csrPtr_(nullptr),
     curTimeIndex_(time().timeIndex()),
     VPtr_(nullptr),
     V0Ptr_(nullptr),
@@ -432,6 +437,7 @@ Foam::fvMesh::fvMesh
     fvSolution(static_cast<const objectRegistry&>(*this)),
     boundary_(*this),
     lduPtr_(nullptr),
+    csrPtr_(nullptr),
     curTimeIndex_(time().timeIndex()),
     VPtr_(nullptr),
     V0Ptr_(nullptr),
@@ -508,6 +514,7 @@ Foam::fvMesh::fvMesh
     ),
     boundary_(*this),
     lduPtr_(nullptr),
+    csrPtr_(nullptr),
     curTimeIndex_(time().timeIndex()),
     VPtr_(nullptr),
     V0Ptr_(nullptr),
@@ -558,6 +565,7 @@ Foam::fvMesh::fvMesh
     ),
     boundary_(*this),
     lduPtr_(nullptr),
+    csrPtr_(nullptr),
     curTimeIndex_(time().timeIndex()),
     VPtr_(nullptr),
     V0Ptr_(nullptr),
@@ -770,6 +778,20 @@ const Foam::lduAddressing& Foam::fvMesh::lduAddr() const
     }
 
     return *lduPtr_;
+}
+
+
+const Foam::fvMeshCsrAddressing& Foam::fvMesh::csrAddr() const
+{
+    if (!csrPtr_)
+    {
+
+        csrPtr_ = new fvMeshCsrAddressing(*this);
+
+        return *csrPtr_;
+    }
+
+    return *csrPtr_;
 }
 
 
@@ -1017,6 +1039,7 @@ void Foam::fvMesh::updateMesh(const mapPolyMesh& mpm)
     polyMesh::updateMesh(mpm);
 
     // Our slice of the addressing is no longer valid
+    deleteDemandDrivenData(csrPtr_);
     deleteDemandDrivenData(lduPtr_);
 
     if (VPtr_)

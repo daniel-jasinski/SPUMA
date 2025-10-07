@@ -1,5 +1,6 @@
 fvMesh/fvMeshGeometry.C
 fvMesh/fvMesh.C
+fvMesh/fvMeshCsrAddressing.C
 
 fvGeometryScheme = fvMesh/fvGeometryScheme
 $(fvGeometryScheme)/fvGeometryScheme/fvGeometryScheme.C
@@ -447,6 +448,8 @@ gradSchemes = finiteVolume/gradSchemes
 $(gradSchemes)/gradScheme/gradSchemes.C
 $(gradSchemes)/gaussGrad/gaussGrads.C
 $(gradSchemes)/iterativeGaussGrad/iterativeGaussGrads.C
+
+$(gradSchemes)/cellBasedGaussGrad/cellBasedGaussGrads.C
 
 $(gradSchemes)/leastSquaresGrad/leastSquaresVectors.C
 $(gradSchemes)/leastSquaresGrad/leastSquaresGrads.C

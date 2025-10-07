@@ -73,6 +73,7 @@ namespace Foam
 
 // Forward Declarations
 class fvMeshLduAddressing;
+class fvMeshCsrAddressing;
 class volMesh;
 template<class Type> class fvMatrix;
 
@@ -99,6 +100,8 @@ protected:
     // Demand-Driven Data
 
         mutable fvMeshLduAddressing* lduPtr_;
+
+        mutable fvMeshCsrAddressing* csrPtr_;
 
         //- Current time index for cell volumes
         //  Note.  The whole mechanism will be replaced once the
@@ -320,6 +323,9 @@ public:
 
             //- Return ldu addressing
             virtual const lduAddressing& lduAddr() const;
+
+            //- Return CSR addressing
+            const fvMeshCsrAddressing& csrAddr() const;
 
             //- Return a list of pointers for each patch
             //  with only those pointing to interfaces being set
