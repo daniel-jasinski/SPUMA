@@ -434,7 +434,15 @@ int main(int argc, char *argv[])
 
     #include "addRegionOption.H"
 
+    // memoryPoolOptions
+    #include "addMemoryPoolOptions.H"
+
+    // device Init Options
+    #include "addInitDeviceOptions.H"
+    
     #include "setRootCase.H"
+    #include "initDevice.H"       
+    #include "createMemoryPool.H" 
     #include "createTime.H"
 
     // Optionally override controlDict time with -time options
