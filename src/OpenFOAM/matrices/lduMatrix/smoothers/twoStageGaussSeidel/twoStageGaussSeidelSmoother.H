@@ -40,6 +40,13 @@ Description
     Smoothers for Krylov Solvers on a GPU cluster"
     DOI:10.48550/arXiv.2104.01196, 2021
 
+Usage
+    \table
+        Property    | Description                       | Required    | Default value
+        nInnerIter  | number of inner jacobi iterations | no          | 1
+        omega       | damping factor                    | no          | 0.9
+    \endtable
+
 SourceFiles
     twoStageGaussSeidelSmoother.H
     twoStageGaussSeidelSmoother.C
