@@ -714,22 +714,49 @@ void Foam::Field<Type>::replace
 template<class Type>
 void Foam::Field<Type>::clamp_min(const Type& lower)
 {
-    // Use free function max() [sic] to impose component-wise clamp_min
-    // std::for_each
-    for (auto& val : *this)
+
+    if (this->usePool())
     {
-        val = max(val, lower);
+        foamExecutor exec;
+        auto* fp = this->begin();
+        auto Lambda = [=](label i)
+        {
+            fp[i] = max(fp[i],lower);
+        };
+        exec.parallelFor(Lambda,this->size());
+    }
+    else
+    {
+        // Use free function max() [sic] to impose component-wise clamp_min
+        // std::for_each
+        for (auto& val : *this)
+        {
+            val = max(val, lower);
+        }
     }
 }
 
 template<class Type>
 void Foam::Field<Type>::clamp_max(const Type& upper)
 {
-    // Use free function min() [sic] to impose component-wise clamp_max
-    // std::for_each
-    for (auto& val : *this)
+    if (this->usePool())
     {
-        val = min(val, upper);
+        foamExecutor exec;
+        auto* fp = this->begin();
+        auto Lambda = [=](label i)
+        {
+            fp[i] = min(fp[i], upper);
+        };
+        exec.parallelFor(Lambda,this->size());
+    }
+    else
+    {
+        // Use free function min() [sic] to impose component-wise clamp_max
+        // std::for_each
+        for (auto& val : *this)
+        {
+            val = min(val, upper);
+        }
     }
 }
 
@@ -738,12 +765,24 @@ template<class Type>
 void Foam::Field<Type>::clamp_range(const Type& lower, const Type& upper)
 {
     // Note: no checks for bad/invalid clamping ranges
-
-    // Use free functions min(), max() to impose component-wise clamping
-    // std::for_each
-    for (auto& val : *this)
+    if (this->usePool())
     {
-        val = min(max(val, lower), upper);
+        foamExecutor exec;
+        auto* fp = this->begin();
+        auto Lambda = [=](label i)
+        {
+            fp[i] = min(max(fp[i], lower), upper);
+        };
+        exec.parallelFor(Lambda,this->size());
+    }
+    else
+    {
+        // Use free functions min(), max() to impose component-wise clamping
+        // std::for_each
+        for (auto& val : *this)
+        {
+            val = min(max(val, lower), upper);
+        }
     }
 }
 
