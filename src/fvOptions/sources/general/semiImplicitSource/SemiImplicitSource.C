@@ -343,10 +343,17 @@ void Foam::fv::SemiImplicitSource<Type>::addSup
 
             if (this->useSubMesh())
             {
-                for (const label celli : cells_)
+                foamExecutor exec;
+                const auto cellsPtr = cells_.cbegin();
+                auto* tsuPtr = tsu.ref().begin();
+                const auto exprFldPtr = exprFld.cbegin();
+                const scalar localV(VDash_);
+                auto Lambda = [=](label i)
                 {
-                    tsu.ref()[celli] = exprFld[celli]/VDash_;
-                }
+                    const label celli = cellsPtr[i];
+                    tsuPtr[celli] = exprFldPtr[celli]/localV;
+                };
+                exec.parallelFor(Lambda,cells_.size());
             }
             else
             {
@@ -471,10 +478,17 @@ void Foam::fv::SemiImplicitSource<Type>::addSup
 
             if (this->useSubMesh())
             {
-                for (const label celli : cells_)
+                foamExecutor exec;
+                const auto cellsPtr = cells_.cbegin();
+                auto* tspPtr = tsp.ref().begin();
+                const auto exprFldPtr = exprFld.cbegin();
+                const scalar localV(VDash_);
+                auto Lambda = [=](label i)
                 {
-                    tsp.ref()[celli] = exprFld[celli]/VDash_;
-                }
+                    const label celli = cellsPtr[i];
+                    tspPtr[celli] = exprFldPtr[celli]/localV;
+                };
+                exec.parallelFor(Lambda,cells_.size());
             }
             else
             {
