@@ -214,10 +214,25 @@ Foam::IndirectListBase<T, Addr>::operator[](const label i) const
 template<class T, class Addr>
 inline void Foam::IndirectListBase<T, Addr>::operator=(const T& val)
 {
-    // Or std::fill(this->begin(), this->end(), val);
-    for (const label idx : addr_)
+    if (values_.usePool() && addr_.usePool())
     {
-        values_[idx] = val;
+        foamExecutor exec;
+        auto valuesPtr = values_.begin();
+        const auto addrPtr = addr_.cbegin();
+        auto Lambda = [=](label idx)
+        {
+            valuesPtr[addrPtr[idx]] = val;
+        };
+        exec.parallelFor(Lambda,addr_.size());
+
+    }
+    else
+    {
+        // Or std::fill(this->begin(), this->end(), val);
+        for (const label idx : addr_)
+        {
+            values_[idx] = val;
+        }
     }
 }
 
@@ -225,10 +240,26 @@ inline void Foam::IndirectListBase<T, Addr>::operator=(const T& val)
 template<class T, class Addr>
 inline void Foam::IndirectListBase<T, Addr>::operator=(const Foam::zero)
 {
-    // Or std::fill(this->begin(), this->end(), Zero);
-    for (const label idx : addr_)
+    if (values_.usePool() && addr_.usePool())
     {
-        values_[idx] = Zero;
+        foamExecutor exec;
+        auto valuesPtr = values_.begin();
+        const auto addrPtr = addr_.cbegin();
+        T localZero(Zero);
+        auto Lambda = [=](label idx)
+        {
+            valuesPtr[addrPtr[idx]] = localZero;
+        };
+        exec.parallelFor(Lambda,addr_.size());
+
+    }
+    else
+    {
+        // Or std::fill(this->begin(), this->end(), Zero);
+        for (const label idx : addr_)
+        {
+            values_[idx] = Zero;
+        }
     }
 }
 
