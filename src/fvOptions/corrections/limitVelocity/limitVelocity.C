@@ -114,6 +114,7 @@ bool Foam::fv::limitVelocity::read(const dictionary& dict)
 
 void Foam::fv::limitVelocity::correct(volVectorField& U)
 {
+    scalar Umax0 = max(mag(U)).value();
     const scalar maxSqrU = sqr(max_);
 
     // Count nTotCells ourselves
@@ -203,7 +204,8 @@ void Foam::fv::limitVelocity::correct(volVectorField& U)
             << nFacesAbovePercent
             << "%) of faces";
     }
-    Info<< ", with max limit " << max_ << endl;
+    Info<< ", with max limit " << max_;
+    Info<< ", unlimited U max " << Umax0 << endl;
 
     if (nCellsAbove || nFacesAbove)
     {
