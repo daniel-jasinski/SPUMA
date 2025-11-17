@@ -74,7 +74,7 @@ public:
     static void _backendMemSet
     (
         void* ptr,
-        const size_t sizeInBytes,
+        const uint64_t sizeInBytes,
         const void* value,
         size_t sizeOfValue
     );
@@ -82,13 +82,13 @@ public:
     static void _backendMemSetScalarOne
     (
        void* ptr,
-       const size_t sizeInBytes
+       const uint64_t sizeInBytes
     );
 
     static void _backendMemSet
     (
         void* ptr,
-        const size_t sizeInBytes,
+        const uint64_t sizeInBytes,
         const int value
     );
 };

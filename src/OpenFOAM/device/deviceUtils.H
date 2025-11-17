@@ -69,12 +69,12 @@ namespace argWrapper
 namespace device
 {
 
-    inline label setNumBlocks(const label size, const label nThreads)
+    inline size_t setNumBlocks(const uint64_t size, const size_t nThreads)
     {
         return (size + nThreads - 1) / nThreads;
     }
 
-    inline label setTreeReduceNumBlocks(const label size, const label nThreads)
+    inline size_t setTreeReduceNumBlocks(const uint64_t size, const size_t nThreads)
     {
         return (size + 2*nThreads- 1) / (2*nThreads);
     }

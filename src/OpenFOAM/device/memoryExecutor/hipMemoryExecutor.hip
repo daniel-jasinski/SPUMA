@@ -132,7 +132,7 @@ void Foam::hipMemoryExecutor::_backendMemCopy
 void Foam::hipMemoryExecutor::_backendMemSet
 (
     void* ptr,
-    const size_t sizeInBytes,
+    const uint64_t sizeInBytes,
     const void* value,
     size_t sizeOfValue
 )
@@ -151,7 +151,7 @@ void Foam::hipMemoryExecutor::_backendMemSet
         FatalErrorInFunction << "ERROR: hipMemcpy returned " << err << abort(FatalError);
 
     const int nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
-    int numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreadsPerBlock);
+    size_t numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreadsPerBlock);
     numBlocks = numBlocks == 0 ? 1 : numBlocks;
     Foam::device::memSetKernel<<<numBlocks, nThreadsPerBlock>>>
     (
@@ -168,7 +168,7 @@ void Foam::hipMemoryExecutor::_backendMemSet
 void Foam::hipMemoryExecutor::_backendMemSetScalarOne
 (
     void* ptr,
-    const size_t sizeInBytes
+    const uint64_t sizeInBytes
 )
 {
     const int nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
@@ -186,7 +186,7 @@ void Foam::hipMemoryExecutor::_backendMemSetScalarOne
 void Foam::hipMemoryExecutor::_backendMemSet
 (
     void* ptr,
-    const size_t sizeInBytes,
+    const uint64_t sizeInBytes,
     const int value
 )
 {

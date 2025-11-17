@@ -89,7 +89,7 @@ void Foam::cudaMemoryExecutor::_backendMemCopy
 void Foam::cudaMemoryExecutor::_backendMemSet
 (
     void* ptr,
-    const size_t sizeInBytes,
+    const uint64_t sizeInBytes,
     const void* value,
     size_t sizeOfValue
 )
@@ -108,7 +108,7 @@ void Foam::cudaMemoryExecutor::_backendMemSet
         FatalErrorInFunction << "ERROR: cudaMemcpy returned " << err << abort(FatalError);
 
     const int nThreadsPerBlock = cudaDeviceInit::getNumberOfThreadsPerBlock();
-    int numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreadsPerBlock);
+    size_t numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreadsPerBlock);
     numBlocks = numBlocks == 0 ? 1 : numBlocks;
     Foam::device::memSetKernel<<<numBlocks, nThreadsPerBlock>>>
     (
@@ -125,7 +125,7 @@ void Foam::cudaMemoryExecutor::_backendMemSet
 void Foam::cudaMemoryExecutor::_backendMemSetScalarOne
 (
     void* ptr,
-    const size_t sizeInBytes
+    const uint64_t sizeInBytes
 )
 {
     const int nThreadsPerBlock = cudaDeviceInit::getNumberOfThreadsPerBlock();
@@ -143,7 +143,7 @@ void Foam::cudaMemoryExecutor::_backendMemSetScalarOne
 void Foam::cudaMemoryExecutor::_backendMemSet
 (
     void* ptr,
-    const size_t sizeInBytes,
+    const uint64_t sizeInBytes,
     const int value
 )
 {

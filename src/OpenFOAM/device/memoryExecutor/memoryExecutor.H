@@ -88,7 +88,7 @@ public:
     static inline void memSet
     (
         void* ptr,
-        const size_t sizeInBytes,
+        const uint64_t sizeInBytes,
         const void* value,
         size_t sizeOfValue
     )
@@ -96,12 +96,12 @@ public:
         T::_backendMemSet(ptr, sizeInBytes, value, sizeOfValue);
     }
 
-    static inline void memSetScalarOne(void* ptr, const size_t sizeInBytes)
+    static inline void memSetScalarOne(void* ptr, const uint64_t sizeInBytes)
     {
        T::_backendMemSetScalarOne(ptr, sizeInBytes);
     }
 
-    static inline void memSet(void* ptr, const size_t sizeInBytes, const int value)
+    static inline void memSet(void* ptr, const uint64_t sizeInBytes, const int value)
     {
         T::_backendMemSet(ptr,sizeInBytes,value);
     }

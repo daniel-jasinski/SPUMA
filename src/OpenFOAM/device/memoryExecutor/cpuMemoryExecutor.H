@@ -86,7 +86,8 @@ public:
     (
         void* ptr,
         const uint64_t sizeInBytes,
-        const void* value, size_t sizeOfValue
+        const void* value,
+        size_t sizeOfValue
     )
     {
         char* tmpPtr = static_cast<char*>(ptr);
@@ -100,7 +101,7 @@ public:
         }
     }
 
-    static void _backendMemSetScalarOne(void* ptr, const size_t sizeInBytes)
+    static void _backendMemSetScalarOne(void* ptr, const uint64_t sizeInBytes)
     {
         scalar* tmpPtr = static_cast<scalar*>(ptr);
         for (size_t i = 0; i < sizeInBytes/sizeof(scalar); i++)
