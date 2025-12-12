@@ -347,7 +347,7 @@ void Foam::omegaWallFunctionFvPatchScalarField::calculate
                 (
                     omega0p[faceCellsp[facei]],
                     cornerWeightsp[facei]*
-                    phiTanh*b1 + (1 - phiTanh)*b2
+                    (phiTanh*b1 + (1 - phiTanh)*b2)
                 );
             };
             exec.parallelFor(Lambda, faceCells.size());
