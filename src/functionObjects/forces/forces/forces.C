@@ -408,11 +408,11 @@ void Foam::functionObjects::forces::addToInternalField
         {
             const label celli = cellIDsPtr[i];
 
-            sumTmpPtr[0] += fPtr[i];
+            foamAtomic::AtomicAdd(sumTmpPtr[0],fPtr[i]);
             forcePtr[celli] += fPtr[i];
 
             const vector m(MdPtr[i]^fPtr[i]);
-            sumTmpPtr[1] += m;
+            foamAtomic::AtomicAdd(sumTmpPtr[1], m);
             momentPtr[celli] = m;
         };
         exec.parallelFor(Lambda,cellIDs.size());
