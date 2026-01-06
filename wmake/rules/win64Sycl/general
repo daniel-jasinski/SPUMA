@@ -1,0 +1,12 @@
+#------------------------------------------------------------------------------
+# Windows 64-bit with AdaptiveCpp SYCL compiler
+#------------------------------------------------------------------------------
+
+CPP        = cpp -traditional-cpp $(GFLAGS)
+
+include $(GENERAL_RULES)/standard
+
+include $(DEFAULT_RULES)/c
+include $(DEFAULT_RULES)/c++
+
+#------------------------------------------------------------------------------

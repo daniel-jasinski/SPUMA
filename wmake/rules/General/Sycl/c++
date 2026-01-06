@@ -1,0 +1,39 @@
+#------------------------------------------------------------------------------
+# AdaptiveCpp (acpp) SYCL compiler
+#------------------------------------------------------------------------------
+SUFFIXES   += .C .cc .cpp .cxx
+
+CC         := acpp -std=c++17
+
+c++ARCH    :=
+c++DBUG    :=
+c++OPT     := -O2
+ptFLAGS    := -DNoRepository -Dhave_sycl
+
+c++WARN     = \
+    -Wall -Wextra \
+    -Wno-unused-parameter -Wno-old-style-cast
+
+# Less restrictive warnings (eg, for flex++, CGAL, etc.)
+c++LESSWARN = \
+    -Wno-old-style-cast -Wno-unused-local-typedefs \
+    -Wno-deprecated-declarations \
+    -fpermissive
+
+# AdaptiveCpp target (generic for JIT, or cuda:sm_XX, hip:gfxXXX)
+ifeq (,$(strip $(ACPP_TARGETS)))
+    ACPP_TARGETS := generic
+endif
+
+# AdaptiveCpp specific flags
+ACPP_FLAGS := --acpp-targets=$(ACPP_TARGETS)
+
+# Windows STL compatibility
+ifeq ($(WM_OSTYPE),MSwindows)
+    ACPP_FLAGS += -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
+endif
+
+# Tuning
+sinclude $(GENERAL_RULES)/common/c++$(WM_COMPILE_OPTION)
+
+#------------------------------------------------------------------------------
