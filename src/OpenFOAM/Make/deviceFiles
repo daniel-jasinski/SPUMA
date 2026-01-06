@@ -12,3 +12,8 @@ ifneq (,$(findstring true,$(have_hip)))
         db/error/hipError.hip \
         device/memoryExecutor/hipMemoryExecutor.hip
 endif
+
+ifneq (,$(findstring true,$(have_sycl)))
+    DEVICE_SOURCE += \
+        device/syclGlobal.cpp
+endif

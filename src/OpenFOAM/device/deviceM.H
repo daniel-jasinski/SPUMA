@@ -39,6 +39,9 @@ SourceFiles
 #if defined(have_cuda) || defined(have_hip)
     #define FOAM_DEVICE __host__ __device__
     #define FOAM_DEVICE_I __host__ __device__ __forceinline__
+#elif defined(have_sycl)
+    #define FOAM_DEVICE
+    #define FOAM_DEVICE_I inline
 #else
     #define FOAM_DEVICE
     #define FOAM_DEVICE_I inline
@@ -51,6 +54,10 @@ SourceFiles
 #elif have_hip
     #include <hip/hip_runtime.h>
     #define deviceSync() hipDeviceSynchronize()
+#elif have_sycl
+    #include <sycl/sycl.hpp>
+    namespace Foam { sycl::queue& getSyclQueue(); }
+    #define deviceSync() Foam::getSyclQueue().wait()
 #else
     #define deviceSync()
 #endif
@@ -75,6 +82,17 @@ SourceFiles
 #define NUM_SM 110
 
 // Max shared memory addressable by a block
+#define MAX_SMEM 65536
+
+#elif have_sycl
+
+// Number of threads per work-group (SYCL terminology)
+#define NUM_THREADS_PER_BLOCK 256
+
+// Number of compute units (varies by device, this is a reasonable default)
+#define NUM_SM 64
+
+// Max local memory addressable by a work-group
 #define MAX_SMEM 65536
 
 #endif

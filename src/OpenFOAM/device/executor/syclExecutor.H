@@ -25,43 +25,77 @@ License
     You should have received a copy of the GNU General Public License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
+Class
+    Foam::syclExecutor
+
 Description
-    Compile-time selection of the GPU initialization executor.
+    SYCL executor backend using AdaptiveCpp.
 
 SourceFiles
-    deviceInits.H
+    syclExecutor.H
+    syclExecutor.cpp
+
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_deviceInits_H
-#define Foam_deviceInits_H
+#ifndef Foam_sycl_executor_H
+#define Foam_sycl_executor_H
 
-#include "cpuDeviceInit.H"
-#ifdef have_cuda
-    #include "cudaDeviceInit.cuh"
-#elif have_hip
-    #include "hipDeviceInit.hpp"
-#elif have_sycl
-    #include "syclDeviceInit.H"
-#endif
+#include "executor.H"
+#include <sycl/sycl.hpp>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-#ifdef have_cuda
-    typedef cudaDeviceInit foamDeviceInit;
-#elif have_hip
-    typedef hipDeviceInit foamDeviceInit;
-#elif have_sycl
-    typedef syclDeviceInit foamDeviceInit;
-#else
-    typedef cpuDeviceInit foamDeviceInit;
-#endif
+// Forward declaration
+class syclExecutor;
+
+// Global SYCL queue accessor
+sycl::queue& getSyclQueue();
+
+/*---------------------------------------------------------------------------*\
+                          Class syclExecutor Declaration
+\*---------------------------------------------------------------------------*/
+
+class syclExecutor
+:
+    public executor<syclExecutor>
+{
+
+public:
+
+    template<typename F>
+    void _backendFor(F& lambda, const label& size);
+
+    template<typename F>
+    void _backendSerialFor(F& lambda, const label& size);
+
+    template<typename F, typename resultT>
+    void _backendReductionSum
+    (
+        F& lambda, resultT* const __restrict__ result,
+        const label& size
+    );
+
+    template<typename F,typename Op, typename resultT>
+    void _backendReductionCompare
+    (
+        F& lambda, Op& op,
+        resultT* const __restrict__ result,
+        const label& size
+    );
+};
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "syclExecutor.cpp"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -26,45 +26,40 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Description
-    Compile-time selection of the GPU initialization executor.
+    Global SYCL queue instance for SPUMA.
+    Uses GPU device if available, falls back to CPU.
 
-SourceFiles
-    deviceInits.H
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_deviceInits_H
-#define Foam_deviceInits_H
+#ifdef have_sycl
 
-#include "cpuDeviceInit.H"
-#ifdef have_cuda
-    #include "cudaDeviceInit.cuh"
-#elif have_hip
-    #include "hipDeviceInit.hpp"
-#elif have_sycl
-    #include "syclDeviceInit.H"
-#endif
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#include <sycl/sycl.hpp>
 
 namespace Foam
 {
 
-#ifdef have_cuda
-    typedef cudaDeviceInit foamDeviceInit;
-#elif have_hip
-    typedef hipDeviceInit foamDeviceInit;
-#elif have_sycl
-    typedef syclDeviceInit foamDeviceInit;
-#else
-    typedef cpuDeviceInit foamDeviceInit;
-#endif
+// Global SYCL queue - selects GPU if available, falls back to CPU
+sycl::queue& getSyclQueue()
+{
+    static sycl::queue q = []()
+    {
+        try
+        {
+            // Try to get a GPU device first
+            return sycl::queue(sycl::gpu_selector_v);
+        }
+        catch (const sycl::exception&)
+        {
+            // Fall back to default device (usually CPU)
+            return sycl::queue(sycl::default_selector_v);
+        }
+    }();
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+    return q;
+}
 
 } // End namespace Foam
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#endif
+#endif // have_sycl
 
 // ************************************************************************* //

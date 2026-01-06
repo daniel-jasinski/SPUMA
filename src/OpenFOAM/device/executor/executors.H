@@ -44,6 +44,8 @@ SourceFiles
     #include "cudaExecutor.cuh"
 #elif have_hip
     #include "hipExecutor.hpp"
+#elif have_sycl
+    #include "syclExecutor.H"
 #endif
 
 #include "deviceInits.H"
@@ -57,6 +59,8 @@ namespace Foam
     typedef cudaExecutor foamExecutor;
 #elif have_hip
     typedef hipExecutor foamExecutor;
+#elif have_sycl
+    typedef syclExecutor foamExecutor;
 #else
     typedef cpuExecutor foamExecutor;
 #endif

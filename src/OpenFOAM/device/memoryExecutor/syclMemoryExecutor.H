@@ -25,43 +25,86 @@ License
     You should have received a copy of the GNU General Public License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
+Class
+    Foam::syclMemoryExecutor
+
 Description
-    Compile-time selection of the GPU initialization executor.
+    SYCL executor for memory pool operations using AdaptiveCpp.
 
 SourceFiles
-    deviceInits.H
+    syclMemoryExecutor.H
+    syclMemoryExecutor.cpp
+
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_deviceInits_H
-#define Foam_deviceInits_H
+#ifndef Foam_sycl_Memory_Executor_H
+#define Foam_sycl_Memory_Executor_H
 
-#include "cpuDeviceInit.H"
-#ifdef have_cuda
-    #include "cudaDeviceInit.cuh"
-#elif have_hip
-    #include "hipDeviceInit.hpp"
-#elif have_sycl
-    #include "syclDeviceInit.H"
-#endif
+#include "memoryExecutor.H"
+#include <sycl/sycl.hpp>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-#ifdef have_cuda
-    typedef cudaDeviceInit foamDeviceInit;
-#elif have_hip
-    typedef hipDeviceInit foamDeviceInit;
-#elif have_sycl
-    typedef syclDeviceInit foamDeviceInit;
-#else
-    typedef cpuDeviceInit foamDeviceInit;
-#endif
+// Forward declaration
+sycl::queue& getSyclQueue();
+
+/*---------------------------------------------------------------------------*\
+                       Class syclMemoryExecutor Declaration
+\*---------------------------------------------------------------------------*/
+
+class syclMemoryExecutor
+: public memoryExecutor<syclMemoryExecutor>
+{
+public:
+
+    static constexpr label _memAlignBytes = 16;
+
+    static void* _backendAlloc(uint64_t size);
+
+    static void _backendClear(void* ptr);
+
+    static void _backendMemCopy
+    (
+        void* dst,
+        const void* src,
+        uint64_t size,
+        memCopyKind kind
+    );
+
+    static void _backendMemSet
+    (
+        void* ptr,
+        const size_t sizeInBytes,
+        const void* value,
+        size_t sizeOfValue
+    );
+
+    static void _backendMemSetScalarOne
+    (
+       void* ptr,
+       const size_t sizeInBytes
+    );
+
+    static void _backendMemSet
+    (
+        void* ptr,
+        const size_t sizeInBytes,
+        const int value
+    );
+};
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "syclMemoryExecutor.cpp"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -43,4 +43,8 @@ ifneq (,$(findstring true,$(have_cuda)))
     EXE_INC += -Dhave_cuda
 endif
 
+ifneq (,$(findstring true,$(have_sycl)))
+    EXE_INC += -Dhave_sycl
+endif
+
 

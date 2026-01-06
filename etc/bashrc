@@ -203,6 +203,13 @@ fi
 # Cleanup variables (done as final statement for a clean exit code)
 unset foamOldDirs projectDir
 
+# Auto-set have_sycl for Sycl compiler
+case "$WM_COMPILER" in
+Sycl*)
+    export have_sycl=true
+    ;;
+esac
+
 # Ignore headers for unused device backend source files
 source "$WM_PROJECT_DIR/src/IgnoreHeaders"
 
