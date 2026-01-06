@@ -29,7 +29,7 @@
 # Use POSIX shell. Default to POSIX for the OS.
 #------------------------------------------------------------------------------
 
-SHELL           = /bin/sh
+SHELL           = sh
 
 ifeq (,$(strip $(WM_OSTYPE)))
     WM_OSTYPE  := POSIX

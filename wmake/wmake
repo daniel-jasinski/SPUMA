@@ -199,7 +199,12 @@ printInfo()
 # Set nCores to the number of cores on the machine
 allCores()
 {
-    nCores=$(getconf _NPROCESSORS_ONLN 2>/dev/null) || nCores=1
+    # Windows/MSYS2: use NUMBER_OF_PROCESSORS environment variable
+    if [ -n "$NUMBER_OF_PROCESSORS" ]; then
+        nCores="$NUMBER_OF_PROCESSORS"
+    else
+        nCores=$(getconf _NPROCESSORS_ONLN 2>/dev/null) || nCores=1
+    fi
     echo "${nCores:-1}"
 }
 
