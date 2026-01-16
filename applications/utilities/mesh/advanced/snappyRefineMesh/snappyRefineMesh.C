@@ -774,13 +774,13 @@ int main(int argc, char *argv[])
         labelList(mesh.nCells(), Zero)
     );
 
-    label maxLevel = max(refLevel);
+    label maxLevel = Foam::max(refLevel);
 
     if (maxLevel > 0)
     {
         Info<< "Read existing refinement level from file "
             << refLevel.objectPath() << nl
-            << "   min level : " << min(refLevel) << nl
+            << "   min level : " << Foam::min(refLevel) << nl
             << "   max level : " << maxLevel << nl
             << endl;
     }
