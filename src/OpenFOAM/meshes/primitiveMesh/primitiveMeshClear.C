@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
     Copyright (C) 2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -171,6 +172,8 @@ void Foam::primitiveMesh::clearAddressing()
     pcPtr_.reset(nullptr);
 
     cfPtr_.reset(nullptr);
+    cellFaceStartPtr_.reset(nullptr);
+    facePtr_.reset(nullptr);
     efPtr_.reset(nullptr);
     pfPtr_.reset(nullptr);
 

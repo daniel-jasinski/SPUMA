@@ -235,6 +235,11 @@ protected:
                 const direction cmpt
             ) const;
 
+            void addBoundaryDiag
+            (
+                Field<Type>& diag
+            ) const;
+
             void addCmptAvBoundaryDiag(scalarField& diag) const;
 
             void addBoundarySource

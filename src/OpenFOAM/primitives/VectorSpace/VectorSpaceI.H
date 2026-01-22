@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,19 +31,20 @@ License
 #include "products.H"
 #include "VectorSpaceOps.H"
 #include "ops.H"
+#include "deviceM.H"
 #include <type_traits>
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace(Foam::zero)
+FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace(Foam::zero)
 {
     VectorSpaceOps<Ncmpts>::fill_n(this->begin(), Cmpt(Foam::zero{}));
 }
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
+FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -53,7 +55,7 @@ inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
 template<class Form2, class Cmpt2>
-inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
+FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
 (
     const VectorSpace<Form2, Cmpt2, Ncmpts>& vs
 )
@@ -83,7 +85,7 @@ inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::ConstBlock<SubVector, BStart>
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline const Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
+FOAM_DEVICE inline const Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 (
     const direction d
 ) const
@@ -102,7 +104,7 @@ inline const Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
+FOAM_DEVICE inline Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 (
     const direction d
 )
@@ -121,7 +123,7 @@ inline Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 (
     Cmpt& c,
     const direction d
@@ -141,7 +143,7 @@ inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::component
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::replace
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::replace
 (
     const direction d,
     const Cmpt& c
@@ -279,7 +281,7 @@ ConstBlock<SubVector, BStart>::operator()
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -300,7 +302,7 @@ inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator+=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator+=
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -310,7 +312,7 @@ inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator+=
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator-=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator-=
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -320,14 +322,14 @@ inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator-=
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=(Foam::zero)
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=(Foam::zero)
 {
     VectorSpaceOps<Ncmpts>::fill_n(this->begin(), Cmpt(Foam::zero{}));
 }
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator*=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator*=
 (
     const scalar s
 )
@@ -337,7 +339,7 @@ inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator*=
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator/=
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator/=
 (
     const scalar s
 )
@@ -354,7 +356,7 @@ namespace Foam
 // * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt& setComponent
+FOAM_DEVICE inline Cmpt& setComponent
 (
     VectorSpace<Form, Cmpt, Ncmpts>& vs,
     const direction d
@@ -365,7 +367,7 @@ inline Cmpt& setComponent
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline const Cmpt& component
+FOAM_DEVICE inline const Cmpt& component
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs,
     const direction d
@@ -379,7 +381,7 @@ inline const Cmpt& component
 // Equivalent to outer-products between the Form and itself
 // Form^0 = 1.0
 template<class Form, class Cmpt, direction Ncmpts>
-inline typename powProduct<Form, 0>::type pow
+FOAM_DEVICE inline typename powProduct<Form, 0>::type pow
 (
     const VectorSpace<Form, Cmpt, Ncmpts>&,
     typename powProduct<Form, 0>::type
@@ -392,7 +394,7 @@ inline typename powProduct<Form, 0>::type pow
 
 // Form^1 = Form
 template<class Form, class Cmpt, direction Ncmpts>
-inline typename powProduct<Form, 1>::type pow
+FOAM_DEVICE inline typename powProduct<Form, 1>::type pow
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& v,
     typename powProduct<Form, 1>::type
@@ -405,7 +407,7 @@ inline typename powProduct<Form, 1>::type pow
 
 // Form^2 = sqr(Form)
 template<class Form, class Cmpt, direction Ncmpts>
-inline typename powProduct<Form, 2>::type pow
+FOAM_DEVICE inline typename powProduct<Form, 2>::type pow
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& v,
     typename powProduct<Form, 2>::type
@@ -417,7 +419,7 @@ inline typename powProduct<Form, 2>::type pow
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline scalar magSqr
+FOAM_DEVICE inline scalar magSqr
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -429,7 +431,7 @@ inline scalar magSqr
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline scalar mag
+FOAM_DEVICE inline scalar mag
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -455,7 +457,7 @@ inline VectorSpace<Form, Cmpt, Ncmpts> normalised
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline VectorSpace<Form, Cmpt, Ncmpts> cmptMultiply
+FOAM_DEVICE inline VectorSpace<Form, Cmpt, Ncmpts> cmptMultiply
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -468,7 +470,7 @@ inline VectorSpace<Form, Cmpt, Ncmpts> cmptMultiply
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline VectorSpace<Form, Cmpt, Ncmpts> cmptPow
+FOAM_DEVICE inline VectorSpace<Form, Cmpt, Ncmpts> cmptPow
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -481,7 +483,7 @@ inline VectorSpace<Form, Cmpt, Ncmpts> cmptPow
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline VectorSpace<Form, Cmpt, Ncmpts> cmptDivide
+FOAM_DEVICE inline VectorSpace<Form, Cmpt, Ncmpts> cmptDivide
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -494,7 +496,7 @@ inline VectorSpace<Form, Cmpt, Ncmpts> cmptDivide
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline VectorSpace<Form, Cmpt, Ncmpts> stabilise
+FOAM_DEVICE inline VectorSpace<Form, Cmpt, Ncmpts> stabilise
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs,
     const Cmpt& small
@@ -507,7 +509,7 @@ inline VectorSpace<Form, Cmpt, Ncmpts> stabilise
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptMax
+FOAM_DEVICE inline Cmpt cmptMax
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -519,7 +521,7 @@ inline Cmpt cmptMax
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptMin
+FOAM_DEVICE inline Cmpt cmptMin
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -531,7 +533,7 @@ inline Cmpt cmptMin
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptSum
+FOAM_DEVICE inline Cmpt cmptSum
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -543,7 +545,7 @@ inline Cmpt cmptSum
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptAv
+FOAM_DEVICE inline Cmpt cmptAv
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -553,7 +555,7 @@ inline Cmpt cmptAv
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt cmptProduct
+FOAM_DEVICE inline Cmpt cmptProduct
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -565,7 +567,7 @@ inline Cmpt cmptProduct
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form cmptSqr
+FOAM_DEVICE inline Form cmptSqr
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -577,7 +579,7 @@ inline Form cmptSqr
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form cmptMag
+FOAM_DEVICE inline Form cmptMag
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -601,7 +603,7 @@ inline Form cmptMagSqr
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form max
+FOAM_DEVICE inline Form max
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -614,7 +616,7 @@ inline Form max
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form min
+FOAM_DEVICE inline Form min
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -640,14 +642,14 @@ inline Form minMod
 
 
 template<class Type>
-inline Type dot(const scalar s, const Type& t)
+FOAM_DEVICE inline Type dot(const scalar s, const Type& t)
 {
     return s * t;
 }
 
 
 template<class Type>
-inline Type dot(const Type& t, const scalar s)
+FOAM_DEVICE inline Type dot(const Type& t, const scalar s)
 {
     return t * s;
 }
@@ -671,7 +673,7 @@ inline typename innerProduct<Form1, Form2>::type dot
 // * * * * * * * * * * * * * * * Global Operators  * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator-
+FOAM_DEVICE inline Form operator-
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
@@ -683,7 +685,7 @@ inline Form operator-
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator+
+FOAM_DEVICE inline Form operator+
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -695,7 +697,7 @@ inline Form operator+
 }
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator-
+FOAM_DEVICE inline Form operator-
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -708,7 +710,7 @@ inline Form operator-
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator*
+FOAM_DEVICE inline Form operator*
 (
     scalar s,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
@@ -721,7 +723,7 @@ inline Form operator*
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator*
+FOAM_DEVICE inline Form operator*
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs,
     scalar s
@@ -734,7 +736,7 @@ inline Form operator*
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Form operator/
+FOAM_DEVICE inline Form operator/
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs,
     scalar s
@@ -774,7 +776,7 @@ inline Form operator/
 
 
 template<class Form, class Cmpt, direction Ncmpts>
-inline Cmpt operator&&
+FOAM_DEVICE inline Cmpt operator&&
 (
     const VectorSpace<Form, Cmpt, Ncmpts>& vs1,
     const VectorSpace<Form, Cmpt, Ncmpts>& vs2

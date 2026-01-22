@@ -25,6 +25,8 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+#include "deviceUtils.H"
+
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 template<class RhoFieldType>
@@ -45,18 +47,33 @@ void Foam::porosityModels::DarcyForchheimer::apply
 
         const labelList& cells = mesh_.cellZones()[cellZoneIDs_[zoneI]];
 
-        forAll(cells, i)
+        foamExecutor exec;
+        const auto dZonesPtr = dZones.cbegin();
+        const auto fZonesPtr = fZones.cbegin();
+        const auto cellsPtr = cells.cbegin();
+        const auto VPtr = V.cbegin();
+        const auto UPtr = U.cbegin();
+        const auto rhoPtr = argWrapper::cget(rho);
+        const auto muPtr = mu.cbegin();
+        auto UdiagPtr = Udiag.begin();
+        auto UsourcePtr = Usource.begin();
+
+        const bool isUniform = csysPtr_->uniform();
+        
+        const tensor localI(I);
+        auto Lambda = [=](label i)
         {
-            const label celli = cells[i];
-            const label j = this->fieldIndex(i);
+            const label celli = cellsPtr[i];
+            const label j = isUniform ? 0 : i;
             const tensor Cd =
-                mu[celli]*dZones[j] + (rho[celli]*mag(U[celli]))*fZones[j];
+                muPtr[celli]*dZonesPtr[j] + (rhoPtr[celli]*mag(UPtr[celli]))*fZonesPtr[j];
 
             const scalar isoCd = tr(Cd);
 
-            Udiag[celli] += V[celli]*isoCd;
-            Usource[celli] -= V[celli]*((Cd - I*isoCd) & U[celli]);
-        }
+            UdiagPtr[celli] += VPtr[celli]*isoCd;
+            UsourcePtr[celli] -= VPtr[celli]*((Cd - localI*isoCd) & UPtr[celli]);  
+        };
+        exec.parallelFor(Lambda, cells.size());
     }
 }
 
@@ -77,15 +94,27 @@ void Foam::porosityModels::DarcyForchheimer::apply
 
         const labelList& cells = mesh_.cellZones()[cellZoneIDs_[zoneI]];
 
-        forAll(cells, i)
-        {
-            const label celli = cells[i];
-            const label j = this->fieldIndex(i);
-            const tensor D = dZones[j];
-            const tensor F = fZones[j];
+        foamExecutor exec;
+        const auto cellsPtr = cells.cbegin();
+        const auto dZonesPtr = dZones.cbegin();
+        const auto fZonesPtr = fZones.cbegin();
+        const auto muPtr = mu.cbegin();
+        const auto UPtr = U.cbegin();
+        const auto rhoPtr = argWrapper::cget(rho);
+        auto AUPtr = AU.begin();
+        const bool isUniform = csysPtr_->uniform();
 
-            AU[celli] += mu[celli]*D + (rho[celli]*mag(U[celli]))*F;
-        }
+        auto Lambda = [=](label i)
+        {
+            const label celli = cellsPtr[i];
+            const label j = isUniform ? 0 : i;
+            const tensor D = dZonesPtr[j];
+            const tensor F = fZonesPtr[j];
+
+            AUPtr[celli] += muPtr[celli]*D + (rhoPtr[celli]*mag(UPtr[celli]))*F;
+        };
+        exec.parallelFor(Lambda, cells.size());
+
     }
 }
 

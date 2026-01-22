@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2022 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,6 +41,7 @@ namespace Foam
 // This enables specialization for floatVector and doubleVector independent
 // of the definition of 'scalar' or 'vector' - useful for mixed-precision
 // operation.
+
 
 template<>
 void Field<Vector<float>>::normalise()

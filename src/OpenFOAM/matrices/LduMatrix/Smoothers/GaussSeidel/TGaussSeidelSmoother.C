@@ -50,7 +50,14 @@ Foam::TGaussSeidelSmoother<Type, DType, LUType>::TGaussSeidelSmoother
 
     for (label celli=0; celli<nCells; celli++)
     {
-        rDPtr[celli] = inv(diagPtr[celli]);
+        if constexpr(std::is_same<DType, Type>::value)
+        {
+            rDPtr[celli] = cmptDivide(pTraits<Type>::one, diagPtr[celli]);
+        }
+        else
+        {
+            rDPtr[celli] = inv(diagPtr[celli]);
+        }
     }
 }
 
@@ -137,7 +144,14 @@ void Foam::TGaussSeidelSmoother<Type, DType, LUType>::smooth
             }
 
             // Finish current psi
-            curPsi = dot(rDPtr[celli], curPsi);
+            if constexpr(std::is_same<DType, Type>::value)
+            {
+                curPsi = cmptMultiply(rDPtr[celli], curPsi);
+            }
+            else
+            {
+                curPsi = dot(rDPtr[celli], curPsi);
+            }
 
             // Distribute the neighbour side using current psi
             for (label curFace=fStart; curFace<fEnd; curFace++)

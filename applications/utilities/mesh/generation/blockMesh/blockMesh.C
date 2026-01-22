@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -166,7 +167,11 @@ int main(int argc, char *argv[])
     );
 
     #include "addRegionOption.H"
+    #include "addMemoryPoolOptions.H"
+    #include "addInitDeviceOptions.H"
     #include "setRootCase.H"
+    #include "initDevice.H"
+    #include "createMemoryPool.H"
     #include "createTime.H"
 
     // Remove old files, unless disabled

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -67,26 +68,31 @@ Foam::tmp<Foam::vectorField> Foam::cyclicFvPatch::delta() const
     auto tpdv = tmp<vectorField>::New(patchD.size());
     auto& pdv = tpdv.ref();
 
+    foamExecutor exec;
+    auto pdv_p = pdv.begin();
+    const auto patchD_p = patchD.cbegin();
+    const auto nbrPatchD_p = nbrPatchD.cbegin();
     // To the transformation if necessary
     if (parallel())
     {
-        forAll(patchD, facei)
-        {
-            vector ddi = patchD[facei];
-            vector dni = nbrPatchD[facei];
+        auto Lambda = [=](label facei){
+            vector ddi = patchD_p[facei];
+            vector dni = nbrPatchD_p[facei];
 
-            pdv[facei] = ddi - dni;
-        }
+            pdv_p[facei] = ddi - dni;
+        };
+        exec.parallelFor(Lambda,patchD.size());
     }
     else
     {
-        forAll(patchD, facei)
-        {
-            vector ddi = patchD[facei];
-            vector dni = nbrPatchD[facei];
+        const auto T_p = forwardT().cbegin();
+        auto Lambda = [=](label facei){
+            vector ddi = patchD_p[facei];
+            vector dni = nbrPatchD_p[facei];
 
-            pdv[facei] = ddi - transform(forwardT()[0], dni);
-        }
+            pdv_p[facei] = ddi - transform(T_p[0], dni);
+        };
+        exec.parallelFor(Lambda,patchD.size());
     }
 
     return tpdv;

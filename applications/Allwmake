@@ -21,11 +21,41 @@ echo ========================================
 
 #------------------------------------------------------------------------------
 
-wmake -all $targetType utilities
-wmake -all $targetType solvers
+# Utilities
+# wmake -all $targetType utilities
+wmake -all $targetType utilities/finiteArea
+wmake -all $targetType utilities/doc
+wmake -all $targetType utilities/mesh/advanced
+wmake -all $targetType utilities/mesh/conversion
+wmake -all $targetType utilities/mesh/doc
+wmake -all $targetType utilities/mesh/generation/PDRblockMesh
+wmake -all $targetType utilities/mesh/generation/blockMesh
+# wmake -all $targetType utilities/mesh/generation/extrude
+wmake -all $targetType utilities/mesh/generation/extrude2DMesh
+wmake -all $targetType utilities/mesh/generation/foamyMesh
+wmake -all $targetType utilities/mesh/generation/snappyHexMesh
+wmake -all $targetType utilities/mesh/manipulation
+wmake -all $targetType utilities/miscellaneous
+wmake -all $targetType utilities/preProcessing
+wmake -all $targetType utilities/postProcessing
+wmake -all $targetType utilities/parallelProcessing
+wmake -all $targetType utilities/surface
+wmake -all $targetType utilities/thermophysical
+
+# Solvers
+# wmake -all $targetType solvers
+wmake $targetType solvers/basic/laplacianFoam
+wmake $targetType solvers/basic/potentialFoam
+wmake $targetType solvers/compressible/rhoSimpleFoam
+wmake $targetType solvers/compressible/rhoPimpleFoam
+wmake $targetType solvers/incompressible/icoFoam
+wmake $targetType solvers/incompressible/pisoFoam
+wmake $targetType solvers/incompressible/simpleFoam
+wmake $targetType solvers/incompressible/simpleFoam/SRFSimpleFoam
+wmake $targetType solvers/incompressible/pimpleFoam
 
 # Extra tools (optional)
-## wmake -all $targetType tools
+wmake -all $targetType tools
 
 #------------------------------------------------------------------------------
 

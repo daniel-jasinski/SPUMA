@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -212,12 +213,20 @@ const Foam::scalarField& Foam::lduMatrix::diag() const
 }
 
 
-Foam::scalarField& Foam::lduMatrix::diag()
+Foam::scalarField& Foam::lduMatrix::diag(bool init)
 {
     if (!diagPtr_)
     {
-        diagPtr_ =
-            std::make_unique<scalarField>(lduAddr().size(), Foam::zero{});
+        if (init)
+        {
+            diagPtr_ =
+                std::make_unique<scalarField>(lduAddr().size(), Foam::zero{});
+        }
+        else
+        {
+            diagPtr_ =
+                std::make_unique<scalarField>(lduAddr().size());
+        }
     }
 
     return *diagPtr_;
@@ -259,7 +268,7 @@ const Foam::scalarField& Foam::lduMatrix::upper() const
 }
 
 
-Foam::scalarField& Foam::lduMatrix::upper()
+Foam::scalarField& Foam::lduMatrix::upper(bool init)
 {
     if (!upperPtr_)
     {
@@ -272,12 +281,23 @@ Foam::scalarField& Foam::lduMatrix::upper()
             // no lowerPtr so any lowerCSR was constructed from upper
             lowerCSRPtr_.reset(nullptr);
 
-            upperPtr_ =
-                std::make_unique<scalarField>
-                (
-                    lduAddr().lowerAddr().size(),
-                    Foam::zero{}
-                );
+            if(init)
+            {
+                upperPtr_ =
+                    std::make_unique<scalarField>
+                    (
+                        lduAddr().lowerAddr().size(),
+                        Foam::zero{}
+                    );
+            }
+            else
+            {
+                upperPtr_ =
+                    std::make_unique<scalarField>
+                    (
+                        lduAddr().lowerAddr().size()
+                    );
+            }
         }
     }
 
@@ -330,7 +350,7 @@ const Foam::scalarField& Foam::lduMatrix::lower() const
 }
 
 
-Foam::scalarField& Foam::lduMatrix::lower()
+Foam::scalarField& Foam::lduMatrix::lower(bool init)
 {
     if (!lowerPtr_)
     {
@@ -342,12 +362,23 @@ Foam::scalarField& Foam::lduMatrix::lower()
         }
         else
         {
-            lowerPtr_ =
-                std::make_unique<scalarField>
-                (
-                    lduAddr().lowerAddr().size(),
-                    Foam::zero{}
-                );
+            if (init)
+            {
+                lowerPtr_ =
+                    std::make_unique<scalarField>
+                    (
+                        lduAddr().lowerAddr().size(),
+                        Foam::zero{}
+                    );
+            }
+            else
+            {
+                lowerPtr_ =
+                    std::make_unique<scalarField>
+                    (
+                        lduAddr().lowerAddr().size()
+                    );
+            }
         }
     }
 

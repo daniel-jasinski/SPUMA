@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -134,6 +135,12 @@ class primitiveMesh
             //- Cell-faces
             mutable std::unique_ptr<cellList> cfPtr_;
 
+            //- cell-face start
+            mutable std::unique_ptr<labelList> cellFaceStartPtr_;
+
+            //- face index using cell face start
+            mutable std::unique_ptr<labelList> facePtr_;
+
             //- Edge-faces
             mutable std::unique_ptr<labelListList> efPtr_;
 
@@ -202,6 +209,9 @@ class primitiveMesh
 
             //- Calculate cell-face addressing
             void calcCells() const;
+
+            //- Calculate plain cell face addressing
+            void calcFaceStart() const;
 
             //- Calculate edge list
             void calcCellEdges() const;
@@ -543,9 +553,17 @@ public:
                     cellList&,
                     const labelUList& own,
                     const labelUList& nei,
-                    const label nCells = -1
+                    const label inNCells = -1
                 );
 
+                static void calcFaceStart
+                (
+                    labelList& cellFaceStartAddr,
+                    labelList& facesortAddr,
+                    const labelUList& own,
+                    const labelUList& nei,
+                    const label inNCells = -1
+                );
                 //- Helper function to calculate point ordering. Returns true
                 //  if points already ordered, false and fills pointMap (old to
                 //  new). Map splits points into those not used by any boundary
@@ -567,6 +585,8 @@ public:
                 const labelListList& pointCells() const;
 
                 const cellList& cells() const;
+                const labelList& cellsFaceStart() const;
+                const labelList& cellsFaces() const;
                 // faceFaces considered unnecessary
                 const labelListList& edgeFaces() const;
                 const labelListList& pointFaces() const;

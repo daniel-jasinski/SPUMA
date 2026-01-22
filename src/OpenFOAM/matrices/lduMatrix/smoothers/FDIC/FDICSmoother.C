@@ -59,7 +59,8 @@ Foam::FDICSmoother::FDICSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     ),
     rD_(matrix_.diag().size()),
     rDuUpper_(matrix_.upper().size()),

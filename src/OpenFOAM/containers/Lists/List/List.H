@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -47,12 +48,15 @@ SourceFiles
 #include "UList.H"
 #include "SLListFwd.H"
 
+#include "MemoryPoolBase.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
 // Forward Declarations
+class MemoryPool;
+class poolSwitch;
 template<class T> class List;
 template<class T, unsigned N> class FixedList;
 template<class T, int SizeMin> class DynamicList;
@@ -65,6 +69,28 @@ template<class T> Istream& operator>>(Istream& is, List<T>& list);
 typedef List<bool> boolList;        //!< A List of bools
 typedef List<char> charList;        //!< A List of chars
 typedef List<label> labelList;      //!< A List of labels
+
+
+class poolSwitch
+{
+    bool value_;
+public:
+    //- The value type
+    typedef poolSwitch value_type;
+
+    poolSwitch()=delete;
+    //- allow constructor just from bool and label
+    explicit poolSwitch(const bool value): value_(value){};
+    explicit poolSwitch(const label value): value_(value){};
+
+    // allow cast to Bool
+    operator bool() const noexcept { return value_; };
+
+    //- Delete copy assignment operators from other types
+    template <typename T>
+    poolSwitch& operator=(T ) = delete;
+
+};
 
 /*---------------------------------------------------------------------------*\
                            Class List Declaration
@@ -134,13 +160,15 @@ public:
         inline constexpr List() noexcept;
 
         //- Construct with given size
-        explicit List(const label len);
+        explicit List(const label len, poolSwitch usePool = poolSwitch(false));
+
+        explicit List(const poolSwitch usePool);
 
         //- Construct with given size and value for all elements
-        List(const label len, const T& val);
+        List(const label len, const T& val, poolSwitch usePool = poolSwitch(false));
 
         //- Construct with given size initializing all elements to zero
-        List(const label len, Foam::zero);
+        List(const label len, Foam::zero, poolSwitch usePool = poolSwitch(false));
 
         //- Construct with length=1, copying the value as the only content
         List(Foam::one, const T& val);

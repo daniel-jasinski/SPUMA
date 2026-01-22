@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -60,22 +61,54 @@ void Foam::List<T>::resize_copy(label count, const label len)
             // Recover overlapping content when resizing
 
             this->size_ = len;
-            this->v_ = ListPolicy::allocate<T>(len);
+            if (this->usePool_)
+            {
+                this->v_ = static_cast<T*>
+                    (
+                        Spuma::MemoryPool::getInstance()->allocate(len*sizeof(T))
+                    );
 
-            // Can dispatch with
-            // - std::execution::par_unseq
-            // - std::execution::unseq
-            std::move(old, (old + count), this->v_);
+                Spuma::MemoryPool::getInstance()->memCopy(this->v_,old,count*sizeof(T));
 
-            ListPolicy::deallocate(old, oldLen);
+                Spuma::MemoryPool::getInstance()->free(old);
+            }
+            else
+            {
+                this->v_ = new T[len];
+
+                // Can dispatch with
+                // - std::execution::par_unseq
+                // - std::execution::unseq
+                std::move(old, (old + count), this->v_);
+
+                delete[] old;
+            };
         }
         else
         {
             // No overlapping content
-            ListPolicy::deallocate(old, oldLen);
+            if (this->usePool_)
+            {
+                Spuma::MemoryPool::getInstance()->free(this->v_);
+            }
+            else
+            {
+                delete[] this->v_;
+            };
 
             this->size_ = len;
-            this->v_ = ListPolicy::allocate<T>(len);
+
+            if (this->usePool_)
+            {
+                this->v_ = static_cast<T*>
+                    (
+                        Spuma::MemoryPool::getInstance()->allocate(len*sizeof(T))
+                    );
+            }
+            else
+            {
+                this->v_ = new T[len];
+            };
         }
     }
     else
@@ -95,11 +128,16 @@ void Foam::List<T>::resize_copy(label count, const label len)
 
 
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
+template<class T>
+Foam::List<T>::List(const poolSwitch usePool)
+:
+    UList<T>(nullptr, 0, usePool)
+{}
 
 template<class T>
-Foam::List<T>::List(const label len)
+Foam::List<T>::List(const label len, poolSwitch usePool)
 :
-    UList<T>()
+    UList<T>(nullptr, 0, usePool)
 {
     if (FOAM_UNLIKELY(len < 0))
     {
@@ -117,9 +155,9 @@ Foam::List<T>::List(const label len)
 
 
 template<class T>
-Foam::List<T>::List(const label len, const T& val)
+Foam::List<T>::List(const label len, const T& val, poolSwitch usePool)
 :
-    UList<T>()
+    UList<T>(nullptr, 0, usePool)
 {
     if (FOAM_UNLIKELY(len < 0))
     {
@@ -138,9 +176,9 @@ Foam::List<T>::List(const label len, const T& val)
 
 
 template<class T>
-Foam::List<T>::List(const label len, Foam::zero)
+Foam::List<T>::List(const label len, Foam::zero, poolSwitch usePool)
 :
-    UList<T>()
+    UList<T>(nullptr, 0, usePool)
 {
     if (FOAM_UNLIKELY(len < 0))
     {
@@ -188,7 +226,7 @@ Foam::List<T>::List(Foam::one, Foam::zero)
 template<class T>
 Foam::List<T>::List(const UList<T>& list)
 :
-    UList<T>()
+    UList<T>(nullptr, 0, list.usePool())
 {
     if (!list.empty())
     {
@@ -197,11 +235,11 @@ Foam::List<T>::List(const UList<T>& list)
     }
 }
 
-
+// TODO memmoryPool
 template<class T>
 Foam::List<T>::List(const List<T>& list)
 :
-    UList<T>()
+    UList<T>(nullptr, 0, list.usePool())
 {
     if (!list.empty())
     {
@@ -214,7 +252,7 @@ Foam::List<T>::List(const List<T>& list)
 template<class T>
 Foam::List<T>::List(List<T>& list, bool reuse)
 :
-    UList<T>()
+    UList<T>(nullptr, 0, list.usePool())
 {
     if (reuse)
     {
@@ -235,7 +273,7 @@ Foam::List<T>::List(List<T>& list, bool reuse)
 template<class T>
 Foam::List<T>::List(const UList<T>& list, const labelUList& indices)
 :
-    UList<T>()
+    UList<T>(nullptr,0,list.usePool())
 {
     if (!indices.empty())
     {
@@ -253,7 +291,7 @@ Foam::List<T>::List
     const FixedList<label,N>& indices
 )
 :
-    UList<T>()
+    UList<T>(nullptr,0,list.usePool())
 {
     // if (!FixedList::empty()) is always true
     {
@@ -270,7 +308,7 @@ Foam::List<T>::List(const FixedList<T, N>& list)
     List<T>(list.begin(), list.end(), list.size())
 {}
 
-
+//TODO memoryPool
 template<class T>
 Foam::List<T>::List(const UPtrList<T>& list)
 :
@@ -320,8 +358,18 @@ Foam::List<T>::List(DynamicList<T, SizeMin>&& list)
 template<class T>
 Foam::List<T>::~List()
 {
-    //TODO? May need to verify that size is accurate (for correct alignment)
-    ListPolicy::deallocate(this->v_, this->size_);
+    if (this->size_ > 0)
+    {
+        if(this->usePool_)
+        {
+            Spuma::MemoryPool::getInstance()->free(this->v_);
+
+        }
+        else
+        {
+            delete[] this->v_;
+        }
+    }
 }
 
 
@@ -361,7 +409,18 @@ void Foam::List<T>::transfer(List<T>& list)
     // Clear and swap
     clear();
     this->size_ = list.size_;
-    this->v_ = list.v_;
+
+    //if input list is not on pool trigger copy
+    if (this->usePool() && !list.usePool())
+    {
+        doAlloc(list.size());
+        Spuma::MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+        list.clear();
+    }
+    else
+    {
+        this->v_ = list.v_;
+    }
 
     list.size_ = 0;
     list.v_ = nullptr;

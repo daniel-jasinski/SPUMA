@@ -57,6 +57,11 @@ namespace Foam
     makeLduSolvers(sphericalTensor, scalar, scalar);
     makeLduSolvers(symmTensor, scalar, scalar);
     makeLduSolvers(tensor, scalar, scalar);
+
+    makeLduSolvers(vector, vector, scalar);
+    makeLduSolvers(sphericalTensor, sphericalTensor, scalar);
+    makeLduSolvers(symmTensor, symmTensor, scalar);
+    makeLduSolvers(tensor, tensor, scalar);
 };
 
 

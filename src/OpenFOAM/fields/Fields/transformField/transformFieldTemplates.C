@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -39,11 +40,24 @@ void Foam::transform
     const Field<Type>& fld
 )
 {
-    // std::transform
-    TFOR_ALL_F_OP_FUNC_S_F
-    (
-        Type, result, =, transform, tensor, rot, Type, fld
-    );
+    if (result.usePool() && fld.usePool())
+    {
+        checkFields(result, fld, "f1 = tranform(s, f2)");
+        foamExecutor exec;
+        auto resPtr = result.begin();
+        const auto fldPtr = fld.cbegin();
+        auto Lambda = [=](label i){
+            resPtr[i] = transform(rot, fldPtr[i]);
+        };
+        exec.parallelFor(Lambda, result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_S_F
+        (
+            Type, result, =, transform, tensor, rot, Type, fld
+        );
+    }
 }
 
 
@@ -57,14 +71,44 @@ void Foam::transform
 {
     if (rot.size() == 1)
     {
-        return transform(result, rot.front(), fld);
+        if (result.usePool() && rot.usePool() && fld.usePool())
+        {
+            checkFields(result, rot, fld, "f1 = transform(f2, f3)");
+            foamExecutor exec;
+            auto resPtr = result.begin();
+            const auto rotPtr = rot.cbegin();
+            const auto fldPtr = fld.cbegin();
+            auto Lambda = [=](label i){
+                resPtr[i] = transform(rotPtr[0], fldPtr[i]); // direct acces to avoid page fault
+            };
+            exec.parallelFor(Lambda, result.size());
+            return;
+        }
+        else
+        {
+            return transform(result, rot.front(), fld);
+        }
     }
 
-    // std::transform
-    TFOR_ALL_F_OP_FUNC_F_F
-    (
-        Type, result, =, transform, tensor, rot, Type, fld
-    );
+    if (result.usePool() && rot.usePool() && fld.usePool())
+    {
+        checkFields(result, rot, fld, "f1 = transform(f2, f3)");
+        foamExecutor exec;
+        auto resPtr = result.begin();
+        const auto rotPtr = rot.cbegin();
+        const auto fldPtr = fld.cbegin();
+        auto Lambda = [=](label i){
+            resPtr[i] = transform(rotPtr[i], fldPtr[i]);
+        };
+        exec.parallelFor(Lambda, result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_F_F
+        (
+            Type, result, =, transform, tensor, rot, Type, fld
+        );
+    }
 }
 
 

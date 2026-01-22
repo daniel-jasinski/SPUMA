@@ -73,7 +73,19 @@ class ConstPrecisionAdaptor
             {
                 // Need intermediate buffer
                 this->reset(new Container<Type>(src.size()));
-                std::copy(src.cbegin(), src.cend(), this->ref().begin());
+                
+                const label size = src.size();
+		Type* __restrict__ refPtr = this->ref().begin();
+		const InputType* const __restrict__ srcPtr = src.cbegin();
+
+		foamExecutor exec;
+                auto Lambda1 = [=](label i)
+                {
+                    refPtr[i] = srcPtr[i];
+                };
+                exec.parallelFor(Lambda1, size);
+
+		// std::copy(src.cbegin(), src.cend(), this->ref().begin());
             }
         }
 
@@ -215,7 +227,18 @@ class PrecisionAdaptor
                 this->reset(new Container<Type>(src.size()));
                 if (doCopy)
                 {
-                    std::copy(src.cbegin(), src.cend(), this->ref().begin());
+                    const label size = src.size();
+                    Type* __restrict__ refPtr = this->ref().begin();
+                    InputType* __restrict__ srcPtr = src.begin();
+
+                    foamExecutor exec;
+                    auto Lambda1 = [=](label i)
+                    {
+                        refPtr[i] = srcPtr[i];
+                    };
+                    exec.parallelFor(Lambda1, size);
+
+                    // std::copy(src.cbegin(), src.cend(), this->ref().begin());
                 }
             }
         }
@@ -268,7 +291,20 @@ public:
                 const auto& stored = this->cref();
                 auto& input = orig_.ref();
                 input.resize(stored.size());  // Extra safety
-                std::copy(stored.cbegin(), stored.cend(), input.begin());
+
+                const label size = stored.size();
+                InputType* __restrict__ inputPtr = input.begin();
+                const Type* const __restrict__ storedPtr = stored.cbegin();
+
+                foamExecutor exec;
+                auto Lambda1 = [=](label i)
+                {
+                    inputPtr[i] = storedPtr[i];
+                };
+                exec.parallelFor(Lambda1, size);
+
+		
+                // std::copy(stored.cbegin(), stored.cend(), input.begin());
             }
         }
 

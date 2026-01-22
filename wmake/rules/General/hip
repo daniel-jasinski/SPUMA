@@ -1,0 +1,39 @@
+#------------------------------------------------------------------------------
+# Additional rules for handling CUDA files
+
+SUFFIXES   += .hip
+
+ifeq (,$(strip $(AMDARCH)))
+    AMDARCH := gfx90a
+endif
+
+HIPCC      := hipcc$(COMPILER_VERSION) -std=c++17 -fPIC
+
+hipARCH    := -m64 --offload-arch=$(AMDARCH):xnack+ -Dhave_hip -munsafe-fp-atomics
+hipDBUG    :=
+hipOPT     := -O2
+ptFLAGS   := -DNoRepository
+
+hipWARN     = -Wall -Wextra -Wno-unused
+
+HIP_LIB_HEADER_DIRS = \
+     $(EXE_INC) \
+     -IlnInclude \
+     -iquote. \
+     $(PROJECT_INC) \
+     $(GINC) \
+     $(SYS_INC)
+
+hipFLAGS    = \
+    $(hipARCH) $(GFLAGS) $(hipWARN) $(hipOPT) $(hipDBUG) $(ptFLAGS) \
+    $(FOAM_EXTRA_CXXFLAGS) $(HIP_LIB_HEADER_DIRS)
+
+hiptoo       = $(WM_SCHEDULER) $(HIPCC) $(hipFLAGS) -c $< -o $@
+
+LIB_LIBS +=
+LINKEXE +=
+
+$(OBJECTS_DIR)/%.o : %.hip
+	$(hiptoo)
+
+#------------------------------------------------------------------------------

@@ -8,6 +8,7 @@
     Copyright (C) 2007-2023 PCOpt/NTUA
     Copyright (C) 2013-2023 FOSS GP
     Copyright (C) 2019-2021 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -373,7 +374,7 @@ void objective::doNormalization()
 {
     if (normalize_ && normFactor_)
     {
-        const scalar oneOverNorm(1./normFactor_());
+        /*const scalar oneOverNorm(1./normFactor_());
 
         if (hasdJdb())
         {
@@ -415,6 +416,7 @@ void objective::doNormalization()
         {
             gradDxDbMultPtr_() *= oneOverNorm;
         }
+        */
     }
 }
 
@@ -512,10 +514,21 @@ void objective::nullify()
         }
         if (hasBoundaryEdgeContribution())
         {
-            for (auto& field : bEdgeContribution_())
+        // Workaround for NVC++
+        #if defined(have_cuda) || defined(have_hip)
+            for (Field<vectorField>& field : bEdgeContribution_())
+            {
+                for (vectorField& subField : field)
+                {
+                    subField = vector::zero;
+                }
+            }
+        #else
+            for (Field<vectorField>& field : bEdgeContribution_())
             {
                 field = Zero;
             }
+        #endif
         }
         if (hasDivDxDbMult())
         {

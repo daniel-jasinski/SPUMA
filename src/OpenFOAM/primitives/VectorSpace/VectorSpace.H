@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -46,6 +47,8 @@ SourceFiles
 #include "scalar.H"
 #include "word.H"
 #include "zero.H"
+
+#include "deviceM.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -155,20 +158,20 @@ public:
     // Generated Methods
 
         //- Default construct
-        VectorSpace() = default;
+        FOAM_DEVICE VectorSpace() = default;
 
 
     // Constructors
 
         //- Construct initialized to zero
-        inline VectorSpace(Foam::zero);
+        FOAM_DEVICE inline VectorSpace(Foam::zero);
 
         //- Copy construct
-        inline VectorSpace(const VectorSpace<Form, Cmpt, Ncmpts>& vs);
+        FOAM_DEVICE inline VectorSpace(const VectorSpace<Form, Cmpt, Ncmpts>& vs);
 
         //- Copy construct of a VectorSpace with the same size
         template<class Form2, class Cmpt2>
-        inline explicit VectorSpace(const VectorSpace<Form2, Cmpt2, Ncmpts>&);
+        FOAM_DEVICE inline explicit VectorSpace(const VectorSpace<Form2, Cmpt2, Ncmpts>&);
 
         //- Construct from Istream
         explicit VectorSpace(Istream& is);
@@ -179,11 +182,11 @@ public:
         //- The number of elements in the VectorSpace = Ncmpts.
         static constexpr direction size() noexcept { return Ncmpts; }
 
-        inline const Cmpt& component(const direction) const;
-        inline Cmpt& component(const direction);
+        FOAM_DEVICE inline const Cmpt& component(const direction) const;
+        FOAM_DEVICE inline Cmpt& component(const direction);
 
-        inline void component(Cmpt&, const direction) const;
-        inline void replace(const direction, const Cmpt&);
+        FOAM_DEVICE inline void component(Cmpt&, const direction) const;
+        FOAM_DEVICE inline void replace(const direction, const Cmpt&);
 
         //- Return const pointer to the first data element
         const Cmpt* cdata() const noexcept { return v_; }
@@ -206,17 +209,17 @@ public:
         inline const Cmpt& operator[](const direction) const;
         inline Cmpt& operator[](const direction);
 
-        inline void operator=(const VectorSpace<Form, Cmpt, Ncmpts>&);
-        inline void operator+=(const VectorSpace<Form, Cmpt, Ncmpts>&);
-        inline void operator-=(const VectorSpace<Form, Cmpt, Ncmpts>&);
+        FOAM_DEVICE inline void operator=(const VectorSpace<Form, Cmpt, Ncmpts>&);
+        FOAM_DEVICE inline void operator+=(const VectorSpace<Form, Cmpt, Ncmpts>&);
+        FOAM_DEVICE inline void operator-=(const VectorSpace<Form, Cmpt, Ncmpts>&);
 
         //- Copy assign from a VectorSpace with the same size
         template<class Form2, class Cmpt2>
         inline void operator=(const VectorSpace<Form2, Cmpt2, Ncmpts>&);
 
-        inline void operator=(Foam::zero);
-        inline void operator*=(const scalar);
-        inline void operator/=(const scalar);
+        FOAM_DEVICE inline void operator=(Foam::zero);
+        FOAM_DEVICE inline void operator*=(const scalar);
+        FOAM_DEVICE inline void operator/=(const scalar);
 
 
     // Iterators

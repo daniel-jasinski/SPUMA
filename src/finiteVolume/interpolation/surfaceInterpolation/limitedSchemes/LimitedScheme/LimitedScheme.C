@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2020-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -63,28 +64,44 @@ void Foam::LimitedScheme<Type, Limiter, LimitFunc>::calcLimiter
 
     scalarField& pLim = limiterField.primitiveFieldRef();
 
-    forAll(pLim, face)
-    {
-        label own = owner[face];
-        label nei = neighbour[face];
+    foamExecutor exec;
+          auto pLimp = pLim.begin();
+    const auto ownp = owner.cbegin();
+    const auto neighp = neighbour.cbegin();
 
-        pLim[face] = Limiter::limiter
+    const auto CDweightsp = CDweights.cbegin();
+    const auto faceFluxp = this->faceFlux_.cbegin();
+    const auto lPhip = lPhi.cbegin();
+    const auto gradcp = gradc.cbegin();
+    const auto Cp = C.cbegin();
+
+    Limiter localLimiter(*this);
+
+    auto Lambda = [=](label face)
+    {
+        const label own = ownp[face];
+        const label nei = neighp[face];
+
+        pLimp[face] = localLimiter.limiter
         (
-            CDweights[face],
-            this->faceFlux_[face],
-            lPhi[own],
-            lPhi[nei],
-            gradc[own],
-            gradc[nei],
-            C[nei] - C[own]
+            CDweightsp[face],
+            faceFluxp[face],
+            lPhip[own],
+            lPhip[nei],
+            gradcp[own],
+            gradcp[nei],
+            Cp[nei] - Cp[own]
         );
-    }
+    };
+    exec.parallelFor(Lambda, pLim.size());
 
     surfaceScalarField::Boundary& bLim = limiterField.boundaryFieldRef();
 
     forAll(bLim, patchi)
     {
         scalarField& pLim = bLim[patchi];
+
+        auto pLimp = pLim.begin();
 
         if (bLim[patchi].coupled())
         {
@@ -112,19 +129,28 @@ void Foam::LimitedScheme<Type, Limiter, LimitFunc>::calcLimiter
             // Build the d-vectors
             vectorField pd(CDweights.boundaryField()[patchi].patch().delta());
 
-            forAll(pLim, face)
+            const auto pCDweightsp = pCDweights.cbegin();
+            const auto pFaceFluxp = pFaceFlux.cbegin();
+            const auto plPhiPp = plPhiP.cbegin();
+            const auto plPhiNp = plPhiN.cbegin();
+            const auto pGradcPp = pGradcP.cbegin();
+            const auto pGradcNp = pGradcN.cbegin();
+            const auto pdp = pd.cbegin();
+
+            auto Lambda = [=](label face)
             {
-                pLim[face] = Limiter::limiter
+                pLimp[face] = localLimiter.limiter
                 (
-                    pCDweights[face],
-                    pFaceFlux[face],
-                    plPhiP[face],
-                    plPhiN[face],
-                    pGradcP[face],
-                    pGradcN[face],
-                    pd[face]
+                    pCDweightsp[face],
+                    pFaceFluxp[face],
+                    plPhiPp[face],
+                    plPhiNp[face],
+                    pGradcPp[face],
+                    pGradcNp[face],
+                    pdp[face]
                 );
-            }
+            };
+            exec.parallelFor(Lambda, pLim.size());
         }
         else
         {

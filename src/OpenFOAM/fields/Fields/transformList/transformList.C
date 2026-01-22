@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
     Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -41,10 +42,22 @@ Foam::List<T> Foam::transform
 
     List<T> result(loopLen);
 
-    /* pragmas... */
-    for (label i = 0; i < loopLen; ++i)
+    if (field.usePool() && result.usePool())
     {
-        result[i] = transform(rotTensor, field[i]);
+        foamExecutor exec;
+        auto res_p = result.begin();
+        const auto f_p = field.cbegin();
+        auto Lambda = [=](label i){
+            res_p[i] = transform(rotTensor, f_p[i]);
+        };
+        exec.parallelFor(Lambda, result.size());
+    }
+    else
+    {
+        for (label i = 0; i < loopLen; ++i)
+        {
+            result[i] = transform(rotTensor, field[i]);
+        }
     }
 
     return result;

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2014 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,42 +29,42 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-inline constexpr Foam::complex::complex() noexcept
+FOAM_DEVICE inline constexpr Foam::complex::complex() noexcept
 :
     re(0),
     im(0)
 {}
 
 
-inline constexpr Foam::complex::complex(Foam::zero) noexcept
+FOAM_DEVICE inline constexpr Foam::complex::complex(Foam::zero) noexcept
 :
     re(0),
     im(0)
 {}
 
 
-inline constexpr Foam::complex::complex(const scalar r) noexcept
+FOAM_DEVICE inline constexpr Foam::complex::complex(const scalar r) noexcept
 :
     re(r),
     im(0)
 {}
 
 
-inline constexpr Foam::complex::complex(const scalar r, const scalar i) noexcept
+FOAM_DEVICE inline constexpr Foam::complex::complex(const scalar r, const scalar i) noexcept
 :
     re(r),
     im(i)
 {}
 
 
-inline Foam::complex::complex(const std::complex<float>& c)
+FOAM_DEVICE inline Foam::complex::complex(const std::complex<float>& c)
 :
     re(c.real()),
     im(c.imag())
 {}
 
 
-inline Foam::complex::complex(const std::complex<double>& c)
+FOAM_DEVICE inline Foam::complex::complex(const std::complex<double>& c)
 :
     re(c.real()),
     im(c.imag())
@@ -84,7 +85,7 @@ inline Foam::scalar Foam::complex::magnitude() const
 }
 
 
-inline Foam::scalar Foam::complex::magSqr() const
+FOAM_DEVICE inline Foam::scalar Foam::complex::magSqr() const
 {
     return (re*re + im*im);
 }
@@ -112,14 +113,14 @@ inline void Foam::complex::operator=(const scalar s)
 }
 
 
-inline void Foam::complex::operator+=(const complex& c)
+FOAM_DEVICE inline void Foam::complex::operator+=(const complex& c)
 {
     re += c.re;
     im += c.im;
 }
 
 
-inline void Foam::complex::operator+=(const scalar s)
+FOAM_DEVICE inline void Foam::complex::operator+=(const scalar s)
 {
     re += s;
 }
@@ -201,7 +202,7 @@ inline scalar magSqr(const complex& c)
 }
 
 
-inline complex sqr(const complex& c)
+FOAM_DEVICE inline complex sqr(const complex& c)
 {
     return c*c;
 }
@@ -275,13 +276,13 @@ inline complex transform(const Tensor<scalar>&, const complex c)
 
 // * * * * * * * * * * * * * * * Friend Operators  * * * * * * * * * * * * * //
 
-inline complex operator-(const complex& c)
+FOAM_DEVICE inline complex operator-(const complex& c)
 {
     return complex(-c.re, -c.im);
 }
 
 
-inline complex operator+(const complex& c1, const complex& c2)
+FOAM_DEVICE inline complex operator+(const complex& c1, const complex& c2)
 {
     return complex
     (
@@ -291,19 +292,19 @@ inline complex operator+(const complex& c1, const complex& c2)
 }
 
 
-inline complex operator+(const complex& c, const scalar s)
+FOAM_DEVICE inline complex operator+(const complex& c, const scalar s)
 {
     return complex(c.re + s, c.im);
 }
 
 
-inline complex operator+(const scalar s, const complex& c)
+FOAM_DEVICE inline complex operator+(const scalar s, const complex& c)
 {
     return complex(c.re + s, c.im);
 }
 
 
-inline complex operator-(const complex& c1, const complex& c2)
+FOAM_DEVICE inline complex operator-(const complex& c1, const complex& c2)
 {
     return complex
     (
@@ -313,19 +314,19 @@ inline complex operator-(const complex& c1, const complex& c2)
 }
 
 
-inline complex operator-(const complex& c, const scalar s)
+FOAM_DEVICE inline complex operator-(const complex& c, const scalar s)
 {
     return complex(c.re - s, c.im);
 }
 
 
-inline complex operator-(const scalar s, const complex& c)
+FOAM_DEVICE inline complex operator-(const scalar s, const complex& c)
 {
     return complex(s - c.re, -c.im);
 }
 
 
-inline complex operator*(const complex& c1, const complex& c2)
+FOAM_DEVICE inline complex operator*(const complex& c1, const complex& c2)
 {
     return complex
     (
@@ -335,19 +336,19 @@ inline complex operator*(const complex& c1, const complex& c2)
 }
 
 
-inline complex operator*(const complex& c, const scalar s)
+FOAM_DEVICE inline complex operator*(const complex& c, const scalar s)
 {
     return complex(s*c.re, s*c.im);
 }
 
 
-inline complex operator*(const scalar s, const complex& c)
+FOAM_DEVICE inline complex operator*(const scalar s, const complex& c)
 {
     return complex(s*c.re, s*c.im);
 }
 
 
-inline complex operator/(const complex& c1, const complex& c2)
+FOAM_DEVICE inline complex operator/(const complex& c1, const complex& c2)
 {
     const scalar sqrC2 = c2.magSqr();
 
@@ -359,13 +360,13 @@ inline complex operator/(const complex& c1, const complex& c2)
 }
 
 
-inline complex operator/(const complex& c, const scalar s)
+FOAM_DEVICE inline complex operator/(const complex& c, const scalar s)
 {
     return complex(c.re/s, c.im/s);
 }
 
 
-inline complex operator/(const scalar s, const complex& c)
+FOAM_DEVICE inline complex operator/(const scalar s, const complex& c)
 {
     return complex(s)/c;
 }
@@ -382,7 +383,7 @@ inline complex operator/(const scalar s, const complex& c)
 namespace Foam
 {
     #define transFunc(func)                                                   \
-    inline complex func(const complex& c)                                     \
+    FOAM_DEVICE inline complex func(const complex& c)                         \
     {                                                                         \
         return std:: func (static_cast<std::complex<scalar>>(c));             \
     }
@@ -440,31 +441,31 @@ powFuncs(float)
 powFuncs(double)
 
 
-inline complex pow3(const complex& c)
+FOAM_DEVICE inline complex pow3(const complex& c)
 {
     return c*sqr(c);
 }
 
 
-inline complex pow4(const complex& c)
+FOAM_DEVICE inline complex pow4(const complex& c)
 {
     return sqr(sqr(c));
 }
 
 
-inline complex pow5(const complex& c)
+FOAM_DEVICE inline complex pow5(const complex& c)
 {
     return c*pow4(c);
 }
 
 
-inline complex pow6(const complex& c)
+FOAM_DEVICE inline complex pow6(const complex& c)
 {
     return pow3(sqr(c));
 }
 
 
-inline complex pow025(const complex& c)
+FOAM_DEVICE inline complex pow025(const complex& c)
 {
     return sqrt(sqrt(c));
 }

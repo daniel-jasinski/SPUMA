@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -105,11 +106,11 @@ public:
 
         //- Construct given MatrixSpace of the same rank
         template<class Cmpt2>
-        inline Tensor(const MatrixSpace<Tensor<Cmpt2>, Cmpt2, 3, 3>& vs);
+        FOAM_DEVICE inline Tensor(const MatrixSpace<Tensor<Cmpt2>, Cmpt2, 3, 3>& vs);
 
         //- Construct given VectorSpace of the same rank
         template<class Cmpt2>
-        inline Tensor(const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>& vs);
+        FOAM_DEVICE inline Tensor(const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>& vs);
 
         //- Construct given SphericalTensor
         inline Tensor(const SphericalTensor<Cmpt>& st);
@@ -127,7 +128,7 @@ public:
 
         //- Construct given the three row vectors,
         //- optionally treated as transposed (ie, column vectors)
-        inline Tensor
+        FOAM_DEVICE inline Tensor
         (
             const Vector<Cmpt>& x,
             const Vector<Cmpt>& y,
@@ -136,7 +137,7 @@ public:
         );
 
         //- Construct given the nine components
-        inline Tensor
+        FOAM_DEVICE inline Tensor
         (
             const Cmpt txx, const Cmpt txy, const Cmpt txz,
             const Cmpt tyx, const Cmpt tyy, const Cmpt tyz,
@@ -163,15 +164,15 @@ public:
 
     // Component Access
 
-        const Cmpt& xx() const noexcept { return this->v_[XX]; }
-        const Cmpt& xy() const noexcept { return this->v_[XY]; }
-        const Cmpt& xz() const noexcept { return this->v_[XZ]; }
-        const Cmpt& yx() const noexcept { return this->v_[YX]; }
-        const Cmpt& yy() const noexcept { return this->v_[YY]; }
-        const Cmpt& yz() const noexcept { return this->v_[YZ]; }
-        const Cmpt& zx() const noexcept { return this->v_[ZX]; }
-        const Cmpt& zy() const noexcept { return this->v_[ZY]; }
-        const Cmpt& zz() const noexcept { return this->v_[ZZ]; }
+        FOAM_DEVICE const Cmpt& xx() const noexcept { return this->v_[XX]; }
+        FOAM_DEVICE const Cmpt& xy() const noexcept { return this->v_[XY]; }
+        FOAM_DEVICE const Cmpt& xz() const noexcept { return this->v_[XZ]; }
+        FOAM_DEVICE const Cmpt& yx() const noexcept { return this->v_[YX]; }
+        FOAM_DEVICE const Cmpt& yy() const noexcept { return this->v_[YY]; }
+        FOAM_DEVICE const Cmpt& yz() const noexcept { return this->v_[YZ]; }
+        FOAM_DEVICE const Cmpt& zx() const noexcept { return this->v_[ZX]; }
+        FOAM_DEVICE const Cmpt& zy() const noexcept { return this->v_[ZY]; }
+        FOAM_DEVICE const Cmpt& zz() const noexcept { return this->v_[ZZ]; }
 
         Cmpt& xx() noexcept { return this->v_[XX]; }
         Cmpt& xy() noexcept { return this->v_[XY]; }
@@ -210,7 +211,7 @@ public:
         inline void col(const direction c, const Vector<Cmpt>& v);
 
         //- Set column values
-        inline void cols
+        FOAM_DEVICE inline void cols
         (
             const Vector<Cmpt>& x,
             const Vector<Cmpt>& y,
@@ -221,13 +222,13 @@ public:
     // Row-vector access
 
         //- Extract vector for row 0
-        inline Vector<Cmpt> x() const;
+        FOAM_DEVICE inline Vector<Cmpt> x() const;
 
         //- Extract vector for row 1
-        inline Vector<Cmpt> y() const;
+        FOAM_DEVICE inline Vector<Cmpt> y() const;
 
         //- Extract vector for row 2
-        inline Vector<Cmpt> z() const;
+        FOAM_DEVICE inline Vector<Cmpt> z() const;
 
         //- Extract vector for given row: compile-time check of index
         template<direction Idx>
@@ -244,7 +245,7 @@ public:
         inline void row(const direction r, const Vector<Cmpt>& v);
 
         //- Set row values
-        inline void rows
+        FOAM_DEVICE inline void rows
         (
             const Vector<Cmpt>& x,
             const Vector<Cmpt>& y,
@@ -279,25 +280,25 @@ public:
     // Tensor Operations
 
         //- Return non-Hermitian transpose
-        inline Tensor<Cmpt> T() const;
+        FOAM_DEVICE inline Tensor<Cmpt> T() const;
 
         //- The determinate
-        inline Cmpt det() const;
+        FOAM_DEVICE inline Cmpt det() const;
 
         //- The 2D determinant by excluding given direction
         inline Cmpt det2D(const direction excludeCmpt) const;
 
         //- Return adjunct matrix (transpose of cofactor matrix)
-        inline Tensor<Cmpt> adjunct() const;
+        FOAM_DEVICE inline Tensor<Cmpt> adjunct() const;
 
         //- Return cofactor matrix (transpose of adjunct matrix)
-        inline Tensor<Cmpt> cof() const;
+        FOAM_DEVICE inline Tensor<Cmpt> cof() const;
 
         //- Return 2D adjunct matrix by excluding given direction
         inline Tensor<Cmpt> adjunct2D(const direction excludeCmpt) const;
 
         //- Return inverse
-        inline Tensor<Cmpt> inv() const;
+        FOAM_DEVICE inline Tensor<Cmpt> inv() const;
 
         //- Return inverse, with (ad hoc) failsafe handling of 2D tensors
         inline Tensor<Cmpt> safeInv() const;
@@ -306,7 +307,7 @@ public:
         inline Tensor<Cmpt> inv2D(const direction excludeCmpt) const;
 
         //- Inner-product of this with another Tensor.
-        inline Tensor<Cmpt> inner(const Tensor<Cmpt>& t2) const;
+        FOAM_DEVICE inline Tensor<Cmpt> inner(const Tensor<Cmpt>& t2) const;
 
         //- Schur-product of this with another Tensor.
         inline Tensor<Cmpt> schur(const Tensor<Cmpt>& t2) const;
@@ -322,7 +323,7 @@ public:
 
         //- Assign to an equivalent vector space
         template<class Cmpt2>
-        inline void operator=(const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>&);
+        FOAM_DEVICE inline void operator=(const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>&);
 
         //- Assign to a SphericalTensor
         inline void operator=(const SphericalTensor<Cmpt>&);

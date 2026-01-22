@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2022-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -125,7 +126,7 @@ Foam::lagrangianFieldDecomposer::decomposeFieldField
 ) const
 {
     // Create the field for the processor
-    return tmp<CompactIOField<Field<Type>>>::New
+    auto tcfield = tmp<CompactIOField<Field<Type>>>::New
     (
         IOobject
         (
@@ -138,8 +139,25 @@ Foam::lagrangianFieldDecomposer::decomposeFieldField
             IOobject::NO_REGISTER
         ),
         // Mapping internal field values
+        // Workaround for NVC++
+        #if defined(have_cuda) || defined(have_hip)
+        Field<Field<Type>>()
+        #else
         Field<Field<Type>>(field, particleIndices_)
+        #endif
     );
+
+    #if defined(have_cuda) || defined(have_hip)
+    auto& cfield = tcfield.ref();
+
+    for (label i=0; i<field.size(); ++i)
+    {
+        Field<Type> localField(field[i], particleIndices_);
+        cfield[i].transfer(localField);
+    }
+    #endif
+
+    return tcfield;
 }
 
 

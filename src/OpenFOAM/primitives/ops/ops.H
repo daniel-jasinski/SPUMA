@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -37,6 +38,8 @@ Description
 #ifndef Foam_ops_H
 #define Foam_ops_H
 
+#include "deviceM.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -52,7 +55,7 @@ namespace Foam
     template<class T1, class T2>                                               \
     struct opName##Op2                                                         \
     {                                                                          \
-        void operator()(T1& x, const T2& y) const                              \
+        FOAM_DEVICE inline void operator()(T1& x, const T2& y) const           \
         {                                                                      \
             op;                                                                \
         }                                                                      \
@@ -61,7 +64,7 @@ namespace Foam
     template<class T>                                                          \
     struct opName##Op                                                          \
     {                                                                          \
-        void operator()(T& x, const T& y) const                                \
+        FOAM_DEVICE inline void operator()(T& x, const T& y) const             \
         {                                                                      \
             op;                                                                \
         }                                                                      \
@@ -107,7 +110,7 @@ EqOp(nopEq, (void)x)
     template<class T, class T1, class T2>                                      \
     struct opName##Op3                                                         \
     {                                                                          \
-        [[nodiscard]] T operator()(const T1& x, const T2& y) const             \
+        [[nodiscard]] FOAM_DEVICE_I T operator()(const T1& x, const T2& y) const             \
         {                                                                      \
             return op;                                                         \
         }                                                                      \
@@ -116,7 +119,7 @@ EqOp(nopEq, (void)x)
     template<class T1, class T2>                                               \
     struct opName##Op2                                                         \
     {                                                                          \
-        [[nodiscard]] T1 operator()(const T1& x, const T2& y) const            \
+        [[nodiscard]] FOAM_DEVICE_I T1 operator()(const T1& x, const T2& y) const            \
         {                                                                      \
             return op;                                                         \
         }                                                                      \
@@ -125,7 +128,7 @@ EqOp(nopEq, (void)x)
     template<class T>                                                          \
     struct opName##Op                                                          \
     {                                                                          \
-        [[nodiscard]] T operator()(const T& x, const T& y) const               \
+        [[nodiscard]] FOAM_DEVICE_I T operator()(const T& x, const T& y) const               \
         {                                                                      \
             return op;                                                         \
         }                                                                      \

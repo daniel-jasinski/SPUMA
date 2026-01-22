@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -54,35 +55,34 @@ bool Foam::adjustPhi
             const fvPatchVectorField& Up = U.boundaryField()[patchi];
             const fvsPatchScalarField& phip = bphi[patchi];
 
+            foamExecutor exec;
+            const auto phipPtr = phip.cbegin();
+            auto LambdaIn = [=](label i)
+            {
+                scalar value = 0.0;
+                if(phipPtr[i] < 0.0)
+                    value = -phipPtr[i];
+                return value;
+            };
+            auto LambdaOut = [=](label i)
+            {
+                scalar value = 0.0;
+                if(!(phipPtr[i] < 0.0))
+                    value = phipPtr[i];
+                return value;
+            };
+
             if (!phip.coupled())
             {
                 if (Up.fixesValue() && !isA<inletOutletFvPatchVectorField>(Up))
                 {
-                    forAll(phip, i)
-                    {
-                        if (phip[i] < 0.0)
-                        {
-                            massIn -= phip[i];
-                        }
-                        else
-                        {
-                            fixedMassOut += phip[i];
-                        }
-                    }
+                    exec.reductionSum(LambdaIn, &massIn, phip.size());
+                    exec.reductionSum(LambdaOut, &fixedMassOut, phip.size());
                 }
                 else
                 {
-                    forAll(phip, i)
-                    {
-                        if (phip[i] < 0.0)
-                        {
-                            massIn -= phip[i];
-                        }
-                        else
-                        {
-                            adjustableMassOut += phip[i];
-                        }
-                    }
+                    exec.reductionSum(LambdaIn, &massIn, phip.size());
+                    exec.reductionSum(LambdaOut, &adjustableMassOut, phip.size());
                 }
             }
         }
@@ -122,7 +122,8 @@ bool Foam::adjustPhi
         {
             const fvPatchVectorField& Up = U.boundaryField()[patchi];
             fvsPatchScalarField& phip = bphi[patchi];
-
+            auto phipPtr = phip.begin();
+            foamExecutor exec;
             if (!phip.coupled())
             {
                 if
@@ -131,13 +132,12 @@ bool Foam::adjustPhi
                  || isA<inletOutletFvPatchVectorField>(Up)
                 )
                 {
-                    forAll(phip, i)
+                    auto Lambda = [=](label i)
                     {
-                        if (phip[i] > 0.0)
-                        {
-                            phip[i] *= massCorr;
-                        }
-                    }
+                        if (phipPtr[i] > 0.0)
+                            phipPtr[i] *= massCorr;
+                    };
+                    exec.parallelFor(Lambda, phip.size());
                 }
             }
         }

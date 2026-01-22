@@ -9,6 +9,7 @@
     Copyright (C) 2016-2021,2023 OpenCFD Ltd.
     Copyright (C) 2023 Huawei (Yu Ankun)
     Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -448,10 +449,15 @@ void Foam::GAMGSolver::Vcycle
         );
     }
 
-    forAll(psi, i)
+    solveScalar* __restrict__ psiPtr = psi.begin();
+    const solveScalar* const __restrict__ finestCorrectionPtr = finestCorrection.begin();
+    const label nCells = psi.size();
+    foamExecutor exec;
+    auto Lambda = [=](label celli)
     {
-        psi[i] += finestCorrection[i];
-    }
+        psiPtr[celli] += finestCorrectionPtr[celli];
+    };
+    exec.parallelFor(Lambda, nCells);
 
     smoothers[0].smooth
     (

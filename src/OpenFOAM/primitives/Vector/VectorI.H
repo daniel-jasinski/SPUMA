@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,7 +30,7 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt>::Vector(Foam::zero)
+FOAM_DEVICE inline Foam::Vector<Cmpt>::Vector(Foam::zero)
 :
     Vector::vsType(Foam::zero{})
 {}
@@ -37,7 +38,7 @@ inline Foam::Vector<Cmpt>::Vector(Foam::zero)
 
 template<class Cmpt>
 template<class Cmpt2>
-inline Foam::Vector<Cmpt>::Vector
+FOAM_DEVICE inline Foam::Vector<Cmpt>::Vector
 (
     const VectorSpace<Vector<Cmpt2>, Cmpt2, 3>& vs
 )
@@ -47,7 +48,7 @@ inline Foam::Vector<Cmpt>::Vector
 
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt>::Vector
+FOAM_DEVICE inline Foam::Vector<Cmpt>::Vector
 (
     const Cmpt& vx,
     const Cmpt& vy,
@@ -80,7 +81,7 @@ inline const Foam::Vector<Cmpt>& Foam::Vector<Cmpt>::centre
 
 
 template<class Cmpt>
-inline Foam::scalar Foam::Vector<Cmpt>::magSqr() const
+FOAM_DEVICE inline Foam::scalar Foam::Vector<Cmpt>::magSqr() const
 {
     return
     (
@@ -92,7 +93,7 @@ inline Foam::scalar Foam::Vector<Cmpt>::magSqr() const
 
 
 template<class Cmpt>
-inline Foam::scalar Foam::Vector<Cmpt>::mag() const
+FOAM_DEVICE inline Foam::scalar Foam::Vector<Cmpt>::mag() const
 {
     return ::sqrt(this->magSqr());
 }
@@ -150,7 +151,7 @@ Foam::Vector<Cmpt>::removeCollinear(const Vector<Cmpt>& unitVec)
 // * * * * * * * * * * * * * * * Member Operations * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Cmpt Foam::Vector<Cmpt>::inner(const Vector<Cmpt>& v2) const
+FOAM_DEVICE inline Cmpt Foam::Vector<Cmpt>::inner(const Vector<Cmpt>& v2) const
 {
     const Vector<Cmpt>& v1 = *this;
 
@@ -159,7 +160,7 @@ inline Cmpt Foam::Vector<Cmpt>::inner(const Vector<Cmpt>& v2) const
 
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt>
+FOAM_DEVICE inline Foam::Vector<Cmpt>
 Foam::Vector<Cmpt>::cross(const Vector<Cmpt>& v2) const
 {
     const Vector<Cmpt>& v1 = *this;
@@ -256,7 +257,7 @@ namespace Foam
 
 //- Linear interpolation of vectors a and b by factor t
 template<class Cmpt>
-inline Vector<Cmpt> lerp
+FOAM_DEVICE inline Vector<Cmpt> lerp
 (
     const Vector<Cmpt>& a,
     const Vector<Cmpt>& b,
@@ -290,28 +291,28 @@ public:
 
 
 template<class Cmpt>
-inline Cmpt operator&(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
+FOAM_DEVICE inline Cmpt operator&(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
 {
     return v1.inner(v2);
 }
 
 
 template<class Cmpt>
-inline Vector<Cmpt> operator^(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
+FOAM_DEVICE inline Vector<Cmpt> operator^(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
 {
     return v1.cross(v2);
 }
 
 
 template<class Cmpt>
-inline Vector<Cmpt> operator*(const Cmpt& s, const Vector<Cmpt>& v)
+FOAM_DEVICE inline Vector<Cmpt> operator*(const Cmpt& s, const Vector<Cmpt>& v)
 {
     return Vector<Cmpt>(s*v.x(), s*v.y(), s*v.z());
 }
 
 
 template<class Cmpt>
-inline Vector<Cmpt> operator*(const Vector<Cmpt>& v, const Cmpt& s)
+FOAM_DEVICE inline Vector<Cmpt> operator*(const Vector<Cmpt>& v, const Cmpt& s)
 {
     return s*v;
 }

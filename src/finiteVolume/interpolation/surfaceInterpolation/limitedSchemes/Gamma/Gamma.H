@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -81,7 +82,7 @@ public:
         k_ = max(k_/2.0, SMALL);
     }
 
-    scalar limiter
+    FOAM_DEVICE scalar limiter
     (
         const scalar cdWeight,
         const scalar faceFlux,

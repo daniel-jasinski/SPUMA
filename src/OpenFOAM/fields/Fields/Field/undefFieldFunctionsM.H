@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
     Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,6 +28,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #undef UNARY_FUNCTION
+#undef UNARY_FUNCTION_HOST
 #undef UNARY_FUNCTION_TRANSFORM
 #undef UNARY_FUNCTION_INTERFACE
 

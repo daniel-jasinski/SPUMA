@@ -43,6 +43,7 @@ SourceFiles
 #define Foam_IndirectListBase_H
 
 #include "List.H"
+#include "executors.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

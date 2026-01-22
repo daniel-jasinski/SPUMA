@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
     Copyright (C) 2017-2020 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -73,17 +74,17 @@ constexpr doubleScalar doubleScalarROOTVSMALL = 1.0e-150;
 #define ScalarRead readDouble
 
 
-inline Scalar mag(const Scalar s)
+FOAM_DEVICE inline Scalar mag(const Scalar s)
 {
     return ::fabs(s);
 }
 
-inline Scalar hypot(const Scalar x, const Scalar y)
+FOAM_DEVICE inline Scalar hypot(const Scalar x, const Scalar y)
 {
     return ::hypot(x, y);
 }
 
-inline Scalar atan2(const Scalar y, const Scalar x)
+FOAM_DEVICE inline Scalar atan2(const Scalar y, const Scalar x)
 {
     return ::atan2(y, x);
 }

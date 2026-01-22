@@ -60,7 +60,8 @@ Foam::DICSmoother::DICSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     ),
     rD_(matrix_.diag().size())
 {

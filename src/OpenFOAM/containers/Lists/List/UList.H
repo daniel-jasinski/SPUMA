@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -54,6 +55,7 @@ SourceFiles
 #include "labelRange.H"
 #include "nullObject.H"
 #include "Hash.H"
+#include "contiguous.H"
 #include "ListPolicy.H"  // Also includes "contiguous"
 
 #include <vector>  // i.e, std::vector
@@ -64,6 +66,9 @@ namespace Foam
 {
 
 // Forward Declarations
+class labelRange;
+class MemoryPool;
+
 template<class T> class List;
 template<class T> class SubList;
 template<class T> class UList;
@@ -100,11 +105,15 @@ class UList
         //- Vector of values of type T
         T* __restrict__ v_;
 
+        bool usePool_;
 
 protected:
 
     // Protected Member Functions
 
+        //- set memory management flag
+        // Use with care
+        inline void setPool(bool flag) noexcept { usePool_ = flag; };
         //- Set addressed size to be inconsistent with allocated storage.
         //  Use with care
         inline void setAddressableSize(const label n) noexcept;
@@ -247,13 +256,15 @@ public:
         inline constexpr UList() noexcept;
 
         //- Construct from components
-        inline UList(T* __restrict__ ptr, const label len) noexcept;
+        inline UList(T* __restrict__ ptr, const label len,  bool usePool = false) noexcept;
 
         //- Move construct from a SubList, shallow copy
         UList(SubList<T>&&) noexcept;
 
 
     // Member Functions
+        // Query memory management
+            inline bool usePool() const;
 
         // Access
 

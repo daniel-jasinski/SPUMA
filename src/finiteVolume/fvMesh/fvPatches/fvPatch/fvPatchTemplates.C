@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -57,10 +58,15 @@ void Foam::fvPatch::patchInternalField
     }
     #endif
 
-    for (label i = 0; i < len; ++i)
+    auto pfldp = pfld.begin();
+    const auto internalDatap = internalData.cbegin();
+    const auto addressingp = addressing.cbegin();
+    auto Lambda = [=](label i)
     {
-        pfld[i] = internalData[addressing[i]];
-    }
+        pfldp[i] = internalDatap[addressingp[i]];
+    };
+    foamExecutor exec;
+    exec.parallelFor(Lambda, len);
 }
 
 

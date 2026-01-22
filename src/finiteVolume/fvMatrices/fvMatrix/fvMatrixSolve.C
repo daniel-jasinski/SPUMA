@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -270,23 +271,38 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveCoupled
 
     auto& psi = psi_.constCast();
 
-    LduMatrix<Type, scalar, scalar> coupledMatrix(psi.mesh());
-    coupledMatrix.diag() = diag();
+    LduMatrix<Type, Type, scalar> coupledMatrix(psi.mesh());
+    
+    Field<Type>& Tdiag = coupledMatrix.diag();
+    Field<scalar>& Sdiag = diag();
+
+    Type localOne(pTraits<Type>::one);
+    Type* __restrict__ TdiagPtr = Tdiag.begin();
+    const scalar* const __restrict__ SdiagPtr = Sdiag.cbegin();
+
+    foamExecutor exec;
+
+    auto LambdaDiag = [=] (label celli)
+    {
+        TdiagPtr[celli] = dot(SdiagPtr[celli], localOne);
+    };
+    exec.parallelFor(LambdaDiag, Sdiag.size());
+
     coupledMatrix.upper() = upper();
     coupledMatrix.lower() = lower();
     coupledMatrix.source() = source();
 
-    addBoundaryDiag(coupledMatrix.diag(), 0);
+    addBoundaryDiag(coupledMatrix.diag());
     addBoundarySource(coupledMatrix.source(), false);
 
     coupledMatrix.interfaces() = psi.boundaryFieldRef().interfaces();
     coupledMatrix.interfacesUpper() = boundaryCoeffs().component(0);
     coupledMatrix.interfacesLower() = internalCoeffs().component(0);
 
-    autoPtr<typename LduMatrix<Type, scalar, scalar>::solver>
+    autoPtr<typename LduMatrix<Type, Type, scalar>::solver>
     coupledMatrixSolver
     (
-        LduMatrix<Type, scalar, scalar>::solver::New
+        LduMatrix<Type, Type, scalar>::solver::New
         (
             psi.name(),
             coupledMatrix,

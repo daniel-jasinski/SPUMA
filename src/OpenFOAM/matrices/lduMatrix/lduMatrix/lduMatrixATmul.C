@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -60,6 +61,8 @@ void Foam::lduMatrix::Amul
 
     const label startRequest = UPstream::nRequests();
 
+    //get executor
+    foamExecutor exec;
     // Initialise the update of interfaced interfaces
     initMatrixInterfaces
     (
@@ -89,8 +92,8 @@ void Foam::lduMatrix::Amul
         //       so is handling symmetric()
         const scalar* const __restrict__ lowercsrPtr = lowerCSR().begin();
 
-        for (label cell=0; cell<nCells; cell++)
-        {
+        auto LambdaAmul = [=](label cell)
+	{
             auto& val = ApsiPtr[cell];
 
             val = diagPtr[cell]*psiPtr[cell];
@@ -117,26 +120,27 @@ void Foam::lduMatrix::Amul
                     val += upperPtr[i]*psiPtr[nbrCell];
                 }
             }
-        }
+        };
+        exec.parallelFor(LambdaAmul, nCells);
     }
     else
     {
-        for (label cell=0; cell<nCells; cell++)
+        const label nFaces = upper().size();
+        auto LambdaDiag = [=](label cell)
         {
             ApsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
-        }
+        };
+        exec.parallelFor(LambdaDiag, nCells);
 
-
-        const label nFaces = upper().size();
-
-        for (label face=0; face<nFaces; face++)
+        auto LambdaOffDiag = [=](label face)
         {
-            ApsiPtr[uPtr[face]] += lowerPtr[face]*psiPtr[lPtr[face]];
-            ApsiPtr[lPtr[face]] += upperPtr[face]*psiPtr[uPtr[face]];
-        }
+            foamAtomic::AtomicAdd(ApsiPtr[uPtr[face]], lowerPtr[face]*psiPtr[lPtr[face]]);
+            foamAtomic::AtomicAdd(ApsiPtr[lPtr[face]], upperPtr[face]*psiPtr[uPtr[face]]);
+        };
+        exec.parallelFor(LambdaOffDiag, nFaces);
     }
 
-    // Update interface interfaces
+    //Update interface interfaces
     updateMatrixInterfaces
     (
         true,
@@ -174,6 +178,7 @@ void Foam::lduMatrix::Tmul
     const scalar* const __restrict__ lowerPtr = lower().begin();
     const scalar* const __restrict__ upperPtr = upper().begin();
 
+    foamExecutor exec;
     const label startRequest = UPstream::nRequests();
 
     // Initialise the update of interfaced interfaces
@@ -188,17 +193,20 @@ void Foam::lduMatrix::Tmul
     );
 
     const label nCells = diag().size();
-    for (label cell=0; cell<nCells; cell++)
+    auto LambdaDiag = [=](label cell)
     {
         TpsiPtr[cell] = diagPtr[cell]*psiPtr[cell];
-    }
+    };
+    exec.parallelFor(LambdaDiag, nCells);
 
     const label nFaces = upper().size();
-    for (label face=0; face<nFaces; face++)
+
+    auto LambdaOffDiag = [=](label face)
     {
-        TpsiPtr[uPtr[face]] += upperPtr[face]*psiPtr[lPtr[face]];
-        TpsiPtr[lPtr[face]] += lowerPtr[face]*psiPtr[uPtr[face]];
-    }
+        foamAtomic::AtomicAdd(TpsiPtr[uPtr[face]], upperPtr[face]*psiPtr[lPtr[face]]);
+        foamAtomic::AtomicAdd(TpsiPtr[lPtr[face]], lowerPtr[face]*psiPtr[uPtr[face]]);
+    };
+    exec.parallelFor(LambdaOffDiag,nFaces);
 
     // Update interface interfaces
     updateMatrixInterfaces
@@ -236,16 +244,20 @@ void Foam::lduMatrix::sumA
     const label nCells = diag().size();
     const label nFaces = upper().size();
 
-    for (label cell=0; cell<nCells; cell++)
+    foamExecutor exec;
+
+    auto LambdaDiag = [=](label cell)
     {
         sumAPtr[cell] = diagPtr[cell];
-    }
+    };
+    exec.parallelFor(LambdaDiag,nCells);
 
-    for (label face=0; face<nFaces; face++)
+    auto LambdaOffDiag = [=](label face)
     {
-        sumAPtr[uPtr[face]] += lowerPtr[face];
-        sumAPtr[lPtr[face]] += upperPtr[face];
-    }
+        foamAtomic::AtomicAdd(sumAPtr[uPtr[face]], lowerPtr[face]);
+        foamAtomic::AtomicAdd(sumAPtr[lPtr[face]], upperPtr[face]);
+    };
+    exec.parallelFor(LambdaOffDiag,nFaces);
 
     // Add the interface internal coefficients to diagonal
     // and the interface boundary coefficients to the sum-off-diagonal
@@ -256,10 +268,13 @@ void Foam::lduMatrix::sumA
             const labelUList& pa = lduAddr().patchAddr(patchi);
             const scalarField& pCoeffs = interfaceBouCoeffs[patchi];
 
-            forAll(pa, face)
+            const auto pap = pa.cbegin();
+            const auto pCoeffsp = pCoeffs.cbegin();
+            auto Lambda = [=](label face)
             {
-                sumAPtr[pa[face]] -= pCoeffs[face];
-            }
+                foamAtomic::AtomicAdd(sumAPtr[pap[face]], -pCoeffsp[face]);
+            };
+            exec.parallelFor(Lambda,pa.size());
         }
     }
 }
@@ -287,6 +302,8 @@ void Foam::lduMatrix::residual
     const scalar* const __restrict__ upperPtr = upper().begin();
     const scalar* const __restrict__ lowerPtr = lower().begin();
 
+    foamExecutor exec;
+
     // Parallel boundary initialisation.
     // Note: there is a change of sign in the coupled
     // interface update.  The reason for this is that the
@@ -312,19 +329,21 @@ void Foam::lduMatrix::residual
     );
 
     const label nCells = diag().size();
-    for (label cell=0; cell<nCells; cell++)
+
+    auto LambdaDiag = [=](label cell)
     {
         rAPtr[cell] = sourcePtr[cell] - diagPtr[cell]*psiPtr[cell];
-    }
-
+    };
+    exec.parallelFor(LambdaDiag, nCells);
 
     const label nFaces = upper().size();
 
-    for (label face=0; face<nFaces; face++)
+    auto LambdaOffDiag = [=](label face)
     {
-        rAPtr[uPtr[face]] -= lowerPtr[face]*psiPtr[lPtr[face]];
-        rAPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
-    }
+        foamAtomic::AtomicAdd(rAPtr[uPtr[face]], -lowerPtr[face]*psiPtr[lPtr[face]]);
+        foamAtomic::AtomicAdd(rAPtr[lPtr[face]], -upperPtr[face]*psiPtr[uPtr[face]]);
+    };
+    exec.parallelFor(LambdaOffDiag,nFaces);
 
     // Update interface interfaces
     updateMatrixInterfaces
@@ -371,11 +390,14 @@ Foam::tmp<Foam::scalarField> Foam::lduMatrix::H1() const
 
         const label nFaces = upper().size();
 
-        for (label face=0; face<nFaces; face++)
+        auto Lambda = [=](label face)
         {
-            H1Ptr[uPtr[face]] -= lowerPtr[face];
-            H1Ptr[lPtr[face]] -= upperPtr[face];
-        }
+            foamAtomic::AtomicAdd(H1Ptr[uPtr[face]], -lowerPtr[face]);
+            foamAtomic::AtomicAdd(H1Ptr[lPtr[face]], -upperPtr[face]);
+        };
+
+        foamExecutor exec;
+        exec.parallelFor(Lambda,nFaces);
     }
 
     return tH1;

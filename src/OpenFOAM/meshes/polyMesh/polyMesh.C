@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017, 2020 OpenFOAM Foundation
     Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -209,7 +210,8 @@ Foam::polyMesh::polyMesh(const IOobject& io, const bool doInit)
             *this,
             IOobject::READ_IF_PRESENT,
             IOobject::NO_WRITE
-        )
+        ),
+        poolSwitch(1)
     ),
     neighbour_
     (
@@ -221,7 +223,8 @@ Foam::polyMesh::polyMesh(const IOobject& io, const bool doInit)
             *this,
             IOobject::READ_IF_PRESENT,
             IOobject::NO_WRITE
-        )
+        ),
+        poolSwitch(1)
     ),
     clearedPrimitives_(false),
     boundary_

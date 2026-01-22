@@ -1,0 +1,36 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2312                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+probes
+{
+    // Where to load it from
+    libs            (sampling);
+
+    type            probes;
+
+    // Name of the directory for probe data
+    name            probes;
+
+    // Write every time step
+    writeControl    timeStep;
+    timeInterval    1;
+
+    // Fields to be probed
+    fields
+    (
+        p
+    );
+
+    probeLocations
+    (
+        (-0.05 0 0)  // rear side of the cylinder
+        (0.05 0 0)   // front side of the cylinder
+    );
+}
+
+// ************************************************************************* //

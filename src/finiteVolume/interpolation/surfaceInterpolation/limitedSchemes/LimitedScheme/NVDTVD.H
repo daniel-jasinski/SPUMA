@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2012 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -60,7 +61,7 @@ public:
 
     // Member Functions
 
-        scalar phict
+        FOAM_DEVICE scalar phict
         (
             const scalar faceFlux,
             const scalar phiP,
@@ -94,7 +95,7 @@ public:
         }
 
 
-        scalar r
+        FOAM_DEVICE scalar r
         (
             const scalar faceFlux,
             const scalar phiP,

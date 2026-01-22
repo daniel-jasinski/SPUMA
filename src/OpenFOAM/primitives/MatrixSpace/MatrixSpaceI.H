@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -41,7 +42,7 @@ inline Foam::MatrixSpace<Form, Cmpt, Mrows, Ncols>::MatrixSpace
 
 template<class Form, class Cmpt, Foam::direction Mrows, Foam::direction Ncols>
 template<class Form2, class Cmpt2>
-inline Foam::MatrixSpace<Form, Cmpt, Mrows, Ncols>::MatrixSpace
+FOAM_DEVICE inline Foam::MatrixSpace<Form, Cmpt, Mrows, Ncols>::MatrixSpace
 (
     const VectorSpace<Form2, Cmpt2, Mrows*Ncols>& vs
 )
@@ -316,7 +317,7 @@ operator()(const direction i, const direction j)
 
 
 template<class Form, class Cmpt, Foam::direction Mrows, Foam::direction Ncols>
-inline void Foam::MatrixSpace<Form, Cmpt, Mrows, Ncols>::operator=
+FOAM_DEVICE inline void Foam::MatrixSpace<Form, Cmpt, Mrows, Ncols>::operator=
 (
     Foam::zero
 )

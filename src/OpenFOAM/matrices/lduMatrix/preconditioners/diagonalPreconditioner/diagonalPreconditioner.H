@@ -73,7 +73,7 @@ class diagonalPreconditioner
         //- No copy assignment
         void operator=(const diagonalPreconditioner&) = delete;
 
-
+        void calcReciprocalD(solveScalarField&, const lduMatrix&);
 public:
 
     //- Runtime type information
@@ -86,6 +86,12 @@ public:
         diagonalPreconditioner
         (
             const lduMatrix::solver&,
+            const dictionary& solverControlsUnused
+        );
+
+        diagonalPreconditioner
+        (
+            const lduMatrix&,
             const dictionary& solverControlsUnused
         );
 
@@ -114,6 +120,12 @@ public:
         {
             return precondition(wT, rT, cmpt);
         }
+
+        virtual const solveScalarField& getReciprocalD() const 
+        {
+            return rD;
+        }
+        
 };
 
 

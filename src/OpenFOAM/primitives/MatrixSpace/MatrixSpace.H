@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2016 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -195,7 +196,7 @@ public:
 
         //- Construct as copy of a VectorSpace with the same size
         template<class Form2, class Cmpt2>
-        inline explicit MatrixSpace
+        FOAM_DEVICE inline explicit MatrixSpace
         (
             const VectorSpace<Form2, Cmpt2, Mrows*Ncols>&
         );
@@ -282,7 +283,7 @@ public:
     // Member Operators
 
         //- Assignment to zero
-        inline void operator=(Foam::zero);
+        FOAM_DEVICE inline void operator=(Foam::zero);
 
         //- Assignment to a block of another matrix space
         template

@@ -1,0 +1,16 @@
+
+DEVICE_SOURCE =
+
+ifneq (,$(findstring true,$(have_cuda)))
+    DEVICE_SOURCE += \
+        db/error/cudaError.cu \
+        device/memoryExecutor/cudaMemoryExecutor.cu \
+        device/deviceInit/cudaDeviceInit.C
+endif
+
+ifneq (,$(findstring true,$(have_hip)))
+    DEVICE_SOURCE += \
+        db/error/hipError.hip \
+        device/memoryExecutor/hipMemoryExecutor.hip \
+        device/deviceInit/hipDeviceInit.C
+endif

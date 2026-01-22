@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -94,7 +95,7 @@ gaussConvectionScheme<Type>::fvmDiv
     );
     fvMatrix<Type>& fvm = tfvm.ref();
 
-    fvm.lower() = -weights.primitiveField()*faceFlux.primitiveField();
+    fvm.lower(false) = -weights.primitiveField()*faceFlux.primitiveField();
     fvm.upper() = fvm.lower() + faceFlux.primitiveField();
     fvm.negSumDiag();
 

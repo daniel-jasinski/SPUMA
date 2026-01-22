@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -99,17 +100,17 @@ public:
     // Constructors
 
         //- Construct initialized to zero
-        inline SphericalTensor(Foam::zero);
+        FOAM_DEVICE inline SphericalTensor(Foam::zero);
 
         //- Construct given VectorSpace
         template<class Cmpt2>
-        inline SphericalTensor
+        FOAM_DEVICE inline SphericalTensor
         (
             const VectorSpace<SphericalTensor<Cmpt2>, Cmpt2, 1>&
         );
 
         //- Construct given the component
-        inline explicit SphericalTensor(const Cmpt& tii);
+        FOAM_DEVICE inline explicit SphericalTensor(const Cmpt& tii);
 
         //- Construct from Istream
         inline explicit SphericalTensor(Istream& is);
@@ -119,7 +120,7 @@ public:
 
     // Component Access
 
-        const Cmpt& ii() const noexcept { return this->v_[II]; }
+        FOAM_DEVICE const Cmpt& ii() const noexcept { return this->v_[II]; }
 
         Cmpt& ii() noexcept { return this->v_[II]; }
 
@@ -127,7 +128,7 @@ public:
     // Diagonal access and manipulation
 
         //- The L2-norm squared of the diagonal
-        inline scalar diagSqr() const;
+        FOAM_DEVICE inline scalar diagSqr() const;
 
 
     // Tensor Operations

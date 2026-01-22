@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2022-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -104,11 +105,17 @@ void Foam::lduCalculatedProcessorField<Type>::initInterfaceMatrixUpdate
     {
         scalarSendBuf_.resize_nocopy(fc.size());
         scalarRecvBuf_.resize_nocopy(fc.size());
-
-        forAll(fc, i)
+        foamExecutor exec;
+        auto sSendBufp = scalarSendBuf_.begin();
+        const auto psiInternalp = psiInternal.cbegin();
+        const auto fcp = fc.cbegin();
+        auto Lambda = [=](label i)
         {
-            scalarSendBuf_[i] = psiInternal[fc[i]];
-        }
+            sSendBufp[i] = psiInternalp[fcp[i]];
+        };
+        exec.parallelFor(Lambda, fc.size());
+
+
     }
 
     recvRequest_ = UPstream::nRequests();
@@ -146,19 +153,27 @@ void Foam::lduCalculatedProcessorField<Type>::addToInternalField
 {
     const labelUList& faceCells = this->procInterface_.faceCells();
 
+    foamExecutor exec;
+    auto resultp = result.begin();
+    const auto faceCellsp=faceCells.cbegin();
+    const auto coeffsp = coeffs.cbegin();
+    const auto valsp = vals.cbegin();
+
     if (add)
     {
-        forAll(faceCells, elemI)
+        auto Lambda = [=](label elemI)
         {
-            result[faceCells[elemI]] += coeffs[elemI]*vals[elemI];
-        }
+            foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], coeffsp[elemI]*valsp[elemI]);
+        };
+        exec.parallelFor(Lambda, faceCells.size());
     }
     else
     {
-        forAll(faceCells, elemI)
+        auto Lambda = [=](label elemI)
         {
-            result[faceCells[elemI]] -= coeffs[elemI]*vals[elemI];
-        }
+            foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], -coeffsp[elemI]*valsp[elemI]);
+        };
+        exec.parallelFor(Lambda, faceCells.size());
     }
 }
 

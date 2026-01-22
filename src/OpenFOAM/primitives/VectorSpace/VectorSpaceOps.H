@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -78,7 +79,7 @@ struct VectorSpaceOps
     //  \param s scalar/component data (non-indexed)
     //  \param eo binary combine/assign operation
     template<class V, class S, class EqOp>
-    static inline void eqOpS(V& vs, const S& s, EqOp eo)
+    FOAM_DEVICE static inline void eqOpS(V& vs, const S& s, EqOp eo)
     {
         // if constexpr (I < N)
         {
@@ -92,7 +93,7 @@ struct VectorSpaceOps
     //  \param [in] vs input vector-space (indexed) data
     //  \param eo binary combine/assign operation
     template<class S, class V, class EqOp>
-    static inline void SeqOp(S& s, const V& vs, EqOp eo)
+    FOAM_DEVICE static inline void SeqOp(S& s, const V& vs, EqOp eo)
     {
         // if constexpr (I < N)
         {
@@ -106,7 +107,7 @@ struct VectorSpaceOps
     //  \param [in] vs2 second vector-space (indexed) data
     //  \param eo binary combine/assign operation
     template<class V1, class V2, class EqOp>
-    static inline void eqOp(V1& vs1, const V2& vs2, EqOp eo)
+    FOAM_DEVICE static inline void eqOp(V1& vs1, const V2& vs2, EqOp eo)
     {
         // if constexpr (I < N)
         {
@@ -122,7 +123,7 @@ struct VectorSpaceOps
     //  \param [in] s scalar operand
     //  \param bop binary operation
     template<class V, class V1, class S, class BinaryOp>
-    static inline void opVS(V& vs, const V1& vs1, const S& s, BinaryOp bop)
+    FOAM_DEVICE static inline void opVS(V& vs, const V1& vs1, const S& s, BinaryOp bop)
     {
         // if constexpr (I < N)
         {
@@ -138,7 +139,7 @@ struct VectorSpaceOps
     //  \param [in] vs1 vector-space (indexed) data operand
     //  \param bop binary operation
     template<class V, class S, class V1, class BinaryOp>
-    static inline void opSV(V& vs, const S& s, const V1& vs1, BinaryOp bop)
+    FOAM_DEVICE static inline void opSV(V& vs, const S& s, const V1& vs1, BinaryOp bop)
     {
         // if constexpr (I < N)
         {
@@ -154,7 +155,7 @@ struct VectorSpaceOps
     //  \param [in] vs2 vector-space (indexed) data operand
     //  \param bop binary operation
     template<class V, class V1, class BinaryOp>
-    static inline void op(V& vs, const V1& vs1, const V1& vs2, BinaryOp bop)
+    FOAM_DEVICE static inline void op(V& vs, const V1& vs1, const V1& vs2, BinaryOp bop)
     {
         // if constexpr (I < N)
         {
@@ -178,22 +179,22 @@ struct VectorSpaceOps<N, N>
     static inline void fill_n(Output, const T&) {}
 
     template<class V, class S, class EqOp>
-    static inline void eqOpS(V&, const S&, EqOp) {}
+    FOAM_DEVICE static inline void eqOpS(V&, const S&, EqOp) {}
 
     template<class S, class V, class EqOp>
-    static inline void SeqOp(S&, const V&, EqOp) {}
+    FOAM_DEVICE static inline void SeqOp(S&, const V&, EqOp) {}
 
     template<class V1, class V2, class EqOp>
-    static inline void eqOp(V1&, const V2&, EqOp) {}
+    FOAM_DEVICE static inline void eqOp(V1&, const V2&, EqOp) {}
 
     template<class V, class V1, class S, class BinaryOp>
-    static inline void opVS(V&, const V1&, const S&, BinaryOp) {}
+    FOAM_DEVICE static inline void opVS(V&, const V1&, const S&, BinaryOp) {}
 
     template<class V, class S, class V1, class BinaryOp>
-    static inline void opSV(V&, const S&, const V1&, BinaryOp) {}
+    FOAM_DEVICE static inline void opSV(V&, const S&, const V1&, BinaryOp) {}
 
     template<class V, class V1, class BinaryOp>
-    static inline void op(V&, const V1&, const V1&, BinaryOp) {}
+    FOAM_DEVICE static inline void op(V&, const V1&, const V1&, BinaryOp) {}
 };
 
 

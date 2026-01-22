@@ -57,7 +57,8 @@ Foam::DICGaussSeidelSmoother::DICGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     ),
     dicSmoother_
     (

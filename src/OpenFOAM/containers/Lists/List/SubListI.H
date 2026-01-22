@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -36,7 +37,7 @@ inline Foam::SubList<T>::SubList
     const UList<T>& list
 ) noexcept
 :
-    UList<T>(const_cast<T*>(list.cdata()), list.size())
+    UList<T>(const_cast<T*>(list.cdata()), list.size(),list.usePool())
 {}
 
 
@@ -58,7 +59,7 @@ inline Foam::SubList<T>::SubList
     const label len
 )
 :
-    UList<T>(const_cast<T*>(list.cdata()), len)
+    UList<T>(const_cast<T*>(list.cdata()), len,list.usePool())
 {
     #ifdef FULLDEBUG
     list.checkSize(len);
@@ -74,7 +75,7 @@ inline Foam::SubList<T>::SubList
     const label start
 )
 :
-    UList<T>(const_cast<T*>(list.cdata() + start), len)
+    UList<T>(const_cast<T*>(list.cdata() + start), len,list.usePool())
 {
     #ifdef FULLDEBUG
     list.checkRange(start, len);

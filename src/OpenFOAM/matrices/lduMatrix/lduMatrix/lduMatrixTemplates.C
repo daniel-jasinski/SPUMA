@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -51,11 +52,13 @@ Foam::tmp<Foam::Field<Type>> Foam::lduMatrix::H(const Field<Type>& psi) const
 
         const label nFaces = upper().size();
 
-        for (label face=0; face<nFaces; face++)
+        auto Lambda = [=](label face)
         {
-            HpsiPtr[uPtr[face]] -= lowerPtr[face]*psiPtr[lPtr[face]];
-            HpsiPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
-        }
+            foamAtomic::AtomicAdd(HpsiPtr[uPtr[face]], -lowerPtr[face]*psiPtr[lPtr[face]]);
+            foamAtomic::AtomicAdd(HpsiPtr[lPtr[face]], -upperPtr[face]*psiPtr[uPtr[face]]);
+        };
+        foamExecutor exec;
+        exec.parallelFor(Lambda, nFaces);
     }
 
     return tHpsi;
@@ -80,18 +83,26 @@ Foam::lduMatrix::faceH(const Field<Type>& psi) const
         const scalarField& Lower = const_cast<const lduMatrix&>(*this).lower();
         const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
 
-        const labelUList& l = lduAddr().lowerAddr();
-        const labelUList& u = lduAddr().upperAddr();
+        const label* l = lduAddr().lowerAddr().begin();
+        const label* u = lduAddr().upperAddr().begin();
 
         auto tfaceHpsi = tmp<Field<Type>>::New(Lower.size());
         auto& faceHpsi = tfaceHpsi.ref();
 
-        for (label face=0; face<l.size(); face++)
+        auto faceHpsip = faceHpsi.begin();
+        const auto psip = psi.cbegin();
+        const auto Lp = Lower.cbegin();
+        const auto Up = Upper.begin();
+
+        auto Lambda = [=](label face)
         {
-            faceHpsi[face] =
-                Upper[face]*psi[u[face]]
-              - Lower[face]*psi[l[face]];
-        }
+            faceHpsip[face] =
+                Up[face]*psip[u[face]]
+              - Lp[face]*psip[l[face]];
+        };
+
+        foamExecutor exec;
+        exec.parallelFor(Lambda, Lower.size());
 
         return tfaceHpsi;
     }

@@ -1,0 +1,207 @@
+/*---------------------------------------------------------------------------*\
+  *      .  *_______ * ______ .  __ *  __ * ___ .___    .  ___ .   *  .     *
+    *  .    /       | |   _  \  |  |  |  | |   \/   | *   /   \ *   .    *   .
+ *    .  * .\   (---*.|  |_)  |.|  |  |  |*|  \  /  |. * /  *  \  .  *     *
+ =^^=^^==^^^=\   \^=^=|   ___/=^|  |^=|  |=|  |\/|  |^^=/  /=\  \^=^=^^===^^^=
+ 0  o  O  o---)   \ 0 |  |   0  |  o--o  |o|  |  |  | o/  _____  \ 0   o  O
+     0    |_______/   |__| o   o \______/  |__| 0|__| /__/  o  \__\   o
+  O   o  o        0  o      0   O        o    o       O  o     0   o    0  o
+-------------------------------------------------------------------------------
+    Copyright (C) 2025 Cineca
+-------------------------------------------------------------------------------
+License
+    This file is part of SPUMA.
+
+    SPUMA is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    SPUMA is distributed in the hope that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include <hip/hip_runtime.h>
+#include "hipMemoryExecutor.hpp"
+#include "deviceM.H"
+#include "memoryKernels.H"
+#include "error.H"
+#include "hipError.hpp"
+#include "hipDeviceInit.hpp"
+#include "deviceUtils.H"
+
+// * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * * //
+
+__global__
+void memCopyKernel
+(
+    const unsigned long long size,
+    char* const dst,
+    const char* const src
+)
+{
+    unsigned long long idx = blockIdx.x*blockDim.x + threadIdx.x;
+    unsigned long long stride = blockDim.x*gridDim.x;
+    for (unsigned long long i = idx; i < size; i += stride)
+    {
+        dst[i] = src[i];
+    }
+}
+
+void* Foam::hipMemoryExecutor::_backendAlloc(uint64_t size)
+{
+
+    void* ptr;
+    label err = CHECK_HIP_ERROR(hipMallocManaged((void**)&ptr, size));
+    int deviceId;
+    CHECK_HIP_ERROR(hipGetDevice(&deviceId));
+    CHECK_HIP_ERROR(hipMemAdvise(ptr, size, hipMemAdviseSetCoarseGrain, deviceId));
+
+    if (err != 0)
+    {
+        FatalErrorInFunction << "ERROR: hipMallocManaged returned " << err << abort(FatalError);
+    }
+    return ptr;
+}
+
+void Foam::hipMemoryExecutor::_backendClear(void* ptr)
+{
+    if (ptr)
+    {
+        label err = CHECK_HIP_ERROR(hipFree(ptr));
+        if (err != 0)
+        {
+            FatalErrorInFunction << "ERROR: hipFree returned " << err << abort(FatalError);
+        }
+    }
+}
+
+void Foam::hipMemoryExecutor::_backendMemCopy
+(
+    void* dst,
+    const void* src,
+    uint64_t size,
+    memCopyKind kind
+)
+{
+    label err = 0;
+    if (kind == memCopyKind::memCopyHostToDevice)
+    {
+        err = CHECK_HIP_ERROR(hipMemcpy(dst, src, (size_t) size, hipMemcpyHostToDevice));
+    }
+    else if (kind == memCopyKind::memCopyDeviceToHost)
+    {
+        err = CHECK_HIP_ERROR(hipMemcpy(dst, src, (size_t) size, hipMemcpyDeviceToHost));
+    }
+    else if (kind == memCopyKind::memCopyDefault)
+    {
+        err = CHECK_HIP_ERROR(hipMemcpy(dst, src, (size_t) size, hipMemcpyDefault));
+    }
+    else if (kind == memCopyKind::memCopyDeviceToDevice)
+    {
+        const label nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
+        const label numBlocks = device::setNumBlocks(size, nThreadsPerBlock); 
+        hipLaunchKernelGGL
+        (
+            memCopyKernel,
+            numBlocks,
+            nThreadsPerBlock,
+            0,
+            0,
+            size,
+            reinterpret_cast<char*>(dst),
+            reinterpret_cast<const char*>(src)
+        );
+
+        hipDeviceSynchronize();
+        CHECK_LAST_HIP_ERROR();
+    }
+    else
+        FatalErrorInFunction << "ERROR: memCopyKind not found" << abort(FatalError);
+
+    if (err != 0)
+        FatalErrorInFunction << "ERROR: hipMemcpy returned " << err << abort(FatalError);
+}
+
+void Foam::hipMemoryExecutor::_backendMemSet
+(
+    void* ptr,
+    const uint64_t sizeInBytes,
+    const void* value,
+    size_t sizeOfValue
+)
+{
+    label err = CHECK_HIP_ERROR
+    (
+        hipMemcpyAsync
+        (
+            ptr,
+            value,
+            sizeOfValue,
+            hipMemcpyHostToDevice
+        )
+    );
+    if (err != 0)
+        FatalErrorInFunction << "ERROR: hipMemcpy returned " << err << abort(FatalError);
+
+    const int nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
+    size_t numBlocks = device::setNumBlocks(sizeInBytes - sizeOfValue, nThreadsPerBlock);
+    numBlocks = numBlocks == 0 ? 1 : numBlocks;
+    Foam::device::memSetKernel<<<numBlocks, nThreadsPerBlock>>>
+    (
+        sizeInBytes - sizeOfValue,
+        (int) sizeOfValue,
+        (char*)ptr + sizeOfValue,
+        (const char*) ptr
+    );
+
+    hipDeviceSynchronize();
+    CHECK_LAST_HIP_ERROR();
+}
+
+void Foam::hipMemoryExecutor::_backendMemSetScalarOne
+(
+    void* ptr,
+    const uint64_t sizeInBytes
+)
+{
+    const int nThreadsPerBlock = hipDeviceInit::getNumberOfThreadsPerBlock();
+    const int numBlocks = device::setNumBlocks(sizeInBytes, nThreadsPerBlock);
+    Foam::device::memSetOneKernel<<<numBlocks, nThreadsPerBlock>>>
+    (
+        sizeInBytes/sizeof(scalar),
+        (scalar*)ptr
+    );
+
+    hipDeviceSynchronize();
+    CHECK_LAST_HIP_ERROR();
+}
+
+void Foam::hipMemoryExecutor::_backendMemSet
+(
+    void* ptr,
+    const uint64_t sizeInBytes,
+    const int value
+)
+{
+    label err = CHECK_HIP_ERROR
+    (
+        hipMemset
+        (
+            ptr,
+            value,
+            sizeInBytes
+        )
+    );
+
+    if (err != 0)
+        FatalErrorInFunction << "ERROR: hipMemcpy returned " << err << abort(FatalError);
+}
+
+// ************************************************************************* //

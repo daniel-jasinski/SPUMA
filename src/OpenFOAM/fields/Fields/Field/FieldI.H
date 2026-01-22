@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2018-2021 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,27 +30,29 @@ License
 
 template<class Type>
 inline constexpr Foam::Field<Type>::Field() noexcept
+:
+    List<Type>(poolSwitch(1))
 {}
 
 
 template<class Type>
 inline Foam::Field<Type>::Field(const label len)
 :
-    List<Type>(len)
+    List<Type>(len, poolSwitch(1))
 {}
 
 
 template<class Type>
 inline Foam::Field<Type>::Field(const label len, const Type& val)
 :
-    List<Type>(len, val)
+    List<Type>(len, val, poolSwitch(1))
 {}
 
 
 template<class Type>
 inline Foam::Field<Type>::Field(const label len, Foam::zero)
 :
-    List<Type>(len, Foam::zero{})
+    List<Type>(len, Foam::zero{}, poolSwitch(1))
 {}
 
 
@@ -73,14 +76,14 @@ inline Foam::Field<Type>::Field(Foam::one, Foam::zero)
     List<Type>(Foam::one{}, Foam::zero{})
 {}
 
-
+// TODO memoryPool
 template<class Type>
 inline Foam::Field<Type>::Field(const Field<Type>& fld)
 :
     List<Type>(fld)
 {}
 
-
+// TODO memoryPool
 template<class Type>
 inline Foam::Field<Type>::Field(const UList<Type>& list)
 :

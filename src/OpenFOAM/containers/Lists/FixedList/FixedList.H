@@ -47,6 +47,7 @@ SourceFiles
 #include "stdFoam.H"
 #include "nullObject.H"
 #include "Hash.H"
+#include "contiguous.H"
 #include "ListPolicy.H"  // Also includes "contiguous"
 #include "autoPtr.H"
 

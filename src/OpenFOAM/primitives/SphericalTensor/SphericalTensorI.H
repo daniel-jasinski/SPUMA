@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -31,7 +32,7 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::SphericalTensor<Cmpt>::SphericalTensor(Foam::zero)
+FOAM_DEVICE inline Foam::SphericalTensor<Cmpt>::SphericalTensor(Foam::zero)
 :
     SphericalTensor::vsType(Foam::zero{})
 {}
@@ -39,7 +40,7 @@ inline Foam::SphericalTensor<Cmpt>::SphericalTensor(Foam::zero)
 
 template<class Cmpt>
 template<class Cmpt2>
-inline Foam::SphericalTensor<Cmpt>::SphericalTensor
+FOAM_DEVICE inline Foam::SphericalTensor<Cmpt>::SphericalTensor
 (
     const VectorSpace<SphericalTensor<Cmpt2>, Cmpt2, 1>& vs
 )
@@ -49,7 +50,7 @@ inline Foam::SphericalTensor<Cmpt>::SphericalTensor
 
 
 template<class Cmpt>
-inline Foam::SphericalTensor<Cmpt>::SphericalTensor(const Cmpt& stii)
+FOAM_DEVICE inline Foam::SphericalTensor<Cmpt>::SphericalTensor(const Cmpt& stii)
 {
     this->v_[II] = stii;
 }
@@ -65,7 +66,7 @@ inline Foam::SphericalTensor<Cmpt>::SphericalTensor(Istream& is)
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::scalar Foam::SphericalTensor<Cmpt>::diagSqr() const
+FOAM_DEVICE inline Foam::scalar Foam::SphericalTensor<Cmpt>::diagSqr() const
 {
     return 3*Foam::magSqr(this->ii());
 }
@@ -80,7 +81,7 @@ namespace Foam
 
 //- Return the trace of a SphericalTensor
 template<class Cmpt>
-inline Cmpt tr(const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE inline Cmpt tr(const SphericalTensor<Cmpt>& st)
 {
     return 3*st.ii();
 }
@@ -88,7 +89,7 @@ inline Cmpt tr(const SphericalTensor<Cmpt>& st)
 
 //- Return the spherical part of a SphericalTensor, i.e. itself
 template<class Cmpt>
-inline SphericalTensor<Cmpt> sph(const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE inline SphericalTensor<Cmpt> sph(const SphericalTensor<Cmpt>& st)
 {
     return st;
 }
@@ -96,7 +97,7 @@ inline SphericalTensor<Cmpt> sph(const SphericalTensor<Cmpt>& st)
 
 //- Return the determinant of a SphericalTensor
 template<class Cmpt>
-inline Cmpt det(const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE inline Cmpt det(const SphericalTensor<Cmpt>& st)
 {
     return st.ii()*st.ii()*st.ii();
 }
@@ -104,7 +105,7 @@ inline Cmpt det(const SphericalTensor<Cmpt>& st)
 
 //- Return the inverse of a SphericalTensor
 template<class Cmpt>
-inline SphericalTensor<Cmpt> inv(const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE inline SphericalTensor<Cmpt> inv(const SphericalTensor<Cmpt>& st)
 {
     #ifdef FULLDEBUG
     if (mag(st.ii()) < VSMALL)
@@ -122,7 +123,7 @@ inline SphericalTensor<Cmpt> inv(const SphericalTensor<Cmpt>& st)
 
 //- Return the square of Frobenius norm of a SphericalTensor
 template<class Cmpt>
-inline Foam::scalar magSqr(const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE inline Foam::scalar magSqr(const SphericalTensor<Cmpt>& st)
 {
     return st.diagSqr();
 }
@@ -162,7 +163,7 @@ inline Cmpt cmptAv(const SphericalTensor<Cmpt>& st)
 
 //- Linear interpolation of spherical tensors a and b by factor t
 template<class Cmpt>
-inline SphericalTensor<Cmpt> lerp
+FOAM_DEVICE inline SphericalTensor<Cmpt> lerp
 (
     const SphericalTensor<Cmpt>& a,
     const SphericalTensor<Cmpt>& b,
@@ -178,7 +179,7 @@ inline SphericalTensor<Cmpt> lerp
 //- Division of a Cmpt by a SphericalTensor
 template<class Cmpt>
 inline SphericalTensor<Cmpt>
-operator/(const Cmpt s, const SphericalTensor<Cmpt>& st)
+FOAM_DEVICE operator/(const Cmpt s, const SphericalTensor<Cmpt>& st)
 {
     #ifdef FULLDEBUG
     if (mag(st.ii()) < VSMALL)
@@ -197,7 +198,7 @@ operator/(const Cmpt s, const SphericalTensor<Cmpt>& st)
 
 //- Division of a SphericalTensor by a Cmpt
 template<class Cmpt>
-inline SphericalTensor<Cmpt>
+FOAM_DEVICE inline SphericalTensor<Cmpt>
 operator/(const SphericalTensor<Cmpt>& st, const Cmpt s)
 {
     #ifdef FULLDEBUG
@@ -226,7 +227,7 @@ operator&(const SphericalTensor<Cmpt>& st1, const SphericalTensor<Cmpt>& st2)
 
 //- Inner-product of a SphericalTensor and a Vector
 template<class Cmpt>
-inline Vector<Cmpt>
+FOAM_DEVICE inline Vector<Cmpt>
 operator&(const SphericalTensor<Cmpt>& st, const Vector<Cmpt>& v)
 {
     return Vector<Cmpt>
@@ -240,7 +241,7 @@ operator&(const SphericalTensor<Cmpt>& st, const Vector<Cmpt>& v)
 
 //- Inner-product of a Vector and a SphericalTensor
 template<class Cmpt>
-inline Vector<Cmpt>
+FOAM_DEVICE inline Vector<Cmpt>
 operator&(const Vector<Cmpt>& v, const SphericalTensor<Cmpt>& st)
 {
     return Vector<Cmpt>
@@ -254,7 +255,7 @@ operator&(const Vector<Cmpt>& v, const SphericalTensor<Cmpt>& st)
 
 //- Double-inner-product of a SphericalTensor and a SphericalTensor
 template<class Cmpt>
-inline Cmpt
+FOAM_DEVICE inline Cmpt
 operator&&(const SphericalTensor<Cmpt>& st1, const SphericalTensor<Cmpt>& st2)
 {
     return 3*st1.ii()*st2.ii();

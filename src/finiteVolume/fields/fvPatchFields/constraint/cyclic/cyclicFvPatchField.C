@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -133,22 +134,28 @@ void Foam::cyclicFvPatchField<Type>::patchNeighbourField(UList<Type>& pnf) const
     const labelUList& nbrFaceCells =
         cyclicPatch().cyclicPatch().neighbPatch().faceCells();
 
+    foamExecutor exec;
+    auto pnf_p = pnf.begin();
+    const auto iField_p = iField.cbegin();
+    const auto nbrFaceCells_p = nbrFaceCells.cbegin();
+
     if (doTransform())
     {
-        forAll(pnf, facei)
-        {
-            pnf[facei] = transform
+        const auto T_p = forwardT().cbegin();
+        auto Lambda = [=](label facei){
+            pnf_p[facei] = transform
             (
-                forwardT()[0], iField[nbrFaceCells[facei]]
+                T_p[0], iField_p[nbrFaceCells_p[facei]]
             );
-        }
+        };
+        exec.parallelFor(Lambda,pnf.size());
     }
     else
     {
-        forAll(pnf, facei)
-        {
-            pnf[facei] = iField[nbrFaceCells[facei]];
-        }
+        auto Lambda = [=](label facei){
+            pnf_p[facei] = iField_p[nbrFaceCells_p[facei]];
+        };
+        exec.parallelFor(Lambda,pnf.size());
     }
 }
 

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -82,7 +83,7 @@ public:
     constexpr operator double() const noexcept { return 1; }
 
     //- Component-wise or element-wise access returns one
-    one operator[](const label) const noexcept { return one{}; }
+    FOAM_DEVICE one operator[](const label) const noexcept { return one{}; }
 };
 
 

@@ -161,8 +161,11 @@ int main(int argc, char *argv[])
         "Write checks to file in dictionary or JSON format"
     );
 
-
+    #include "addMemoryPoolOptions.H"
+    #include "addInitDeviceOptions.H"
     #include "setRootCase.H"
+    #include "initDevice.H"
+    #include "createMemoryPool.H"
     #include "createTime.H"
     #include "getAllRegionOptions.H"
     instantList timeDirs = timeSelector::select0(runTime, args);

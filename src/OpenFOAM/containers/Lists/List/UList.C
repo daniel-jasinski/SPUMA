@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,6 +28,10 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "UList.H"
+#include "contiguous.H"
+#include "labelRange.H"
+#include "MemoryPoolBase.H"
+
 #include <random>
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
@@ -97,7 +102,6 @@ void Foam::UList<T>::swapLast(const label i)
     }
 }
 
-
 template<class T>
 void Foam::UList<T>::deepCopy(const UList<T>& list)
 {
@@ -113,7 +117,18 @@ void Foam::UList<T>::deepCopy(const UList<T>& list)
         // Can dispatch with
         // - std::execution::par_unseq
         // - std::execution::unseq
-        std::copy(list.cbegin(), list.cend(), this->v_);
+        if (list.usePool() && this->usePool_) //ADD case were the src list is not on the pool?
+        {
+            Spuma::MemoryPool::getInstance()->memCopy(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+        }
+        else if (this->usePool_ && !list.usePool())
+        {
+            Spuma::MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+        }
+        else
+        {
+            std::copy(list.cbegin(), list.cend(), this->v_);
+        }
     }
 }
 

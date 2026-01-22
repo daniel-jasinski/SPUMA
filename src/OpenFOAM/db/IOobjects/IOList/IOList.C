@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2016-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -89,6 +90,17 @@ Foam::IOList<T>::IOList(const IOobject& io)
     readIOcontents();
 }
 
+template<class T>
+Foam::IOList<T>::IOList(const IOobject& io, poolSwitch usePool)
+:
+    regIOobject(io)
+{
+    if(usePool) this->setPool(1);
+    // Check for MUST_READ_IF_MODIFIED
+    warnNoRereading<IOList<T>>();
+
+    readIOcontents();
+}
 
 template<class T>
 Foam::IOList<T>::IOList(const IOobject& io, Foam::zero)

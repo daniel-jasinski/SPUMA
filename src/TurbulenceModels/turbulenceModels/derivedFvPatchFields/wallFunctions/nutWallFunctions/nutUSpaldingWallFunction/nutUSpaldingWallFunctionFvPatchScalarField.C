@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -79,13 +80,20 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcNut() const
         // tolerance.
 
         scalarField& nutw = tnutw.ref();
-        forAll(err, facei)
+
+        foamExecutor exec;
+        auto nutwp = nutw.begin();
+        const auto errp = err.cbegin();
+        const auto thisp = this->cbegin();
+        const scalar tolerance = tolerance_;
+        auto Lambda = [=](label facei)
         {
-            if (err[facei] < tolerance_)
+            if (errp[facei] < tolerance)
             {
-                nutw[facei] = this->operator[](facei);
+                nutwp[facei] = thisp[facei];
             }
-        }
+        };
+        exec.parallelFor(Lambda, err.size());
     }
     return tnutw;
 }
@@ -140,9 +148,21 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
     err.setSize(uTau.size());
     err = 0.0;
 
-    forAll(uTau, facei)
+    foamExecutor exec;
+    auto errp = err.begin();
+    auto uTaup = uTau.begin();
+
+    auto magUpp = magUp.begin();
+    auto magGradUp = magGradU.begin();
+    auto nuwp = nuw.begin();
+    auto nutwp = nutw.begin();
+    auto yp = y.begin();
+
+    const scalar tolerance = tolerance_; //allow lambda to copy class member
+
+    auto Lambda = [=](label facei)
     {
-        scalar ut = sqrt((nutw[facei] + nuw[facei])*magGradU[facei]);
+        scalar ut = sqrt((nutwp[facei] + nuwp[facei])*magGradUp[facei]);
         // Note: for exact restart seed with laminar viscosity only:
         //scalar ut = sqrt(nuw[facei]*magGradU[facei]);
 
@@ -152,45 +172,35 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcUTau
 
             do
             {
-                const scalar kUu = min(kappa*magUp[facei]/ut, scalar(50));
+                const scalar kUu = min(kappa*magUpp[facei]/ut, scalar(50));
                 const scalar fkUu = exp(kUu) - 1 - kUu*(1 + 0.5*kUu);
 
                 const scalar f =
-                    - ut*y[facei]/nuw[facei]
-                    + magUp[facei]/ut
+                    - ut*yp[facei]/nuwp[facei]
+                    + magUpp[facei]/ut
                     + 1.0/E*(fkUu - 1.0/6.0*kUu*sqr(kUu));
 
                 const scalar df =
-                    y[facei]/nuw[facei]
-                  + magUp[facei]/sqr(ut)
+                    yp[facei]/nuwp[facei]
+                  + magUpp[facei]/sqr(ut)
                   + 1.0/E*kUu*fkUu/ut;
 
                 const scalar uTauNew = ut + f/df;
-                err[facei] = mag((ut - uTauNew)/ut);
+                errp[facei] = Foam::mag((ut - uTauNew)/ut);
                 ut = uTauNew;
-
-                //iterations_++;
 
             } while
             (
                 ut > ROOTVSMALL
-             && err[facei] > tolerance_
+             && errp[facei] > tolerance
              && ++iter < maxIter
             );
 
-            uTau[facei] = max(scalar(0), ut);
-
-            //invocations_++;
-            //if (iter > 1)
-            //{
-            //    nontrivial_++;
-            //}
-            //if (iter >= maxIter_)
-            //{
-            //    nonconvergence_++;
-            //}
+            uTaup[facei] = max(scalar(0), ut);
         }
-    }
+    };
+
+    exec.parallelFor(Lambda, uTau.size());
 
     return tuTau;
 }

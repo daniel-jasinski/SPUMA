@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -39,6 +40,7 @@ SourceFiles
 #ifndef fvcSurfaceIntegrate_H
 #define fvcSurfaceIntegrate_H
 
+#include "Atomics.H"
 #include "primitiveFieldsFwd.H"
 #include "volFieldsFwd.H"
 #include "surfaceFieldsFwd.H"

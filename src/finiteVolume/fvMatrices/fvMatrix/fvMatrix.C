@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -59,10 +60,15 @@ void Foam::fvMatrix<Type>::addToInternalField
             << abort(FatalError);
     }
 
-    forAll(addr, facei)
+    auto intfp = intf.begin();
+    const auto addrp = addr.cbegin();
+    const auto pfp = pf.cbegin();
+    auto Lambda = [=](label facei)
     {
-        intf[addr[facei]] += pf[facei];
-    }
+        foamAtomic::AtomicAdd(intfp[addrp[facei]], pfp[facei]);
+    };
+    foamExecutor exec;
+    exec.parallelFor(Lambda, addr.size());
 }
 
 
@@ -96,11 +102,15 @@ void Foam::fvMatrix<Type>::subtractFromInternalField
             << ") and field (" << pf.size() << ") are different sizes" << endl
             << abort(FatalError);
     }
-
-    forAll(addr, facei)
+    auto intfp = intf.begin();
+    const auto addrp = addr.cbegin();
+    const auto pfp = pf.cbegin();
+    auto Lambda = [=](label facei)
     {
-        intf[addr[facei]] -= pf[facei];
-    }
+        foamAtomic::AtomicAdd(intfp[addrp[facei]], -pfp[facei]);
+    };
+    foamExecutor exec;
+    exec.parallelFor(Lambda, addr.size());
 }
 
 
@@ -146,6 +156,34 @@ void Foam::fvMatrix<Type>::addBoundaryDiag
     }
 }
 
+template<class Type>
+void Foam::fvMatrix<Type>::addBoundaryDiag
+(
+    Field<Type>& diag
+) const
+{
+    for (label fieldi = 0; fieldi < nMatrices(); ++fieldi)
+    {
+        const auto& bpsi = this->psi(fieldi).boundaryField();
+
+        forAll(bpsi, ptfi)
+        {
+            const label patchi = globalPatchID(fieldi, ptfi);
+
+            const Field<Type>& pic = internalCoeffs_[patchi];
+
+            if (patchi != -1)
+            {
+                addToInternalField
+                (
+                    lduAddr().patchAddr(patchi),
+                    pic,
+                    diag
+                );
+            }
+        }
+    }
+}
 
 template<class Type>
 void Foam::fvMatrix<Type>::addCmptAvBoundaryDiag(scalarField& diag) const
@@ -208,11 +246,20 @@ void Foam::fvMatrix<Type>::addBoundarySource
 
                     const labelUList& addr = lduAddr().patchAddr(patchi);
 
-                    forAll(addr, facei)
+                    auto sourcep = source.begin();
+                    const auto addrp = addr.cbegin();
+                    const auto pbcp = pbc.cbegin();
+                    const auto pnfp = pnf.cbegin();
+                    auto Lambda = [=](label facei)
                     {
-                        source[addr[facei]] +=
-                            cmptMultiply(pbc[facei], pnf[facei]);
-                    }
+                        foamAtomic::AtomicAdd
+                        (
+                            sourcep[addrp[facei]],
+                            cmptMultiply(pbcp[facei], pnfp[facei])
+                        );
+                    };
+                    foamExecutor exec;
+                    exec.parallelFor(Lambda, addr.size());
                 }
             }
         }
@@ -247,6 +294,114 @@ void Foam::fvMatrix<Type>::setValuesFromList
     // - set local matrix to be diagonal (so adjust source)
     //      - cut connections to neighbours
     // - make (on non-adjusted cells) contribution explicit
+
+    if constexpr(std::is_same<UList<Type>, ListType<Type>>())
+    {
+
+    // define ptr to pass to lambda
+    foamExecutor exec;
+    const auto cellLabelsPtr = cellLabels.cbegin();
+    //const auto cellsPtr = cells.cbegin();
+    const auto valuesPtr = values.cbegin();
+    const auto ownPtr = own.cbegin();
+    const auto neiPtr = nei.cbegin();
+    auto upperPtr = upper().begin();
+    auto lowerPtr = lower().begin();
+    auto srcPtr = source_.begin();
+
+
+    const auto cfStartPtr = mesh.cellsFaceStart().cbegin();
+    const auto cfPtr = mesh.cellsFaces().cbegin();
+    labelField cellCounter(cells.size(),Zero);
+    auto cellCounterPtr = cellCounter.begin();
+
+    const label nInternalFaces = mesh.nInternalFaces();
+
+    //probably usless branch for symm and asymm
+    if (symmetric() || asymmetric())
+    {
+        auto Lambda = [=](label i)
+        {
+            const label celli = cellLabelsPtr[i];
+            const Type value = valuesPtr[i];
+
+            label old = foamAtomic::AtomicCAS(cellCounterPtr[celli], 0, 1);
+            if (!old)
+            {
+                for (label id = cfStartPtr[celli]; id < cfStartPtr[celli+1]; id++)
+                {
+                    label facei = cfPtr[id];
+                    if ((facei >= 0) && (facei < nInternalFaces))
+                    {
+                        if (celli == ownPtr[facei])
+                        {
+                            if(lowerPtr[facei])
+                                foamAtomic::AtomicAdd(srcPtr[neiPtr[facei]], -lowerPtr[facei] * value);
+                        }
+                        else
+                        {
+                            if(upperPtr[facei])
+                                foamAtomic::AtomicAdd(srcPtr[ownPtr[facei]], -upperPtr[facei] * value);
+                        }
+
+                        upperPtr[facei] = 0.0;
+                        lowerPtr[facei] = 0.0;
+
+                    }
+                }
+            }
+        };
+        exec.parallelFor(Lambda, cellLabels.size());
+    }
+
+    // boundary fields on cpu
+    if (symmetric() || asymmetric())
+    {
+        const auto& bmesh = mesh.boundaryMesh();
+        const auto patchID_p = bmesh.patchID().cbegin();
+        const label nBndFaces = mesh.nBoundaryFaces();
+        forAll(bmesh, patchi)
+        {
+            if(internalCoeffs_[patchi].size())
+            {
+                auto internalCoeffs_p = internalCoeffs_[patchi].begin();
+                auto boundaryCoeffs_p = boundaryCoeffs_[patchi].begin();
+                const label patchFaceStart = bmesh[patchi].start();
+                auto Lambda = [=](label i)
+                {
+                    const label celli = cellLabelsPtr[i];
+                    for (label id = cfStartPtr[celli]; id < cfStartPtr[celli+1]; id++)
+                    {
+                        const label facei = cfPtr[id];
+                        const label bndfacei = facei - nInternalFaces;
+                        if((bndfacei >= 0) && (bndfacei < nBndFaces) && (patchID_p[bndfacei] == patchi))
+                        {
+                            const label pfacei = facei - patchFaceStart;
+                            internalCoeffs_p[pfacei] = Zero;
+                            boundaryCoeffs_p[pfacei] = Zero;
+                        }
+                    };
+                };
+                exec.parallelFor(Lambda, cellLabels.size());
+            }
+        }
+    }
+
+    auto psiPtr = psi.begin();
+    const auto diagPtr = Diag.begin();
+
+    auto Lambda = [=](label i)
+    {
+        const label celli = cellLabelsPtr[i];
+        const Type value = valuesPtr[i];
+        psiPtr[celli] = value;
+        srcPtr[celli] = value*diagPtr[celli];
+    };
+    exec.parallelFor(Lambda, cellLabels.size());
+
+    }
+    else
+    { //handle other list types non supported on memorypool
 
     if (symmetric() || asymmetric())
     {
@@ -291,6 +446,8 @@ void Foam::fvMatrix<Type>::setValuesFromList
                 }
                 else
                 {
+                    const label patchi = mesh.boundaryMesh().whichPatch(facei); //only cpu
+
                     if (internalCoeffs_[patchi].size())
                     {
                         const label patchFacei =
@@ -304,8 +461,8 @@ void Foam::fvMatrix<Type>::setValuesFromList
         }
     }
 
-    // Note: above loop might have affected source terms on adjusted cells
-    // so make sure to adjust them afterwards
+    //Note: above loop might have affected source terms on adjusted cells
+    //so make sure to adjust them afterwards
     forAll(cellLabels, i)
     {
         const label celli = cellLabels[i];
@@ -314,6 +471,8 @@ void Foam::fvMatrix<Type>::setValuesFromList
         psi[celli] = value;
         source_[celli] = value*Diag[celli];
     }
+
+    }//end if else  on list type
 }
 
 
@@ -980,7 +1139,7 @@ void Foam::fvMatrix<Type>::setValues
     const Type& value
 )
 {
-    this->setValuesFromList(cellLabels, UniformList<Type>(value));
+    this->setValuesFromList(cellLabels, List<Type>(cellLabels.size(), value, poolSwitch(1)));
 }
 
 
@@ -1118,6 +1277,9 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
     scalarField sumOff(D.size(), Zero);
     sumMagOffDiag(sumOff);
 
+    auto Dp = D.begin();
+    auto sumOffp = sumOff.begin();
+    foamExecutor exec;
     // Handle the boundary contributions to the diagonal
     forAll(psi_.boundaryField(), patchi)
     {
@@ -1126,28 +1288,33 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
         if (ptf.size())
         {
             const labelUList& pa = lduAddr().patchAddr(patchi);
+            const auto pap = pa.cbegin();
             Field<Type>& iCoeffs = internalCoeffs_[patchi];
+            const auto iCoeffsp = iCoeffs.cbegin();
 
             if (ptf.coupled())
             {
                 const Field<Type>& pCoeffs = boundaryCoeffs_[patchi];
 
+                const auto pCoeffsp = pCoeffs.cbegin();
                 // For coupled boundaries add the diagonal and
                 // off-diagonal contributions
-                forAll(pa, face)
+                auto Lambda = [=](label face)
                 {
-                    D[pa[face]] += component(iCoeffs[face], 0);
-                    sumOff[pa[face]] += mag(component(pCoeffs[face], 0));
-                }
+                    foamAtomic::AtomicAdd(Dp[pap[face]], component(iCoeffsp[face], 0));
+                    foamAtomic::AtomicAdd(sumOffp[pap[face]], mag(component(pCoeffsp[face], 0)));
+                };
+                exec.parallelFor(Lambda, pa.size());
             }
             else
             {
                 // For non-coupled boundaries add the maximum magnitude diagonal
                 // contribution to ensure stability
-                forAll(pa, face)
+                auto Lambda = [=](label face)
                 {
-                    D[pa[face]] += cmptMax(cmptMag(iCoeffs[face]));
-                }
+                   foamAtomic::AtomicAdd(Dp[pap[face]], cmptMax(cmptMag(iCoeffsp[face])));
+                };
+                exec.parallelFor(Lambda, pa.size());
             }
         }
     }
@@ -1205,10 +1372,11 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
 
     // Ensure the matrix is diagonally dominant...
     // Assumes that the central coefficient is positive and ensures it is
-    forAll(D, celli)
+    auto LambdaDiag = [=](label celli)
     {
-        D[celli] = max(mag(D[celli]), sumOff[celli]);
-    }
+        Dp[celli] = max(mag(Dp[celli]), sumOffp[celli]);
+    };
+    exec.parallelFor(LambdaDiag, D.size());
 
     // ... then relax
     D /= alpha;
@@ -1221,21 +1389,25 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
         if (ptf.size())
         {
             const labelUList& pa = lduAddr().patchAddr(patchi);
+            const auto pap = pa.cbegin();
             Field<Type>& iCoeffs = internalCoeffs_[patchi];
+            const auto iCoeffsp = iCoeffs.cbegin();
 
             if (ptf.coupled())
             {
-                forAll(pa, face)
+                auto Lambda = [=](label face)
                 {
-                    D[pa[face]] -= component(iCoeffs[face], 0);
-                }
+                    foamAtomic::AtomicAdd(Dp[pap[face]], -component(iCoeffsp[face], 0));
+                };
+                exec.parallelFor(Lambda, pa.size());
             }
             else
             {
-                forAll(pa, face)
+                auto Lambda = [=](label face)
                 {
-                    D[pa[face]] -= cmptMin(iCoeffs[face]);
-                }
+                    foamAtomic::AtomicAdd(Dp[pap[face]], -cmptMin(iCoeffsp[face]));
+                };
+                exec.parallelFor(Lambda, pa.size());
             }
         }
     }

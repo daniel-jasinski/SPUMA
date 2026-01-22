@@ -43,13 +43,17 @@ namespace Foam
 
 Foam::zone::zone()
 :
-    zoneIdentifier()
+    zoneIdentifier(),
+    labelList(poolSwitch(1)),
+    lookupMapPtr_(nullptr)
 {}
 
 
 Foam::zone::zone(const word& name, const label index)
 :
-    zoneIdentifier(name, index)
+    zoneIdentifier(name, index),
+    labelList(poolSwitch(1)),
+    lookupMapPtr_(nullptr)
 {}
 
 
@@ -87,11 +91,14 @@ Foam::zone::zone
     const label index
 )
 :
-    zoneIdentifier(name, dict, index)
+    zoneIdentifier(name, dict, index),
+    labelList(poolSwitch(1)),
+    lookupMapPtr_(nullptr)
 {
     if (!labelsName.empty())
     {
-        dict.readEntry<labelList>(labelsName, *this, keyType::LITERAL);
+        //dict.readEntry<labelList>(labelsName, *this, keyType::LITERAL);
+        labelList::operator=(dict.get<labelList>(labelsName));
     }
 }
 
@@ -103,8 +110,12 @@ Foam::zone::zone
 )
 :
     zoneIdentifier(originalZone, newIndex),
-    labelList(originalZone)
-{}
+    labelList(poolSwitch(1)),
+    lookupMapPtr_(nullptr)
+{
+    labelList::operator=(originalZone);
+}
+
 
 
 Foam::zone::zone
@@ -115,8 +126,11 @@ Foam::zone::zone
 )
 :
     zoneIdentifier(originalZone, newIndex),
-    labelList(addr)
-{}
+    labelList(poolSwitch(1)),
+    lookupMapPtr_(nullptr)
+{
+    labelList::operator=(addr);
+}
 
 
 Foam::zone::zone
@@ -127,8 +141,11 @@ Foam::zone::zone
 )
 :
     zoneIdentifier(originalZone, newIndex),
-    labelList(std::move(addr))
-{}
+    labelList(poolSwitch(1)),
+    lookupMapPtr_(nullptr)
+{
+    labelList::operator=(std::move(addr));
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -37,6 +38,8 @@ void Foam::LduMatrix<Type, DType, LUType>::Amul
     const tmp<Field<Type>>& tpsi
 ) const
 {
+    const auto& addr = lduAddr();
+
     Type* __restrict__ ApsiPtr = Apsi.begin();
 
     const Field<Type>& psi = tpsi();
@@ -52,6 +55,8 @@ void Foam::LduMatrix<Type, DType, LUType>::Amul
 
     const label startRequest = UPstream::nRequests();
 
+    foamExecutor exec;
+
     // Initialise the update of interfaced interfaces
     initMatrixInterfaces
     (
@@ -62,17 +67,84 @@ void Foam::LduMatrix<Type, DType, LUType>::Amul
     );
 
     const label nCells = diag().size();
-    for (label cell=0; cell<nCells; cell++)
+    
+    if (hasLowerCSR())
     {
-        ApsiPtr[cell] = dot(diagPtr[cell], psiPtr[cell]);
+        // Use cell-based looping
+        if (debug == 2) PoutInFunction<< "cell-based looping" << endl;
+
+        const label* const __restrict__ oStartPtr =
+            addr.ownerStartAddr().begin();
+        const label* const __restrict__ loStartPtr =
+            addr.losortStartAddr().begin();
+        const label* const __restrict__ lcsrPtr =
+                addr.lowerCSRAddr().begin();
+
+        // Note: lowerCSR constructed from lower if available, upper otherwise
+        //       so is handling symmetric()
+        const scalar* const __restrict__ lowercsrPtr = lowerCSR().begin();
+
+        auto LambdaAmul = [=](label cell)
+        {
+            auto& val = ApsiPtr[cell];
+
+            if constexpr(std::is_same<DType, Type>::value)
+            {
+                val = cmptMultiply(diagPtr[cell], psiPtr[cell]);
+            }
+            else
+            {
+                val = dot(diagPtr[cell], psiPtr[cell]);
+            }
+
+            // Add lower contributions
+            {
+                const label start = loStartPtr[cell];
+                const label end = loStartPtr[cell+1];
+
+                for (label i = start; i < end; i++)
+                {
+                    const label nbrCell = lcsrPtr[i];
+                    val += dot(lowercsrPtr[i], psiPtr[nbrCell]);
+                }
+            }
+            // Add upper contributions
+            {
+                const label start = oStartPtr[cell];
+                const label end = oStartPtr[cell+1];
+
+                for (label i = start; i < end; i++)
+                {
+                    const label nbrCell = uPtr[i];
+                    val += dot(upperPtr[i], psiPtr[nbrCell]);
+                }
+            }
+        };
+        exec.parallelFor(LambdaAmul, nCells);
     }
-
-
-    const label nFaces = upper().size();
-    for (label face=0; face<nFaces; face++)
+    else
     {
-        ApsiPtr[uPtr[face]] += dot(lowerPtr[face], psiPtr[lPtr[face]]);
-        ApsiPtr[lPtr[face]] += dot(upperPtr[face], psiPtr[uPtr[face]]);
+        auto LamdaDiag = [=](label cell)
+        {
+            if constexpr(std::is_same<DType, Type>::value)
+            {
+                ApsiPtr[cell] = cmptMultiply(diagPtr[cell], psiPtr[cell]);
+            }
+            else
+            {
+                ApsiPtr[cell] = dot(diagPtr[cell], psiPtr[cell]);
+            }
+        };
+        exec.parallelFor(LamdaDiag, nCells);
+
+        const label nFaces = upper().size();
+
+        auto LambdaOffDiag = [=](label face)
+        {
+            foamAtomic::AtomicAdd(ApsiPtr[uPtr[face]], dot(lowerPtr[face], psiPtr[lPtr[face]]));
+            foamAtomic::AtomicAdd(ApsiPtr[lPtr[face]], dot(upperPtr[face], psiPtr[uPtr[face]]));
+        };
+        exec.parallelFor(LambdaOffDiag, nFaces);
     }
 
     // Update interface interfaces
@@ -111,6 +183,8 @@ void Foam::LduMatrix<Type, DType, LUType>::Tmul
 
     const label startRequest = UPstream::nRequests();
 
+    foamExecutor exec;
+
     // Initialise the update of interfaced interfaces
     initMatrixInterfaces
     (
@@ -121,17 +195,28 @@ void Foam::LduMatrix<Type, DType, LUType>::Tmul
     );
 
     const label nCells = diag().size();
-    for (label cell=0; cell<nCells; cell++)
+        
+    auto LambdaDiag = [=](label cell)
     {
-        TpsiPtr[cell] = dot(diagPtr[cell], psiPtr[cell]);
-    }
+        if constexpr(std::is_same<DType, Type>::value)
+        {
+            TpsiPtr[cell] = cmptMultiply(diagPtr[cell], psiPtr[cell]);
+        }
+        else
+        {
+            TpsiPtr[cell] = dot(diagPtr[cell], psiPtr[cell]);
+        }
+    };
+    exec.parallelFor(LambdaDiag, nCells);
 
     const label nFaces = upper().size();
-    for (label face=0; face<nFaces; face++)
+
+    auto LambdaOffDiag = [=](label face)
     {
-        TpsiPtr[uPtr[face]] += dot(upperPtr[face], psiPtr[lPtr[face]]);
-        TpsiPtr[lPtr[face]] += dot(lowerPtr[face], psiPtr[uPtr[face]]);
-    }
+        foamAtomic::AtomicAdd(TpsiPtr[uPtr[face]], dot(upperPtr[face], psiPtr[lPtr[face]]));
+        foamAtomic::AtomicAdd(TpsiPtr[lPtr[face]], dot(lowerPtr[face], psiPtr[uPtr[face]]));
+    };
+    exec.parallelFor(LambdaOffDiag, nFaces);
 
     // Update interface interfaces
     updateMatrixInterfaces
@@ -153,6 +238,8 @@ void Foam::LduMatrix<Type, DType, LUType>::sumA
     Field<Type>& sumA
 ) const
 {
+    const auto& addr = lduAddr();
+
     Type* __restrict__ sumAPtr = sumA.begin();
 
     const DType* __restrict__ diagPtr = diag().begin();
@@ -166,15 +253,85 @@ void Foam::LduMatrix<Type, DType, LUType>::sumA
     const label nCells = diag().size();
     const label nFaces = upper().size();
 
-    for (label cell=0; cell<nCells; cell++)
-    {
-        sumAPtr[cell] = dot(diagPtr[cell], pTraits<Type>::one);
-    }
+    foamExecutor exec;
 
-    for (label face=0; face<nFaces; face++)
+    Type localOne(pTraits<Type>::one);
+    
+    if (hasLowerCSR())
     {
-        sumAPtr[uPtr[face]] += dot(lowerPtr[face], pTraits<Type>::one);
-        sumAPtr[lPtr[face]] += dot(upperPtr[face], pTraits<Type>::one);
+        // Use cell-based looping
+        if (debug == 2) PoutInFunction<< "cell-based looping" << endl;
+
+        const label* const __restrict__ oStartPtr =
+            addr.ownerStartAddr().begin();
+        const label* const __restrict__ loStartPtr =
+            addr.losortStartAddr().begin();
+        const label* const __restrict__ lcsrPtr =
+                addr.lowerCSRAddr().begin();
+
+        // Note: lowerCSR constructed from lower if available, upper otherwise
+        //       so is handling symmetric()
+        const scalar* const __restrict__ lowercsrPtr = lowerCSR().begin();
+
+        auto LambdaAmul = [=](label cell)
+        {
+            auto& val = sumAPtr[cell];
+
+            if constexpr(std::is_same<DType, Type>::value)
+            {
+                val = diagPtr[cell];
+            }
+            else
+            {
+                val = dot(diagPtr[cell], localOne);
+            }
+
+            // Add lower contributions
+            {
+                const label start = loStartPtr[cell];
+                const label end = loStartPtr[cell+1];
+
+                for (label i = start; i < end; i++)
+                {
+                    const label nbrCell = lcsrPtr[i];
+                    val += dot(lowercsrPtr[i], localOne);
+                }
+            }
+            // Add upper contributions
+            {
+                const label start = oStartPtr[cell];
+                const label end = oStartPtr[cell+1];
+
+                for (label i = start; i < end; i++)
+                {
+                    const label nbrCell = uPtr[i];
+                    val += dot(upperPtr[i], localOne);
+                }
+            }
+        };
+        exec.parallelFor(LambdaAmul, nCells);
+    }
+    else
+    {
+        auto LambdaDiag = [=](label cell)
+        {
+            if constexpr(std::is_same<DType, Type>::value)
+            {
+                sumAPtr[cell] = diagPtr[cell];
+            }
+            else
+            {
+                sumAPtr[cell] = dot(diagPtr[cell], localOne);
+            }
+        };
+        exec.parallelFor(LambdaDiag, nCells);
+
+        auto LambdaOffDiag = [=](label face)
+        {
+            foamAtomic::AtomicAdd(sumAPtr[uPtr[face]], dot(lowerPtr[face], localOne));
+            foamAtomic::AtomicAdd(sumAPtr[lPtr[face]], dot(upperPtr[face], localOne));
+        };
+        exec.parallelFor(LambdaOffDiag, nFaces);
     }
 
     // Add the interface internal coefficients to diagonal
@@ -186,10 +343,14 @@ void Foam::LduMatrix<Type, DType, LUType>::sumA
             const labelUList& pa = lduAddr().patchAddr(patchi);
             const Field<LUType>& pCoeffs = interfacesUpper_[patchi];
 
-            forAll(pa, face)
+            const auto paPtr = pa.cbegin();
+            const auto pCoeffsPtr = pCoeffs.cbegin();
+
+            auto Lambda = [=](label face)
             {
-                sumAPtr[pa[face]] -= dot(pCoeffs[face], pTraits<Type>::one);
-            }
+                foamAtomic::AtomicAdd(sumAPtr[paPtr[face]], -dot(pCoeffsPtr[face], localOne));
+            };
+            exec.parallelFor(Lambda, pa.size());
         }
     }
 }
@@ -202,6 +363,8 @@ void Foam::LduMatrix<Type, DType, LUType>::residual
     const Field<Type>& psi
 ) const
 {
+    const auto& addr = lduAddr();
+
     Type* __restrict__ rAPtr = rA.begin();
 
     const Type* const __restrict__ psiPtr = psi.begin();
@@ -220,6 +383,8 @@ void Foam::LduMatrix<Type, DType, LUType>::residual
 
     const label startRequest = UPstream::nRequests();
 
+    foamExecutor exec;
+
     // Initialise the update of interfaced interfaces
     initMatrixInterfaces
     (
@@ -230,17 +395,84 @@ void Foam::LduMatrix<Type, DType, LUType>::residual
     );
 
     const label nCells = diag().size();
-    for (label cell=0; cell<nCells; cell++)
+    
+    if (hasLowerCSR())
     {
-        rAPtr[cell] = sourcePtr[cell] - dot(diagPtr[cell], psiPtr[cell]);
+        // Use cell-based looping
+        if (debug == 2) PoutInFunction<< "cell-based looping" << endl;
+
+        const label* const __restrict__ oStartPtr =
+            addr.ownerStartAddr().begin();
+        const label* const __restrict__ loStartPtr =
+            addr.losortStartAddr().begin();
+        const label* const __restrict__ lcsrPtr =
+                addr.lowerCSRAddr().begin();
+
+        // Note: lowerCSR constructed from lower if available, upper otherwise
+        //       so is handling symmetric()
+        const scalar* const __restrict__ lowercsrPtr = lowerCSR().begin();
+
+        auto LambdaAmul = [=](label cell)
+        {
+            auto& val = rAPtr[cell];
+
+            if constexpr(std::is_same<DType, Type>::value)
+            {
+                val = sourcePtr[cell] - cmptMultiply(diagPtr[cell], psiPtr[cell]);
+            }
+            else
+            {
+                val = sourcePtr[cell] - dot(diagPtr[cell], psiPtr[cell]);
+            }
+
+            // Add lower contributions
+            {
+                const label start = loStartPtr[cell];
+                const label end = loStartPtr[cell+1];
+
+                for (label i = start; i < end; i++)
+                {
+                    const label nbrCell = lcsrPtr[i];
+                    val -= dot(lowercsrPtr[i], psiPtr[nbrCell]);
+                }
+            }
+            // Add upper contributions
+            {
+                const label start = oStartPtr[cell];
+                const label end = oStartPtr[cell+1];
+
+                for (label i = start; i < end; i++)
+                {
+                    const label nbrCell = uPtr[i];
+                    val -= dot(upperPtr[i], psiPtr[nbrCell]);
+                }
+            }
+        };
+        exec.parallelFor(LambdaAmul, nCells);
     }
-
-
-    const label nFaces = upper().size();
-    for (label face=0; face<nFaces; face++)
+    else
     {
-        rAPtr[uPtr[face]] -= dot(lowerPtr[face], psiPtr[lPtr[face]]);
-        rAPtr[lPtr[face]] -= dot(upperPtr[face], psiPtr[uPtr[face]]);
+        auto LambdaDiag = [=](label cell)
+        {
+            if constexpr(std::is_same<DType, Type>::value)
+            {
+                rAPtr[cell] = sourcePtr[cell] - cmptMultiply(diagPtr[cell], psiPtr[cell]);
+            }
+            else
+            {
+                rAPtr[cell] = sourcePtr[cell] - dot(diagPtr[cell], psiPtr[cell]);
+            }
+        };
+        exec.parallelFor(LambdaDiag, nCells);
+
+        const label nFaces = upper().size();
+
+        auto LambdaOffDiag = [=](label face)
+        {
+            foamAtomic::AtomicAdd(rAPtr[uPtr[face]], -dot(lowerPtr[face], psiPtr[lPtr[face]]));
+            foamAtomic::AtomicAdd(rAPtr[lPtr[face]], -dot(upperPtr[face], psiPtr[uPtr[face]]));
+        };
+        exec.parallelFor(LambdaOffDiag, nFaces);
     }
 
     // Update interface interfaces

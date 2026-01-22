@@ -422,7 +422,11 @@ int main(int argc, char *argv[])
     // Prevent volume BCs from triggering finite-area
     regionModels::allowFaModels(false);
 
+    #include "addMemoryPoolOptions.H"
+    #include "addInitDeviceOptions.H"
     #include "setRootCase.H"
+    #include "initDevice.H"
+    #include "createMemoryPool.H"
 
     // ------------------------------------------------------------------------
     // Configuration

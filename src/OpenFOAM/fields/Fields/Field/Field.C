@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2015-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,7 +41,7 @@ Foam::Field<Type>::Field
     const labelUList& mapAddressing
 )
 :
-    List<Type>(mapAddressing.size())
+    List<Type>(mapAddressing.size(),poolSwitch(1))
 {
     map(mapF, mapAddressing);
 }
@@ -53,7 +54,7 @@ Foam::Field<Type>::Field
     const labelUList& mapAddressing
 )
 :
-    List<Type>(mapAddressing.size())
+    List<Type>(mapAddressing.size(),poolSwitch(1))
 {
     map(tmapF, mapAddressing);
 }
@@ -320,14 +321,35 @@ void Foam::Field<Type>::map
 
     if (mapF.size() > 0)
     {
-        forAll(f, i)
+        if(f.usePool() && mapF.usePool() && mapAddressing.usePool())
         {
-            const label mapI = mapAddressing[i];
+            auto fPtr = f.begin();
+            auto mapFPtr = mapF.cbegin();
+            auto mapAddressingPtr = mapAddressing.cbegin();
 
-            if (mapI >= 0)
+            foamExecutor exec;
+            auto mapAddr = [=] (label i)
             {
-                f[i] = mapF[mapI];
+                const label mapI = mapAddressingPtr[i];
+                if (mapI >= 0)
+                {
+                    fPtr[i] = mapFPtr[mapI];
+                }
+            };
+            exec.parallelFor(mapAddr, f.size());
+        }
+        else
+        {
+            forAll(f, i)
+            {
+                const label mapI = mapAddressing[i];
+
+                if (mapI >= 0)
+                {
+                    f[i] = mapF[mapI];
+                }
             }
+
         }
     }
 }
@@ -598,10 +620,19 @@ void Foam::Field<Type>::rmap
 template<class Type>
 void Foam::Field<Type>::negate()
 {
-    TFOR_ALL_F_OP_OP_F(Type, *this, =, -, Type, *this)
+    if (this->usePool())
+    {
+        auto rp = this->begin();
+        auto negateOp = [=] (label i) {rp[i] = - rp[i];};
+        foamExecutor exec;
+        exec.parallelFor(negateOp, this->size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_OP_F(Type, *this, =, -, Type, *this);
+    };
+
 }
-
-
 // A no-op except for vector specialization
 template<class Type>
 void Foam::Field<Type>::normalise()
@@ -628,8 +659,20 @@ void Foam::Field<Type>::replace
     const UList<cmptType>& sf
 )
 {
-    TFOR_ALL_F_OP_FUNC_S_F(Type, *this, ., replace, const direction, d,
-        cmptType, sf)
+    if(this->usePool() && sf.usePool())
+    {
+        checkFields(*this, sf, "f1.replace(s, f2)");
+        auto rp = this->begin();
+        auto sfp = sf.begin();
+        auto replaceOp = [=](label i) {rp[i].replace(d,sfp[i]);};
+        foamExecutor exec;
+        exec.parallelFor(replaceOp, this->size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_S_F(Type, *this, ., replace, const direction, d,
+            cmptType, sf)
+    }
 }
 
 
@@ -652,19 +695,43 @@ void Foam::Field<Type>::replace
     const cmptType& c
 )
 {
-    TFOR_ALL_F_OP_FUNC_S_S(Type, *this, ., replace, const direction, d,
-        cmptType, c)
+    if(this->usePool())
+    {
+        auto rp = this->begin();
+        auto replaceLambda = [=] (label i){ rp[i].replace(d,c);};
+        foamExecutor exec;
+        exec.parallelFor(replaceLambda, this->size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_S_S(Type, *this, ., replace, const direction, d,
+            cmptType, c)
+    }
 }
 
 
 template<class Type>
 void Foam::Field<Type>::clamp_min(const Type& lower)
 {
-    // Use free function max() [sic] to impose component-wise clamp_min
-    // std::for_each
-    for (auto& val : *this)
+
+    if (this->usePool())
     {
-        val = max(val, lower);
+        foamExecutor exec;
+        auto* fp = this->begin();
+        auto Lambda = [=](label i)
+        {
+            fp[i] = max(fp[i],lower);
+        };
+        exec.parallelFor(Lambda,this->size());
+    }
+    else
+    {
+        // Use free function max() [sic] to impose component-wise clamp_min
+        // std::for_each
+        for (auto& val : *this)
+        {
+            val = max(val, lower);
+        }
     }
 }
 
@@ -672,11 +739,24 @@ void Foam::Field<Type>::clamp_min(const Type& lower)
 template<class Type>
 void Foam::Field<Type>::clamp_max(const Type& upper)
 {
-    // Use free function min() [sic] to impose component-wise clamp_max
-    // std::for_each
-    for (auto& val : *this)
+    if (this->usePool())
     {
-        val = min(val, upper);
+        foamExecutor exec;
+        auto* fp = this->begin();
+        auto Lambda = [=](label i)
+        {
+            fp[i] = min(fp[i], upper);
+        };
+        exec.parallelFor(Lambda,this->size());
+    }
+    else
+    {
+        // Use free function min() [sic] to impose component-wise clamp_max
+        // std::for_each
+        for (auto& val : *this)
+        {
+            val = min(val, upper);
+        }
     }
 }
 
@@ -719,12 +799,24 @@ template<class Type>
 void Foam::Field<Type>::clamp_range(const Type& lower, const Type& upper)
 {
     // Note: no checks for bad/invalid clamping ranges
-
-    // Use free functions min(), max() to impose component-wise clamping
-    // std::for_each
-    for (auto& val : *this)
+    if (this->usePool())
     {
-        val = min(max(val, lower), upper);
+        foamExecutor exec;
+        auto* fp = this->begin();
+        auto Lambda = [=](label i)
+        {
+            fp[i] = min(max(fp[i], lower), upper);
+        };
+        exec.parallelFor(Lambda,this->size());
+    }
+    else
+    {
+        // Use free functions min(), max() to impose component-wise clamping
+        // std::for_each
+        for (auto& val : *this)
+        {
+            val = min(max(val, lower), upper);
+        }
     }
 }
 
@@ -803,8 +895,15 @@ void Foam::Field<Type>::operator=(const tmp<Field>& rhs)
     {
         return;  // Self-assignment is a no-op
     }
-
-    List<Type>::operator=(rhs());
+    //if movable: move instead of copying
+    if (rhs.movable())
+    {
+       Field<Type>::operator=(std::move(rhs.ref()));
+    }
+    else
+    {
+        List<Type>::operator=(rhs());
+    }
 }
 
 
@@ -812,29 +911,60 @@ template<class Type>
 template<class Form, class Cmpt, Foam::direction nCmpt>
 void Foam::Field<Type>::operator=(const VectorSpace<Form,Cmpt,nCmpt>& vs)
 {
-    TFOR_ALL_F_OP_S(Type, *this, =, VSType, vs)
+    if (this->usePool())
+    {
+        auto rp = this->begin();
+        auto Lambda = [=](label i) {rp[i] = vs;};
+        foamExecutor exec;
+        exec.parallelFor(Lambda, this->size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_S(Type, *this, =, VSType, vs)
+    }
 }
 
-
-#define COMPUTED_ASSIGNMENT(TYPE, op)                                          \
-                                                                               \
-template<class Type>                                                           \
-void Foam::Field<Type>::operator op(const UList<TYPE>& f)                      \
-{                                                                              \
-    TFOR_ALL_F_OP_F(Type, *this, op, TYPE, f)                                  \
-}                                                                              \
-                                                                               \
-template<class Type>                                                           \
-void Foam::Field<Type>::operator op(const tmp<Field<TYPE>>& tf)                \
-{                                                                              \
-    operator op(tf());                                                         \
-    tf.clear();                                                                \
-}                                                                              \
-                                                                               \
-template<class Type>                                                           \
-void Foam::Field<Type>::operator op(const TYPE& t)                             \
-{                                                                              \
-    TFOR_ALL_F_OP_S(Type, *this, op, TYPE, t)                                  \
+#define COMPUTED_ASSIGNMENT(TYPE, op)                                                 \
+                                                                                      \
+template <class Type>                                                                 \
+void Foam::Field<Type>::operator op(const UList<TYPE> &f)                             \
+{                                                                                     \
+    if (this->usePool() && f.usePool())                                               \
+    {                                                                                 \
+        checkFields(*this, f, "f1 " #op " f2");                                       \
+        auto rp =this->begin();                                                       \
+        const auto fp = f.cbegin();                                                   \
+        auto opLambda = [=](label i) {rp[i] op fp[i];};                               \
+        foamExecutor exec;                                                            \
+        exec.parallelFor(opLambda, f.size());                                         \
+    }                                                                                 \
+    else                                                                              \
+    {                                                                                 \
+        TFOR_ALL_F_OP_F(Type, *this, op, TYPE, f)                                     \
+    }                                                                                 \
+}                                                                                     \
+                                                                                      \
+template <class Type>                                                                 \
+void Foam::Field<Type>::operator op(const tmp<Field<TYPE>> &tf)                       \
+{                                                                                     \
+    operator op(tf());                                                                \
+    tf.clear();                                                                       \
+}                                                                                     \
+                                                                                      \
+template <class Type>                                                                 \
+void Foam::Field<Type>::operator op(const TYPE & t)                                   \
+{                                                                                     \
+    if (this->usePool())                                                              \
+    {                                                                                 \
+        auto rp =this->begin();                                                       \
+        auto opLambda = [=](label i){rp[i] op t;};                                    \
+        foamExecutor exec;                                                            \
+        exec.parallelFor(opLambda, this->size());                                     \
+    }                                                                                 \
+    else                                                                              \
+    {                                                                                 \
+        TFOR_ALL_F_OP_S(Type, *this, op, TYPE, t)                                     \
+    }                                                                                 \
 }
 
 COMPUTED_ASSIGNMENT(Type, +=)

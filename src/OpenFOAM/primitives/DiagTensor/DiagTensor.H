@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -102,7 +103,7 @@ public:
         inline DiagTensor(const SphericalTensor<Cmpt>&);
 
         //- Construct given three components
-        inline DiagTensor(const Cmpt& txx, const Cmpt& tyy, const Cmpt& tzz);
+        FOAM_DEVICE inline DiagTensor(const Cmpt& txx, const Cmpt& tyy, const Cmpt& tzz);
 
         //- Construct from Istream
         inline explicit DiagTensor(Istream& is);
@@ -112,9 +113,9 @@ public:
 
     // Component Access
 
-        const Cmpt& xx() const noexcept { return this->v_[XX]; }
-        const Cmpt& yy() const noexcept { return this->v_[YY]; }
-        const Cmpt& zz() const noexcept { return this->v_[ZZ]; }
+        FOAM_DEVICE const Cmpt& xx() const noexcept { return this->v_[XX]; }
+        FOAM_DEVICE const Cmpt& yy() const noexcept { return this->v_[YY]; }
+        FOAM_DEVICE const Cmpt& zz() const noexcept { return this->v_[ZZ]; }
 
         Cmpt& xx() noexcept { return this->v_[XX]; }
         Cmpt& yy() noexcept { return this->v_[YY]; }

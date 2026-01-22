@@ -63,7 +63,8 @@ Foam::nonBlockingGaussSeidelSmoother::nonBlockingGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     )
 {
     // Check that all interface addressing is sorted to be after the

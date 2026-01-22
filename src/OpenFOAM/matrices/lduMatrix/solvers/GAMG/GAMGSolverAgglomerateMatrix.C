@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2023-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -142,32 +143,50 @@ void Foam::GAMGSolver::agglomerateMatrix
             scalarField& coarseUpper = coarseMatrix.upper(nCoarseFaces);
             scalarField& coarseLower = coarseMatrix.lower(nCoarseFaces);
 
-            forAll(faceRestrictAddr, fineFacei)
+            const bool* const __restrict__ faceFlipMapPtr = faceFlipMap.cbegin();
+            const label* const __restrict__ faceRestrictAddrPtr = faceRestrictAddr.cbegin();
+            const scalar* const __restrict__ fineLowerPtr = fineLower.cbegin();
+            const scalar* const __restrict__ fineUpperPtr = fineUpper.cbegin();
+            scalar* __restrict__ coarseUpperPtr = coarseUpper.begin();
+            scalar* __restrict__ coarseLowerPtr = coarseLower.begin();
+            scalar* __restrict__ coarseDiagPtr = coarseDiag.begin();
+
+            // forAll(faceRestrictAddr, fineFacei)
+            // {
+            const label size = faceRestrictAddr.size();
+            foamExecutor exec;
+
+            auto Lambda = [=](label fineFacei)
             {
-                label cFace = faceRestrictAddr[fineFacei];
+                label cFace = faceRestrictAddrPtr[fineFacei];
 
                 if (cFace >= 0)
                 {
                     // Check the orientation of the fine-face relative to the
                     // coarse face it is being agglomerated into
-                    if (!faceFlipMap[fineFacei])
+                    if (!faceFlipMapPtr[fineFacei])
                     {
-                        coarseUpper[cFace] += fineUpper[fineFacei];
-                        coarseLower[cFace] += fineLower[fineFacei];
+                        foamAtomic::AtomicAdd(coarseUpperPtr[cFace], fineUpperPtr[fineFacei]);
+                        foamAtomic::AtomicAdd(coarseLowerPtr[cFace], fineLowerPtr[fineFacei]);
                     }
                     else
                     {
-                        coarseUpper[cFace] += fineLower[fineFacei];
-                        coarseLower[cFace] += fineUpper[fineFacei];
+                        foamAtomic::AtomicAdd(coarseUpperPtr[cFace], fineLowerPtr[fineFacei]);
+                        foamAtomic::AtomicAdd(coarseLowerPtr[cFace], fineUpperPtr[fineFacei]);
                     }
                 }
                 else
                 {
                     // Add the fine face coefficients into the diagonal.
-                    coarseDiag[-1 - cFace] +=
-                        fineUpper[fineFacei] + fineLower[fineFacei];
+                    foamAtomic::AtomicAdd
+                    (
+                        coarseDiagPtr[-1 - cFace],
+                        fineUpperPtr[fineFacei] + fineLowerPtr[fineFacei]
+                    );
                 }
-            }
+            };
+
+            exec.parallelFor(Lambda, size);
         }
         else // ... Otherwise it is symmetric so agglomerate just the upper
         {
@@ -177,20 +196,30 @@ void Foam::GAMGSolver::agglomerateMatrix
             // Coarse matrix upper coefficients
             scalarField& coarseUpper = coarseMatrix.upper(nCoarseFaces);
 
-            forAll(faceRestrictAddr, fineFacei)
+            const label* const __restrict__ faceRestrictAddrPtr = faceRestrictAddr.cbegin();
+            const scalar* const __restrict__ fineUpperPtr = fineUpper.cbegin();
+            scalar* __restrict__ coarseUpperPtr = coarseUpper.begin();
+            scalar* __restrict__ coarseDiagPtr = coarseDiag.begin();
+
+
+            const label size = faceRestrictAddr.size();
+            foamExecutor exec;
+
+            auto Lambda = [=](label fineFacei)
             {
-                label cFace = faceRestrictAddr[fineFacei];
+                label cFace = faceRestrictAddrPtr[fineFacei];
 
                 if (cFace >= 0)
                 {
-                    coarseUpper[cFace] += fineUpper[fineFacei];
+                    foamAtomic::AtomicAdd(coarseUpperPtr[cFace], fineUpperPtr[fineFacei]);
                 }
-                else
+                    else
                 {
-                    // Add the fine face coefficient into the diagonal.
-                    coarseDiag[-1 - cFace] += 2*fineUpper[fineFacei];
+                    foamAtomic::AtomicAdd(coarseDiagPtr[-1 - cFace], 2*fineUpperPtr[fineFacei]);
                 }
-            }
+            };
+
+            exec.parallelFor(Lambda, size);
         }
     }
 }

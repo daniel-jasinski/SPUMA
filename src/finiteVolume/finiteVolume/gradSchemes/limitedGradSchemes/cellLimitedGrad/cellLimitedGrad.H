@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -45,6 +46,7 @@ SourceFiles
 #ifndef cellLimitedGrad_H
 #define cellLimitedGrad_H
 
+#include "Atomics.H"
 #include "gradScheme.H"
 #include "Field.H"
 
@@ -123,7 +125,7 @@ public:
 
     // Member Functions
 
-        inline void limitFaceCmpt
+        FOAM_DEVICE inline void limitFaceCmpt
         (
             scalar& limiter,
             const scalar maxDelta,
@@ -131,12 +133,31 @@ public:
             const scalar extrapolate
         ) const;
 
-        inline void limitFace
+        FOAM_DEVICE inline void limitFaceCmpt
+        (
+            scalar& limiter,
+            const scalar maxDelta,
+            const scalar minDelta,
+            const scalar extrapolate,
+            const Limiter& limitObj
+        ) const;
+
+        FOAM_DEVICE inline void limitFace
         (
             Type& limiter,
             const Type& maxDelta,
             const Type& minDelta,
             const Type& extrapolate
+        ) const;
+
+        FOAM_DEVICE inline void limitFace
+        (
+            Type& limiter,
+            const Type& maxDelta,
+            const Type& minDelta,
+            const Type& extrapolate,
+            const Limiter& limiterObj,
+            const label nComponents
         ) const;
 
         //- Return the gradient of the given field to the gradScheme::grad
@@ -164,7 +185,7 @@ public:
 // * * * * * * * * * * * * Inline Member Function  * * * * * * * * * * * * * //
 
 template<class Type, class Limiter>
-inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
+FOAM_DEVICE inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
 (
     scalar& limiter,
     const scalar maxDelta,
@@ -192,7 +213,7 @@ inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
 
 
 template<class Type, class Limiter>
-inline void cellLimitedGrad<Type, Limiter>::limitFace
+FOAM_DEVICE inline void cellLimitedGrad<Type, Limiter>::limitFace
 (
     Type& limiter,
     const Type& maxDelta,
@@ -212,7 +233,59 @@ inline void cellLimitedGrad<Type, Limiter>::limitFace
     }
 }
 
+template<class Type, class Limiter>
+FOAM_DEVICE inline void cellLimitedGrad<Type, Limiter>::limitFaceCmpt
+(
+    scalar& limiter,
+    const scalar maxDelta,
+    const scalar minDelta,
+    const scalar extrapolate,
+    const Limiter& limitObj
+) const
+{
+    scalar r = 1;
 
+    if (extrapolate > SMALL)
+    {
+        r = maxDelta/extrapolate;
+    }
+    else if (extrapolate < -SMALL)
+    {
+        r = minDelta/extrapolate;
+    }
+    else
+    {
+        return;
+    }
+
+    //limiter = min(limiter, limitObj.limiter(r));
+    foamAtomic::AtomicMin(limiter, limitObj.limiter(r));
+}
+
+
+template<class Type, class Limiter>
+FOAM_DEVICE inline void cellLimitedGrad<Type, Limiter>::limitFace
+(
+    Type& limiter,
+    const Type& maxDelta,
+    const Type& minDelta,
+    const Type& extrapolate,
+    const Limiter& limiterObj,
+    const label nComponents
+) const
+{
+    for (direction cmpt=0; cmpt < nComponents; ++cmpt)
+    {
+        limitFaceCmpt
+        (
+            setComponent(limiter, cmpt),
+            component(maxDelta, cmpt),
+            component(minDelta, cmpt),
+            component(extrapolate, cmpt),
+            limiterObj
+        );
+    }
+}
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace fv

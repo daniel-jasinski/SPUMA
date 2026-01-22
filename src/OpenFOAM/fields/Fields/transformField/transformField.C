@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,8 +41,22 @@ void Foam::transform
 )
 {
     const tensor rot = q.R();
-    // std::transform
-    TFOR_ALL_F_OP_FUNC_S_F(vector, rtf, =, transform, tensor, rot, vector, tf)
+
+    if (rtf.usePool() && tf.usePool())
+    {
+        checkFields(rtf, tf, "f1 = tranform(s, f2)");
+        foamExecutor exec;
+        auto rtf_p = rtf.begin();
+        const auto tf_p = tf.cbegin();
+        auto Lambda = [=](label i){
+            rtf_p[i] = transform(rot,tf_p[i]);
+        };
+        exec.parallelFor(Lambda,rtf.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_FUNC_S_F(vector, rtf, =, transform, tensor, rot, vector, tf)
+    }
 }
 
 

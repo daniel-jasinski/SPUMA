@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -41,7 +42,7 @@ inline Foam::Tensor<Cmpt>::Tensor(Foam::zero)
 
 template<class Cmpt>
 template<class Cmpt2>
-inline Foam::Tensor<Cmpt>::Tensor
+FOAM_DEVICE inline Foam::Tensor<Cmpt>::Tensor
 (
     const MatrixSpace<Tensor<Cmpt2>, Cmpt2, 3, 3>& vs
 )
@@ -52,7 +53,7 @@ inline Foam::Tensor<Cmpt>::Tensor
 
 template<class Cmpt>
 template<class Cmpt2>
-inline Foam::Tensor<Cmpt>::Tensor
+FOAM_DEVICE inline Foam::Tensor<Cmpt>::Tensor
 (
     const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>& vs
 )
@@ -91,7 +92,7 @@ inline Foam::Tensor<Cmpt>::Tensor
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt>::Tensor
+FOAM_DEVICE inline Foam::Tensor<Cmpt>::Tensor
 (
     const Vector<Cmpt>& x,
     const Vector<Cmpt>& y,
@@ -111,7 +112,7 @@ inline Foam::Tensor<Cmpt>::Tensor
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt>::Tensor
+FOAM_DEVICE inline Foam::Tensor<Cmpt>::Tensor
 (
     const Cmpt txx, const Cmpt txy, const Cmpt txz,
     const Cmpt tyx, const Cmpt tyy, const Cmpt tyz,
@@ -150,21 +151,21 @@ inline Foam::Tensor<Cmpt>::Tensor(Istream& is)
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::x() const
+FOAM_DEVICE inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::x() const
 {
     return Vector<Cmpt>(this->v_[XX], this->v_[XY], this->v_[XZ]);
 }
 
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::y() const
+FOAM_DEVICE inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::y() const
 {
     return Vector<Cmpt>(this->v_[YX], this->v_[YY], this->v_[YZ]);
 }
 
 
 template<class Cmpt>
-inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::z() const
+FOAM_DEVICE inline Foam::Vector<Cmpt> Foam::Tensor<Cmpt>::z() const
 {
     return Vector<Cmpt>(this->v_[ZX], this->v_[ZY], this->v_[ZZ]);
 }
@@ -300,7 +301,7 @@ inline void Foam::Tensor<Cmpt>::row(const Vector<Cmpt>& v)
 
 
 template<class Cmpt>
-inline void Foam::Tensor<Cmpt>::cols
+FOAM_DEVICE inline void Foam::Tensor<Cmpt>::cols
 (
     const Vector<Cmpt>& x,
     const Vector<Cmpt>& y,
@@ -314,7 +315,7 @@ inline void Foam::Tensor<Cmpt>::cols
 
 
 template<class Cmpt>
-inline void Foam::Tensor<Cmpt>::rows
+FOAM_DEVICE inline void Foam::Tensor<Cmpt>::rows
 (
     const Vector<Cmpt>& x,
     const Vector<Cmpt>& y,
@@ -423,7 +424,7 @@ inline bool Foam::Tensor<Cmpt>::is_identity(const scalar tol) const
 // * * * * * * * * * * * * * * * Member Operations * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::T() const
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::T() const
 {
     return Tensor<Cmpt>
     (
@@ -435,7 +436,7 @@ inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::T() const
 
 
 template<class Cmpt>
-inline Cmpt Foam::Tensor<Cmpt>::det() const
+FOAM_DEVICE inline Cmpt Foam::Tensor<Cmpt>::det() const
 {
     return
     (
@@ -468,7 +469,7 @@ inline Cmpt Foam::Tensor<Cmpt>::det2D(const direction excludeCmpt) const
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct() const
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct() const
 {
     return Tensor<Cmpt>
     (
@@ -480,7 +481,7 @@ inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct() const
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::cof() const
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::cof() const
 {
     return this->adjunct().T();
 }
@@ -542,7 +543,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Foam::Tensor<Cmpt>
+FOAM_DEVICE inline Foam::Tensor<Cmpt>
 Foam::Tensor<Cmpt>::inner(const Tensor<Cmpt>& t2) const
 {
     const Tensor<Cmpt>& t1 = *this;
@@ -585,7 +586,7 @@ Foam::Tensor<Cmpt>::schur(const Tensor<Cmpt>& t2) const
 
 // Invert without much error handling
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv() const
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv() const
 {
     const Cmpt detval = this->det();
 
@@ -672,7 +673,7 @@ inline void Foam::Tensor<Cmpt>::operator&=(const Tensor<Cmpt>& t)
 
 template<class Cmpt>
 template<class Cmpt2>
-inline void Foam::Tensor<Cmpt>::operator=
+FOAM_DEVICE inline void Foam::Tensor<Cmpt>::operator=
 (
     const VectorSpace<Tensor<Cmpt2>, Cmpt2, 9>& vs
 )
@@ -725,7 +726,7 @@ namespace Foam
 
 //- Return the trace of a Tensor
 template<class Cmpt>
-inline Cmpt tr(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Cmpt tr(const Tensor<Cmpt>& t)
 {
     return t.xx() + t.yy() + t.zz();
 }
@@ -733,7 +734,7 @@ inline Cmpt tr(const Tensor<Cmpt>& t)
 
 //- Return the spherical part of a Tensor
 template<class Cmpt>
-inline SphericalTensor<Cmpt> sph(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SphericalTensor<Cmpt> sph(const Tensor<Cmpt>& t)
 {
     return SphericalTensor<Cmpt>
     (
@@ -744,7 +745,7 @@ inline SphericalTensor<Cmpt> sph(const Tensor<Cmpt>& t)
 
 //- Return the symmetric part of a Tensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> symm(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SymmTensor<Cmpt> symm(const Tensor<Cmpt>& t)
 {
     return SymmTensor<Cmpt>
     (
@@ -757,7 +758,7 @@ inline SymmTensor<Cmpt> symm(const Tensor<Cmpt>& t)
 
 //- Return twice the symmetric part of a Tensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> twoSymm(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SymmTensor<Cmpt> twoSymm(const Tensor<Cmpt>& t)
 {
     return SymmTensor<Cmpt>
     (
@@ -770,7 +771,7 @@ inline SymmTensor<Cmpt> twoSymm(const Tensor<Cmpt>& t)
 
 //- Return the deviatoric part of the symmetric part of a Tensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> devSymm(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SymmTensor<Cmpt> devSymm(const Tensor<Cmpt>& t)
 {
     const Cmpt sph(tr(t)/3.0);
 
@@ -785,7 +786,7 @@ inline SymmTensor<Cmpt> devSymm(const Tensor<Cmpt>& t)
 
 //- Return the deviatoric part of twice the symmetric part of a Tensor
 template<class Cmpt>
-inline SymmTensor<Cmpt> devTwoSymm(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline SymmTensor<Cmpt> devTwoSymm(const Tensor<Cmpt>& t)
 {
     const Cmpt sph((2.0/3.0)*tr(t));
 
@@ -800,7 +801,7 @@ inline SymmTensor<Cmpt> devTwoSymm(const Tensor<Cmpt>& t)
 
 //- Return the skew-symmetric part of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> skew(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> skew(const Tensor<Cmpt>& t)
 {
     return Tensor<Cmpt>
     (
@@ -813,7 +814,7 @@ inline Tensor<Cmpt> skew(const Tensor<Cmpt>& t)
 
 //- Return the skew-symmetric part of a SymmTensor as a Tensor
 template<class Cmpt>
-inline const Tensor<Cmpt>& skew(const SymmTensor<Cmpt>& st)
+FOAM_DEVICE inline const Tensor<Cmpt>& skew(const SymmTensor<Cmpt>& st)
 {
     return Tensor<Cmpt>::zero;
 }
@@ -821,7 +822,7 @@ inline const Tensor<Cmpt>& skew(const SymmTensor<Cmpt>& st)
 
 //- Return the deviatoric part of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> dev(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> dev(const Tensor<Cmpt>& t)
 {
     return t - sph(t);
 }
@@ -829,7 +830,7 @@ inline Tensor<Cmpt> dev(const Tensor<Cmpt>& t)
 
 //- Return the two-third deviatoric part of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> dev2(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> dev2(const Tensor<Cmpt>& t)
 {
     return t - 2*sph(t);
 }
@@ -837,7 +838,7 @@ inline Tensor<Cmpt> dev2(const Tensor<Cmpt>& t)
 
 //- Return the determinant of a Tensor
 template<class Cmpt>
-inline Cmpt det(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Cmpt det(const Tensor<Cmpt>& t)
 {
     return t.det();
 }
@@ -845,7 +846,7 @@ inline Cmpt det(const Tensor<Cmpt>& t)
 
 //- Return the cofactor Tensor of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> cof(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> cof(const Tensor<Cmpt>& t)
 {
     return t.cof();
 }
@@ -871,7 +872,7 @@ inline Tensor<Cmpt> inv(const Tensor<Cmpt>& t, const Cmpt detval)
 
 //- Return the inverse of a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> inv(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Tensor<Cmpt> inv(const Tensor<Cmpt>& t)
 {
     return t.inv();
 }
@@ -907,7 +908,7 @@ inline Cmpt invariantIII(const Tensor<Cmpt>& t)
 
 //- Linear interpolation of tensors a and b by factor t
 template<class Cmpt>
-inline Tensor<Cmpt> lerp
+FOAM_DEVICE inline Tensor<Cmpt> lerp
 (
     const Tensor<Cmpt>& a,
     const Tensor<Cmpt>& b,
@@ -935,7 +936,7 @@ inline Tensor<Cmpt> lerp
 
 //- Sum of a SphericalTensor and a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator+(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -949,7 +950,7 @@ operator+(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Sum of a Tensor and a SphericalTensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator+(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -963,7 +964,7 @@ operator+(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 
 //- Sum of a SymmTensor and a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator+(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -977,7 +978,7 @@ operator+(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Sum of a Tensor and a SymmTensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator+(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -991,7 +992,7 @@ operator+(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 
 //- Subtract a Tensor from a SphericalTensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator-(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -1005,7 +1006,7 @@ operator-(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Subtract a SphericalTensor from a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator-(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -1019,7 +1020,7 @@ operator-(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 
 //- Subtract a Tensor from a SymmTensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator-(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -1033,7 +1034,7 @@ operator-(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Subtract a SymmTensor from a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator-(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -1047,7 +1048,7 @@ operator-(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 
 //- Return the Hodge dual of a Tensor as a Vector
 template<class Cmpt>
-inline Vector<Cmpt> operator*(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline Vector<Cmpt> operator*(const Tensor<Cmpt>& t)
 {
     return Vector<Cmpt>(t.yz(), -t.xz(), t.xy());
 }
@@ -1055,7 +1056,7 @@ inline Vector<Cmpt> operator*(const Tensor<Cmpt>& t)
 
 //- Return the Hodge dual of a Vector as a Tensor
 template<class Cmpt>
-inline Tensor<Cmpt> operator*(const Vector<Cmpt>& v)
+FOAM_DEVICE inline Tensor<Cmpt> operator*(const Vector<Cmpt>& v)
 {
     return Tensor<Cmpt>
     (
@@ -1069,7 +1070,7 @@ inline Tensor<Cmpt> operator*(const Vector<Cmpt>& v)
 //- Division of a Vector by a Tensor
 template<class Cmpt>
 inline typename innerProduct<Vector<Cmpt>, Tensor<Cmpt>>::type
-operator/(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
+FOAM_DEVICE operator/(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
 {
     return inv(t) & v;
 }
@@ -1078,7 +1079,7 @@ operator/(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
 //- Division of a Tensor by a Cmpt
 template<class Cmpt>
 inline Tensor<Cmpt>
-operator/(const Tensor<Cmpt>& t, const Cmpt s)
+FOAM_DEVICE operator/(const Tensor<Cmpt>& t, const Cmpt s)
 {
     #ifdef FULLDEBUG
     if (mag(s) < VSMALL)
@@ -1102,7 +1103,7 @@ operator/(const Tensor<Cmpt>& t, const Cmpt s)
 
 //- Inner-product of a Tensor and a Tensor
 template<class Cmpt>
-inline typename innerProduct<Tensor<Cmpt>, Tensor<Cmpt>>::type
+FOAM_DEVICE inline typename innerProduct<Tensor<Cmpt>, Tensor<Cmpt>>::type
 operator&(const Tensor<Cmpt>& t1, const Tensor<Cmpt>& t2)
 {
     return t1.inner(t2);
@@ -1115,7 +1116,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator&(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -1133,7 +1134,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator&(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -1151,7 +1152,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator&(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
@@ -1177,7 +1178,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Tensor<Cmpt>
+FOAM_DEVICE inline Tensor<Cmpt>
 operator&(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 {
     return Tensor<Cmpt>
@@ -1203,7 +1204,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Vector<Cmpt>
+FOAM_DEVICE inline Vector<Cmpt>
 operator&(const Tensor<Cmpt>& t, const Vector<Cmpt>& v)
 {
     return Vector<Cmpt>
@@ -1221,7 +1222,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Vector<Cmpt>
+FOAM_DEVICE inline Vector<Cmpt>
 operator&(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
 {
     return Vector<Cmpt>
@@ -1235,7 +1236,7 @@ operator&(const Vector<Cmpt>& v, const Tensor<Cmpt>& t)
 
 //- Double-inner-product of a SphericalTensor and a Tensor
 template<class Cmpt>
-inline Cmpt
+FOAM_DEVICE inline Cmpt
 operator&&(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return (st1.ii()*t2.xx() + st1.ii()*t2.yy() + st1.ii()*t2.zz());
@@ -1244,7 +1245,7 @@ operator&&(const SphericalTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Double-inner-product of a Tensor and a SphericalTensor
 template<class Cmpt>
-inline Cmpt
+FOAM_DEVICE inline Cmpt
 operator&&(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 {
     return (t1.xx()*st2.ii() + t1.yy()*st2.ii() + t1.zz()*st2.ii());
@@ -1253,7 +1254,7 @@ operator&&(const Tensor<Cmpt>& t1, const SphericalTensor<Cmpt>& st2)
 
 //- Double-inner-product of a SymmTensor and a Tensor
 template<class Cmpt>
-inline Cmpt
+FOAM_DEVICE inline Cmpt
 operator&&(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 {
     return
@@ -1267,7 +1268,7 @@ operator&&(const SymmTensor<Cmpt>& st1, const Tensor<Cmpt>& t2)
 
 //- Double-inner-product of a Tensor and a SymmTensor
 template<class Cmpt>
-inline Cmpt
+FOAM_DEVICE inline Cmpt
 operator&&(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 {
     return
@@ -1281,7 +1282,7 @@ operator&&(const Tensor<Cmpt>& t1, const SymmTensor<Cmpt>& st2)
 
 //- Outer-product of a Vector and a Vector
 template<class Cmpt>
-inline typename outerProduct<Vector<Cmpt>, Vector<Cmpt>>::type
+FOAM_DEVICE inline typename outerProduct<Vector<Cmpt>, Vector<Cmpt>>::type
 operator*(const Vector<Cmpt>& v1, const Vector<Cmpt>& v2)
 {
     return Tensor<Cmpt>

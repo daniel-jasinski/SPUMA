@@ -59,7 +59,8 @@ Foam::DILUGaussSeidelSmoother::DILUGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     ),
     diluSmoother_
     (

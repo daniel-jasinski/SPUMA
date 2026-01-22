@@ -277,6 +277,8 @@ int main(int argc, char *argv[])
         "writeTurbulenceFields", {"write-nut", 1906}
     );
 
+    #include "addMemoryPoolOptions.H"
+    #include "addInitDeviceOptions.H"
     #include "setRootCase.H"
 
     if (!args.found("ybl") && !args.found("Cbl"))
@@ -298,6 +300,8 @@ int main(int argc, char *argv[])
 
     const bool writeTurbulenceFields = args.found("writeTurbulenceFields");
 
+    #include "initDevice.H"
+    #include "createMemoryPool.H"
     #include "createTime.H"
     #include "createNamedMesh.H"
     #include "createFields.H"

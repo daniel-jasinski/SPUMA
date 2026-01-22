@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -34,7 +35,17 @@ inline void Foam::List<T>::doAlloc(const label len)
     if (len > 0)
     {
         // With sign-check to avoid spurious -Walloc-size-larger-than
-        this->v_ = ListPolicy::allocate<T>(len);
+        if (this->usePool_)
+        {
+            this->v_ = reinterpret_cast<T*>
+            (
+                Spuma::MemoryPool::getInstance()->allocate(len*sizeof(T))
+            );
+        }
+        else
+        {
+            this->v_ = new T[len];
+        }
         this->size_ = len;
     }
 }
@@ -57,7 +68,7 @@ inline void Foam::List<T>::copyList(const ListType& list)
     }
 }
 
-
+//TODO memoryPool
 template<class T>
 template<class ListType, class ListIndices>
 inline void Foam::List<T>::copyList
@@ -119,7 +130,7 @@ inline constexpr Foam::List<T>::List() noexcept
 template<class T>
 inline Foam::List<T>::List(List<T>&& list) noexcept
 :
-    UList<T>(list.data(), list.size())
+    UList<T>(list.data(), list.size(), list.usePool())
 {
     // Stole content
     list.size_ = 0;
@@ -139,8 +150,18 @@ inline Foam::autoPtr<Foam::List<T>> Foam::List<T>::clone() const
 template<class T>
 inline void Foam::List<T>::clear()
 {
-    ListPolicy::deallocate(this->v_, this->size_);
-    this->v_ = nullptr;
+    if (this->v_)
+    {
+        if (this->usePool_)
+        {
+            Spuma::MemoryPool::getInstance()->free((void*)this->v_);
+        }
+        else
+        {
+            delete[] this->v_;
+        }
+        this->v_ = nullptr;
+    }
     this->size_ = 0;
 }
 

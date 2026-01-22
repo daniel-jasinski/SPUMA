@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016, 2019 OpenFOAM Foundation
     Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -67,7 +68,6 @@ void Foam::omegaWallFunctionFvPatchScalarField::setMaster()
     }
 }
 
-
 void Foam::omegaWallFunctionFvPatchScalarField::createAveragingWeights()
 {
     const auto& omega =
@@ -105,10 +105,15 @@ void Foam::omegaWallFunctionFvPatchScalarField::createAveragingWeights()
             omegaPatches.append(patchi);
 
             const labelUList& faceCells = bf[patchi].patch().faceCells();
-            for (const auto& celli : faceCells)
+            foamExecutor exec;
+            const auto faceCellsp = faceCells.cbegin();
+            auto weightsp = weights.begin();
+            auto Lambda = [=](label id)
             {
-                ++weights[celli];
-            }
+                const label celli = faceCellsp[id];
+                foamAtomic::AtomicAdd(weightsp[celli], 1.0);
+            };
+            exec.parallelFor(Lambda, faceCells.size());
         }
     }
 
@@ -205,31 +210,41 @@ void Foam::omegaWallFunctionFvPatchScalarField::calculate
     const tmp<volScalarField> tk = turbModel.k();
     const volScalarField& k = tk();
 
+    foamExecutor exec;
+    auto omega0p = omega0.begin();
+    const auto faceCellsp = faceCells.cbegin();
+    const auto nutwp = nutw.cbegin();
+    const auto nuwp = nuw.cbegin();
+    const auto kp = k.cbegin();
+    const auto yp = y.cbegin();
+    const auto cornerWeightsp = cornerWeights.cbegin();
+
     // Calculate y-plus
-    const auto yPlus = [&](const label facei) -> scalar
+    const auto yPlus = [=](const label facei) -> scalar
     {
         return
         (
-            Cmu25*y[facei]*sqrt(k[faceCells[facei]])/nuw[facei]
+            Cmu25*yp[facei]*sqrt(kp[faceCellsp[facei]])/nuwp[facei]
         );
     };
 
     // Contribution from the viscous sublayer
-    const auto omegaVis = [&](const label facei) -> scalar
+    const scalar beta1(beta1_);
+    const auto omegaVis = [=](const label facei) -> scalar
     {
         return
         (
-            6.0*nuw[facei]/(beta1_*sqr(y[facei]))
+            6.0*nuwp[facei]/(beta1*sqr(yp[facei]))
         );
     };
 
     // Contribution from the inertial sublayer
-    const auto omegaLog = [&](const label facei) -> scalar
+    const auto omegaLog = [=](const label facei) -> scalar
     {
         return
         (
-            sqrt(k[faceCells[facei]])
-          / (Cmu25*kappa*y[facei])
+            sqrt(kp[faceCellsp[facei]])
+          / (Cmu25*kappa*yp[facei])
         );
     };
 
@@ -237,75 +252,86 @@ void Foam::omegaWallFunctionFvPatchScalarField::calculate
     {
         case blenderType::STEPWISE:
         {
-            forAll(faceCells, facei)
+            auto Lambda = [=](label facei)
             {
                 if (yPlus(facei) > yPlusLam)
                 {
-                    omega0[faceCells[facei]] +=
-                        cornerWeights[facei]
-                      * omegaLog(facei);
+                    foamAtomic::AtomicAdd
+                    (
+                        omega0p[faceCellsp[facei]],
+                        cornerWeightsp[facei]*omegaLog(facei)
+                    );
                 }
                 else
                 {
-                    omega0[faceCells[facei]] +=
-                        cornerWeights[facei]
-                      * omegaVis(facei);
+                    foamAtomic::AtomicAdd
+                    (
+                        omega0p[faceCellsp[facei]], cornerWeightsp[facei]*omegaVis(facei)
+                    );
                 }
-            }
+            };
+            exec.parallelFor(Lambda, faceCells.size());
             break;
         }
 
         case blenderType::BINOMIAL:
         {
-            forAll(faceCells, facei)
+            const scalar nBlend(n_);
+            auto Lambda = [=](label facei)
             {
-                omega0[faceCells[facei]] +=
-                    cornerWeights[facei]
-                  * pow
+                foamAtomic::AtomicAdd
+                (
+                    omega0p[faceCellsp[facei]],
+                    cornerWeightsp[facei]*
+                    pow
                     (
-                        pow(omegaVis(facei), n_) + pow(omegaLog(facei), n_),
-                        scalar(1)/n_
-                    );
-            }
+                        pow(omegaVis(facei), nBlend) + pow(omegaLog(facei), nBlend),
+                        scalar(1)/nBlend
+                    )
+                );
+            };
+            exec.parallelFor(Lambda, faceCells.size());
             break;
         }
 
         case blenderType::MAX:
         {
-            forAll(faceCells, facei)
+            auto Lambda = [=](label facei)
             {
-                // (PH:Eq. 27)
-                omega0[faceCells[facei]] +=
-                    cornerWeights[facei]
-                  * max(omegaVis(facei), omegaLog(facei));
-            }
+                foamAtomic::AtomicAdd
+                (
+                    omega0p[faceCellsp[facei]],
+                    cornerWeightsp[facei]*
+                    max(omegaVis(facei), omegaLog(facei))
+                );
+            };
+            exec.parallelFor(Lambda,faceCells.size());
             break;
         }
 
         case blenderType::EXPONENTIAL:
         {
-            forAll(faceCells, facei)
+            auto Lambda = [=](label facei)
             {
-                // (PH:Eq. 31)
                 const scalar yPlusFace = yPlus(facei);
                 const scalar Gamma = 0.01*pow4(yPlusFace)/(1 + 5*yPlusFace);
                 const scalar invGamma = scalar(1)/(Gamma + ROOTVSMALL);
 
-                omega0[faceCells[facei]] +=
-                    cornerWeights[facei]
-                  * (
-                        omegaVis(facei)*exp(-Gamma)
-                      + omegaLog(facei)*exp(-invGamma)
-                    );
-            }
+                foamAtomic::AtomicAdd
+                (
+                    omega0p[faceCellsp[facei]],
+                    cornerWeightsp[facei]*
+                    (omegaVis(facei)*exp(-Gamma) + omegaLog(facei)*exp(-invGamma))
+                );
+            };
+            exec.parallelFor(Lambda, faceCells.size());
             break;
         }
 
         case blenderType::TANH:
         {
-            forAll(faceCells, facei)
+            auto Lambda = [=](label facei)
             {
-                // (KAS:Eqs. 33-34)
                 const scalar omegaVisFace = omegaVis(facei);
                 const scalar omegaLogFace = omegaLog(facei);
                 const scalar b1 = omegaVisFace + omegaLogFace;
@@ -317,10 +343,14 @@ void Foam::omegaWallFunctionFvPatchScalarField::calculate
                     );
                 const scalar phiTanh = tanh(pow4(0.1*yPlus(facei)));
 
-                omega0[faceCells[facei]] +=
-                    cornerWeights[facei]
-                   *(phiTanh*b1 + (1 - phiTanh)*b2);
-            }
+                foamAtomic::AtomicAdd
+                (
+                    omega0p[faceCellsp[facei]],
+                    cornerWeightsp[facei]*
+                    (phiTanh*b1 + (1 - phiTanh)*b2)
+                );
+            };
+            exec.parallelFor(Lambda, faceCells.size());
             break;
         }
     }
@@ -328,18 +358,28 @@ void Foam::omegaWallFunctionFvPatchScalarField::calculate
     const fvPatchVectorField& Uw = turbModel.U().boundaryField()[patchi];
     const scalarField magGradUw(mag(Uw.snGrad()));
 
-    forAll(faceCells, facei)
+    auto G0p = G0.begin();
+    const auto magGradUwp = magGradUw.cbegin();
+    const blenderType blender = blender_; //local copy of blender to pass to executor lambda
+
+    auto Lambda = [=](label facei)
     {
-        if (!(blender_ == blenderType::STEPWISE) || yPlus(facei) > yPlusLam)
+        if (!(blender == blenderType::STEPWISE) || yPlus(facei) > yPlusLam)
         {
-            G0[faceCells[facei]] +=
-                cornerWeights[facei]
-               *(nutw[facei] + nuw[facei])
-               *magGradUw[facei]
-               *Cmu25*sqrt(k[faceCells[facei]])
-               /(kappa*y[facei]);
+            const auto rhs = cornerWeightsp[facei]
+               *(nutwp[facei] + nuwp[facei])
+               *magGradUwp[facei]
+               *Cmu25*sqrt(kp[faceCellsp[facei]])
+               /(kappa*yp[facei]);
+
+            foamAtomic::AtomicAdd
+            (
+                G0p[faceCellsp[facei]],
+                rhs
+            );
         }
-    }
+    };
+    exec.parallelFor(Lambda, faceCells.size());
 }
 
 
@@ -524,13 +564,21 @@ void Foam::omegaWallFunctionFvPatchScalarField::updateCoeffs()
 
     FieldType& omega = const_cast<FieldType&>(internalField());
 
-    forAll(*this, facei)
-    {
-        const label celli = patch().faceCells()[facei];
+    foamExecutor exec;
+    const auto pFaceCellsp = patch().faceCells().cbegin();
+    auto Gp = G.begin();
+    const auto G0p = G0.cbegin();
+    auto omegap = omega.begin();
+    const auto omega0p = omega0.cbegin();
 
-        G[celli] = G0[celli];
-        omega[celli] = omega0[celli];
-    }
+    auto Lambda = [=](label facei)
+    {
+        const label celli = pFaceCellsp[facei];
+
+        Gp[celli] = G0p[celli];
+        omegap[celli] = omega0p[celli];
+    };
+    exec.parallelFor(Lambda, this->size());
 
     fvPatchField<scalar>::updateCoeffs();
 }

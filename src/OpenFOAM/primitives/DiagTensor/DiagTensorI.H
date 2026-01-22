@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2020-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -59,7 +60,7 @@ inline Foam::DiagTensor<Cmpt>::DiagTensor(const SphericalTensor<Cmpt>& st)
 
 
 template<class Cmpt>
-inline Foam::DiagTensor<Cmpt>::DiagTensor
+FOAM_DEVICE inline Foam::DiagTensor<Cmpt>::DiagTensor
 (
     const Cmpt& vxx,
     const Cmpt& vyy,
@@ -109,7 +110,7 @@ namespace Foam
 
 //- Return the trace of a DiagTensor
 template<class Cmpt>
-inline Cmpt tr(const DiagTensor<Cmpt>& dt)
+FOAM_DEVICE inline Cmpt tr(const DiagTensor<Cmpt>& dt)
 {
     return dt.xx() + dt.yy() + dt.zz();
 }
@@ -117,7 +118,7 @@ inline Cmpt tr(const DiagTensor<Cmpt>& dt)
 
 //- Return the spherical part of a DiagTensor as a SphericalTensor
 template<class Cmpt>
-inline SphericalTensor<Cmpt> sph(const DiagTensor<Cmpt>& dt)
+FOAM_DEVICE inline SphericalTensor<Cmpt> sph(const DiagTensor<Cmpt>& dt)
 {
     return SphericalTensor<Cmpt>
     (
@@ -128,7 +129,7 @@ inline SphericalTensor<Cmpt> sph(const DiagTensor<Cmpt>& dt)
 
 //- Return the determinant of a DiagTensor
 template<class Cmpt>
-inline Cmpt det(const DiagTensor<Cmpt>& dt)
+FOAM_DEVICE inline Cmpt det(const DiagTensor<Cmpt>& dt)
 {
     return dt.xx()*dt.yy()*dt.zz();
 }
@@ -136,7 +137,7 @@ inline Cmpt det(const DiagTensor<Cmpt>& dt)
 
 //- Return the inverse of a DiagTensor as a DiagTensor
 template<class Cmpt>
-inline DiagTensor<Cmpt> inv(const DiagTensor<Cmpt>& dt)
+FOAM_DEVICE inline DiagTensor<Cmpt> inv(const DiagTensor<Cmpt>& dt)
 {
     #ifdef FULLDEBUG
     if (mag(det(dt)) < VSMALL)
@@ -154,7 +155,7 @@ inline DiagTensor<Cmpt> inv(const DiagTensor<Cmpt>& dt)
 
 //- Return the diagonal of a Tensor as a DiagTensor
 template<class Cmpt>
-inline DiagTensor<Cmpt> diag(const Tensor<Cmpt>& t)
+FOAM_DEVICE inline DiagTensor<Cmpt> diag(const Tensor<Cmpt>& t)
 {
     return DiagTensor<Cmpt>(t.xx(), t.yy(), t.zz());
 }
@@ -200,7 +201,7 @@ inline DiagTensor<Cmpt> lerp
 //- Sum of a DiagTensor and a Tensor
 template<class Cmpt>
 inline Tensor<Cmpt>
-operator+(const DiagTensor<Cmpt>& dt1, const Tensor<Cmpt>& t2)
+FOAM_DEVICE operator+(const DiagTensor<Cmpt>& dt1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
     (
@@ -228,7 +229,7 @@ operator+(const Tensor<Cmpt>& t1, const DiagTensor<Cmpt>& dt2)
 //- Subtract a Tensor from a DiagTensor
 template<class Cmpt>
 inline Tensor<Cmpt>
-operator-(const DiagTensor<Cmpt>& dt1, const Tensor<Cmpt>& t2)
+FOAM_DEVICE operator-(const DiagTensor<Cmpt>& dt1, const Tensor<Cmpt>& t2)
 {
     return Tensor<Cmpt>
     (
@@ -296,7 +297,7 @@ operator/(const DiagTensor<Cmpt>& dt, const Cmpt s)
 //- Division of a Vector by a DiagTensor
 template<class Cmpt>
 inline Vector<Cmpt>
-operator/(const Vector<Cmpt> v, const DiagTensor<Cmpt>& dt)
+FOAM_DEVICE operator/(const Vector<Cmpt> v, const DiagTensor<Cmpt>& dt)
 {
     #ifdef FULLDEBUG
     if (mag(det(dt)) < VSMALL)

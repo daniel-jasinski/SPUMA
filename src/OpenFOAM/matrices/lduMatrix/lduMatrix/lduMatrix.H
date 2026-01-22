@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -64,7 +65,9 @@ SourceFiles
 #include "InfoProxy.H"
 #include "Enum.H"
 #include "profilingTrigger.H"
+#include "executors.H"
 #include <functional>  // For reference_wrapper
+#include "Atomics.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -358,7 +361,9 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_;
             const FieldField<Field, scalar>& interfaceIntCoeffs_;
             const lduInterfaceFieldPtrsList& interfaces_;
-
+            
+            //- Dictionary of solution controls
+            dictionary controlDict_;
 
     public:
 
@@ -427,7 +432,8 @@ public:
                 const lduMatrix& matrix,
                 const FieldField<Field, scalar>& interfaceBouCoeffs,
                 const FieldField<Field, scalar>& interfaceIntCoeffs,
-                const lduInterfaceFieldPtrsList& interfaces
+                const lduInterfaceFieldPtrsList& interfaces,
+                const dictionary& solverControls
             );
 
 
@@ -553,6 +559,10 @@ public:
                 solver_(sol)
             {}
 
+            preconditioner()
+            :
+                solver_(NullObjectRef<solver>()) // works but extremely dangerous
+            {};
 
         // Selectors
 
@@ -594,6 +604,12 @@ public:
             ) const
             {
                 NotImplemented;
+            }
+            
+            virtual const solveScalarField& getReciprocalD() const
+            {
+                NotImplemented;
+                return solveScalarField::null();
             }
 
             //- Signal end of solver
@@ -669,9 +685,9 @@ public:
         const scalarField& upper() const;
         const scalarField& lower() const;
 
-        scalarField& diag();
-        scalarField& upper();
-        scalarField& lower();
+        scalarField& diag(bool init = true);
+        scalarField& upper(bool init = true);
+        scalarField& lower(bool init = true);
 
         // Size with externally provided sizes
         // (for constructing with 'fake' mesh in GAMG)

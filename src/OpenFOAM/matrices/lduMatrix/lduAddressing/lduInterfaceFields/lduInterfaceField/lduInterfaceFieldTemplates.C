@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2017-2019 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -37,19 +38,27 @@ void Foam::lduInterfaceField::addToInternalField
     const Field<Type>& vals
 ) const
 {
+    foamExecutor exec;
+    const auto faceCellsp=faceCells.cbegin();
+    auto resultp = result.begin();
+    const auto coeffsp = coeffs.cbegin();
+    const auto valsp = vals.cbegin();
+
     if (add)
     {
-        forAll(faceCells, elemi)
+        auto Lambda = [=](label elemI)
         {
-            result[faceCells[elemi]] += coeffs[elemi]*vals[elemi];
-        }
+            foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], coeffsp[elemI]*valsp[elemI]);
+        };
+        exec.parallelFor(Lambda, faceCells.size());
     }
     else
     {
-        forAll(faceCells, elemi)
+        auto Lambda = [=](label elemI)
         {
-            result[faceCells[elemi]] -= coeffs[elemi]*vals[elemi];
-        }
+            foamAtomic::AtomicAdd(resultp[faceCellsp[elemI]], -coeffsp[elemI]*valsp[elemI]);
+        };
+        exec.parallelFor(Lambda,faceCells.size());
     }
 }
 

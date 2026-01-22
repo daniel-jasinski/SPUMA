@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -62,7 +63,7 @@ gaussLaplacianScheme<Type, GType>::fvmLaplacianUncorrected
     );
     fvMatrix<Type>& fvm = tfvm.ref();
 
-    fvm.upper() = deltaCoeffs.primitiveField()*gammaMagSf.primitiveField();
+    fvm.upper(false) = deltaCoeffs.primitiveField()*gammaMagSf.primitiveField();
     fvm.negSumDiag();
 
     forAll(vf.boundaryField(), patchi)

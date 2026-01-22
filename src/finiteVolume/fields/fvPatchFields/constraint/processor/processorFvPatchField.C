@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -369,11 +370,15 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
     {
         scalarSendBuf_.resize_nocopy(faceCells.size());
         scalarRecvBuf_.resize_nocopy(faceCells.size());
-
-        forAll(faceCells, i)
+        foamExecutor exec;
+        auto sSendBufp = scalarSendBuf_.begin();
+        const auto psiInternalp = psiInternal.cbegin();
+        const auto faceCellsp = faceCells.cbegin();
+        auto Lambda = [=](label facei)
         {
-            scalarSendBuf_[i] = psiInternal[faceCells[i]];
-        }
+            sSendBufp[facei] = psiInternalp[faceCellsp[facei]];
+        };
+        exec.parallelFor(Lambda, faceCells.size());
     }
 
     if
@@ -489,11 +494,15 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
     {
         sendBuf_.resize_nocopy(faceCells.size());
         recvBuf_.resize_nocopy(faceCells.size());
-
-        forAll(faceCells, i)
+        foamExecutor exec;
+        auto sendBufp = sendBuf_.begin();
+        const auto psiInternalp = psiInternal.cbegin();
+        const auto faceCellsp = faceCells.cbegin();
+        auto Lambda = [=](label facei)
         {
-            sendBuf_[i] = psiInternal[faceCells[i]];
-        }
+            sendBufp[facei] = psiInternalp[faceCellsp[facei]];
+        };
+        exec.parallelFor(Lambda, faceCells.size());
     }
 
     if

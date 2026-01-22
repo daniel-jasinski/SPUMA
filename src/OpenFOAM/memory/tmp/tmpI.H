@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -258,6 +259,26 @@ inline T& Foam::tmp<T>::ref() const
     return *ptr_;  // non-const reference
 }
 
+template<class T>
+inline T&& Foam::tmp<T>::move() const
+{
+    if (!movable())
+    {
+        FatalErrorInFunction
+            << "Attempted rvalue-reference to non movable object: "
+            << this->typeName()
+            << abort(FatalError);
+    }
+    else if (!ptr_ && is_pointer())
+    {
+        FatalErrorInFunction
+            << this->typeName() << " deallocated"
+            << abort(FatalError);
+    }
+    T* ptr = ptr_;
+    ptr_ = nullptr;
+    return std::move(*ptr);  // rvalue reference
+}
 
 template<class T>
 inline T* Foam::tmp<T>::ptr() const

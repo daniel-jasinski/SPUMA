@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2023-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,6 +27,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+#include "Atomics.H"
 #include "GAMGAgglomeration.H"
 #include "mapDistribute.H"
 #include "globalIndex.H"
@@ -42,10 +44,17 @@ void Foam::GAMGAgglomeration::restrictField
 {
     cf = Zero;
 
-    forAll(ff, i)
+    const label* const __restrict__ fineToCoarsePtr = fineToCoarse.cbegin();
+    const Type* const __restrict__ ffPtr = ff.cbegin();
+    Type* __restrict__ cfPtr = cf.begin();
+    const label size = ff.size();
+
+    foamExecutor exec;
+    auto Lambda = [=](label i)
     {
-        cf[fineToCoarse[i]] += ff[i];
-    }
+        foamAtomic::AtomicAdd(cfPtr[fineToCoarsePtr[i]], ffPtr[i]);
+    };
+    exec.parallelFor(Lambda, size);
 }
 
 
@@ -143,6 +152,13 @@ void Foam::GAMGAgglomeration::prolongField
 
     const label coarseLevelIndex = levelIndex+1;
 
+    foamExecutor exec;
+
+    const label* const __restrict__ fineToCoarsePtr = fineToCoarse.cbegin();
+    Type* __restrict__ ffPtr = ff.begin();
+    const Type* const __restrict__ cfPtr = cf.cbegin();
+    const label size = fineToCoarse.size();
+
     if (procAgglom && hasProcMesh(coarseLevelIndex))
     {
         const label coarseComm =
@@ -165,17 +181,21 @@ void Foam::GAMGAgglomeration::prolongField
             UPstream::commsTypes::nonBlocking
         );
 
-        forAll(fineToCoarse, i)
+        const Type* const __restrict__ allCfPtr = allCf.cbegin();
+
+        auto Lambda = [=](label i)
         {
-            ff[i] = allCf[fineToCoarse[i]];
-        }
+            ffPtr[i] = allCfPtr[fineToCoarsePtr[i]];
+        };
+        exec.parallelFor(Lambda, size);
     }
     else
     {
-        forAll(fineToCoarse, i)
+        auto Lambda = [=](label i)
         {
-            ff[i] = cf[fineToCoarse[i]];
-        }
+            ffPtr[i] = cfPtr[fineToCoarsePtr[i]];
+        };
+        exec.parallelFor(Lambda, size);
     }
 }
 
@@ -192,6 +212,13 @@ const Foam::Field<Type>& Foam::GAMGAgglomeration::prolongField
     const labelList& fineToCoarse = restrictAddressing_[levelIndex];
 
     const label coarseLevelIndex = levelIndex+1;
+
+    foamExecutor exec;
+
+    const label* const __restrict__ fineToCoarsePtr = fineToCoarse.cbegin();
+    Type* __restrict__ ffPtr = ff.begin();
+    const Type* const __restrict__ cfPtr = cf.cbegin();
+    const label size = fineToCoarse.size();
 
     if (hasProcMesh(coarseLevelIndex))
     {
@@ -215,18 +242,24 @@ const Foam::Field<Type>& Foam::GAMGAgglomeration::prolongField
             UPstream::commsTypes::nonBlocking
         );
 
-        forAll(fineToCoarse, i)
+        const Type* const __restrict__ allCfPtr = allCf.cbegin();
+
+        auto Lambda = [=](label i)
         {
-            ff[i] = allCf[fineToCoarse[i]];
-        }
+            ffPtr[i] = allCfPtr[fineToCoarsePtr[i]];
+        };
+        exec.parallelFor(Lambda, size);
+
         return allCf;
     }
     else
     {
-        forAll(fineToCoarse, i)
+        auto Lambda = [=](label i)
         {
-            ff[i] = cf[fineToCoarse[i]];
-        }
+            ffPtr[i] = cfPtr[fineToCoarsePtr[i]];
+        };
+        exec.parallelFor(Lambda, size);
+
         return cf;
     }
 }

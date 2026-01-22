@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,13 +27,18 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "TGaussSeidelSmoother.H"
+#include "TtwoStageGaussSeidelSmoother.H"
 #include "fieldTypes.H"
 
 #define makeLduSmoothers(Type, DType, LUType)                                  \
                                                                                \
     makeLduSmoother(TGaussSeidelSmoother, Type, DType, LUType);                \
     makeLduSymSmoother(TGaussSeidelSmoother, Type, DType, LUType);             \
-    makeLduAsymSmoother(TGaussSeidelSmoother, Type, DType, LUType);
+    makeLduAsymSmoother(TGaussSeidelSmoother, Type, DType, LUType);            \
+    makeLduSmoother(TtwoStageGaussSeidelSmoother, Type, DType, LUType);        \
+    makeLduSymSmoother(TtwoStageGaussSeidelSmoother, Type, DType, LUType);     \
+    makeLduAsymSmoother(TtwoStageGaussSeidelSmoother, Type, DType, LUType);
+
 
 namespace Foam
 {
@@ -41,6 +47,11 @@ namespace Foam
     makeLduSmoothers(sphericalTensor, scalar, scalar);
     makeLduSmoothers(symmTensor, scalar, scalar);
     makeLduSmoothers(tensor, scalar, scalar);
+
+    makeLduSmoothers(vector, vector, scalar);
+    makeLduSmoothers(sphericalTensor, sphericalTensor, scalar);
+    makeLduSmoothers(symmTensor, symmTensor, scalar);
+    makeLduSmoothers(tensor, tensor, scalar);
 };
 
 

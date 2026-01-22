@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -55,6 +56,7 @@ void Foam::lduAddressing::calcLosort() const
     // Create temporary neighbour addressing
     labelListList cellNbrFaces(size());
 
+    //what if nNbrOfFace[celli] =0?
     forAll(cellNbrFaces, celli)
     {
         cellNbrFaces[celli].setSize(nNbrOfFace[celli]);
@@ -71,8 +73,8 @@ void Foam::lduAddressing::calcLosort() const
         nNbrOfFace[nbr[nbrI]]++;
     }
 
-    // Gather the neighbours into the losort array
-    losortPtr_ = std::make_unique<labelList>(nbr.size(), -1);
+    // Gather the neighbours into the losort array //why fill whith -1? it means that that face has no neighbour
+    losortPtr_ = std::make_unique<labelList>(nbr.size(), -1, poolSwitch(1));
     auto& lst = *losortPtr_;
 
     // Set counter for losort
@@ -102,7 +104,7 @@ void Foam::lduAddressing::calcOwnerStart() const
 
     const labelUList& own = lowerAddr();
 
-    ownerStartPtr_ = std::make_unique<labelList>(size() + 1, own.size());
+    ownerStartPtr_ = std::make_unique<labelList>(size() + 1, own.size(), poolSwitch(1));
     auto& ownStart = *ownerStartPtr_;
 
     // Set up first lookup by hand
@@ -137,7 +139,7 @@ void Foam::lduAddressing::calcLosortStart() const
     }
 
     const labelUList& nbr = upperAddr();
-    losortStartPtr_ = std::make_unique<labelList>(size() + 1, nbr.size());
+    losortStartPtr_ = std::make_unique<labelList>(size() + 1, nbr.size(), poolSwitch(1));
     auto& lsrtStart = *losortStartPtr_;
 
     const labelUList& lsrt = losortAddr();
@@ -177,7 +179,7 @@ void Foam::lduAddressing::calcLoCSR() const
             << abort(FatalError);
     }
 
-    lowerCSRAddrPtr_ = std::make_unique<labelList>(lowerAddr().size());
+    lowerCSRAddrPtr_ = std::make_unique<labelList>(lowerAddr().size(), poolSwitch(1));
     map(lowerAddr(), *lowerCSRAddrPtr_);
 }
 

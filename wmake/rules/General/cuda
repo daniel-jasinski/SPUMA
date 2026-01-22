@@ -1,26 +1,44 @@
 #------------------------------------------------------------------------------
 # Additional rules for handling CUDA files
 
-SUFFIXES += .cu
+SUFFIXES   += .cu
 
 ifeq (,$(strip $(NVARCH)))
-    NVARCH  = 70
+    NVARCH := 80
 endif
 
-NVCC        = nvcc -std=c++17 --compiler-options='-fPIC'
+NVCC      := nvcc$(COMPILER_VERSION) -std=c++17 --compiler-options '-fPIC'
 
-cuARCH      = -arch=sm_$(NVARCH)
-cuOPT       = -O3
-cuDBUG      =
+cuARCH    :=  -m64 -arch=sm_$(NVARCH)
+cuDBUG    :=
+cuOPT     := -O2
+ptFLAGS   := -DNoRepository
 
-# Similar to c++FLAGS
-cuFLAGS     = $(GFLAGS) -DNoRepository $(cuARCH) $(cuOPT) $(cuDBUG) $(LIB_HEADER_DIRS)
+cuWARN     = --compiler-options '-Wall -Wextra -Wno-unused' \
+                -Xcudafe '--diag_suppress=177 \
+                          --diag_suppress=611 \
+                          --diag_suppress=997'
+
+CU_LIB_HEADER_DIRS = \
+     $(EXE_INC) \
+     -IlnInclude \
+     --compiler-options '-iquote.' \
+     $(PROJECT_INC) \
+     $(GINC) \
+     $(SYS_INC)
+
+cuFLAGS    = \
+    $(cuARCH) $(GFLAGS) $(cuWARN) $(cuOPT) $(cuDBUG) $(ptFLAGS) \
+    $(FOAM_EXTRA_CXXFLAGS) $(CU_LIB_HEADER_DIRS)
 
 cutoo       = $(WM_SCHEDULER) $(NVCC) $(cuFLAGS) -c $< -o $@
+
+LIB_LIBS += -lcudart
+LINKEXE += -lcudart
 
 $(OBJECTS_DIR)/%.o : %.cu
 	$(cutoo)
 
-CUDA_LINKLIBSO  = $(NVCC) -shared
+#include $(WMAKE_LOCAL)/link-cuda
 
 #------------------------------------------------------------------------------

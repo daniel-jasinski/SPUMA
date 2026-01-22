@@ -874,7 +874,11 @@ int main(int argc, char *argv[])
 
     // -------------------------
 
+    #include "addMemoryPoolOptions.H"
+    #include "addInitDeviceOptions.H"
     #include "setRootCase.H"
+    #include "initDevice.H"
+    #include "createMemoryPool.H"
 
     {
         bool listOptions = false;

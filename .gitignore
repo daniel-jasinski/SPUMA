@@ -35,6 +35,8 @@ lnInclude
 
 # Build directories - anywhere
 linux*Clang*/
+linux*Amd*/
+linux*Nvidia*/
 linux*Gcc*/
 linux*Icc*/
 solaris*Gcc*/

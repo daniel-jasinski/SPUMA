@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2018 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -79,7 +80,7 @@ public:
 
     // Member Functions
 
-        inline scalar limiter(const scalar r) const
+        FOAM_DEVICE inline scalar limiter(const scalar r) const
         {
             return min(r, 1);
         }

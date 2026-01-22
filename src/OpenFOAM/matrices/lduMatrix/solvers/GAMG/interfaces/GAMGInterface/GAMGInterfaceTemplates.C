@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -52,10 +53,18 @@ Foam::tmp<Foam::Field<Type>> Foam::GAMGInterface::interfaceInternalField
     auto tresult = tmp<Field<Type>>::New(faceCells.size());
     auto& result = tresult.ref();
 
-    forAll(result, elemi)
+    const label size = result.size();
+    const label* const __restrict__ faceCellsPtr = faceCells.cbegin();
+    Type* __restrict__ resultPtr = result.begin();
+    const Type* const __restrict__ iFPtr = iF.cbegin();
+
+    foamExecutor exec;
+    auto Lambda = [=](label elemi)
     {
-        result[elemi] = iF[faceCells[elemi]];
-    }
+        resultPtr[elemi] = iFPtr[faceCellsPtr[elemi]];
+    };
+    exec.parallelFor(Lambda, size);
+
     return tresult;
 }
 
@@ -69,10 +78,17 @@ void Foam::GAMGInterface::interfaceInternalField
 {
     result.resize(size());
 
-    forAll(result, elemi)
+    const label size = result.size();
+    const label* const __restrict__ faceCellsPtr_ = faceCells_.cbegin();
+    Type* __restrict__ resultPtr = result.begin();
+    const Type* const __restrict__ iFPtr = iF.cbegin();
+
+    foamExecutor exec;
+    auto Lambda = [=](label elemi)
     {
-        result[elemi] = iF[faceCells_[elemi]];
-    }
+        resultPtr[elemi] = iFPtr[faceCellsPtr_[elemi]];
+    };
+    exec.parallelFor(Lambda, size);
 }
 
 

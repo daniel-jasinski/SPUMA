@@ -266,9 +266,29 @@ inline Foam::MinMax<T>& Foam::MinMax<T>::add(const T& val)
 template<class T>
 inline Foam::MinMax<T>& Foam::MinMax<T>::add(const UList<T>& vals)
 {
-    for (const T& val : vals)
+
+    if (vals.usePool())
     {
-        add(val);
+        T resultMin(min());
+        T resultMax(max());
+        const auto valsPtr = vals.cbegin();
+        foamExecutor exec;
+        auto Lambda = [=](label i) {return valsPtr[i];};
+        auto CompareOpMin = [](T a, T b) {return ::Foam::min(a,b);};
+        auto CompareOpMax = [](T a, T b) {return ::Foam::max(a,b);};
+        exec.reductionCompare(Lambda, CompareOpMin, &resultMin, vals.size());
+        exec.reductionCompare(Lambda, CompareOpMax, &resultMax, vals.size());
+
+        min() = resultMin;
+        max() = resultMax;
+
+    }
+    else
+    {
+        for (const T& val : vals)
+        {
+            add(val);
+        }
     }
     return *this;
 }

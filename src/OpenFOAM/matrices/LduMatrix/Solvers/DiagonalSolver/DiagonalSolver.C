@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -63,7 +64,26 @@ Foam::DiagonalSolver<Type, DType, LUType>::solve
     Field<Type>& psi
 ) const
 {
-    psi = this->matrix_.source()/this->matrix_.diag();
+    const label nCells = psi.size();
+
+    const Type* const __restrict__ sourcePtr = this->matrix_.source().cbegin();
+    const DType* const __restrict__ diagPtr = this->matrix_.diag().cbegin();
+    Type* __restrict__ psiPtr = psi.begin();
+
+    foamExecutor exec;
+
+    auto LambdaDiagSolver = [=](label celli)
+    {
+        if constexpr(std::is_same<DType, Type>::value)
+        {
+            psiPtr[celli] = cmptDivide(sourcePtr[celli], diagPtr[celli]);
+        }
+        else
+        {
+            psiPtr[celli] = sourcePtr[celli]/diagPtr[celli];
+        }
+    };
+    exec.parallelFor(LambdaDiagSolver, nCells);
 
     return SolverPerformance<Type>
     (

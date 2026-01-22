@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2014 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -53,19 +54,19 @@ namespace Foam
 // Forward Declarations
 class complex;
 
-inline complex operator-(const complex&);
-inline complex operator+(const complex&, const complex&);
-inline complex operator+(const complex&, const scalar);
-inline complex operator+(const scalar, const complex&);
-inline complex operator-(const complex&, const complex&);
-inline complex operator-(const complex&, const scalar);
-inline complex operator-(const scalar, const complex&);
-inline complex operator*(const complex&, const complex&);
-inline complex operator*(const complex&, const scalar);
-inline complex operator*(const scalar, const complex&);
-inline complex operator/(const complex&, const complex&);
-inline complex operator/(const complex&, const scalar);
-inline complex operator/(const scalar, const complex&);
+FOAM_DEVICE inline complex operator-(const complex&);
+FOAM_DEVICE inline complex operator+(const complex&, const complex&);
+FOAM_DEVICE inline complex operator+(const complex&, const scalar);
+FOAM_DEVICE inline complex operator+(const scalar, const complex&);
+FOAM_DEVICE inline complex operator-(const complex&, const complex&);
+FOAM_DEVICE inline complex operator-(const complex&, const scalar);
+FOAM_DEVICE inline complex operator-(const scalar, const complex&);
+FOAM_DEVICE inline complex operator*(const complex&, const complex&);
+FOAM_DEVICE inline complex operator*(const complex&, const scalar);
+FOAM_DEVICE inline complex operator*(const scalar, const complex&);
+FOAM_DEVICE inline complex operator/(const complex&, const complex&);
+FOAM_DEVICE inline complex operator/(const complex&, const scalar);
+FOAM_DEVICE inline complex operator/(const scalar, const complex&);
 
 
 /*---------------------------------------------------------------------------*\
@@ -100,22 +101,22 @@ public:
     // Constructors
 
         //- Default construct, as zero-initialized
-        inline constexpr complex() noexcept;
+        FOAM_DEVICE inline constexpr complex() noexcept;
 
         //- Construct zero-initialized from zero class
-        inline constexpr complex(Foam::zero) noexcept;
+        FOAM_DEVICE inline constexpr complex(Foam::zero) noexcept;
 
         //- Construct from real component
-        inline explicit constexpr complex(const scalar r) noexcept;
+        FOAM_DEVICE inline explicit constexpr complex(const scalar r) noexcept;
 
         //- Construct from real and imaginary parts
-        inline constexpr complex(const scalar r, const scalar i) noexcept;
+        FOAM_DEVICE inline constexpr complex(const scalar r, const scalar i) noexcept;
 
         //- Implicit construct from std::complex
-        inline complex(const std::complex<float>& c);
+        FOAM_DEVICE inline complex(const std::complex<float>& c);
 
         //- Implicit construct from std::complex
-        inline complex(const std::complex<double>& c);
+        FOAM_DEVICE inline complex(const std::complex<double>& c);
 
         //- Construct from Istream
         explicit complex(Istream& is);
@@ -148,7 +149,7 @@ public:
         inline scalar magnitude() const;
 
         //- The L2-norm squared of complex
-        inline scalar magSqr() const;
+        FOAM_DEVICE inline scalar magSqr() const;
 
         //- The sum of real/imag components
         inline scalar cmptSum() const noexcept;
@@ -157,7 +158,7 @@ public:
     // Member Operators
 
         //- Implicit conversion to std::complex
-        operator std::complex<scalar>() const
+        FOAM_DEVICE operator std::complex<scalar>() const
         {
             return std::complex<scalar>(re, im);
         }
@@ -169,8 +170,8 @@ public:
         //- Assign scalar (imag = zero)
         inline void operator=(const scalar s);
 
-        inline void operator+=(const complex& c);
-        inline void operator+=(const scalar s);
+        FOAM_DEVICE inline void operator+=(const complex& c);
+        FOAM_DEVICE inline void operator+=(const scalar s);
 
         inline void operator-=(const complex& c);
         inline void operator-=(const scalar s);
@@ -187,23 +188,23 @@ public:
 
     // Friend Operators
 
-        friend complex operator-(const complex& c);
+        FOAM_DEVICE friend complex operator-(const complex& c);
 
-        friend complex operator+(const complex& c1, const complex& c2);
-        friend complex operator+(const complex& c, const scalar s);
-        friend complex operator+(const scalar s, const complex& c);
+        FOAM_DEVICE friend complex operator+(const complex& c1, const complex& c2);
+        FOAM_DEVICE friend complex operator+(const complex& c, const scalar s);
+        FOAM_DEVICE friend complex operator+(const scalar s, const complex& c);
 
-        friend complex operator-(const complex& c1, const complex& c2);
-        friend complex operator-(const complex& c, const scalar s);
-        friend complex operator-(const scalar s, const complex& c);
+        FOAM_DEVICE friend complex operator-(const complex& c1, const complex& c2);
+        FOAM_DEVICE friend complex operator-(const complex& c, const scalar s);
+        FOAM_DEVICE friend complex operator-(const scalar s, const complex& c);
 
-        friend complex operator*(const complex& c1, const complex& c2);
-        friend complex operator*(const complex& c, const scalar s);
-        friend complex operator*(const scalar s, const complex& c);
+        FOAM_DEVICE friend complex operator*(const complex& c1, const complex& c2);
+        FOAM_DEVICE friend complex operator*(const complex& c, const scalar s);
+        FOAM_DEVICE friend complex operator*(const scalar s, const complex& c);
 
-        friend complex operator/(const complex& c1, const complex& c2);
-        friend complex operator/(const complex& c, const scalar s);
-        friend complex operator/(const scalar s, const complex& c);
+        FOAM_DEVICE friend complex operator/(const complex& c1, const complex& c2);
+        FOAM_DEVICE friend complex operator/(const complex& c, const scalar s);
+        FOAM_DEVICE friend complex operator/(const scalar s, const complex& c);
 
 
     // Housekeeping

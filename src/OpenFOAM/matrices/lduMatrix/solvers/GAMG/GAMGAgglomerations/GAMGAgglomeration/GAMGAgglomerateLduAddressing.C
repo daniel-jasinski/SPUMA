@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -81,7 +82,7 @@ void Foam::GAMGAgglomeration::agglomerateLduAddressing
     labelList cCellFaces(maxNnbrs*nCoarseCells);
 
     // Create face-restriction addressing
-    faceRestrictAddressing_.set(fineLevelIndex, new labelList(nFineFaces));
+    faceRestrictAddressing_.set(fineLevelIndex, new labelList(nFineFaces, poolSwitch(1)));
     labelList& faceRestrictAddr = faceRestrictAddressing_[fineLevelIndex];
 
     // Initial neighbour array (not in upper-triangle order)
@@ -172,9 +173,9 @@ void Foam::GAMGAgglomeration::agglomerateLduAddressing
     // Renumber into upper-triangular order
 
     // All coarse owner-neighbour storage
-    labelList coarseOwner(nCoarseFaces);
-    labelList coarseNeighbour(nCoarseFaces);
-    labelList coarseFaceMap(nCoarseFaces);
+    labelList coarseOwner(nCoarseFaces, poolSwitch(1));
+    labelList coarseNeighbour(nCoarseFaces, poolSwitch(1));
+    labelList coarseFaceMap(nCoarseFaces, poolSwitch(1));
 
     label coarseFacei = 0;
 
@@ -267,7 +268,7 @@ void Foam::GAMGAgglomeration::agglomerateLduAddressing
     patchFaceRestrictAddressing_.set
     (
         fineLevelIndex,
-        new labelListList(fineInterfaces.size())
+        new labelListList(fineInterfaces.size(), labelList(poolSwitch(1)),poolSwitch(1))
     );
     labelListList& patchFineToCoarse =
         patchFaceRestrictAddressing_[fineLevelIndex];
@@ -303,7 +304,6 @@ void Foam::GAMGAgglomeration::agglomerateLduAddressing
     }
 
     UPstream::waitRequests(startOfRequests);
-
 
     // Add the coarse level
     meshLevels_.set

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -39,6 +40,8 @@ Description
 
 namespace Foam
 {
+
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -100,7 +103,21 @@ float sumProd(const UList<float>& f1, const UList<float>& f2)
     if (f1.size() && (f1.size() == f2.size()))
     {
         // std::inner_product
-        TFOR_ALL_S_OP_F_OP_F(float, result, +=, float, f1, *, float, f2)
+        if(f1.usePool() && f2.usePool())
+        {
+            auto f1p = f1.begin();
+            auto f2p = f2.cbegin();
+            const label size = f1.size();
+
+            auto sumProd = [=](label i) {return f1p[i]*f2p[i];};
+
+            foamExecutor exec;
+            exec.reductionSum(sumProd, &result, size);
+        }
+        else
+        {
+            TFOR_ALL_S_OP_F_OP_F(float, result, +=, float, f1, *, float, f2)
+        };
     }
     return result;
 }
@@ -112,8 +129,21 @@ double sumProd(const UList<double>& f1, const UList<double>& f2)
     double result = 0.0;
     if (f1.size() && (f1.size() == f2.size()))
     {
-        // std::inner_product
-        TFOR_ALL_S_OP_F_OP_F(double, result, +=, double, f1, *, double, f2)
+        if(f1.usePool() && f2.usePool())
+        {
+            auto f1p = f1.begin();
+            auto f2p = f2.cbegin();
+            const label size = f1.size();
+
+            auto sumProd = [=](label i) {return f1p[i]*f2p[i];};
+
+            foamExecutor exec;
+            exec.reductionSum(sumProd, &result,size);
+        }
+        else
+        {
+            TFOR_ALL_S_OP_F_OP_F(double, result, +=, double, f1, *, double, f2)
+        };
     }
     return result;
 }

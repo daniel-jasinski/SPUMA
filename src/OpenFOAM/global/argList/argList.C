@@ -37,7 +37,7 @@ License
 #include "IOobject.H"
 #include "dynamicCode.H"
 #include "simpleObjectRegistry.H"
-#include "MemoryPool.H"
+#include "MemoryPoolBase.H"
 #include "sigFpe.H"
 #include "sigInt.H"
 #include "sigQuit.H"

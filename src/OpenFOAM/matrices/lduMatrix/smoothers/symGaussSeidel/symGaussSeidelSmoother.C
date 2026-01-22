@@ -61,7 +61,8 @@ Foam::symGaussSeidelSmoother::symGaussSeidelSmoother
         matrix,
         interfaceBouCoeffs,
         interfaceIntCoeffs,
-        interfaces
+        interfaces,
+        solverControls
     )
 {}
 

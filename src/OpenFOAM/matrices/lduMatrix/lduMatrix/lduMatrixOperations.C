@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -31,6 +32,7 @@ Description
 
 #include "lduMatrix.H"
 
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::lduMatrix::sumDiag()
@@ -39,14 +41,20 @@ void Foam::lduMatrix::sumDiag()
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
     scalarField& Diag = diag();
 
-    const labelUList& l = lduAddr().lowerAddr();
-    const labelUList& u = lduAddr().upperAddr();
+    scalar* diag = Diag.begin();
+    const scalar* lower = Lower.cbegin();
+    const scalar* upper = Upper.cbegin();
+    const auto l = lduAddr().lowerAddr().cbegin();
+    const auto u = lduAddr().upperAddr().cbegin();
 
-    for (label face=0; face<l.size(); face++)
+    auto sumDiagOp = [=](label face)
     {
-        Diag[l[face]] += Lower[face];
-        Diag[u[face]] += Upper[face];
-    }
+       foamAtomic::AtomicAdd(diag[l[face]], lower[face]);
+       foamAtomic::AtomicAdd(diag[u[face]], upper[face]);
+    };
+
+    foamExecutor exec;
+    exec.parallelFor(sumDiagOp, lduAddr().lowerAddr().size());
 }
 
 
@@ -56,14 +64,19 @@ void Foam::lduMatrix::negSumDiag()
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
     scalarField& Diag = diag();
 
-    const labelUList& l = lduAddr().lowerAddr();
-    const labelUList& u = lduAddr().upperAddr();
-
-    for (label face=0; face<l.size(); face++)
+    scalar* diag = Diag.begin();
+    const scalar* lower = Lower.cbegin();
+    const scalar* upper = Upper.cbegin();
+    const auto l = lduAddr().lowerAddr().cbegin();
+    const auto u = lduAddr().upperAddr().cbegin();
+    auto Lambda = [=](label face)
     {
-        Diag[l[face]] -= Lower[face];
-        Diag[u[face]] -= Upper[face];
-    }
+       foamAtomic::AtomicAdd(diag[l[face]], -lower[face]);
+       foamAtomic::AtomicAdd(diag[u[face]], -upper[face]);
+    };
+
+    foamExecutor exec;
+    exec.parallelFor(Lambda, lduAddr().lowerAddr().size());
 }
 
 
@@ -75,14 +88,20 @@ void Foam::lduMatrix::sumMagOffDiag
     const scalarField& Lower = const_cast<const lduMatrix&>(*this).lower();
     const scalarField& Upper = const_cast<const lduMatrix&>(*this).upper();
 
-    const labelUList& l = lduAddr().lowerAddr();
-    const labelUList& u = lduAddr().upperAddr();
+    auto sumoff = sumOff.begin();
+    const scalar* lower = Lower.cbegin();
+    const scalar* upper = Upper.cbegin();
+    const auto l = lduAddr().lowerAddr().cbegin();
+    const auto u = lduAddr().upperAddr().cbegin();
 
-    for (label face = 0; face < l.size(); face++)
+    auto Lambda = [=](label face)
     {
-        sumOff[u[face]] += mag(Lower[face]);
-        sumOff[l[face]] += mag(Upper[face]);
-    }
+        foamAtomic::AtomicAdd(sumoff[u[face]], mag(lower[face]));
+        foamAtomic::AtomicAdd(sumoff[l[face]], mag(upper[face]));
+    };
+
+    foamExecutor exec;
+    exec.parallelFor(Lambda, lduAddr().lowerAddr().size());
 }
 
 
@@ -97,7 +116,7 @@ void Foam::lduMatrix::operator=(const lduMatrix& A)
 
     if (A.hasLower())
     {
-        lower() = A.lower();
+        lower(false) = A.lower();
     }
     else
     {
@@ -106,7 +125,7 @@ void Foam::lduMatrix::operator=(const lduMatrix& A)
 
     if (A.hasUpper())
     {
-        upper() = A.upper();
+        upper(false) = A.upper();
     }
     else
     {
@@ -115,7 +134,7 @@ void Foam::lduMatrix::operator=(const lduMatrix& A)
 
     if (A.hasDiag())
     {
-        diag() = A.diag();
+        diag(false) = A.diag();
     }
 }
 
@@ -200,12 +219,12 @@ void Foam::lduMatrix::operator+=(const lduMatrix& A)
     {
         if (A.hasUpper())
         {
-            upper() = A.upper();
+            upper(false) = A.upper();
         }
 
         if (A.hasLower())
         {
-            lower() = A.lower();
+            lower(false) = A.lower();
         }
     }
     else if (A.diagonal())
@@ -272,12 +291,13 @@ void Foam::lduMatrix::operator-=(const lduMatrix& A)
     {
         if (A.hasUpper())
         {
-            upper() = -A.upper();
+            // - unary operator return a tmp with unique ref in this case => safe to move
+            upper(false) = std::move((-A.upper()).ref());
         }
 
         if (A.hasLower())
         {
-            lower() = -A.lower();
+            lower(false) = std::move((-A.lower()).ref());
         }
     }
     else if (A.diagonal())
@@ -313,15 +333,25 @@ void Foam::lduMatrix::operator*=(const scalarField& sf)
         const labelUList& l = lduAddr().lowerAddr();
         const labelUList& u = lduAddr().upperAddr();
 
-        for (label face=0; face<upper.size(); face++)
-        {
-            upper[face] *= sf[l[face]];
-        }
+        foamExecutor exec;
+        const auto lp = l.cbegin();
+        const auto up = u.cbegin();
+        auto upperp = upper.begin();
+        auto lowerp = lower.begin();
+        const auto sfp = sf.cbegin();
 
-        for (label face=0; face<lower.size(); face++)
+        auto LambdaNeigh = [=](label face)
         {
-            lower[face] *= sf[u[face]];
-        }
+            upperp[face] *= sfp[lp[face]];
+        };
+
+        auto LambdaOwn = [=](label face)
+        {
+            lowerp[face] *= sfp[up[face]];
+        };
+
+        exec.parallelFor(LambdaNeigh, upper.size());
+        exec.parallelFor(LambdaOwn, lower.size());
     }
 }
 

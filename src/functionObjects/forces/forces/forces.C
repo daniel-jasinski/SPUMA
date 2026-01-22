@@ -383,16 +383,46 @@ void Foam::functionObjects::forces::addToInternalField
     auto& force = this->force();
     auto& moment = this->moment();
 
-    forAll(cellIDs, i)
+    if (cellIDs.usePool())
+    {   
+        foamExecutor exec;
+        const auto cellIDsPtr = cellIDs.begin();
+        const auto fPtr = f.begin();
+        const auto MdPtr = Md.begin();
+        auto forcePtr = force.begin();
+        auto momentPtr = moment.begin();
+        
+        vectorField sumTmp(2,Zero);
+        auto sumTmpPtr = sumTmp.begin();
+
+        auto Lambda = [=](label i)
+        {
+            const label celli = cellIDsPtr[i];
+
+            foamAtomic::AtomicAdd(sumTmpPtr[0],fPtr[i]);
+            forcePtr[celli] += fPtr[i];
+
+            const vector m(MdPtr[i]^fPtr[i]);
+            foamAtomic::AtomicAdd(sumTmpPtr[1], m);
+            momentPtr[celli] = m;
+        };
+        exec.parallelFor(Lambda,cellIDs.size());
+        sumInternalForces_ += sumTmp[0];
+        sumInternalMoments_ += sumTmp[1];
+    }
+    else
     {
-        const label celli = cellIDs[i];
+        forAll(cellIDs, i)
+        {
+            const label celli = cellIDs[i];
 
-        sumInternalForces_ += f[i];
-        force[celli] += f[i];
+            sumInternalForces_ += f[i];
+            force[celli] += f[i];
 
-        const vector m(Md[i]^f[i]);
-        sumInternalMoments_ += m;
-        moment[celli] = m;
+            const vector m(Md[i]^f[i]);
+            sumInternalMoments_ += m;
+            moment[celli] = m;
+        }
     }
 }
 

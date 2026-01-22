@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2015-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -61,15 +62,22 @@ SourceFiles
 #include "VectorSpace.H"
 #include "IOobjectOption.H"
 
+#include "executors.H"
+#include <type_traits>
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
+
 // Forward Declarations
 class FieldMapper;
 class dictionary;
 class entry;
+
+template <typename Type, typename Enable = void>
+class FieldTypeBase;
 
 template<class Type> class Field;
 template<class Type> class SubField;
@@ -142,6 +150,8 @@ public:
 };
 
 
+
+
 /*---------------------------------------------------------------------------*\
                            Class Field Declaration
 \*---------------------------------------------------------------------------*/
@@ -180,9 +190,11 @@ public:
         //- Construct given size
         //  For temporary fields that are initialised after construction
         inline explicit Field(const label len);
+        //inline explicit Field(const label len, poolSwitch usePool = false);
 
         //- Construct given size and initial value
         inline Field(const label len, const Type& val);
+        //inline Field(const label len, const Type& val, poolSwitch usePool = false);
 
         //- Construct given size and initial values of zero
         inline Field(const label len, Foam::zero);

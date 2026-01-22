@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -81,6 +82,9 @@ public:
 
         //- Construct from IOobject. Will be zero size if not read.
         explicit IOList(const IOobject& io);
+
+        //construct list on memoryPool
+        IOList(const IOobject& io, poolSwitch usePool);
 
         //- Construct from IOobject and zero size (if not read)
         IOList(const IOobject& io, Foam::zero);

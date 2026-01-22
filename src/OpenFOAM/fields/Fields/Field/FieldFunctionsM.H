@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -42,6 +43,16 @@ tmp<Field<ReturnType>> Func(const UList<Type1>& f1);                           \
 TEMPLATE                                                                       \
 tmp<Field<ReturnType>> Func(const tmp<Field<Type1>>& tf1);
 
+#define UNARY_FUNCTION_HOST(ReturnType, Type1, Func)                                \
+                                                                               \
+TEMPLATE                                                                       \
+void Func(Field<ReturnType>& result, const UList<Type1>& f1);                  \
+                                                                               \
+TEMPLATE                                                                       \
+tmp<Field<ReturnType>> Func(const UList<Type1>& f1);                           \
+                                                                               \
+TEMPLATE                                                                       \
+tmp<Field<ReturnType>> Func(const tmp<Field<Type1>>& tf1);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

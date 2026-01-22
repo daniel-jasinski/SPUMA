@@ -167,8 +167,10 @@ void Foam::MRFZone::setMRFFaces()
     excludedFaces_.setSize(patches.size());
     forAll(nIncludedFaces, patchi)
     {
-        includedFaces_[patchi].setSize(nIncludedFaces[patchi]);
-        excludedFaces_[patchi].setSize(nExcludedFaces[patchi]);
+        //includedFaces_[patchi].setSize(nIncludedFaces[patchi]);
+        //excludedFaces_[patchi].setSize(nExcludedFaces[patchi]);
+        includedFaces_.emplace(patchi, nIncludedFaces[patchi], poolSwitch(1));
+        excludedFaces_.emplace(patchi, nExcludedFaces[patchi], poolSwitch(1));
     }
     nIncludedFaces = 0;
     nExcludedFaces = 0;
@@ -249,6 +251,7 @@ Foam::MRFZone::MRFZone
     cellZoneName_(cellZoneName),
     cellZoneID_(-1),
     excludedPatchNames_(),
+    internalFaces_(poolSwitch(1)),
     origin_(Zero),
     axis_(Zero),
     omega_(nullptr)
@@ -282,11 +285,19 @@ void Foam::MRFZone::addCoriolis
 
     const vector Omega = this->Omega();
 
-    forAll(cells, i)
+    foamExecutor exec;
+    auto  ddtUcPtr =  ddtUc.begin();
+    const auto cellsPtr = cells.cbegin();
+    const auto UcPtr = Uc.cbegin();
+
+
+    auto Lambda = [=](label i)
     {
-        label celli = cells[i];
-        ddtUc[celli] += (Omega ^ Uc[celli]);
-    }
+        label celli = cellsPtr[i];
+        ddtUcPtr[celli] += (Omega ^ UcPtr[celli]);
+    };
+    exec.parallelFor(Lambda, cells.size());
+
 }
 
 
@@ -304,21 +315,28 @@ void Foam::MRFZone::addCoriolis(fvVectorMatrix& UEqn, const bool rhs) const
 
     const vector Omega = this->Omega();
 
+    foamExecutor exec;
+    auto UsourcePtr = Usource.begin();
+    const auto cellsPtr = cells.cbegin();
+    const auto VPtr = V.cbegin();
+    const auto UPtr = U.cbegin();
     if (rhs)
     {
-        forAll(cells, i)
+        auto Lambda = [=](label i)
         {
-            label celli = cells[i];
-            Usource[celli] += V[celli]*(Omega ^ U[celli]);
-        }
+            label celli = cellsPtr[i];
+            UsourcePtr[celli] += VPtr[celli]*(Omega ^ UPtr[celli]);
+        };
+        exec.parallelFor(Lambda, cells.size());
     }
     else
     {
-        forAll(cells, i)
+        auto Lambda = [=](label i)
         {
-            label celli = cells[i];
-            Usource[celli] -= V[celli]*(Omega ^ U[celli]);
-        }
+            label celli = cellsPtr[i];
+            UsourcePtr[celli] -= VPtr[celli]*(Omega ^ UPtr[celli]);
+        };
+        exec.parallelFor(Lambda, cells.size());
     }
 }
 
@@ -342,21 +360,30 @@ void Foam::MRFZone::addCoriolis
 
     const vector Omega = this->Omega();
 
+    foamExecutor exec;
+    auto UsourcePtr = Usource.begin();
+    const auto cellsPtr = cells.cbegin();
+    const auto VPtr = V.cbegin();
+    const auto UPtr = U.cbegin();
+    const auto rhoPtr = rho.cbegin();
+
     if (rhs)
     {
-        forAll(cells, i)
+        auto Lambda = [=](label i)
         {
-            label celli = cells[i];
-            Usource[celli] += V[celli]*rho[celli]*(Omega ^ U[celli]);
-        }
+            label celli = cellsPtr[i];
+            UsourcePtr[celli] += VPtr[celli]*rhoPtr[celli]*(Omega ^ UPtr[celli]);
+        };
+        exec.parallelFor(Lambda, cells.size());
     }
     else
     {
-        forAll(cells, i)
+        auto Lambda = [=](label i)
         {
-            label celli = cells[i];
-            Usource[celli] -= V[celli]*rho[celli]*(Omega ^ U[celli]);
-        }
+            label celli = cellsPtr[i];
+            UsourcePtr[celli] -= VPtr[celli]*rhoPtr[celli]*(Omega ^ UPtr[celli]);
+        };
+        exec.parallelFor(Lambda, cells.size());
     }
 }
 
@@ -374,11 +401,18 @@ void Foam::MRFZone::makeRelative(volVectorField& U) const
 
     const labelList& cells = mesh_.cellZones()[cellZoneID_];
 
-    forAll(cells, i)
+    foamExecutor exec;
+    auto UPtr = U.begin();
+    const auto cellsPtr = cells.cbegin();
+    const auto CPtr = C.cbegin();
+    const vector local_origin(origin_);
+
+    auto Lambda = [=](label i)
     {
-        label celli = cells[i];
-        U[celli] -= (Omega ^ (C[celli] - origin_));
-    }
+        label celli = cellsPtr[i];
+        UPtr[celli] -= (Omega ^ (CPtr[celli] - local_origin));
+    };
+    exec.parallelFor(Lambda, cells.size());
 
     // Included patches
 
@@ -386,23 +420,30 @@ void Foam::MRFZone::makeRelative(volVectorField& U) const
 
     forAll(includedFaces_, patchi)
     {
-        forAll(includedFaces_[patchi], i)
+        auto UbfPtr = Ubf[patchi].begin();
+        const auto incFacesPtr = includedFaces_[patchi].cbegin();
+        auto Lambda = [=](label i)
         {
-            label patchFacei = includedFaces_[patchi][i];
-            Ubf[patchi][patchFacei] = Zero;
-        }
+            label patchFacei = incFacesPtr[i];
+            UbfPtr[patchFacei] = Zero;
+        };
+        exec.parallelFor(Lambda, includedFaces_[patchi].size());
     }
 
     // Excluded patches
     forAll(excludedFaces_, patchi)
     {
-        forAll(excludedFaces_[patchi], i)
+        auto UbfPtr = Ubf[patchi].begin();
+        const auto exclFacesPtr = excludedFaces_[patchi].cbegin();
+        const auto CPtr = C.boundaryField()[patchi].cbegin();
+        auto Lambda = [=](label i)
         {
-            label patchFacei = excludedFaces_[patchi][i];
-            Ubf[patchi][patchFacei] -=
+            label patchFacei = exclFacesPtr[i];
+            UbfPtr[patchFacei] -=
                 (Omega
-              ^ (C.boundaryField()[patchi][patchFacei] - origin_));
-        }
+              ^ (CPtr[patchFacei] - local_origin));
+        };
+        exec.parallelFor(Lambda, excludedFaces_[patchi].size());
     }
 }
 
@@ -448,34 +489,51 @@ void Foam::MRFZone::makeAbsolute(volVectorField& U) const
 
     const labelList& cells = mesh_.cellZones()[cellZoneID_];
 
-    forAll(cells, i)
+    foamExecutor exec;
+    auto UPtr = U.begin();
+    const auto cellsPtr = cells.cbegin();
+    const auto CPtr = C.cbegin();
+    const vector local_origin(origin_);
+
+    auto Lambda = [=](label i)
     {
-        label celli = cells[i];
-        U[celli] += (Omega ^ (C[celli] - origin_));
-    }
+        label celli = cellsPtr[i];
+        UPtr[celli] += (Omega ^ (CPtr[celli] - local_origin));
+    };
+    exec.parallelFor(Lambda, cells.size());
 
     // Included patches
     volVectorField::Boundary& Ubf = U.boundaryFieldRef();
 
     forAll(includedFaces_, patchi)
     {
-        forAll(includedFaces_[patchi], i)
+        auto UbfPtr = Ubf[patchi].begin();
+        const auto incFacesPtr = includedFaces_[patchi].cbegin();
+        const auto CPtr = C.boundaryField()[patchi].cbegin();
+
+        auto Lambda = [=](label i)
         {
-            label patchFacei = includedFaces_[patchi][i];
-            Ubf[patchi][patchFacei] =
-                (Omega ^ (C.boundaryField()[patchi][patchFacei] - origin_));
-        }
+            label patchFacei = incFacesPtr[i];
+            UbfPtr[patchFacei] =
+                (Omega ^ (CPtr[patchFacei] - local_origin));
+        };
+        exec.parallelFor(Lambda, includedFaces_[patchi].size());
     }
 
     // Excluded patches
     forAll(excludedFaces_, patchi)
     {
-        forAll(excludedFaces_[patchi], i)
+        auto UbfPtr = Ubf[patchi].begin();
+        const auto exclFacesPtr = excludedFaces_[patchi].cbegin();
+        const auto CPtr = C.boundaryField()[patchi].cbegin();
+
+        auto Lambda = [=](label i)
         {
-            label patchFacei = excludedFaces_[patchi][i];
-            Ubf[patchi][patchFacei] +=
-                (Omega ^ (C.boundaryField()[patchi][patchFacei] - origin_));
-        }
+            label patchFacei = exclFacesPtr[i];
+            UbfPtr[patchFacei] +=
+                (Omega ^ (CPtr[patchFacei] - local_origin));
+        };
+        exec.parallelFor(Lambda, excludedFaces_[patchi].size());
     }
 }
 
@@ -504,9 +562,11 @@ void Foam::MRFZone::correctBoundaryVelocity(volVectorField& U) const
     }
 
     const vector Omega = this->Omega();
-
+    const vector local_origin(origin_);
     // Included patches
     volVectorField::Boundary& Ubf = U.boundaryFieldRef();
+
+    foamExecutor exec;
 
     forAll(includedFaces_, patchi)
     {
@@ -514,12 +574,18 @@ void Foam::MRFZone::correctBoundaryVelocity(volVectorField& U) const
 
         vectorField pfld(Ubf[patchi]);
 
-        forAll(includedFaces_[patchi], i)
-        {
-            label patchFacei = includedFaces_[patchi][i];
+        auto pfldPtr = pfld.begin();
+        const auto incFacesPtr = includedFaces_[patchi].cbegin();
+        const auto patchCPtr = patchC.cbegin();
 
-            pfld[patchFacei] = (Omega ^ (patchC[patchFacei] - origin_));
-        }
+
+        auto Lambda = [=](label i)
+        {
+            label patchFacei = incFacesPtr[i];
+
+            pfldPtr[patchFacei] = (Omega ^ (patchCPtr[patchFacei] - local_origin));
+        };
+        exec.parallelFor(Lambda, includedFaces_[patchi].size());
 
         Ubf[patchi] == pfld;
     }

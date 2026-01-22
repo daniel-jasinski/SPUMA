@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2019-2025 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -98,7 +99,7 @@ public:
 
         //- Construct given VectorSpace of the same rank
         template<class Cmpt2>
-        inline SymmTensor(const VectorSpace<SymmTensor<Cmpt2>, Cmpt2, 6>&);
+        FOAM_DEVICE inline SymmTensor(const VectorSpace<SymmTensor<Cmpt2>, Cmpt2, 6>&);
 
         //- Construct given SphericalTensor
         inline SymmTensor(const SphericalTensor<Cmpt>&);
@@ -113,7 +114,7 @@ public:
         );
 
         //- Construct given the six components
-        inline SymmTensor
+        FOAM_DEVICE inline SymmTensor
         (
             const Cmpt txx, const Cmpt txy, const Cmpt txz,
                             const Cmpt tyy, const Cmpt tyz,
@@ -128,15 +129,15 @@ public:
 
     // Component Access
 
-        const Cmpt& xx() const noexcept { return this->v_[XX]; }
-        const Cmpt& xy() const noexcept { return this->v_[XY]; }
-        const Cmpt& xz() const noexcept { return this->v_[XZ]; }
-        const Cmpt& yx() const noexcept { return this->v_[XY]; }
-        const Cmpt& yy() const noexcept { return this->v_[YY]; }
-        const Cmpt& yz() const noexcept { return this->v_[YZ]; }
-        const Cmpt& zx() const noexcept { return this->v_[XZ]; }
-        const Cmpt& zy() const noexcept { return this->v_[YZ]; }
-        const Cmpt& zz() const noexcept { return this->v_[ZZ]; }
+        FOAM_DEVICE const Cmpt& xx() const noexcept { return this->v_[XX]; }
+        FOAM_DEVICE const Cmpt& xy() const noexcept { return this->v_[XY]; }
+        FOAM_DEVICE const Cmpt& xz() const noexcept { return this->v_[XZ]; }
+        FOAM_DEVICE const Cmpt& yx() const noexcept { return this->v_[XY]; }
+        FOAM_DEVICE const Cmpt& yy() const noexcept { return this->v_[YY]; }
+        FOAM_DEVICE const Cmpt& yz() const noexcept { return this->v_[YZ]; }
+        FOAM_DEVICE const Cmpt& zx() const noexcept { return this->v_[XZ]; }
+        FOAM_DEVICE const Cmpt& zy() const noexcept { return this->v_[YZ]; }
+        FOAM_DEVICE const Cmpt& zz() const noexcept { return this->v_[ZZ]; }
 
         Cmpt& xx() noexcept { return this->v_[XX]; }
         Cmpt& xy() noexcept { return this->v_[XY]; }
@@ -246,16 +247,16 @@ public:
         const SymmTensor<Cmpt>& T() const noexcept { return *this; }
 
         //- The determinate
-        inline Cmpt det() const;
+        FOAM_DEVICE inline Cmpt det() const;
 
         //- The 2D determinant by excluding given direction
         inline Cmpt det2D(const direction excludeCmpt) const;
 
         //- Return adjunct matrix (transpose of cofactor matrix)
-        inline SymmTensor<Cmpt> adjunct() const;
+        FOAM_DEVICE inline SymmTensor<Cmpt> adjunct() const;
 
         //- Return cofactor matrix (transpose of adjunct matrix)
-        inline SymmTensor<Cmpt> cof() const;
+        FOAM_DEVICE inline SymmTensor<Cmpt> cof() const;
 
         //- Return 2D adjunct matrix by excluding given direction
         inline SymmTensor<Cmpt> adjunct2D(const direction excludeCmpt) const;

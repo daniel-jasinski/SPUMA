@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2020 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -38,6 +39,7 @@ SourceFiles
 #ifndef Foam_primitives_uint_H
 #define Foam_primitives_uint_H
 
+#include "deviceM.H"
 #include "uint8.H"
 #include "uint16.H"
 #include "uint32.H"
@@ -51,13 +53,13 @@ namespace Foam
 #define MAXMIN(RetType, Type1, Type2)                                          \
                                                                                \
 /*! \brief Floating/integral min. Use std::min() to preserve references */     \
-inline RetType min(const Type1 s1, const Type2 s2)                             \
+FOAM_DEVICE inline RetType min(const Type1 s1, const Type2 s2)                 \
 {                                                                              \
     return (s1 < s2) ? s1 : s2;                                                \
 }                                                                              \
                                                                                \
 /*! \brief Floating/integral max. Use std::max() to preserve references */     \
-inline RetType max(const Type1 s1, const Type2 s2)                             \
+FOAM_DEVICE inline RetType max(const Type1 s1, const Type2 s2)                 \
 {                                                                              \
     return (s2 < s1) ? s1 : s2;                                                \
 }

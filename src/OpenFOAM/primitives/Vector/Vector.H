@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2022 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -85,26 +86,26 @@ public:
     // Generated Methods
 
         //- Default construct
-        Vector() = default;
+        FOAM_DEVICE Vector() = default;
 
         //- Copy construct
-        Vector(const Vector&) = default;
+        FOAM_DEVICE Vector(const Vector&) = default;
 
         //- Copy assignment
-        Vector& operator=(const Vector&) = default;
+        FOAM_DEVICE Vector& operator=(const Vector&) = default;
 
 
     // Constructors
 
         //- Construct initialized to zero
-        inline Vector(Foam::zero);
+        FOAM_DEVICE inline Vector(Foam::zero);
 
         //- Copy construct from VectorSpace of the same rank
         template<class Cmpt2>
-        inline Vector(const VectorSpace<Vector<Cmpt2>, Cmpt2, 3>& vs);
+        FOAM_DEVICE inline Vector(const VectorSpace<Vector<Cmpt2>, Cmpt2, 3>& vs);
 
         //- Construct from three components
-        inline Vector(const Cmpt& vx, const Cmpt& vy, const Cmpt& vz);
+        FOAM_DEVICE inline Vector(const Cmpt& vx, const Cmpt& vy, const Cmpt& vz);
 
         //- Construct from Istream
         inline explicit Vector(Istream& is);
@@ -115,13 +116,13 @@ public:
     // Component Access
 
         //- Access to the vector x component
-        const Cmpt& x() const noexcept { return this->v_[components::X]; }
+        FOAM_DEVICE const Cmpt& x() const noexcept { return this->v_[components::X]; }
 
         //- Access to the vector y component
-        const Cmpt& y() const noexcept { return this->v_[components::Y]; }
+        FOAM_DEVICE const Cmpt& y() const noexcept { return this->v_[components::Y]; }
 
         //- Access to the vector z component
-        const Cmpt& z() const noexcept { return this->v_[components::Z]; }
+        FOAM_DEVICE const Cmpt& z() const noexcept { return this->v_[components::Z]; }
 
         //- Access to the vector x component
         Cmpt& x() noexcept { return this->v_[components::X]; }
@@ -142,10 +143,10 @@ public:
         ) const noexcept;
 
         //- The length (L2-norm) of the vector
-        inline scalar mag() const;
+        FOAM_DEVICE inline scalar mag() const;
 
         //- The length (L2-norm) squared of the vector.
-        inline scalar magSqr() const;
+        FOAM_DEVICE inline scalar magSqr() const;
 
         //- The L2-norm distance from another vector.
         //- The mag() of the difference.
@@ -165,10 +166,10 @@ public:
         inline Vector<Cmpt>& removeCollinear(const Vector<Cmpt>& unitVec);
 
         //- Scalar-product of \c this with another Vector.
-        inline Cmpt inner(const Vector<Cmpt>& v2) const;
+        FOAM_DEVICE inline Cmpt inner(const Vector<Cmpt>& v2) const;
 
         //- Cross-product of \c this with another Vector.
-        inline Vector<Cmpt> cross(const Vector<Cmpt>& v2) const;
+        FOAM_DEVICE inline Vector<Cmpt> cross(const Vector<Cmpt>& v2) const;
 
 
     // Comparison Operations

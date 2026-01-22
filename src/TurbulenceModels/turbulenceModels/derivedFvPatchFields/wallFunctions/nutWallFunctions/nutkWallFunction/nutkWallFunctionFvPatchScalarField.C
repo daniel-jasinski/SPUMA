@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016, 2019 OpenFOAM Foundation
     Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -65,19 +66,24 @@ calcNut() const
     const tmp<scalarField> tnutVis = turbModel.nu(patchi);
     const scalarField& nutVis = tnutVis();
 
+    const auto faceCellsPtr = faceCells.cbegin();
+    const auto yPtr = y.cbegin();
+    const auto kPtr = k.primitiveField().cbegin();
+    const auto nutVisPtr = nutVis.cbegin();
+
     // Calculate y-plus
-    const auto yPlus = [&](const label facei) -> scalar
+    const auto yPlus = [=](const label facei) -> scalar
     {
-        return (Cmu25*y[facei]*sqrt(k[faceCells[facei]])/nutVis[facei]);
+        return (Cmu25*yPtr[facei]*sqrt(kPtr[faceCellsPtr[facei]])/nutVisPtr[facei]);
     };
 
     // Inertial sublayer contribution
-    const auto nutLog = [&](const label facei) -> scalar
+    const auto nutLog = [=](const label facei) -> scalar
     {
         const scalar yPlusFace = yPlus(facei);
         return
         (
-            nutVis[facei]*yPlusFace*kappa
+            nutVisPtr[facei]*yPlusFace*kappa
           / log(max(E*yPlusFace, 1 + 1e-4))
         );
     };
@@ -85,81 +91,85 @@ calcNut() const
     auto tnutw = tmp<scalarField>::New(patch().size(), Zero);
     auto& nutw = tnutw.ref();
 
+    auto nutwPtr = nutw.begin();
+    foamExecutor exec;
+
     switch (blender_)
     {
         case blenderType::STEPWISE:
         {
-            forAll(nutw, facei)
-            {
+            auto Lambda = [=](label facei){
                 if (yPlus(facei) > yPlusLam)
                 {
-                    nutw[facei] = nutLog(facei);
+                    nutwPtr[facei] = nutLog(facei);
                 }
                 else
                 {
-                    nutw[facei] = nutVis[facei];
+                    nutwPtr[facei] = nutVisPtr[facei];
                 }
-            }
+            };
+            exec.parallelFor(Lambda,nutw.size());
             break;
         }
 
         case blenderType::MAX:
         {
-            forAll(nutw, facei)
-            {
+            auto Lambda = [=](label facei){
                 // (PH:Eq. 27)
-                nutw[facei] = max(nutVis[facei], nutLog(facei));
-            }
+                nutwPtr[facei] = max(nutVisPtr[facei], nutLog(facei));
+            };
+            exec.parallelFor(Lambda,nutw.size());
             break;
         }
 
         case blenderType::BINOMIAL:
         {
-            forAll(nutw, facei)
-            {
+            const scalar n(n_);
+            auto Lambda = [=](label facei){
                 // (ME:Eqs. 15-16)
-                nutw[facei] =
+                nutwPtr[facei] =
                     pow
                     (
-                        pow(nutVis[facei], n_) + pow(nutLog(facei), n_),
-                        scalar(1)/n_
+                        pow(nutVisPtr[facei], n) + pow(nutLog(facei), n),
+                        scalar(1)/n
                     );
-            }
+            };
+            exec.parallelFor(Lambda,nutw.size());
             break;
         }
 
         case blenderType::EXPONENTIAL:
         {
-            forAll(nutw, facei)
-            {
+            auto Lambda = [=](label facei){
                 // (PH:Eq. 31)
                 const scalar yPlusFace = yPlus(facei);
                 const scalar Gamma = 0.01*pow4(yPlusFace)/(1 + 5*yPlusFace);
                 const scalar invGamma = scalar(1)/(Gamma + ROOTVSMALL);
 
-                nutw[facei] =
-                    nutVis[facei]*exp(-Gamma) + nutLog(facei)*exp(-invGamma);
-            }
+                nutwPtr[facei] =
+                    nutVisPtr[facei]*exp(-Gamma) + nutLog(facei)*exp(-invGamma);
+            };
+            exec.parallelFor(Lambda,nutw.size());
             break;
         }
 
         case blenderType::TANH:
         {
-            forAll(nutw, facei)
-            {
+            auto Lambda = [=](label facei){
                 // (KAS:Eqs. 33-34)
                 const scalar nutLogFace = nutLog(facei);
-                const scalar b1 = nutVis[facei] + nutLogFace;
+                const scalar b1 = nutVisPtr[facei] + nutLogFace;
                 const scalar b2 =
                     pow
                     (
-                        pow(nutVis[facei], 1.2) + pow(nutLogFace, 1.2),
+                        pow(nutVisPtr[facei], 1.2) + pow(nutLogFace, 1.2),
                         1.0/1.2
                     );
                 const scalar phiTanh = tanh(pow4(0.1*yPlus(facei)));
 
-                nutw[facei] = phiTanh*b1 + (1 - phiTanh)*b2;
-            }
+                nutwPtr[facei] = phiTanh*b1 + (1 - phiTanh)*b2;
+            };
+            exec.parallelFor(Lambda,nutw.size());
             break;
         }
     }
