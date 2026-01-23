@@ -33,6 +33,7 @@ License
 #define TEMPLATE template<class Type>
 #include "FieldFunctionsM.C"
 
+#include "Atomics.H"
 #include <type_traits>
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -869,13 +870,13 @@ Type gWeightedAverage
 
     const label loopLen = fld.size();
 
-    /* pragmas... */
-    for (label i = 0; i < loopLen; ++i)
-    {
-        const scalar w = Foam::mag(weights[i]);
-        weight += w;
-        result += w*fld[i];
-    }
+    const auto weightsPtr = weights.cbegin();
+    const auto fldPtr = fld.cbegin();
+    foamExecutor exec;
+    auto LambdaWeight = [=](label i){return Foam::mag(weightsPtr[i]);};
+    exec.reductionSum(LambdaWeight,&weight,loopLen);
+    auto LambdaResult = [=](label i){return Foam::mag(weightsPtr[i])*fldPtr[i];};
+    exec.reductionSum(LambdaResult,&result,loopLen);
 
     // Communicator is not disabled
     if (comm >= 0)

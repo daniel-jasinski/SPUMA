@@ -105,14 +105,21 @@ void Foam::basicSymmetryFvPatchField<Type>::snGrad(UList<Type>& result) const
 
         // (dc/2.0)*(transform(I - 2.0*sqr(nHat), iF) - iF);
 
-        for (label i = 0; i < len; ++i)
+        foamExecutor exec;
+        auto resultPtr = result.begin();
+        const auto dcPtr = dc.cbegin();
+        const auto nHatPtr = nHat.cbegin();
+        const auto pifPtr = pif.cbegin();
+        const auto localI(I);
+        auto Lambda = [=](label i)
         {
-            result[i] =
+            resultPtr[i] =
             (
-                (0.5*dc[i])
-              * (transform(I - 2.0*sqr(nHat[i]), pif[i]) - pif[i])
+                (0.5*dcPtr[i])
+              * (transform(localI - 2.0*sqr(nHatPtr[i]), pifPtr[i]) - pifPtr[i])
             );
-        }
+        };
+        exec.parallelFor(Lambda,len);
     }
 }
 

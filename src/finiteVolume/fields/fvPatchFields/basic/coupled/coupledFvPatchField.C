@@ -248,10 +248,15 @@ void Foam::coupledFvPatchField<Type>::gradientInternalCoeffs
 {
     const label len = result.size();
 
-    for (label i = 0; i < len; ++i)
+    auto resultPtr = result.begin();
+    const auto deltaCoeffsPtr = deltaCoeffs.cbegin();
+    const Type localType = -Type(pTraits<Type>::one);
+    foamExecutor exec;
+    auto Lambda = [=](label i)
     {
-        result[i] = -Type(pTraits<Type>::one)*deltaCoeffs[i];
-    }
+        resultPtr[i] = localType*deltaCoeffsPtr[i];
+    };
+    exec.parallelFor(Lambda, len);
 }
 
 
@@ -264,10 +269,15 @@ void Foam::coupledFvPatchField<Type>::gradientBoundaryCoeffs
 {
     const label len = result.size();
 
-    for (label i = 0; i < len; ++i)
+    auto resultPtr = result.begin();
+    const auto deltaCoeffsPtr = deltaCoeffs.cbegin();
+    const Type localType = Type(pTraits<Type>::one);
+    foamExecutor exec;
+    auto Lambda = [=](label i)
     {
-        result[i] = Type(pTraits<Type>::one)*deltaCoeffs[i];
-    }
+        resultPtr[i] = localType*deltaCoeffsPtr[i];
+    };
+    exec.parallelFor(Lambda, len);
 }
 
 

@@ -181,12 +181,21 @@ void Foam::fv::gaussGrad<Type>::calcGrad
     Field<GradType>& igGrad = gGrad;
     const Field<Type>& issf = ssf;
 
-    forAll(owner, facei)
+    foamExecutor exec;
+    auto igGradPtr = igGrad.begin();
+    
     {
-        const GradType Sfssf = Sf[facei]*issf[facei];
-
-        igGrad[owner[facei]] += Sfssf;
-        igGrad[neighbour[facei]] -= Sfssf;
+        const auto SfPtr = Sf.cbegin();
+        const auto issfPtr = issf.cbegin();
+        const auto ownerPtr = owner.cbegin();
+        const auto neighbourPtr = neighbour.cbegin();
+        auto Lambda = [=](label facei)
+        {
+            const GradType Sfssf = SfPtr[facei]*issfPtr[facei];
+            foamAtomic::AtomicAdd(igGradPtr[ownerPtr[facei]], Sfssf);
+            foamAtomic::AtomicAdd(igGradPtr[neighbourPtr[facei]], - Sfssf);
+        };
+        exec.parallelFor(Lambda,owner.size());
     }
 
     forAll(mesh.boundary(), patchi)
@@ -198,10 +207,15 @@ void Foam::fv::gaussGrad<Type>::calcGrad
 
         const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
 
-        forAll(mesh.boundary()[patchi], facei)
+        const auto pSfPtr = pSf.cbegin();
+        const auto pssfPtr = pssf.cbegin();
+        const auto pFaceCellsPtr = pFaceCells.cbegin();
+
+        auto Lambda = [=](label facei)
         {
-            igGrad[pFaceCells[facei]] += pSf[facei]*pssf[facei];
-        }
+            foamAtomic::AtomicAdd(igGradPtr[pFaceCellsPtr[facei]], pSfPtr[facei]*pssfPtr[facei]);
+        };
+        exec.parallelFor(Lambda, mesh.boundary()[patchi].size());
     }
 
     igGrad /= mesh.V();

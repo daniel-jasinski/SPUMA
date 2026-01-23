@@ -233,10 +233,16 @@ void Foam::fvPatchField<Type>::snGrad(UList<Type>& result) const
 
     const label len = result.size();
 
-    for (label i = 0; i < len; ++i)
+    foamExecutor exec;
+    auto resultPtr = result.begin();
+    const auto dcPtr = dc.cbegin();
+    const auto pfldPtr = pfld.cbegin();
+    const auto pifPtr = pif.cbegin();
+    auto Lambda = [=](label i)
     {
-        result[i] = dc[i]*(pfld[i] - pif[i]);
-    }
+        resultPtr[i] = dcPtr[i]*(pfldPtr[i] - pifPtr[i]);
+    };
+    exec.parallelFor(Lambda,len);
 }
 
 
