@@ -67,14 +67,22 @@ Foam::nutURoughWallFunctionFvPatchScalarField::calcNut() const
     auto tnutw = tmp<scalarField>::New(patch().size(), Zero);
     auto& nutw = tnutw.ref();
 
-    forAll(yPlus, facei)
+    foamExecutor exec;
+    const auto yPlusPtr = yPlus.cbegin();
+    const auto magUpPtr = magUp.cbegin();
+    const auto yPtr = y.cbegin();
+    const auto nuwPtr = nuw.cbegin();
+    auto nutwPtr = nutw.begin();
+
+    auto Lambda = [=](label facei)
     {
-        if (yPlusLam < yPlus[facei])
+        if (yPlusLam < yPlusPtr[facei])
         {
-            const scalar Re = magUp[facei]*y[facei]/nuw[facei] + ROOTVSMALL;
-            nutw[facei] = nuw[facei]*(sqr(yPlus[facei])/Re - 1);
+            const scalar Re = magUpPtr[facei]*yPtr[facei]/nuwPtr[facei] + ROOTVSMALL;
+            nutwPtr[facei] = nuwPtr[facei]*(sqr(yPlusPtr[facei])/Re - 1);
         }
-    }
+    };
+    exec.parallelFor(Lambda, yPlus.size());
 
     return tnutw;
 }
@@ -109,21 +117,32 @@ Foam::nutURoughWallFunctionFvPatchScalarField::calcYPlus
     auto tyPlus = tmp<scalarField>::New(patch().size(), Zero);
     auto& yPlus = tyPlus.ref();
 
+    foamExecutor exec;
+    auto yPlusPtr = yPlus.begin();
+    const auto magUpPtr = magUp.cbegin();
+    const auto nuwPtr = nuw.cbegin();
+    const auto yPtr = y.cbegin();
+    const scalar roughnessHeight = this->roughnessHeight_;
+    const scalar roughnessFactor = this->roughnessFactor_;
+    const scalar roughnessConstant = this->roughnessConstant_;
+    const scalar tolerance = this->tolerance_;
+    const label maxIter = this->maxIter_;
+     
     if (roughnessHeight_ > 0.0)
     {
         // Rough Walls
         const scalar c_1 = 1.0/(90.0 - 2.25) + roughnessConstant_;
-        static const scalar c_2 = 2.25/(90.0 - 2.25);
-        static const scalar c_3 = 2.0*atan(1.0)/log(90.0/2.25);
-        static const scalar c_4 = c_3*log(2.25);
+        const scalar c_2 = 2.25/(90.0 - 2.25);
+        const scalar c_3 = 2.0*atan(1.0)/log(90.0/2.25);
+        const scalar c_4 = c_3*log(2.25);
 
         {
             // If KsPlus is based on YPlus the extra term added to the law
             // of the wall will depend on yPlus
-            forAll(yPlus, facei)
+            auto Lambda = [=](label facei)
             {
-                const scalar magUpara = magUp[facei];
-                const scalar Re = magUpara*y[facei]/nuw[facei];
+                const scalar magUpara = magUpPtr[facei];
+                const scalar Re = magUpara*yPtr[facei]/nuwPtr[facei];
                 const scalar kappaRe = kappa*Re;
 
                 scalar yp = yPlusLam;
@@ -131,11 +150,11 @@ Foam::nutURoughWallFunctionFvPatchScalarField::calcYPlus
 
                 int iter = 0;
                 scalar yPlusLast = 0.0;
-                scalar dKsPlusdYPlus = roughnessHeight_/y[facei];
+                scalar dKsPlusdYPlus = roughnessHeight/yPtr[facei];
 
                 // Additional tuning parameter - nominally = 1
-                dKsPlusdYPlus *= roughnessFactor_;
-
+                dKsPlusdYPlus *= roughnessFactor;
+  
                 do
                 {
                     yPlusLast = yp;
@@ -150,9 +169,9 @@ Foam::nutURoughWallFunctionFvPatchScalarField::calcYPlus
 
                     if (KsPlus >= 90.0)
                     {
-                        const scalar t_1 = 1 + roughnessConstant_*KsPlus;
+                        const scalar t_1 = 1 + roughnessConstant*KsPlus;
                         G = log(t_1);
-                        yPlusGPrime = roughnessConstant_*KsPlus/t_1;
+                        yPlusGPrime = roughnessConstant*KsPlus/t_1;
                     }
                     else if (KsPlus > 2.25)
                     {
@@ -172,22 +191,23 @@ Foam::nutURoughWallFunctionFvPatchScalarField::calcYPlus
                     }
                 } while
                 (
-                    mag(ryPlusLam*(yp - yPlusLast)) > tolerance_
-                 && ++iter < maxIter_
+                    mag(ryPlusLam*(yp - yPlusLast)) > tolerance
+                 && ++iter < maxIter
                  && yp > VSMALL
                 );
 
-                yPlus[facei] = max(scalar(0), yp);
-            }
+                yPlusPtr[facei] = max(scalar(0), yp);
+            };
+            exec.parallelFor(Lambda, yPlus.size());
         }
     }
     else
     {
         // Smooth Walls
-        forAll(yPlus, facei)
+        auto Lambda = [=](label facei)
         {
-            const scalar magUpara = magUp[facei];
-            const scalar Re = magUpara*y[facei]/nuw[facei];
+            const scalar magUpara = magUpPtr[facei];
+            const scalar Re = magUpara*yPtr[facei]/nuwPtr[facei];
             const scalar kappaRe = kappa*Re;
 
             scalar yp = yPlusLam;
@@ -204,12 +224,13 @@ Foam::nutURoughWallFunctionFvPatchScalarField::calcYPlus
             }
             while
             (
-                mag(ryPlusLam*(yp - yPlusLast)) > tolerance_
-             && ++iter < maxIter_
+                mag(ryPlusLam*(yp - yPlusLast)) > tolerance
+             && ++iter < maxIter
             );
 
-            yPlus[facei] = max(scalar(0), yp);
-        }
+            yPlusPtr[facei] = max(scalar(0), yp);
+        };
+        exec.parallelFor(Lambda, yPlus.size());
     }
 
     return tyPlus;
