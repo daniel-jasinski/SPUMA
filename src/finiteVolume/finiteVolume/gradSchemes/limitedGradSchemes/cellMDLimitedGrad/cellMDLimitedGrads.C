@@ -68,53 +68,68 @@ Foam::fv::cellMDLimitedGrad<Foam::scalar>::calcGrad
     scalarField maxVsf(vsf.primitiveField());
     scalarField minVsf(vsf.primitiveField());
 
-    forAll(owner, facei)
+    foamExecutor exec;
+    const auto ownerPtr = owner.cbegin();
+    const auto neighbourPtr = neighbour.cbegin();
+
+    auto gPtr = g.begin();
+    const auto vsfPtr = vsf.cbegin();
+    auto maxVsfPtr = maxVsf.begin();
+    auto minVsfPtr = minVsf.begin();
+    const auto CPtr = C.cbegin();
+    const auto CfPtr = Cf.cbegin();
+
+    auto Lambda = [=](label facei)
     {
-        const label own = owner[facei];
-        const label nei = neighbour[facei];
+        const label own = ownerPtr[facei];
+        const label nei = neighbourPtr[facei];
 
-        const scalar vsfOwn = vsf[own];
-        const scalar vsfNei = vsf[nei];
+        const scalar& vsfOwn = vsfPtr[own];
+        const scalar& vsfNei = vsfPtr[nei];
 
-        maxVsf[own] = max(maxVsf[own], vsfNei);
-        minVsf[own] = min(minVsf[own], vsfNei);
+        foamAtomic::AtomicMax(maxVsfPtr[own], vsfNei);
+        foamAtomic::AtomicMin(minVsfPtr[own], vsfNei);
 
-        maxVsf[nei] = max(maxVsf[nei], vsfOwn);
-        minVsf[nei] = min(minVsf[nei], vsfOwn);
-    }
-
+        foamAtomic::AtomicMax(maxVsfPtr[nei], vsfOwn);
+        foamAtomic::AtomicMin(minVsfPtr[nei], vsfOwn);
+    };
+    exec.parallelFor(Lambda, owner.size());
 
     const volScalarField::Boundary& bsf = vsf.boundaryField();
 
     forAll(bsf, patchi)
     {
         const fvPatchScalarField& psf = bsf[patchi];
-
         const labelUList& pOwner = mesh.boundary()[patchi].faceCells();
+        const auto psfPtr = psf.cbegin();
+        const auto pOwnerPtr = pOwner.cbegin();
 
         if (psf.coupled())
         {
             const scalarField psfNei(psf.patchNeighbourField());
-
-            forAll(pOwner, pFacei)
+            const auto psfNeiPtr = psfNei.cbegin();
+            
+            auto Lambda = [=](label pFacei)
             {
-                const label own = pOwner[pFacei];
-                const scalar vsfNei = psfNei[pFacei];
+                const label own = pOwnerPtr[pFacei];
+                const scalar& vsfNei = psfNeiPtr[pFacei];
 
-                maxVsf[own] = max(maxVsf[own], vsfNei);
-                minVsf[own] = min(minVsf[own], vsfNei);
-            }
+                foamAtomic::AtomicMax(maxVsfPtr[own], vsfNei);
+                foamAtomic::AtomicMin(minVsfPtr[own], vsfNei);
+            };
+            exec.parallelFor(Lambda, pOwner.size());
         }
         else
         {
-            forAll(pOwner, pFacei)
+            auto Lambda = [=](label pFacei)
             {
-                const label own = pOwner[pFacei];
-                const scalar vsfNei = psf[pFacei];
+                const label own = pOwnerPtr[pFacei];
+                const scalar& vsfNei = psfPtr[pFacei];
 
-                maxVsf[own] = max(maxVsf[own], vsfNei);
-                minVsf[own] = min(minVsf[own], vsfNei);
-            }
+                foamAtomic::AtomicMax(maxVsfPtr[own], vsfNei);
+                foamAtomic::AtomicMin(minVsfPtr[own], vsfNei);
+            };
+            exec.parallelFor(Lambda, pOwner.size());
         }
     }
 
@@ -126,54 +141,54 @@ Foam::fv::cellMDLimitedGrad<Foam::scalar>::calcGrad
         const scalarField maxMinVsf((1.0/k_ - 1.0)*(maxVsf - minVsf));
         maxVsf += maxMinVsf;
         minVsf -= maxMinVsf;
-
-        //maxVsf *= 1.0/k_;
-        //minVsf *= 1.0/k_;
     }
 
-
-    forAll(owner, facei)
+    auto LambdaInitLimiter = [=](label facei)
     {
-        const label own = owner[facei];
-        const label nei = neighbour[facei];
+        const label own = ownerPtr[facei];
+        const label nei = neighbourPtr[facei];
 
         // owner side
         limitFace
         (
-            g[own],
-            maxVsf[own],
-            minVsf[own],
-            Cf[facei] - C[own]
+            gPtr[own],
+            maxVsfPtr[own],
+            minVsfPtr[own],
+            CfPtr[facei] - CPtr[own]
         );
 
         // neighbour side
         limitFace
         (
-            g[nei],
-            maxVsf[nei],
-            minVsf[nei],
-            Cf[facei] - C[nei]
+            gPtr[nei],
+            maxVsfPtr[nei],
+            minVsfPtr[nei],
+            CfPtr[facei] - CPtr[nei]
         );
-    }
-
+    };
+    exec.parallelFor(LambdaInitLimiter, owner.size());
 
     forAll(bsf, patchi)
     {
         const labelUList& pOwner = mesh.boundary()[patchi].faceCells();
         const vectorField& pCf = Cf.boundaryField()[patchi];
 
-        forAll(pOwner, pFacei)
+        const auto pOwnerPtr = pOwner.cbegin();
+        const auto pCfPtr = pCf.cbegin();
+
+        auto Lambda = [=](label pFacei)
         {
-            const label own = pOwner[pFacei];
+            const label own = pOwnerPtr[pFacei];
 
             limitFace
             (
-                g[own],
-                maxVsf[own],
-                minVsf[own],
-                pCf[pFacei] - C[own]
+                gPtr[own],
+                maxVsfPtr[own],
+                minVsfPtr[own],
+                pCfPtr[pFacei] - CPtr[own]
             );
-        }
+        };
+        exec.parallelFor(Lambda, pOwner.size());
     }
 
     g.correctBoundaryConditions();
@@ -211,21 +226,32 @@ Foam::fv::cellMDLimitedGrad<Foam::vector>::calcGrad
     vectorField maxVsf(vsf.primitiveField());
     vectorField minVsf(vsf.primitiveField());
 
-    forAll(owner, facei)
+    foamExecutor exec;
+    const auto ownerPtr = owner.cbegin();
+    const auto neighbourPtr = neighbour.cbegin();
+
+    auto gPtr = g.begin();
+    const auto vsfPtr = vsf.cbegin();
+    auto maxVsfPtr = maxVsf.begin();
+    auto minVsfPtr = minVsf.begin();
+    const auto CPtr = C.cbegin();
+    const auto CfPtr = Cf.cbegin();
+
+    auto Lambda = [=](label facei)
     {
-        const label own = owner[facei];
-        const label nei = neighbour[facei];
+        const label own = ownerPtr[facei];
+        const label nei = neighbourPtr[facei];
 
-        const vector& vsfOwn = vsf[own];
-        const vector& vsfNei = vsf[nei];
+        const vector& vsfOwn = vsfPtr[own];
+        const vector& vsfNei = vsfPtr[nei];
 
-        maxVsf[own] = max(maxVsf[own], vsfNei);
-        minVsf[own] = min(minVsf[own], vsfNei);
+        foamAtomic::AtomicMax(maxVsfPtr[own], vsfNei);
+        foamAtomic::AtomicMin(minVsfPtr[own], vsfNei);
 
-        maxVsf[nei] = max(maxVsf[nei], vsfOwn);
-        minVsf[nei] = min(minVsf[nei], vsfOwn);
-    }
-
+        foamAtomic::AtomicMax(maxVsfPtr[nei], vsfOwn);
+        foamAtomic::AtomicMin(minVsfPtr[nei], vsfOwn);
+    };
+    exec.parallelFor(Lambda, owner.size());
 
     const volVectorField::Boundary& bsf = vsf.boundaryField();
 
@@ -233,30 +259,35 @@ Foam::fv::cellMDLimitedGrad<Foam::vector>::calcGrad
     {
         const fvPatchVectorField& psf = bsf[patchi];
         const labelUList& pOwner = mesh.boundary()[patchi].faceCells();
+        const auto psfPtr = psf.cbegin();
+        const auto pOwnerPtr = pOwner.cbegin();
 
         if (psf.coupled())
         {
             const vectorField psfNei(psf.patchNeighbourField());
+            const auto psfNeiPtr = psfNei.cbegin();
 
-            forAll(pOwner, pFacei)
+            auto Lambda = [=](label pFacei)
             {
-                const label own = pOwner[pFacei];
-                const vector& vsfNei = psfNei[pFacei];
+                const label own = pOwnerPtr[pFacei];
+                const vector& vsfNei = psfNeiPtr[pFacei];
 
-                maxVsf[own] = max(maxVsf[own], vsfNei);
-                minVsf[own] = min(minVsf[own], vsfNei);
-            }
+                foamAtomic::AtomicMax(maxVsfPtr[own], vsfNei);
+                foamAtomic::AtomicMin(minVsfPtr[own], vsfNei);
+            };
+            exec.parallelFor(Lambda, pOwner.size());
         }
         else
         {
-            forAll(pOwner, pFacei)
+            auto Lambda = [=](label pFacei)
             {
-                const label own = pOwner[pFacei];
-                const vector& vsfNei = psf[pFacei];
+                const label own = pOwnerPtr[pFacei];
+                const vector& vsfNei = psfPtr[pFacei];
 
-                maxVsf[own] = max(maxVsf[own], vsfNei);
-                minVsf[own] = min(minVsf[own], vsfNei);
-            }
+                foamAtomic::AtomicMax(maxVsfPtr[own], vsfNei);
+                foamAtomic::AtomicMin(minVsfPtr[own], vsfNei);
+            };
+            exec.parallelFor(Lambda, pOwner.size());
         }
     }
 
@@ -268,54 +299,54 @@ Foam::fv::cellMDLimitedGrad<Foam::vector>::calcGrad
         const vectorField maxMinVsf((1.0/k_ - 1.0)*(maxVsf - minVsf));
         maxVsf += maxMinVsf;
         minVsf -= maxMinVsf;
-
-        //maxVsf *= 1.0/k_;
-        //minVsf *= 1.0/k_;
     }
 
-
-    forAll(owner, facei)
+    auto LambdaInitLimiter = [=](label facei)
     {
-        const label own = owner[facei];
-        const label nei = neighbour[facei];
+        const label own = ownerPtr[facei];
+        const label nei = neighbourPtr[facei];
 
         // owner side
         limitFace
         (
-            g[own],
-            maxVsf[own],
-            minVsf[own],
-            Cf[facei] - C[own]
+            gPtr[own],
+            maxVsfPtr[own],
+            minVsfPtr[own],
+            CfPtr[facei] - CPtr[own]
         );
 
         // neighbour side
         limitFace
         (
-            g[nei],
-            maxVsf[nei],
-            minVsf[nei],
-            Cf[facei] - C[nei]
+            gPtr[nei],
+            maxVsfPtr[nei],
+            minVsfPtr[nei],
+            CfPtr[facei] - CPtr[nei]
         );
-    }
-
+    };
+    exec.parallelFor(LambdaInitLimiter, owner.size());
 
     forAll(bsf, patchi)
     {
         const labelUList& pOwner = mesh.boundary()[patchi].faceCells();
         const vectorField& pCf = Cf.boundaryField()[patchi];
 
-        forAll(pOwner, pFacei)
+        const auto pOwnerPtr = pOwner.cbegin();
+        const auto pCfPtr = pCf.cbegin();
+
+        auto Lambda = [=](label pFacei)
         {
-            const label own = pOwner[pFacei];
+            const label own = pOwnerPtr[pFacei];
 
             limitFace
             (
-                g[own],
-                maxVsf[own],
-                minVsf[own],
-                pCf[pFacei] - C[own]
+                gPtr[own],
+                maxVsfPtr[own],
+                minVsfPtr[own],
+                pCfPtr[pFacei] - CPtr[own]
             );
-        }
+        };
+        exec.parallelFor(Lambda, pOwner.size());
     }
 
     g.correctBoundaryConditions();

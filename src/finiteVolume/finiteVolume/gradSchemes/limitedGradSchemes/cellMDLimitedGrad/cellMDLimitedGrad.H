@@ -46,6 +46,7 @@ SourceFiles
 #ifndef cellMDLimitedGrad_H
 #define cellMDLimitedGrad_H
 
+#include "Atomics.H"
 #include "gradScheme.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -112,7 +113,7 @@ public:
 
     // Member Functions
 
-        static inline void limitFace
+        FOAM_DEVICE static inline void limitFace
         (
             typename outerProduct<vector, Type>::type& g,
             const Type& maxDelta,
@@ -137,7 +138,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 template<>
-inline void cellMDLimitedGrad<scalar>::limitFace
+FOAM_DEVICE inline void cellMDLimitedGrad<scalar>::limitFace
 (
     vector& g,
     const scalar& maxDelta,
@@ -149,17 +150,17 @@ inline void cellMDLimitedGrad<scalar>::limitFace
 
     if (extrapolate > maxDelta)
     {
-        g = g + dcf*(maxDelta - extrapolate)/magSqr(dcf);
+        foamAtomic::AtomicAdd(g, dcf*(maxDelta - extrapolate)/magSqr(dcf));
     }
     else if (extrapolate < minDelta)
     {
-        g = g + dcf*(minDelta - extrapolate)/magSqr(dcf);
+        foamAtomic::AtomicAdd(g, dcf*(minDelta - extrapolate)/magSqr(dcf));
     }
 }
 
 
 template<class Type>
-inline void cellMDLimitedGrad<Type>::limitFace
+FOAM_DEVICE inline void cellMDLimitedGrad<Type>::limitFace
 (
     typename outerProduct<vector, Type>::type& g,
     const Type& maxDelta,
@@ -170,16 +171,22 @@ inline void cellMDLimitedGrad<Type>::limitFace
     for (direction cmpt = 0; cmpt < Type::nComponents; ++cmpt)
     {
         vector gi(g[cmpt], g[cmpt+3], g[cmpt+6]);
-        cellMDLimitedGrad<scalar>::limitFace
-        (
-            gi,
-            maxDelta.component(cmpt),
-            minDelta.component(cmpt),
-            dcf
-        );
-        g[cmpt] = gi.x();
-        g[cmpt+3] = gi.y();
-        g[cmpt+6] = gi.z();
+        vector gIncrement(0., 0., 0.);
+
+        const scalar extrapolate = dcf & gi;
+
+        if (extrapolate > maxDelta.component(cmpt))
+        {
+            gIncrement = dcf*(maxDelta.component(cmpt) - extrapolate)/magSqr(dcf);
+        }
+        else if (extrapolate < minDelta.component(cmpt))
+        {
+            gIncrement = dcf*(minDelta.component(cmpt) - extrapolate)/magSqr(dcf);
+        }
+
+        foamAtomic::AtomicAdd(g[cmpt], gIncrement.x());
+        foamAtomic::AtomicAdd(g[cmpt+3], gIncrement.y());
+        foamAtomic::AtomicAdd(g[cmpt+6], gIncrement.z());
     }
 }
 
