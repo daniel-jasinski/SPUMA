@@ -1,13 +1,26 @@
 EXE_INC = \
     -I$(OBJECTS_DIR)
 
+/* Windows: define FOAM_BUILDING_LIB so FOAM_EXPORT_DATA becomes dllexport */
+ifneq (,$(findstring windows,$(WM_OSTYPE)))
+    EXE_INC += -DFOAM_BUILDING_LIB
+endif
+
+ifneq (,$(findstring windows,$(WM_OSTYPE)))
+LIB_LIBS = \
+    $(FOAM_LIBBIN)/libOSspecific.lib \
+    -Wl,/DEFAULTLIB:advapi32
+else
 LIB_LIBS = \
     $(FOAM_LIBBIN)/libOSspecific.o
+endif
 
-/* libz: (not disabled) */
+/* libz: disabled on Windows MSVC (no MSVC-compatible zlib available yet) */
+ifeq (,$(findstring windows,$(WM_OSTYPE)))
 ifeq (,$(findstring ~libz,$(WM_COMPILE_CONTROL)))
     EXE_INC  += -DHAVE_LIBZ
     LIB_LIBS += -lz
+endif
 endif
 
 /* extrae profiling hooks [https://tools.bsc.es/extrae] */
@@ -22,7 +35,11 @@ endif
 PROJECT_LIBS =
 
 ifeq (libo,$(FOAM_LINK_DUMMY_PSTREAM))
+ifneq (,$(findstring windows,$(WM_OSTYPE)))
+    LIB_LIBS += $(FOAM_LIBBIN)/dummy/libPstream_static.lib
+else
     LIB_LIBS += $(FOAM_LIBBIN)/dummy/libPstream.o
+endif
 else
     LIB_LIBS += -L$(FOAM_LIBBIN)/dummy -lPstream
 endif
@@ -45,6 +62,14 @@ endif
 
 ifneq (,$(findstring true,$(have_sycl)))
     EXE_INC += -Dhave_sycl
+endif
+
+/* SYCL device code: include .cpp implementation files for inline device code.
+   Detect SYCL from compiler name (Sycl or MsvcSycl) since have_sycl
+   may not be passed through to make on Windows. */
+ifneq (,$(findstring Sycl,$(WM_COMPILER)))
+    EXE_INC += -I$(LIB_SRC)/OpenFOAM/device/executor
+    EXE_INC += -I$(LIB_SRC)/OpenFOAM/device/memoryExecutor
 endif
 
 

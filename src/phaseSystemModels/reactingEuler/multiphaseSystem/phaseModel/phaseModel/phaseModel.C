@@ -111,7 +111,7 @@ Foam::phaseModel::New
             dict,
             "phaseModel",
             modelType,
-            *phaseSystemConstructorTablePtr_
+            *phaseSystemConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

@@ -73,7 +73,7 @@ Foam::topOInterpolationFunction::New
             dict,
             "function",
             type,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

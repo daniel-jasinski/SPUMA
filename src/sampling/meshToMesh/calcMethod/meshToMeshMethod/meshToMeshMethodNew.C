@@ -47,7 +47,7 @@ Foam::autoPtr<Foam::meshToMeshMethod> Foam::meshToMeshMethod::New
         (
             "meshToMesh",
             methodName,
-            *componentsConstructorTablePtr_
+            *componentsConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

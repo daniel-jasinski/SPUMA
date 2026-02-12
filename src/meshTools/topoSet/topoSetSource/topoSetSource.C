@@ -43,7 +43,11 @@ namespace Foam
 }
 
 
-Foam::HashTable<Foam::string>* Foam::topoSetSource::usageTablePtr_ = nullptr;
+Foam::HashTable<Foam::string>*& Foam::topoSetSource::usageTablePtr_()
+{
+    static HashTable<string>* ptr = nullptr;
+    return ptr;
+}
 
 
 const Foam::Enum
@@ -139,7 +143,7 @@ Foam::autoPtr<Foam::topoSetSource> Foam::topoSetSource::New
             dict,
             "topoSetSource",
             topoSetSourceType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -162,7 +166,7 @@ Foam::autoPtr<Foam::topoSetSource> Foam::topoSetSource::New
         (
             "topoSetSource",
             topoSetSourceType,
-            *istreamConstructorTablePtr_
+            *istreamConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

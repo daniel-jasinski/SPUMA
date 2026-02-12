@@ -6,9 +6,16 @@ LINK_LIBS   = $(c++DBUG)
 LINKLIBSO   = $(CC) $(c++FLAGS) -shared
 LINKEXE     = $(CC) $(c++FLAGS)
 
-# Windows DLL export
+# Windows DLL export (MinGW)
 ifeq ($(WM_OSTYPE),MSwindows)
     LINKLIBSO  += -Wl,--export-all-symbols
+endif
+
+# Windows MSVC ABI: Allow unresolved symbols for cross-DLL static data access
+# These are resolved at runtime when DLLs load
+ifeq ($(WM_OSTYPE),windows)
+    LINKLIBSO  += -Wl,/FORCE:UNRESOLVED
+    LINKEXE    += -Wl,/FORCE:UNRESOLVED
 endif
 
 #------------------------------------------------------------------------------

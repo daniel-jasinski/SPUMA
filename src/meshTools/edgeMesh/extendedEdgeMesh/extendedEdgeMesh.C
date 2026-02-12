@@ -100,13 +100,13 @@ Foam::label Foam::extendedEdgeMesh::externalStart_ = 0;
 
 Foam::wordHashSet Foam::extendedEdgeMesh::readTypes()
 {
-    return wordHashSet(*fileExtensionConstructorTablePtr_);
+    return wordHashSet(*fileExtensionConstructorTablePtr_());
 }
 
 
 Foam::wordHashSet Foam::extendedEdgeMesh::writeTypes()
 {
-    return wordHashSet(*writefileExtensionMemberFunctionTablePtr_);
+    return wordHashSet(*writefileExtensionMemberFunctionTablePtr_());
 }
 
 

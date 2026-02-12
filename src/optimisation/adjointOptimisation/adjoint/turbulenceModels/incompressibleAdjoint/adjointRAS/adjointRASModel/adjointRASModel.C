@@ -214,7 +214,7 @@ autoPtr<adjointRASModel> adjointRASModel::New
             dict,
             "adjointRASModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

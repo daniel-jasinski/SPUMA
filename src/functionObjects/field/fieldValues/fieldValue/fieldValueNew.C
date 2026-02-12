@@ -55,7 +55,7 @@ Foam::functionObjects::fieldValue::New
             dict,
             typeName,
             modelType,
-            *runTimeConstructorTablePtr_
+            *runTimeConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

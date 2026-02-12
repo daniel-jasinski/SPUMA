@@ -68,7 +68,7 @@ Foam::topoSet::New
         (
             "set",
             setType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -94,7 +94,7 @@ Foam::topoSet::New
         (
             "set",
             setType,
-            *sizeConstructorTablePtr_
+            *sizeConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -120,7 +120,7 @@ Foam::topoSet::New
         (
             "set",
             setType,
-            *setConstructorTablePtr_
+            *setConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

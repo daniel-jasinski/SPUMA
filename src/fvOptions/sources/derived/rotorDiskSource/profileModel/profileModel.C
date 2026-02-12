@@ -84,7 +84,7 @@ Foam::autoPtr<Foam::profileModel> Foam::profileModel::New
             dict,
             "profileModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

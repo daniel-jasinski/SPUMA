@@ -72,11 +72,11 @@ Description
         ::Foam::Hash<::Foam::word>                                             \
     > prefix##CompatTableType;                                                 \
                                                                                \
-    /* Table singleton (storage) */                                            \
-    static prefix##TableType* prefix##TablePtr_;                               \
+    /* Table singleton (storage via function-local static for Windows DLL) */  \
+    static prefix##TableType*& prefix##TablePtr_();                            \
                                                                                \
-    /* Lookup aliases singleton (storage) */                                   \
-    static std::unique_ptr<prefix##CompatTableType> prefix##CompatTablePtr_;   \
+    /* Lookup aliases singleton (storage via function-local static) */         \
+    static std::unique_ptr<prefix##CompatTableType>& prefix##CompatTablePtr_();\
                                                                                \
     /* Aliases singleton (access) */                                           \
     static prefix##CompatTableType& prefix##CompatTable();                     \
@@ -89,24 +89,33 @@ Description
 
 
 // Not used directly: storage and helper methods for runtime tables
+// - uses function-local statics for Windows DLL cross-module sharing
 // - uses automatic cleanup for compat table (issue #2314)
 #define defineRunTimeSelectionTableBase(baseType,prefix,Tspecialize)           \
                                                                                \
-    /* Define table singleton (storage) */                                     \
-    Tspecialize prefix##TableType* prefix##TablePtr_(nullptr);                 \
+    /* Define table singleton via function-local static (Windows DLL-safe) */  \
+    Tspecialize prefix##TableType*& prefix##TablePtr_()                        \
+    {                                                                          \
+        static prefix##TableType* ptr = nullptr;                               \
+        return ptr;                                                            \
+    }                                                                          \
                                                                                \
-    /* Define aliases singleton (storage) */                                   \
+    /* Define aliases singleton via function-local static (Windows DLL-safe) */\
     Tspecialize                                                                \
-    std::unique_ptr<prefix##CompatTableType> prefix##CompatTablePtr_(nullptr); \
+    std::unique_ptr<prefix##CompatTableType>& prefix##CompatTablePtr_()        \
+    {                                                                          \
+        static std::unique_ptr<prefix##CompatTableType> ptr(nullptr);          \
+        return ptr;                                                            \
+    }                                                                          \
                                                                                \
     /* Define table singleton (access) for aliases */                          \
     Tspecialize prefix##CompatTableType& prefix##CompatTable()                 \
     {                                                                          \
-        if (!prefix##CompatTablePtr_)                                          \
+        if (!prefix##CompatTablePtr_())                                        \
         {                                                                      \
-            prefix##CompatTablePtr_.reset(new prefix##CompatTableType(16));    \
+            prefix##CompatTablePtr_().reset(new prefix##CompatTableType(16));  \
         }                                                                      \
-        return *(prefix##CompatTablePtr_);                                     \
+        return *(prefix##CompatTablePtr_());                                   \
     }                                                                          \
                                                                                \
     /* Table construct/destruct helper */                                      \
@@ -117,27 +126,27 @@ Description
         {                                                                      \
             if (!constructed)                                                  \
             {                                                                  \
-                prefix##TablePtr_ = new prefix##TableType;                     \
+                prefix##TablePtr_() = new prefix##TableType;                   \
                 constructed = true;                                            \
             }                                                                  \
         }                                                                      \
-        else if (prefix##TablePtr_)                                            \
+        else if (prefix##TablePtr_())                                          \
         {                                                                      \
-            delete prefix##TablePtr_;                                          \
-            prefix##TablePtr_ = nullptr;                                       \
+            delete prefix##TablePtr_();                                        \
+            prefix##TablePtr_() = nullptr;                                     \
         }                                                                      \
     }                                                                          \
                                                                                \
     /* Define lookup function pointer (singleton) */                           \
     Tspecialize prefix##Ptr prefix##Table(const ::Foam::word& k)               \
     {                                                                          \
-        if (prefix##TablePtr_)                                                 \
+        if (prefix##TablePtr_())                                               \
         {                                                                      \
-            const auto& tbl = *prefix##TablePtr_;                              \
+            const auto& tbl = *prefix##TablePtr_();                            \
             auto iter = tbl.cfind(k);                                          \
-            if (!iter.good() && prefix##CompatTablePtr_)                       \
+            if (!iter.good() && prefix##CompatTablePtr_())                     \
             {                                                                  \
-                const auto altIter = prefix##CompatTablePtr_->cfind(k);        \
+                const auto altIter = prefix##CompatTablePtr_()->cfind(k);      \
                 if (altIter.good())                                            \
                 {                                                              \
                     const auto& alt = altIter.val();  /* <word,int> */         \
@@ -203,16 +212,15 @@ Description
                                                                                \
         explicit add##argNames##ConstructorToTable                             \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName                   \
+            const ::Foam::word& k = baseType##Type::typeName_()               \
         )                                                                      \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
-            if (!argNames##ConstructorTablePtr_->insert(k, New))               \
+            if (!argNames##ConstructorTablePtr_()->insert(k, New))             \
             {                                                                  \
                 std::cerr                                                      \
                     << "Duplicate entry " << k << " in runtime table "         \
                     << #baseType << std::endl;                                 \
-                ::Foam::error::safePrintStack(std::cerr);                      \
             }                                                                  \
         }                                                                      \
                                                                                \
@@ -242,20 +250,20 @@ Description
                                                                                \
         explicit addRemovable##argNames##ConstructorToTable                    \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName                   \
+            const ::Foam::word& k = baseType##Type::typeName_()               \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
-            argNames##ConstructorTablePtr_->set(k, New);                       \
+            argNames##ConstructorTablePtr_()->set(k, New);                     \
         }                                                                      \
                                                                                \
         ~addRemovable##argNames##ConstructorToTable()                          \
         {                                                                      \
-            if (argNames##ConstructorTablePtr_)                                \
+            if (argNames##ConstructorTablePtr_())                              \
             {                                                                  \
-                argNames##ConstructorTablePtr_->erase(name);                   \
+                argNames##ConstructorTablePtr_()->erase(name);                 \
             }                                                                  \
         }                                                                      \
                                                                                \
@@ -301,16 +309,15 @@ Description
                                                                                \
         explicit add##argNames##ConstructorToTable                             \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName                   \
+            const ::Foam::word& k = baseType##Type::typeName_()               \
         )                                                                      \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
-            if (!argNames##ConstructorTablePtr_->insert(k, New##baseType))     \
+            if (!argNames##ConstructorTablePtr_()->insert(k, New##baseType))   \
             {                                                                  \
                 std::cerr                                                      \
                     << "Duplicate entry " << k << " in runtime table "         \
                     << #baseType << std::endl;                                 \
-                ::Foam::error::safePrintStack(std::cerr);                      \
             }                                                                  \
         }                                                                      \
                                                                                \
@@ -339,20 +346,20 @@ Description
                                                                                \
         explicit addRemovable##argNames##ConstructorToTable                    \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName                   \
+            const ::Foam::word& k = baseType##Type::typeName_()               \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
-            argNames##ConstructorTablePtr_->set(k, New##baseType);             \
+            argNames##ConstructorTablePtr_()->set(k, New##baseType);           \
         }                                                                      \
                                                                                \
         ~addRemovable##argNames##ConstructorToTable()                          \
         {                                                                      \
-            if (argNames##ConstructorTablePtr_)                                \
+            if (argNames##ConstructorTablePtr_())                              \
             {                                                                  \
-                argNames##ConstructorTablePtr_->erase(name);                   \
+                argNames##ConstructorTablePtr_()->erase(name);                 \
             }                                                                  \
         }                                                                      \
                                                                                \

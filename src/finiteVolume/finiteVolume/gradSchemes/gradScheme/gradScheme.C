@@ -49,7 +49,7 @@ Foam::tmp<Foam::fv::gradScheme<Type>> Foam::fv::gradScheme<Type>::New
         FatalIOErrorInFunction(schemeData)
             << "Grad scheme not specified" << endl << endl
             << "Valid grad schemes are :" << endl
-            << IstreamConstructorTablePtr_->sortedToc()
+            << IstreamConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -64,7 +64,7 @@ Foam::tmp<Foam::fv::gradScheme<Type>> Foam::fv::gradScheme<Type>::New
             schemeData,
             "grad",
             schemeName,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -44,7 +44,7 @@ Foam::autoPtr<Foam::edgeMesh> Foam::edgeMesh::New
             << "Unknown edge format " << fileType
             << " for file " << name << nl << nl
             << "Valid types:" << nl
-            << flatOutput(fileExtensionConstructorTablePtr_->sortedToc())
+            << flatOutput(fileExtensionConstructorTablePtr_()->sortedToc())
             << exit(FatalError);
     }
 

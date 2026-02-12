@@ -74,7 +74,7 @@ Foam::topoSetCellZoneSource::New
             dict,
             "cellZoneSource",
             sourceType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -98,7 +98,7 @@ Foam::topoSetCellZoneSource::New
         (
             "cellZoneSource",
             sourceType,
-            *istreamConstructorTablePtr_
+            *istreamConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

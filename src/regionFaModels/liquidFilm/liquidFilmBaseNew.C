@@ -55,7 +55,7 @@ autoPtr<liquidFilmBase> liquidFilmBase::New
             dict,
             "liquidFilmModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

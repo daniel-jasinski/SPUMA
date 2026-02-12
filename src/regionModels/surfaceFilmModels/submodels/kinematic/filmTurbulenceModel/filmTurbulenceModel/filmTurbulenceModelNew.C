@@ -58,7 +58,7 @@ autoPtr<filmTurbulenceModel> filmTurbulenceModel::New
             dict,
             "filmTurbulenceModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

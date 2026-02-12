@@ -79,7 +79,7 @@ autoPtr<surfaceFilmModel> surfaceFilmModel::New
             dict,
             "surfaceFilmModel",
             modelType,
-            *meshConstructorTablePtr_
+            *meshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

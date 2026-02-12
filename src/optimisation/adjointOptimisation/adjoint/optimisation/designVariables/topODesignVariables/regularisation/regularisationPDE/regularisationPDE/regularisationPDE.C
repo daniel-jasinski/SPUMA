@@ -149,7 +149,7 @@ Foam::autoPtr<Foam::regularisationPDE> Foam::regularisationPDE::New
             dict,
             "regularisationPDE",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

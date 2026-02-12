@@ -61,7 +61,7 @@ Foam::multiphaseInter::multiphaseSystem::New
             dict,
             "multiphaseSystem",
             systemType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

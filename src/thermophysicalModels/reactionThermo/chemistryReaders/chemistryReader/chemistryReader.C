@@ -55,7 +55,7 @@ Foam::chemistryReader<ThermoType>::New
             thermoDict,
             "chemistryReader",
             readerName,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

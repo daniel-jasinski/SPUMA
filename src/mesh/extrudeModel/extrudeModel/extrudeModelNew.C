@@ -48,7 +48,7 @@ Foam::autoPtr<Foam::extrudeModel> Foam::extrudeModel::New
             dict,
             "extrudeModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

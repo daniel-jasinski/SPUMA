@@ -54,7 +54,7 @@ Foam::LduMatrix<Type, DType, LUType>::preconditioner::New
                 preconditionerDict,
                 "symmetric matrix preconditioner",
                 preconditionerName,
-                *symMatrixConstructorTablePtr_
+                *symMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 
@@ -78,7 +78,7 @@ Foam::LduMatrix<Type, DType, LUType>::preconditioner::New
                 preconditionerDict,
                 "asymmetric matrix preconditioner",
                 preconditionerName,
-                *asymMatrixConstructorTablePtr_
+                *asymMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

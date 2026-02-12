@@ -49,7 +49,7 @@ Foam::autoPtr<Foam::substitutionModel> Foam::substitutionModel::New
             dict,
             "substitutionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

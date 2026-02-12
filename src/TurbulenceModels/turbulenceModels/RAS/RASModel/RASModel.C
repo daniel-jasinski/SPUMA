@@ -154,7 +154,7 @@ Foam::RASModel<BasicTurbulenceModel>::New
             dict,
             "RAS model",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -51,7 +51,7 @@ Foam::CompositionModel<CloudType>::New
             dict,
             "compositionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

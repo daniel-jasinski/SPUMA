@@ -44,13 +44,13 @@ bool Foam::simplifiedFvMesh::fvPatchFieldExists(const word& patchType)
 {
     return
     (
-        fvPatchField<scalar>::dictionaryConstructorTablePtr_->found(patchType)
-     || fvPatchField<vector>::dictionaryConstructorTablePtr_->found(patchType)
+        fvPatchField<scalar>::dictionaryConstructorTablePtr_()->found(patchType)
+     || fvPatchField<vector>::dictionaryConstructorTablePtr_()->found(patchType)
      || fvPatchField<sphericalTensor>::
-            dictionaryConstructorTablePtr_->found(patchType)
+            dictionaryConstructorTablePtr_()->found(patchType)
      || fvPatchField<symmTensor>::
-            dictionaryConstructorTablePtr_->found(patchType)
-     || fvPatchField<tensor>::dictionaryConstructorTablePtr_->found(patchType)
+            dictionaryConstructorTablePtr_()->found(patchType)
+     || fvPatchField<tensor>::dictionaryConstructorTablePtr_()->found(patchType)
     );
 }
 
@@ -93,7 +93,7 @@ Foam::autoPtr<Foam::simplifiedFvMesh> Foam::simplifiedFvMesh::New
         (
             "simplified fvMesh",
             modelType,
-            *timeConstructorTablePtr_
+            *timeConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

@@ -35,6 +35,9 @@ Description
 #include <iostream>
 #include <cstdlib>
 
+// Trace: DLL static init begins
+namespace { struct GlobalsTrace1 { GlobalsTrace1() { std::cerr << "TRACE: globals.C init start" << std::endl; std::cerr.flush(); } } globalsTrace1_; }
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 // Setup an error handler for the global new operator
 
@@ -107,5 +110,8 @@ bool Foam::JobInfo::constructed(false);
 // Create the jobInfo file in the $FOAM_JOB_DIR/runningJobs directory
 
 #include "JobInfo.C"
+
+// Trace: DLL static init for globals.C complete
+namespace { struct GlobalsTrace2 { GlobalsTrace2() { std::cerr << "TRACE: globals.C init done" << std::endl; std::cerr.flush(); } } globalsTrace2_; }
 
 // ************************************************************************* //

@@ -46,7 +46,7 @@ Foam::autoPtr<Foam::solidProperties> Foam::solidProperties::New
         (
             "solidProperties",
             name,
-            *ConstructorTablePtr_
+            *ConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -87,7 +87,7 @@ Foam::autoPtr<Foam::solidProperties> Foam::solidProperties::New
             dict,
             "solidProperties",
             solidType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

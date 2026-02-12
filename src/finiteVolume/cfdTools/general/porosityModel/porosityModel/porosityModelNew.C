@@ -52,7 +52,7 @@ Foam::autoPtr<Foam::porosityModel> Foam::porosityModel::New
             dict,
             typeName,
             modelType,
-            *meshConstructorTablePtr_
+            *meshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

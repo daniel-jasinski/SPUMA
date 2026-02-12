@@ -108,7 +108,7 @@ Foam::multiphaseInter::interfaceCompositionModel::New
             dict,
             "interfaceCompositionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

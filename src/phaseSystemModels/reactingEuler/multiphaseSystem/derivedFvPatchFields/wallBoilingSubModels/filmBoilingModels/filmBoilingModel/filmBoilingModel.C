@@ -60,7 +60,7 @@ Foam::wallBoilingModels::filmBoilingModel::New
             dict,
             "filmBoilingModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

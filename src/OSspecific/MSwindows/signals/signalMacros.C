@@ -34,6 +34,12 @@ SourceFiles
 #include "error.H"
 #include <csignal>
 
+// Signal handler function pointer type
+// MinGW defines __p_sig_fn_t but MSVC/clang-MSVC does not
+#if !defined(__MINGW32__) && !defined(__MINGW64__)
+typedef void (__cdecl *__p_sig_fn_t)(int);
+#endif
+
 // * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
 
 namespace Foam

@@ -102,7 +102,7 @@ Foam::autoPtr<Foam::lduMatrix::smoother> Foam::lduMatrix::smoother::New
                 solverControls,
                 "symmetric matrix smoother",
                 name,
-                *symMatrixConstructorTablePtr_
+                *symMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 
@@ -129,7 +129,7 @@ Foam::autoPtr<Foam::lduMatrix::smoother> Foam::lduMatrix::smoother::New
                 solverControls,
                 "asymmetric matrix smoother",
                 name,
-                *asymMatrixConstructorTablePtr_
+                *asymMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

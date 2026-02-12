@@ -73,7 +73,7 @@ autoPtr<pyrolysisModel> pyrolysisModel::New
             dict,
             "pyrolysisModel",
             modelType,
-            *meshConstructorTablePtr_
+            *meshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -102,7 +102,7 @@ autoPtr<pyrolysisModel> pyrolysisModel::New
             dict,
             "pyrolysisModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

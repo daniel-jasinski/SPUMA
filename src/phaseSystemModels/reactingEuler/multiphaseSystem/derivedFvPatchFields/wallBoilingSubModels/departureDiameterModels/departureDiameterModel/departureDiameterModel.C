@@ -61,7 +61,7 @@ Foam::wallBoilingModels::departureDiameterModel::New
             dict,
             "departureDiameterModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

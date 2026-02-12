@@ -150,7 +150,7 @@ Foam::autoPtr<Thermo> Foam::basicThermo::New
     auto* ctorPtr = getThermoOrDie<Thermo>
     (
         thermoDict,
-        *(Thermo::fvMeshConstructorTablePtr_)
+        *(Thermo::fvMeshConstructorTablePtr_())
     );
 
     return autoPtr<Thermo>(ctorPtr(mesh, phaseName));
@@ -168,7 +168,7 @@ Foam::autoPtr<Thermo> Foam::basicThermo::New
     auto* ctorPtr = getThermoOrDie<Thermo>
     (
         dict,
-        *(Thermo::dictionaryConstructorTablePtr_)
+        *(Thermo::dictionaryConstructorTablePtr_())
     );
 
     return autoPtr<Thermo>(ctorPtr(mesh, dict, phaseName));
@@ -199,7 +199,7 @@ Foam::autoPtr<Thermo> Foam::basicThermo::New
     auto* ctorPtr = getThermoOrDie<Thermo>
     (
         thermoDict,
-        *(Thermo::fvMeshDictPhaseConstructorTablePtr_)
+        *(Thermo::fvMeshDictPhaseConstructorTablePtr_())
     );
 
     return autoPtr<Thermo>(ctorPtr(mesh, phaseName, dictName));

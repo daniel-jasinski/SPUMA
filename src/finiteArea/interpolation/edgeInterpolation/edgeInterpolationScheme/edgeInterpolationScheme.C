@@ -53,7 +53,7 @@ Foam::edgeInterpolationScheme<Type>::New
         FatalIOErrorInFunction(schemeData)
             << "Discretisation scheme not specified" << nl << nl
             << "Valid schemes are :" << nl
-            << MeshConstructorTablePtr_->sortedToc()
+            << MeshConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -68,7 +68,7 @@ Foam::edgeInterpolationScheme<Type>::New
             schemeData,
             "discretisation",
             schemeName,
-            *MeshConstructorTablePtr_
+            *MeshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -98,7 +98,7 @@ Foam::edgeInterpolationScheme<Type>::New
             << "Discretisation scheme not specified"
             << endl << endl
             << "Valid schemes are :" << endl
-            << MeshConstructorTablePtr_->sortedToc()
+            << MeshConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -113,7 +113,7 @@ Foam::edgeInterpolationScheme<Type>::New
             schemeData,
             "discretisation",
             schemeName,
-            *MeshFluxConstructorTablePtr_
+            *MeshFluxConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

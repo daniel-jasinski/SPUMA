@@ -77,7 +77,7 @@ Foam::autoPtr<Foam::ParticleStressModel> Foam::ParticleStressModel::New
             dict,
             "particle stress model",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

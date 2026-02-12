@@ -61,7 +61,7 @@ Foam::reconstructionSchemes::New
             dict,
             "reconstructionSchemes",
             schemeType,
-            *componentsConstructorTablePtr_
+            *componentsConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

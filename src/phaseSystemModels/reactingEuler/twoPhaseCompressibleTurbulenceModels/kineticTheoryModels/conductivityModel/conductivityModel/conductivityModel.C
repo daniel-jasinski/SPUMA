@@ -72,7 +72,7 @@ Foam::kineticTheoryModels::conductivityModel::New
             dict,
             "conductivityModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

@@ -52,7 +52,7 @@ Foam::autoPtr<Foam::polyMeshModifier> Foam::polyMeshModifier::New
             dict,
             "polyMeshModifier",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

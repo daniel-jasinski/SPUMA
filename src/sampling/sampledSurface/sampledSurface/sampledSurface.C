@@ -69,7 +69,7 @@ Foam::autoPtr<Foam::sampledSurface> Foam::sampledSurface::New
             dict,
             "sample",
             sampleType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

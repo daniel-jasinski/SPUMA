@@ -61,7 +61,7 @@ Foam::autoPtr<Foam::engineTime> Foam::engineTime::New
             dict,
             "engine",
             engineType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

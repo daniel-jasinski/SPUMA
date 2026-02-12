@@ -51,7 +51,7 @@ Foam::DevolatilisationModel<CloudType>::New
             dict,
             "devolatilisationModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

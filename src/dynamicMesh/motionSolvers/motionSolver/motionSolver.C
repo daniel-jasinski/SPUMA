@@ -120,10 +120,10 @@ Foam::autoPtr<Foam::motionSolver> Foam::motionSolver::New
     (
         solverDict,
         "motionSolverLibs",
-        dictionaryConstructorTablePtr_
+        dictionaryConstructorTablePtr_()
     );
 
-    if (!dictionaryConstructorTablePtr_)
+    if (!dictionaryConstructorTablePtr_())
     {
         FatalErrorInFunction
             << "solver table is empty"
@@ -139,7 +139,7 @@ Foam::autoPtr<Foam::motionSolver> Foam::motionSolver::New
             solverDict,
             "solver",
             solverName,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

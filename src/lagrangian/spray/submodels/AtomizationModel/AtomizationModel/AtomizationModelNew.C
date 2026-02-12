@@ -51,7 +51,7 @@ Foam::AtomizationModel<CloudType>::New
             dict,
             "atomizationModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

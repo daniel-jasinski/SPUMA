@@ -40,6 +40,7 @@ SourceFiles
 #ifndef Foam_UPstream_H
 #define Foam_UPstream_H
 
+#include "stdFoam.H"
 #include "wordList.H"
 #include "labelList.H"
 #include "DynamicList.H"
@@ -209,13 +210,13 @@ private:
     // Private Static Data
 
         //- By default this is not a parallel run
-        static bool parRun_;
+        FOAM_EXPORT_DATA static bool parRun_;
 
         //- Have support for threads?
-        static bool haveThreads_;
+        FOAM_EXPORT_DATA static bool haveThreads_;
 
         //- Standard transfer message type
-        static int msgType_;
+        FOAM_EXPORT_DATA static int msgType_;
 
         //- Names of all worlds
         static wordList allWorlds_;
@@ -233,13 +234,13 @@ private:
     // Communicator specific data
 
         //- My processor number
-        static DynamicList<int> myProcNo_;
+        FOAM_EXPORT_DATA static DynamicList<int> myProcNo_;
 
         //- List of process IDs
-        static DynamicList<List<int>> procIDs_;
+        FOAM_EXPORT_DATA static DynamicList<List<int>> procIDs_;
 
         //- Parent communicator
-        static DynamicList<label> parentComm_;
+        FOAM_EXPORT_DATA static DynamicList<label> parentComm_;
 
         //- Free communicators
         static DynamicList<label> freeComms_;
@@ -315,10 +316,10 @@ public:
 
         //- Communicator for all ranks.
         //- May differ from commGlobal() if local worlds are in use
-        static label worldComm;
+        FOAM_EXPORT_DATA static label worldComm;
 
         //- Debugging: warn for use of any communicator differing from warnComm
-        static label warnComm;
+        FOAM_EXPORT_DATA static label warnComm;
 
         //- Communicator for all ranks, irrespective of any local worlds
         static constexpr label commGlobal() noexcept { return 0; }

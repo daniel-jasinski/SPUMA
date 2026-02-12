@@ -83,7 +83,7 @@ Foam::porousModel::New
             dict,
             "porousModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

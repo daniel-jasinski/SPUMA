@@ -48,13 +48,13 @@ namespace Foam
 
 Foam::wordHashSet Foam::edgeMesh::readTypes()
 {
-    return wordHashSet(*fileExtensionConstructorTablePtr_);
+    return wordHashSet(*fileExtensionConstructorTablePtr_());
 }
 
 
 Foam::wordHashSet Foam::edgeMesh::writeTypes()
 {
-    return wordHashSet(*writefileExtensionMemberFunctionTablePtr_);
+    return wordHashSet(*writefileExtensionMemberFunctionTablePtr_());
 }
 
 

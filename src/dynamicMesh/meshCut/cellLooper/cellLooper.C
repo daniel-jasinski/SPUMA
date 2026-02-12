@@ -56,7 +56,7 @@ Foam::autoPtr<Foam::cellLooper> Foam::cellLooper::New
         (
             "cellLooper",
             type,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

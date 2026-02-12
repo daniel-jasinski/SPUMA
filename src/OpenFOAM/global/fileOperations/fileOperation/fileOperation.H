@@ -73,6 +73,7 @@ Description
 #ifndef Foam_fileOperation_H
 #define Foam_fileOperation_H
 
+#include "foamWinCompat.H"
 #include "ISstream.H"
 #include "Ostream.H"
 #include "UPstream.H"

@@ -52,7 +52,7 @@ Foam::sixDoFRigidBodyMotionConstraint::New
             dict,
             "sixDoFRigidBodyMotionConstraint",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

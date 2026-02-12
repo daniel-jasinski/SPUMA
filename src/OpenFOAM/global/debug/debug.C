@@ -147,6 +147,8 @@ Foam::dictionary& Foam::debug::controlDict()
 {
     if (!controlDictPtr_)
     {
+        std::cerr << "debug::controlDict() loading..." << std::endl;
+        std::cerr.flush();
         string controlDictString(Foam::getEnv("FOAM_CONTROLDICT"));
         if (!controlDictString.empty())
         {
@@ -173,6 +175,8 @@ Foam::dictionary& Foam::debug::controlDict()
                 controlDictPtr_->merge(dictionary(is));
             }
         }
+        std::cerr << "debug::controlDict() loaded OK" << std::endl;
+        std::cerr.flush();
     }
 
     return *controlDictPtr_;
@@ -187,6 +191,8 @@ Foam::dictionary& Foam::debug::switchSet
 {
     if (!subDictPtr)
     {
+        std::cerr << "debug::switchSet(\"" << subDictName << "\")" << std::endl;
+        std::cerr.flush();
         subDictPtr = controlDict().findDict(subDictName, keyType::LITERAL);
 
         if (!subDictPtr)

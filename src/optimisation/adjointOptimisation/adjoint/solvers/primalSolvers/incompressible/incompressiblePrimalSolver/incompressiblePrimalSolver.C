@@ -94,7 +94,7 @@ Foam::incompressiblePrimalSolver::New
             dict,
             "incompressiblePrimalSolver",
             solverType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

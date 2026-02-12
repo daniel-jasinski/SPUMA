@@ -243,7 +243,7 @@ autoPtr<objective> objective::New
             dict,
             "objective",
             objectiveType,
-            *objectiveConstructorTablePtr_
+            *objectiveConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

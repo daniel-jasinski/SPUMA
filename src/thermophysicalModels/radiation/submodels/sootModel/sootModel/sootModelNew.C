@@ -54,7 +54,7 @@ Foam::radiation::sootModel::New
             dict,
             "sootModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

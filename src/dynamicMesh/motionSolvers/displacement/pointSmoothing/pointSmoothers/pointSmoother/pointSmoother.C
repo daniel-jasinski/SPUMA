@@ -139,15 +139,15 @@ Foam::pointSmoother::New
 {
     Info<< "Selecting pointSmoother type " << pointSmootherType << endl;
 
-    auto cstrIter = dictionaryConstructorTablePtr_->find(pointSmootherType);
+    auto cstrIter = dictionaryConstructorTablePtr_()->find(pointSmootherType);
 
-    if (cstrIter == dictionaryConstructorTablePtr_->end())
+    if (cstrIter == dictionaryConstructorTablePtr_()->end())
     {
         FatalErrorIn("pointSmoother::New")
             << "Unknown " << typeName << " type "
             << pointSmootherType << endl << endl
             << "Valid " << typeName << " types are : " << endl
-            << dictionaryConstructorTablePtr_->sortedToc()
+            << dictionaryConstructorTablePtr_()->sortedToc()
             << exit(FatalError);
     }
 

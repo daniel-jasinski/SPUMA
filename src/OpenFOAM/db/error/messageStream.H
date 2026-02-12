@@ -53,6 +53,7 @@ SourceFiles
 #ifndef Foam_messageStream_H
 #define Foam_messageStream_H
 
+#include "stdFoam.H"
 #include "label.H"
 #include "word.H"
 #include <string>
@@ -296,21 +297,21 @@ public:
 //
 //  The values are normally 0 or a positive value.
 //  \note This flag is initialized to 1 by default.
-extern int infoDetailLevel;
+FOAM_EXPORT_DATA extern int infoDetailLevel;
 
 //- Information stream (stdout output on master, null elsewhere)
-extern messageStream Info;
+FOAM_EXPORT_DATA extern messageStream Info;
 
 //- Information stream (stderr output on master, null elsewhere)
-extern messageStream InfoErr;
+FOAM_EXPORT_DATA extern messageStream InfoErr;
 
 //- Warning stream (stdout output on master, null elsewhere),
 //- with additional 'FOAM Warning' header text.
-extern messageStream Warning;
+FOAM_EXPORT_DATA extern messageStream Warning;
 
 //- Error stream (stdout output on all processes),
 //- with additional 'FOAM Serious Error' header text.
-extern messageStream SeriousError;
+FOAM_EXPORT_DATA extern messageStream SeriousError;
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

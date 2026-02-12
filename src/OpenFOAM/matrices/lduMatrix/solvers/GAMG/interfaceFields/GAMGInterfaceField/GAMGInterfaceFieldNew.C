@@ -46,7 +46,7 @@ Foam::autoPtr<Foam::GAMGInterfaceField> Foam::GAMGInterfaceField::New
         (
             "GAMGInterfaceField",
             coupleType,
-            *lduInterfaceFieldConstructorTablePtr_
+            *lduInterfaceFieldConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -71,7 +71,7 @@ Foam::autoPtr<Foam::GAMGInterfaceField> Foam::GAMGInterfaceField::New
         (
             "GAMGInterfaceField",
             coupleType,
-            *lduInterfaceConstructorTablePtr_
+            *lduInterfaceConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -94,7 +94,7 @@ Foam::autoPtr<Foam::GAMGInterfaceField> Foam::GAMGInterfaceField::New
         (
             "GAMGInterfaceField",
             patchFieldType,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

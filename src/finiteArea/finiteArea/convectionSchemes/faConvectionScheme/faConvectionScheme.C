@@ -52,7 +52,7 @@ Foam::fa::convectionScheme<Type>::New
         FatalIOErrorInFunction(schemeData)
             << "Convection scheme not specified" << nl << nl
             << "Valid convection schemes are :" << nl
-            << IstreamConstructorTablePtr_->sortedToc()
+            << IstreamConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -67,7 +67,7 @@ Foam::fa::convectionScheme<Type>::New
             schemeData,
             "convection",
             schemeName,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

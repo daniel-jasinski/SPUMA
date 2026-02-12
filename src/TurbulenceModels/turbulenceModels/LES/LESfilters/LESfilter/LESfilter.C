@@ -58,7 +58,7 @@ Foam::autoPtr<Foam::LESfilter> Foam::LESfilter::New
             dict,
             "LESfilter",
             filterType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

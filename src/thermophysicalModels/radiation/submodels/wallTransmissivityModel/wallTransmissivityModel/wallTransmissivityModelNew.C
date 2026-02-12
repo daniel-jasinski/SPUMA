@@ -48,7 +48,7 @@ wallTransmissivityModel::New
             dict,
             "wallTransmissivityModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -72,7 +72,7 @@ Foam::kineticTheoryModels::radialModel::New
             dict,
             "radialModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

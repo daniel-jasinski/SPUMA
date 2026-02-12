@@ -89,7 +89,7 @@ Foam::surfaceReader::New
         (
             "reader",
             readerType,
-            *fileNameConstructorTablePtr_
+            *fileNameConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

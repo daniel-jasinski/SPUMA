@@ -85,7 +85,7 @@ Foam::motionInterpolation::New(const fvMesh& mesh, Istream& is)
             is,
             "interpolation",
             modelType,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

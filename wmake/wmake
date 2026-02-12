@@ -788,10 +788,23 @@ fi
 
     # Pre-build the $WM_OPTIONS/options file
     # which is included when building the $WM_OPTIONS/files file
+    # Note: WM_* vars passed explicitly for Windows make compatibility
     $make -s -f "$WM_DIR"/makefiles/files \
+        WM_DIR="$WM_DIR" WM_ARCH="$WM_ARCH" WM_COMPILER="$WM_COMPILER" \
+        WM_PRECISION_OPTION="$WM_PRECISION_OPTION" WM_LABEL_SIZE="$WM_LABEL_SIZE" \
+        WM_COMPILE_OPTION="$WM_COMPILE_OPTION" WM_PROJECT="$WM_PROJECT" WM_PROJECT_DIR="$WM_PROJECT_DIR" \
+        WM_OSTYPE="$WM_OSTYPE" FOAM_LIBBIN="$FOAM_LIBBIN" \
+        have_cuda="$have_cuda" have_hip="$have_hip" have_sycl="$have_sycl" \
+        FOAM_LINK_DUMMY_PSTREAM="$FOAM_LINK_DUMMY_PSTREAM" \
         MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" "$objectsDir"/options
 
     $make -s -f "$WM_DIR"/makefiles/files \
+        WM_DIR="$WM_DIR" WM_ARCH="$WM_ARCH" WM_COMPILER="$WM_COMPILER" \
+        WM_PRECISION_OPTION="$WM_PRECISION_OPTION" WM_LABEL_SIZE="$WM_LABEL_SIZE" \
+        WM_COMPILE_OPTION="$WM_COMPILE_OPTION" WM_PROJECT="$WM_PROJECT" WM_PROJECT_DIR="$WM_PROJECT_DIR" \
+        WM_OSTYPE="$WM_OSTYPE" FOAM_LIBBIN="$FOAM_LIBBIN" \
+        have_cuda="$have_cuda" have_hip="$have_hip" have_sycl="$have_sycl" \
+        FOAM_LINK_DUMMY_PSTREAM="$FOAM_LINK_DUMMY_PSTREAM" \
         MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir"
 )
 
@@ -817,6 +830,10 @@ case "$targetType" in
     if grep -qe '^ *LIB *=' "$MakeDir"/files 2>/dev/null
     then
         $make -s -f "$WM_DIR"/makefiles/general \
+            WM_DIR="$WM_DIR" WM_ARCH="$WM_ARCH" WM_COMPILER="$WM_COMPILER" \
+            WM_PRECISION_OPTION="$WM_PRECISION_OPTION" WM_LABEL_SIZE="$WM_LABEL_SIZE" \
+            WM_COMPILE_OPTION="$WM_COMPILE_OPTION" WM_PROJECT="$WM_PROJECT" WM_PROJECT_DIR="$WM_PROJECT_DIR" \
+            WM_OSTYPE="$WM_OSTYPE" WM_OPTIONS="$WM_OPTIONS" \
             MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" lnInclude
     fi
     ;;
@@ -832,6 +849,11 @@ then
     unset exitCode
 
     $make -f "$WM_DIR"/makefiles/general \
+        WM_DIR="$WM_DIR" WM_ARCH="$WM_ARCH" WM_COMPILER="$WM_COMPILER" \
+        WM_PRECISION_OPTION="$WM_PRECISION_OPTION" WM_LABEL_SIZE="$WM_LABEL_SIZE" \
+        WM_COMPILE_OPTION="$WM_COMPILE_OPTION" WM_PROJECT="$WM_PROJECT" WM_PROJECT_DIR="$WM_PROJECT_DIR" \
+        WM_OSTYPE="$WM_OSTYPE" WM_OPTIONS="$WM_OPTIONS" \
+        have_cuda="$have_cuda" have_hip="$have_hip" have_sycl="$have_sycl" \
         MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" updatedep
     exitCode="$?"
 
@@ -843,7 +865,53 @@ fi
 # Make the dependency files or object files and link
 #------------------------------------------------------------------------------
 
+# Windows: compute temp dir and library paths for MSVC linker
+# Uses 8.3 short names to avoid spaces in paths (e.g. PROGRA~1)
+winLinkVars=""
+case "$WM_OSTYPE" in
+(*windows*)
+    _winTmp="$(cygpath -m "${LOCALAPPDATA:-$USERPROFILE/AppData/Local}/Temp" 2>/dev/null || echo C:/Temp)"
+    winLinkVars="WIN_TMP=$_winTmp"
+    if [ -n "$CUDA_PATH" ]; then
+        _cudaLib="$(cygpath -w -s "$CUDA_PATH/lib/x64" 2>/dev/null)"
+        [ -n "$_cudaLib" ] && winLinkVars="$winLinkVars WIN_CUDA_LIB=$_cudaLib"
+    fi
+    if [ -n "$ACPP_PATH" ]; then
+        _acppLib="$(cygpath -w -s "$ACPP_PATH/lib" 2>/dev/null)"
+        [ -n "$_acppLib" ] && winLinkVars="$winLinkVars WIN_ACPP_LIB=$_acppLib"
+    fi
+    # MSVC runtime libraries (libomp.lib, etc.) are in VS BuildTools path
+    if [ -d "/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC" ]; then
+        _msvcVer="$(ls "/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC" | head -1)"
+        if [ -n "$_msvcVer" ]; then
+            _msvcLib="$(cygpath -w -s "/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/$_msvcVer/lib/x64" 2>/dev/null)"
+            [ -n "$_msvcLib" ] && winLinkVars="$winLinkVars WIN_MSVC_LIB=$_msvcLib"
+        fi
+    fi
+    # Windows SDK libraries (kernel32.lib, etc.) and UCRT
+    if [ -d "/c/Program Files (x86)/Windows Kits/10/Lib" ]; then
+        _sdkVer="$(ls "/c/Program Files (x86)/Windows Kits/10/Lib" | sort -V | tail -1)"
+        if [ -n "$_sdkVer" ]; then
+            _umLib="$(cygpath -w -s "/c/Program Files (x86)/Windows Kits/10/Lib/$_sdkVer/um/x64" 2>/dev/null)"
+            [ -n "$_umLib" ] && winLinkVars="$winLinkVars WIN_SDK_LIB=$_umLib"
+            _ucrtLib="$(cygpath -w -s "/c/Program Files (x86)/Windows Kits/10/Lib/$_sdkVer/ucrt/x64" 2>/dev/null)"
+            [ -n "$_ucrtLib" ] && winLinkVars="$winLinkVars WIN_UCRT_LIB=$_ucrtLib"
+        fi
+    fi
+    ;;
+esac
+
 exec $make -f "$WM_DIR"/makefiles/general \
+     WM_DIR="$WM_DIR" WM_ARCH="$WM_ARCH" WM_COMPILER="$WM_COMPILER" \
+     WM_PRECISION_OPTION="$WM_PRECISION_OPTION" WM_LABEL_SIZE="$WM_LABEL_SIZE" \
+     WM_COMPILE_OPTION="$WM_COMPILE_OPTION" WM_PROJECT="$WM_PROJECT" \
+     WM_PROJECT_DIR="$WM_PROJECT_DIR" \
+     WM_OSTYPE="$WM_OSTYPE" WM_OPTIONS="$WM_OPTIONS" \
+     ACPP_TARGETS="$ACPP_TARGETS" \
+     have_cuda="$have_cuda" have_hip="$have_hip" have_sycl="$have_sycl" \
+     FOAM_LIBBIN="$FOAM_LIBBIN" FOAM_APPBIN="$FOAM_APPBIN" \
+     FOAM_LINK_DUMMY_PSTREAM="$FOAM_LINK_DUMMY_PSTREAM" \
+     $winLinkVars \
      MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" $targetType
 
 exit 0 # clean exit

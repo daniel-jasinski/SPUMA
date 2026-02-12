@@ -51,7 +51,7 @@ Foam::autoPtr<Foam::heatTransferCoeffModel> Foam::heatTransferCoeffModel::New
             dict,
             "heatTransferCoeffModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

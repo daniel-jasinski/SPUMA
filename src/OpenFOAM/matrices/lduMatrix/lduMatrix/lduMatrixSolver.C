@@ -78,7 +78,7 @@ Foam::autoPtr<Foam::lduMatrix::solver> Foam::lduMatrix::solver::New
                 solverControls,
                 "symmetric matrix solver",
                 solverName,
-                *symMatrixConstructorTablePtr_
+                *symMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 
@@ -106,7 +106,7 @@ Foam::autoPtr<Foam::lduMatrix::solver> Foam::lduMatrix::solver::New
                 solverControls,
                 "asymmetric matrix solver",
                 solverName,
-                *asymMatrixConstructorTablePtr_
+                *asymMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

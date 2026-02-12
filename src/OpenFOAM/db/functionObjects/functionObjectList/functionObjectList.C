@@ -996,7 +996,7 @@ bool Foam::functionObjectList::read()
         (
             functionsDict,
             "libs",
-            functionObject::dictionaryConstructorTablePtr_
+            functionObject::dictionaryConstructorTablePtr_()
         );
 
         // Top-level "errors" specification (optional)

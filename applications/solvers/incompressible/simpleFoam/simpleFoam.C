@@ -64,6 +64,7 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
+#include <cstdio>
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
 #include "singlePhaseTransportModel.H"

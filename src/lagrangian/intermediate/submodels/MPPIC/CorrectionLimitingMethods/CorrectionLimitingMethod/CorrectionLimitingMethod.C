@@ -72,7 +72,7 @@ Foam::CorrectionLimitingMethod::New
             dict,
             "correction limiter",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

@@ -61,7 +61,7 @@ Foam::autoPtr<Foam::multiphaseSystem> Foam::multiphaseSystem::New
             dict,
             "multiphaseSystem",
             systemType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

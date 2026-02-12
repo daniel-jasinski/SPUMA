@@ -29,6 +29,7 @@ License
 #include "blockMesh.H"
 #include "transform.H"
 #include "Time.H"
+#include <cstdio>
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -57,6 +58,8 @@ namespace Foam
 // Command-line options have precedence over dictionary setting
 static int getVerbosity(const dictionary& dict, int verbosity)
 {
+    std::fprintf(stderr, "TRACE: getVerbosity called, verbosity=%d\n", verbosity);
+    std::fflush(stderr);
     if (verbosity < 0)
     {
         // Forced as 'off'
@@ -65,7 +68,9 @@ static int getVerbosity(const dictionary& dict, int verbosity)
     else if (!verbosity)
     {
         // Not specified: use dictionary value or static default
+        std::fprintf(stderr, "TRACE: getVerbosity calling getOrDefault\n"); std::fflush(stderr);
         verbosity = dict.getOrDefault("verbose", blockMesh::verboseOutput);
+        std::fprintf(stderr, "TRACE: getVerbosity getOrDefault returned %d\n", verbosity); std::fflush(stderr);
     }
 
     return verbosity;
@@ -237,12 +242,14 @@ Foam::blockMesh::blockMesh
     verbose_(getVerbosity(dict, verbosity)),
     checkFaceCorrespondence_
     (
-        meshDict_.getOrDefault("checkFaceCorrespondence", true)
+        (std::fprintf(stderr,"TRACE:init checkFace\n"), std::fflush(stderr),
+        meshDict_.getOrDefault("checkFaceCorrespondence", true))
     ),
     mergeStrategy_(strategy),
     transformType_(transformTypes::NO_TRANSFORM),
     geometry_
     (
+        (std::fprintf(stderr,"TRACE:init geometry\n"), std::fflush(stderr),
         IOobject
         (
             "geometry",                 // dummy name
@@ -251,7 +258,7 @@ Foam::blockMesh::blockMesh
             meshDict_.time(),           // registry
             IOobject::MUST_READ,
             IOobject::NO_WRITE
-        ),
+        )),
         meshDict_.found("geometry")
       ? meshDict_.subDict("geometry")
       : dictionary(),
@@ -259,15 +266,20 @@ Foam::blockMesh::blockMesh
     ),
     blockVertices_
     (
-        meshDict_.lookup("vertices"),
+        (std::fprintf(stderr,"TRACE:init blockVertices\n"), std::fflush(stderr),
+        meshDict_.lookup("vertices")),
         blockVertex::iNew(meshDict_, geometry_)
     ),
-    vertices_(Foam::vertices(blockVertices_)),
-    prescaling_(vector::uniform(1)),
+    vertices_((std::fprintf(stderr,"TRACE:init vertices\n"), std::fflush(stderr),
+        Foam::vertices(blockVertices_))),
+    prescaling_((std::fprintf(stderr,"TRACE:init prescaling\n"), std::fflush(stderr),
+        vector::uniform(1))),
     scaling_(vector::uniform(1)),
     transform_(),
-    topologyPtr_(createTopology(meshDict_, regionName))
+    topologyPtr_((std::fprintf(stderr,"TRACE:init topology\n"), std::fflush(stderr),
+        createTopology(meshDict_, regionName)))
 {
+    std::fprintf(stderr, "TRACE: blockMesh ctor body entered\n"); std::fflush(stderr);
     if (mergeStrategy_ == mergeStrategy::DEFAULT_MERGE)
     {
         strategyNames_.readIfPresent("mergeType", meshDict_, mergeStrategy_);

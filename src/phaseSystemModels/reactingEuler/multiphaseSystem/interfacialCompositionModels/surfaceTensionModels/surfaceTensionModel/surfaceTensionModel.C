@@ -92,7 +92,7 @@ Foam::reactingMultiphaseEuler::surfaceTensionModel::New
             dict,
             "surfaceTensionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

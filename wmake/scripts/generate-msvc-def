@@ -1,0 +1,124 @@
+#!/bin/bash
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     |
+#   \\  /    A nd           | www.openfoam.com
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# Description
+#     Generate a Windows MSVC DEF file from object files for DLL export.
+#     Extracts all global symbols (T, D, B, C types) from COFF object files.
+#
+# Usage
+#     generate-msvc-def OUTPUT.def OBJECT_FILES...
+#     generate-msvc-def OUTPUT.def @response_file.rsp
+#
+#------------------------------------------------------------------------------
+
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 OUTPUT.def OBJECT_FILES..." >&2
+    exit 1
+fi
+
+DEF_FILE="$1"
+shift
+
+# Extract library name from DEF filename (remove path and .def extension)
+LIB_NAME=$(basename "$DEF_FILE" .def)
+
+# Find llvm-nm
+LLVM_NM="${LLVM_NM:-}"
+if [ -z "$LLVM_NM" ]; then
+    for nm in llvm-nm llvm-nm.exe; do
+        if command -v "$nm" >/dev/null 2>&1; then
+            LLVM_NM="$nm"
+            break
+        fi
+    done
+fi
+
+if [ -z "$LLVM_NM" ] || ! command -v "$LLVM_NM" >/dev/null 2>&1; then
+    echo "Error: llvm-nm not found in PATH" >&2
+    exit 1
+fi
+
+# Collect object files from arguments (handle @response_file syntax)
+objects=()
+for arg in "$@"; do
+    if [ "${arg:0:1}" = "@" ]; then
+        # Response file - read objects from it
+        rspfile="${arg:1}"
+        if [ -f "$rspfile" ]; then
+            while IFS= read -r line; do
+                [ -n "$line" ] && objects+=("$line")
+            done < "$rspfile"
+        fi
+    else
+        objects+=("$arg")
+    fi
+done
+
+# Generate DEF file
+{
+    echo "LIBRARY $LIB_NAME"
+    echo "EXPORTS"
+
+    # Extract defined global symbols from all object files
+    # T = text (code), D = data, B = BSS, C = common, R = read-only data
+    # R includes const static members (pTraits::zero, VectorSpace::typeName)
+    # that are needed cross-DLL.
+    # Skip: local (lowercase), undefined (U), weak (W/w), $ prefixed (internal)
+    #
+    # NOTE on DATA keyword: MSVC DEF files support a DATA keyword for data
+    # exports, but this BREAKS cross-DLL data access when the consuming code
+    # doesn't use __declspec(dllimport). Without dllimport, the compiler
+    # generates direct symbol references, and DATA imports only create
+    # __imp_ prefixed entries - causing LNK2019 unresolved externals.
+    # We intentionally omit DATA, accepting that data symbols get JMP thunks
+    # (function-style imports). Cross-DLL data must use accessor functions
+    # (function-local statics) instead of direct static member access.
+    #
+    # Filter out symbols that don't need cross-DLL export to stay under
+    # MSVC's 65535 export limit:
+    #   ??_R   - ALL RTTI structures (R0-R4; OpenFOAM uses its own RTS)
+    #   ??_G   - scalar deleting destructors (compiler-generated wrappers)
+    #   ??_E   - vector deleting destructors (compiler-generated wrappers)
+    #   ??__E  - dynamic initializer/atexit guard variables (TU-internal)
+    #   ?$TSS  - thread-safe static init guards (TU-internal)
+    #   ??_7   - vftables (accessed via vtable pointer, not by name)
+    #   ??_8   - vbtables (virtual base tables, internal)
+    #   ??_C   - string literals (compiler-generated, TU-internal)
+    #   ??@    - anonymous/hash-named symbols (no external linkage)
+    #   __real@  - floating-point constants (compiler-generated)
+    #   __xmm@  - SSE/SIMD constants (compiler-generated)
+    #   _CT    - exception handling copy constructor closures
+    #   _CTA   - exception handling type arrays
+    #   _TI    - exception handling throw info
+    for obj in "${objects[@]}"; do
+        if [ -f "$obj" ]; then
+            "$LLVM_NM" --defined-only "$obj" 2>/dev/null
+        fi
+    done | \
+        grep -E '^[0-9a-fA-F]+ [TDBCR] ' | \
+        awk '{print $3}' | \
+        grep -v '^\$' | \
+        grep -v '^??_R' | \
+        grep -v '^??_G' | \
+        grep -v '^??_E' | \
+        grep -v '^??__E' | \
+        grep -v '^?\$TSS' | \
+        grep -v '^??_7' | \
+        grep -v '^??_8' | \
+        grep -v '^??_C' | \
+        grep -v '^??@' | \
+        grep -v '^__real@' | \
+        grep -v '^__xmm@' | \
+        grep -v '^_CT' | \
+        grep -v '^_CTA' | \
+        grep -v '^_TI' | \
+        sort -u
+} > "$DEF_FILE"
+
+count=$(grep -c '^?' "$DEF_FILE" 2>/dev/null || echo 0)
+echo "Generated $DEF_FILE ($count symbols)"

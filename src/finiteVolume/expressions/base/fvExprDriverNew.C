@@ -62,7 +62,7 @@ Foam::expressions::fvExprDriver::New
             dict,
             "valueType",
             driverType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -90,7 +90,7 @@ Foam::expressions::fvExprDriver::New
         (
             "valueType",
             driverType,
-            *idNameConstructorTablePtr_
+            *idNameConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

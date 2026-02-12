@@ -171,11 +171,15 @@ int main(int argc, char *argv[])
     #include "createMemoryPool.H"
     #include "createTime.H"
 
+    std::fprintf(stderr, "TRACE: blockMesh step A - after createTime\n"); std::fflush(stderr);
+
     // Remove old files, unless disabled
     const bool removeOldFiles = !args.found("no-clean");
+    std::fprintf(stderr, "TRACE: blockMesh step B - after removeOldFiles\n"); std::fflush(stderr);
 
     // Write cellSets
     const bool writeCellSets = args.found("sets");
+    std::fprintf(stderr, "TRACE: blockMesh step C - after writeCellSets\n"); std::fflush(stderr);
 
     // Default merge (topology), unless otherwise specified
     const blockMesh::mergeStrategy strategy =
@@ -184,18 +188,22 @@ int main(int argc, char *argv[])
       ? blockMesh::MERGE_POINTS
       : blockMesh::DEFAULT_MERGE
     );
+    std::fprintf(stderr, "TRACE: blockMesh step D - after strategy\n"); std::fflush(stderr);
 
     // Specified region or default region
     #include "getRegionOption.H"
+    std::fprintf(stderr, "TRACE: blockMesh step E - after getRegionOption\n"); std::fflush(stderr);
 
     if (!polyMesh::regionName(regionName).empty())
     {
         Info<< nl << "Generating mesh for region " << regionName << nl;
     }
+    std::fprintf(stderr, "TRACE: blockMesh step F - after regionName check\n"); std::fflush(stderr);
 
     // Instance for resulting mesh
     bool useTime = false;
     word meshInstance(runTime.constant());
+    std::fprintf(stderr, "TRACE: blockMesh step G - after meshInstance\n"); std::fflush(stderr);
 
     if
     (
@@ -216,12 +224,15 @@ int main(int argc, char *argv[])
                 << exit(FatalError);
         }
     }
+    std::fprintf(stderr, "TRACE: blockMesh step H - after time check\n"); std::fflush(stderr);
 
 
     // Locate appropriate blockMeshDict
     #include "findBlockMeshDict.H"
+    std::fprintf(stderr, "TRACE: blockMesh step I - after findBlockMeshDict\n"); std::fflush(stderr);
 
     blockMesh blocks(meshDict, regionName, strategy, args.verbose());
+    std::fprintf(stderr, "TRACE: blockMesh step J - after blockMesh ctor\n"); std::fflush(stderr);
 
     if (!blocks.good())
     {

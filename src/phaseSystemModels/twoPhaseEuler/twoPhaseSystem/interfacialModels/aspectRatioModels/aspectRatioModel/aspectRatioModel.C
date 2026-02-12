@@ -73,7 +73,7 @@ Foam::aspectRatioModel::New
             dict,
             "aspectRatioModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

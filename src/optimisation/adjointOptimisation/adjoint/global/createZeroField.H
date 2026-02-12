@@ -98,7 +98,7 @@ createZeroBoundaryPtr
     {
         if
         (
-            fvPatchField<Type>::patchConstructorTablePtr_->contains
+            fvPatchField<Type>::patchConstructorTablePtr_()->contains
             (
                 bm[patchi].type()
             )

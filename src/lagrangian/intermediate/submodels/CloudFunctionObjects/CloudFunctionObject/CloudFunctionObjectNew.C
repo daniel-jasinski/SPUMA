@@ -52,7 +52,7 @@ Foam::CloudFunctionObject<CloudType>::New
             dict,
             "cloudFunctionObject",
             objectType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

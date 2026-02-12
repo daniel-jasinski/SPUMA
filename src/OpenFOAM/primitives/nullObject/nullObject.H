@@ -43,6 +43,7 @@ SourceFiles
 #define Foam_nullObject_H
 
 #include "labelFwd.H"
+#include "stdFoam.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -153,7 +154,7 @@ public:
 // Globals
 
 //- Pointer to the unique nullObject
-extern const NullObject* nullObjectPtr;
+FOAM_EXPORT_DATA extern const NullObject* nullObjectPtr;
 
 
 // IOstream Operators

@@ -83,7 +83,7 @@ Foam::autoPtr<Foam::blockVertex> Foam::blockVertex::New
                 dict,
                 "blockVertex",
                 faceType,
-                *IstreamConstructorTablePtr_
+                *IstreamConstructorTablePtr_()
             ) << abort(FatalIOError);
         }
 

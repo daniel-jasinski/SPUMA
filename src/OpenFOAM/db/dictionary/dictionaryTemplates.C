@@ -39,7 +39,7 @@ void Foam::dictionary::reportDefault
     const bool added
 ) const
 {
-    if (writeOptionalEntries > 1)
+    if (reportOptional() > 1)
     {
         FatalIOError(dictionary::executableName(), *this)
             << "No optional entry: " << keyword
@@ -47,7 +47,7 @@ void Foam::dictionary::reportDefault
             << exit(FatalIOError);
     }
 
-    OSstream& os = InfoErr.stream(reportingOutput.get());
+    OSstream& os = reportingOutputStream();
 
     // Tag with "-- " prefix to make the message stand out
     os  << "-- Executable: "
@@ -164,7 +164,7 @@ T Foam::dictionary::getOrDefault
 
         return val;
     }
-    else if (writeOptionalEntries)
+    else if (reportOptional())
     {
         reportDefault(keyword, deflt);
     }
@@ -194,7 +194,7 @@ T Foam::dictionary::getOrAdd
 
         return val;
     }
-    else if (writeOptionalEntries)
+    else if (reportOptional())
     {
         reportDefault(keyword, deflt, true);  // Added
     }
@@ -241,7 +241,7 @@ T Foam::dictionary::getCheckOrDefault
 
         return val;
     }
-    else if (writeOptionalEntries)
+    else if (reportOptional())
     {
         reportDefault(keyword, deflt);
     }
@@ -287,7 +287,7 @@ T Foam::dictionary::getCheckOrAdd
 
         return val;
     }
-    else if (writeOptionalEntries)
+    else if (reportOptional())
     {
         reportDefault(keyword, deflt, true);  // Added
     }
@@ -477,7 +477,7 @@ T Foam::dictionary::getOrDefaultCompat
 
         return val;
     }
-    else if (writeOptionalEntries)
+    else if (reportOptional())
     {
         reportDefault(keyword, deflt);
     }

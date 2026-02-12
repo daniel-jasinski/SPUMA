@@ -46,7 +46,7 @@ Foam::autoPtr<Foam::interpolation<Type>> Foam::interpolation<Type>::New
         (
             "interpolation",
             interpolationType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

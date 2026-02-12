@@ -50,7 +50,7 @@ Foam::HeterogeneousReactingModel<CloudType>::New
             dict,
             "heterogeneousReactingModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

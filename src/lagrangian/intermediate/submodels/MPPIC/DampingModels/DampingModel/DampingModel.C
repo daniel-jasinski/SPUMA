@@ -99,7 +99,7 @@ Foam::DampingModel<CloudType>::New
             dict,
             "damping model",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

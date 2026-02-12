@@ -62,6 +62,28 @@ registerInfoSwitch
 );
 
 
+// * * * * * * * * * * * * * Static Member Functions  * * * * * * * * * * * * //
+
+int Foam::dictionary::reportOptional() noexcept
+{
+    return writeOptionalEntries;
+}
+
+
+int Foam::dictionary::reportOptional(const int level) noexcept
+{
+    int old(writeOptionalEntries);
+    writeOptionalEntries = level;
+    return old;
+}
+
+
+Foam::OSstream& Foam::dictionary::reportingOutputStream()
+{
+    return InfoErr.stream(reportingOutput.get());
+}
+
+
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 Foam::word Foam::dictionary::executableName()

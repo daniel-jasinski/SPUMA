@@ -28,7 +28,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include <cstring>
-#include "memoryExecutors.H"
+#include <cstdlib>
 #include "dummyMemoryPool.H"
 #include "error.H"
 
@@ -41,9 +41,7 @@ namespace Foam
 
 Foam::dummyMemoryPool::dummyMemoryPool(const uint64_t size):
     Foam::MemoryPool::MemoryPool()
-{
-    DebugInFunction << "MEMPOOL: using dummy memory Pool " << nl;
-};
+{};
 
 // * * * * * * * * * * * * * * * Destructors  * * * * * * * * * * * * * * * //
 
@@ -61,7 +59,7 @@ void* Foam::dummyMemoryPool::allocate(uint64_t size)
         WarningInFunction<< "Trying to allocate a block of zero size." << nl;
         return nullptr;
     }
-    void* head = foamMemoryExecutor::alloc(size);
+    void* head = std::malloc(size);
 
     usedBlockList_.insert(blockPair(static_cast<char*>(head), size));
     this->size_ += size;
@@ -90,7 +88,7 @@ void Foam::dummyMemoryPool::free(void* ptr)
         reinterpret_cast<char*>(ptr)
     );
 
-    foamMemoryExecutor::clear(ptr);
+    std::free(ptr);
 
     uint64_t size = block->second;
     this->unusedBlockList_.insert(blockPair(block->first, size));
@@ -160,13 +158,7 @@ void Foam::dummyMemoryPool::copyIn
             <<abort(FatalError);
     }
 
-    foamMemoryExecutor::memCopy
-    (
-        poolPtr,
-        ptr,
-        nElementsInBytes,
-        memCopyKind::memCopyHostToDevice
-    );
+    std::memcpy(poolPtr, ptr, nElementsInBytes);
 };
 
 void Foam::dummyMemoryPool::copyOut
@@ -203,13 +195,7 @@ void Foam::dummyMemoryPool::copyOut
             <<abort(FatalError);
     }
 
-    foamMemoryExecutor::memCopy
-    (
-        ptr,
-        poolPtr,
-        nElementsInBytes,
-        memCopyKind::memCopyDeviceToHost
-    );
+    std::memcpy(ptr, poolPtr, nElementsInBytes);
 };
 
 void Foam::dummyMemoryPool::memSet
@@ -263,7 +249,13 @@ void Foam::dummyMemoryPool::memSet
             <<abort(FatalError);
     }
 
-    foamMemoryExecutor::memSet(poolPtr, nElementsInBytes, value, sizeOfValue);
+    // Replicate the value pattern across the memory block
+    char* dst = static_cast<char*>(poolPtr);
+    const char* val = static_cast<const char*>(value);
+    for (uint64_t i = 0; i < nElementsInBytes; i += sizeOfValue)
+    {
+        std::memcpy(dst + i, val, sizeOfValue);
+    }
 }
 
 void Foam::dummyMemoryPool::memSetScalarOne
@@ -314,7 +306,13 @@ void Foam::dummyMemoryPool::memSetScalarOne
             <<abort(FatalError);
     }
 
-    foamMemoryExecutor::memSetScalarOne(poolPtr, nElementsInBytes);
+    // Set each scalar element to 1.0
+    const size_t numScalars = nElementsInBytes / sizeof(Foam::scalar);
+    Foam::scalar* scalarPtr = static_cast<Foam::scalar*>(poolPtr);
+    for (size_t i = 0; i < numScalars; ++i)
+    {
+        scalarPtr[i] = Foam::scalar(1);
+    }
 }
 
 void Foam::dummyMemoryPool::memSet
@@ -368,7 +366,7 @@ void Foam::dummyMemoryPool::memSet
             <<abort(FatalError);
     }
 
-    foamMemoryExecutor::memSet(poolPtr, nElementsInBytes, value);
+    std::memset(poolPtr, value, nElementsInBytes);
 }
 
 void Foam::dummyMemoryPool::memCopy
@@ -459,13 +457,7 @@ void Foam::dummyMemoryPool::memCopy
             <<abort(FatalError);
     }
 
-    foamMemoryExecutor::memCopy
-    (
-        tgtPtr,
-        srcPtr,
-        nElementsInBytes,
-        memCopyKind::memCopyDeviceToDevice
-    );
+    std::memcpy(tgtPtr, srcPtr, nElementsInBytes);
 }
 
 void Foam::dummyMemoryPool::showAllocated(bool relative)

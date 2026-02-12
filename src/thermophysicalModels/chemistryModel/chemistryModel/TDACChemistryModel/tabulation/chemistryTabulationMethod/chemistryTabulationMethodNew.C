@@ -50,7 +50,7 @@ Foam::chemistryTabulationMethod<CompType, ThermoType>::New
       + '<' + CompType::typeName + ',' + ThermoType::typeName() + '>'
     );
 
-    const auto& cnstrTable = *(dictionaryConstructorTablePtr_);
+    const auto& cnstrTable = *(dictionaryConstructorTablePtr_());
 
     auto* ctorPtr = cnstrTable.lookup(methodTypeName, nullptr);
 

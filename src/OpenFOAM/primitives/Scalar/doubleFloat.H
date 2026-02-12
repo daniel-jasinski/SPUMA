@@ -42,6 +42,20 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#if defined(__CUDA_ARCH__)
+extern "C" double __nv_pow(double, double);
+extern "C" float __nv_powf(float, float);
+#define MAXMINPOW(RetType, Type1, Type2)                \
+                                                        \
+MAXMIN(RetType, Type1, Type2)                           \
+                                                        \
+/*! \brief Raise base to the power expon */             \
+FOAM_DEVICE                                             \
+inline double pow(const Type1 base, const Type2 expon)  \
+{                                                       \
+    return __nv_pow(double(base), double(expon));       \
+}
+#else
 #define MAXMINPOW(RetType, Type1, Type2)                \
                                                         \
 MAXMIN(RetType, Type1, Type2)                           \
@@ -52,6 +66,7 @@ inline double pow(const Type1 base, const Type2 expon)  \
 {                                                       \
     return ::pow(double(base), double(expon));          \
 }
+#endif
 
 
 MAXMINPOW(double, double, double)

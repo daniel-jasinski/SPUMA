@@ -78,7 +78,7 @@ Foam::phaseTransferModel::New
             dict,
             "phaseTransferModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

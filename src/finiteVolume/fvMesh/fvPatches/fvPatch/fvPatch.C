@@ -83,15 +83,15 @@ bool Foam::fvPatch::constraintType(const word& patchType)
     return
     (
         !patchType.empty()
-     && fvPatchField<scalar>::patchConstructorTablePtr_
-     && fvPatchField<scalar>::patchConstructorTablePtr_->found(patchType)
+     && fvPatchField<scalar>::patchConstructorTablePtr_()
+     && fvPatchField<scalar>::patchConstructorTablePtr_()->found(patchType)
     );
 }
 
 
 Foam::wordList Foam::fvPatch::constraintTypes()
 {
-    const auto& cnstrTable = *polyPatchConstructorTablePtr_;
+    const auto& cnstrTable = *polyPatchConstructorTablePtr_();
 
     wordList cTypes(cnstrTable.size());
 

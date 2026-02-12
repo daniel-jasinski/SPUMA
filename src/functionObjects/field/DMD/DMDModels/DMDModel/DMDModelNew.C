@@ -47,7 +47,7 @@ Foam::autoPtr<Foam::DMDModel> Foam::DMDModel::New
             dict,
             "DMDModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

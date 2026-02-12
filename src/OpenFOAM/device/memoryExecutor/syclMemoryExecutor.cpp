@@ -36,7 +36,7 @@ License
 
 // * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * * //
 
-void* Foam::syclMemoryExecutor::_backendAlloc(uint64_t size)
+inline void* Foam::syclMemoryExecutor::_backendAlloc(uint64_t size)
 {
     sycl::queue& q = getSyclQueue();
 
@@ -52,7 +52,7 @@ void* Foam::syclMemoryExecutor::_backendAlloc(uint64_t size)
     return ptr;
 }
 
-void Foam::syclMemoryExecutor::_backendClear(void* ptr)
+inline void Foam::syclMemoryExecutor::_backendClear(void* ptr)
 {
     if (ptr)
     {
@@ -61,7 +61,7 @@ void Foam::syclMemoryExecutor::_backendClear(void* ptr)
     }
 }
 
-void Foam::syclMemoryExecutor::_backendMemCopy
+inline void Foam::syclMemoryExecutor::_backendMemCopy
 (
     void* dst,
     const void* src,
@@ -75,7 +75,7 @@ void Foam::syclMemoryExecutor::_backendMemCopy
     q.memcpy(dst, src, static_cast<size_t>(size)).wait();
 }
 
-void Foam::syclMemoryExecutor::_backendMemSet
+inline void Foam::syclMemoryExecutor::_backendMemSet
 (
     void* ptr,
     const size_t sizeInBytes,
@@ -106,7 +106,7 @@ void Foam::syclMemoryExecutor::_backendMemSet
     }
 }
 
-void Foam::syclMemoryExecutor::_backendMemSetScalarOne
+inline void Foam::syclMemoryExecutor::_backendMemSetScalarOne
 (
     void* ptr,
     const size_t sizeInBytes
@@ -123,7 +123,7 @@ void Foam::syclMemoryExecutor::_backendMemSetScalarOne
     }).wait();
 }
 
-void Foam::syclMemoryExecutor::_backendMemSet
+inline void Foam::syclMemoryExecutor::_backendMemSet
 (
     void* ptr,
     const size_t sizeInBytes,

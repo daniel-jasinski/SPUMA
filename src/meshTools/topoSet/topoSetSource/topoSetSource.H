@@ -133,7 +133,8 @@ protected:
         static const string illegalSource_;
 
         //- A table of usage strings
-        static HashTable<string>* usageTablePtr_;
+        //  Uses function-local static for Windows DLL cross-module sharing
+        static HashTable<string>*& usageTablePtr_();
 
         //- Class with constructor to add usage string to table
         class addToUsageTable
@@ -142,19 +143,19 @@ protected:
 
             addToUsageTable(const word& name, const string& msg)
             {
-                if (!usageTablePtr_)
+                if (!usageTablePtr_())
                 {
-                    usageTablePtr_ = new HashTable<string>();
+                    usageTablePtr_() = new HashTable<string>();
                 }
-                usageTablePtr_->insert(name, msg);
+                usageTablePtr_()->insert(name, msg);
             }
 
             ~addToUsageTable()
             {
-                if (usageTablePtr_)
+                if (usageTablePtr_())
                 {
-                    delete usageTablePtr_;
-                    usageTablePtr_ = nullptr;
+                    delete usageTablePtr_();
+                    usageTablePtr_() = nullptr;
                 }
             }
         };
@@ -300,12 +301,12 @@ public:
 
         static const string& usage(const word& name)
         {
-            if (!usageTablePtr_)
+            if (!usageTablePtr_())
             {
-                usageTablePtr_ = new HashTable<string>();
+                usageTablePtr_() = new HashTable<string>();
             }
 
-            return usageTablePtr_->lookup(name, illegalSource_);
+            return usageTablePtr_()->lookup(name, illegalSource_);
         }
 
 

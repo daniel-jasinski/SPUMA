@@ -51,7 +51,7 @@ Foam::HeatTransferModel<CloudType>::New
             dict,
             "heatTransferModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

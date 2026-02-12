@@ -73,6 +73,59 @@ constexpr floatScalar floatScalarROOTVSMALL = 1.0e-18;
 #define ScalarRead readFloat
 
 
+// CUDA device: use __nv_* functions (see doubleScalar.H for explanation)
+#if defined(__CUDA_ARCH__)
+
+// NVIDIA device math library declarations (float versions)
+extern "C" float __nv_fabsf(float);
+extern "C" float __nv_hypotf(float, float);
+extern "C" float __nv_atan2f(float, float);
+extern "C" float __nv_sqrtf(float);
+extern "C" float __nv_cbrtf(float);
+extern "C" float __nv_expf(float);
+extern "C" float __nv_logf(float);
+extern "C" float __nv_log10f(float);
+extern "C" float __nv_sinf(float);
+extern "C" float __nv_cosf(float);
+extern "C" float __nv_tanf(float);
+extern "C" float __nv_asinf(float);
+extern "C" float __nv_acosf(float);
+extern "C" float __nv_atanf(float);
+extern "C" float __nv_sinhf(float);
+extern "C" float __nv_coshf(float);
+extern "C" float __nv_tanhf(float);
+extern "C" float __nv_asinhf(float);
+extern "C" float __nv_acoshf(float);
+extern "C" float __nv_atanhf(float);
+extern "C" float __nv_erff(float);
+extern "C" float __nv_erfcf(float);
+extern "C" float __nv_lgammaf(float);
+extern "C" float __nv_tgammaf(float);
+
+inline Scalar mag(const Scalar s)
+{
+    return __nv_fabsf(s);
+}
+
+inline Scalar hypot(const Scalar x, const Scalar y)
+{
+    return __nv_hypotf(x, y);
+}
+
+inline Scalar atan2(const Scalar y, const Scalar x)
+{
+    return __nv_atan2f(y, x);
+}
+
+// Single-precision transcendental functions via NVIDIA device math
+#define transFunc(func)                                         \
+inline Scalar func(const Scalar s)                              \
+{                                                               \
+    return __nv_##func##f(s);                                   \
+}
+
+#else /* Host compilation */
+
 inline Scalar mag(const Scalar s)
 {
     return ::fabsf(s);
@@ -95,10 +148,30 @@ inline Scalar func(const Scalar s)                              \
     return ::func##f(s);                                        \
 }
 
+#endif /* __CUDA_ARCH__ */
+
 
 // Single-precision bessel functions.
 // May not be available on all systems
-#ifdef Foam_no_besselFunc
+#if defined(__CUDA_ARCH__)
+    // CUDA device: use NVIDIA device math library for Bessel functions
+    extern "C" float __nv_j0f(float);
+    extern "C" float __nv_j1f(float);
+    extern "C" float __nv_y0f(float);
+    extern "C" float __nv_y1f(float);
+    extern "C" float __nv_jnf(int, float);
+    extern "C" float __nv_ynf(int, float);
+    #define besselFunc(func)                                    \
+    inline Scalar func(const Scalar s)                          \
+    {                                                           \
+        return __nv_##func##f(s);                               \
+    }
+    #define besselFunc2(func)                                   \
+    inline Scalar func(const int n, const Scalar s)             \
+    {                                                           \
+        return __nv_##func##f(n, s);                            \
+    }
+#elif defined(Foam_no_besselFunc)
     // Not available
     #define besselFunc(func)                                    \
     inline Scalar func(const Scalar s)                          \

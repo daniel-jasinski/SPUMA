@@ -102,7 +102,7 @@ autoPtr<zeroATCcells> zeroATCcells::New
             dict,
             "zeroATCcells",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

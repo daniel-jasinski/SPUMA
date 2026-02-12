@@ -71,6 +71,42 @@ Description
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Windows DLL Export Macros
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// FOAM_EXPORT_DATA: For extern data symbols (FatalError, Info, etc.)
+// When building libOpenFOAM itself, define FOAM_BUILDING_LIB to use dllexport.
+// Downstream DLLs use dllimport (the default).
+#if defined(_WIN32)
+# if defined(FOAM_BUILDING_LIB)
+#  define FOAM_EXPORT_DATA __declspec(dllexport)
+# else
+#  define FOAM_EXPORT_DATA __declspec(dllimport)
+# endif
+#else
+# define FOAM_EXPORT_DATA
+#endif
+
+// FOAM_TYPENAME_EXPORT: For TypeName/ClassName macros' static member declarations.
+// On Windows, always use dllexport for ALL libraries (not just libOpenFOAM).
+// This matches FOAM_DEFINE_STATIC_EXPORT so declaration and definition are consistent.
+// Windows requires that if a definition has dllexport, the declaration must also have it.
+#if defined(_WIN32)
+# define FOAM_TYPENAME_EXPORT __declspec(dllexport)
+#else
+# define FOAM_TYPENAME_EXPORT
+#endif
+
+// FOAM_DEFINE_STATIC_EXPORT: For defining static members that need to be exported.
+// Used in .C files when DEFINING static members.
+#if defined(_WIN32)
+# define FOAM_DEFINE_STATIC_EXPORT __declspec(dllexport)
+#else
+# define FOAM_DEFINE_STATIC_EXPORT
+#endif
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 //- Namespace for OpenFOAM
 namespace Foam

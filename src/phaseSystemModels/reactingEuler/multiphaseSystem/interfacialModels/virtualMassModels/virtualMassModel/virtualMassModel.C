@@ -91,7 +91,7 @@ Foam::virtualMassModel::New
             dict,
             "virtualMassModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

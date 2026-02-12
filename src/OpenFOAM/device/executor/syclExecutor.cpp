@@ -88,7 +88,7 @@ void Foam::syclExecutor::_backendReductionSum
     sycl::queue& q = getSyclQueue();
 
     // Initialize result
-    resultT sum = resultT(0);
+    resultT sum = Foam::Zero;
 
     {
         sycl::buffer<resultT, 1> sumBuf(&sum, sycl::range<1>(1));

@@ -48,7 +48,7 @@ wallAbsorptionEmissionModel::New
             dict,
             "wallAbsorptionEmissionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

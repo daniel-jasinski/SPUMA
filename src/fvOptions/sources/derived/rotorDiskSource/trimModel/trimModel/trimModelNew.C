@@ -49,7 +49,7 @@ Foam::autoPtr<Foam::trimModel> Foam::trimModel::New
             dict,
             typeName,
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

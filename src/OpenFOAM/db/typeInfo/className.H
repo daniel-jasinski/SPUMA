@@ -41,7 +41,7 @@ Description
 //  Without debug information
 #define ClassNameNoDebug(TypeNameString)                                       \
     static const char* typeName_() { return TypeNameString; }                  \
-    static const ::Foam::word typeName
+    FOAM_TYPENAME_EXPORT static const ::Foam::word typeName
 
 //- Add typeName information from argument \a TypeNameString to a namespace.
 //  Without debug information.
@@ -67,7 +67,7 @@ public:                                                                        \
 //  Also declares debug information.
 #define ClassName(TypeNameString)                                              \
     ClassNameNoDebug(TypeNameString);                                          \
-    static int debug
+    FOAM_TYPENAME_EXPORT static int debug
 
 //- Add typeName information from argument \a TypeNameString to a namespace.
 //  Also declares debug information.

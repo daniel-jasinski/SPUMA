@@ -153,7 +153,7 @@ Foam::externalDisplacementMeshMover::New
             dict,
             "externalDisplacementMeshMover",
             type,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
