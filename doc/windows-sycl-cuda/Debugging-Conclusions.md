@@ -474,6 +474,149 @@ These are `const word` static members defined in `libOpenFOAM.dll`. When accesse
 
 ---
 
+## Fix #17: Comprehensive cross-DLL `::typeName` sweep
+
+**Symptom**: simpleFoam still crashes with SIGSEGV during volScalarField constructor ("Reading field p") after Fix #16. Crash is in MSVC memcpy (`vmovdqu (%rdx),%ymm0`) in libOpenFOAM.dll at offset 0xc3cc1d, suggesting a bad pointer from JMP thunk.
+
+**Root cause**: Multiple categories of cross-DLL `::typeName` data accesses existed throughout the codebase:
+
+1. **polyPatch typeName in downstream .C files** (~20 instances): `emptyPolyPatch::typeName`, `processorPolyPatch::typeName`, `wallPolyPatch::typeName`, etc. in files like `fvMeshTools.C`, `voxelMeshSearch.C`, `snappyLayerDriver.C`, `STARCDMeshReader.C`, `blockMeshCreate.C`, `PDRblock.C`, `thermalBaffleFvPatchScalarField.C`, etc.
+
+2. **pTraits<T>::typeName in template code** (~35 instances): `UListIO.C`, `FixedListIO.C`, `exprResultI.H`, `FieldField.C`, `FieldM.H`, `dynamicCode.H`, `functionObjectPropertiesTemplates.C`, etc. These template files get compiled into downstream DLLs, making `pTraits<T>::typeName` a cross-DLL data access.
+
+3. **cyclicAMIPolyPatch::typeName in template code**: `particleTemplates.C` (lagrangian).
+
+**Fix**: Three-pronged approach:
+
+1. Changed all `::typeName` to `::typeName_()` in downstream .C files (13 source files, ~25 instances).
+2. Added `static const char* typeName_()` inline function to ALL pTraits primitive specializations: `Scalar.H`, `bool.H`, `char.H`, `int32.H`, `int64.H`, `uint32.H`, `uint64.H`, `int8.H`, `uint8.H`, `complex.H`. For int/uint types, used `#if WM_LABEL_SIZE` conditionals to return the correct name ("label"/"int32" etc.).
+3. Changed `pTraits<Type>::typeName` to `pTraits<Type>::typeName_()` in all cross-DLL template files (11 files, ~35 instances).
+
+**Lesson**: The cross-DLL JMP thunk issue affects ALL static data members accessed across DLL boundaries, not just OpenFOAM class `typeName`. The `pTraits<T>::typeName` pattern is particularly insidious because pTraits specializations for primitive types (scalar, label, bool, etc.) don't use the `ClassName` macro and therefore lack `typeName_()`. Any template code accessing `pTraits<T>::typeName` that gets compiled in a downstream DLL is a ticking time bomb. **Always audit pTraits accesses when adding new template code.**
+
+---
+
+## Fix #18: `dimless` cross-DLL data access in GeometricField/DimensionedField constructors
+
+**Symptom**: simpleFoam crashes during `volScalarField p(IOobject(...), mesh)` construction with segfault (exit code 139). Trace shows "TRACE:sf 2 - before volScalarField p ctor" as last output.
+
+**Root cause**: `GeometricField.C` line 514 uses `Internal(io, mesh, dimless, false)` in the read constructor. `dimless` is a global `extern const dimensionSet` defined in `libOpenFOAM.dll`. Since `GeometricField.C` is template code compiled into downstream DLLs (via `#ifdef NoRepository`), this is a cross-DLL data access through a JMP thunk → crash.
+
+Same issue at:
+- `GeometricField.C:554` (dictionary constructor)
+- `DimensionedFieldIO.C:122,141` (initializer `dimensions_(dimless)`)
+- `UniformDimensionedField.C:103`
+
+**Fix**: Two-pronged approach:
+1. **Template code**: Replaced `dimless` with `dimensionSet()` (default constructor produces identical zero-dimension set). This eliminates cross-DLL data access entirely.
+2. **Comprehensive**: Added `FOAM_EXPORT_DATA` annotation to ALL 23 dimension globals in `dimensionSets.H` (`dimless`, `dimMass`, `dimLength`, `dimTime`, `dimVelocity`, etc.). This provides proper `__declspec(dllimport)` annotation so downstream code uses `__imp_` references via the import table instead of JMP thunks.
+
+Also replaced `dimless` with `dimensionSet()` in:
+- `DimensionedScalarField.C` (8 instances)
+- `GeometricScalarField.C` (8 instances)
+- `geometricOneField.H`, `geometricZeroField.H` (inline `return dimless` → function-local static)
+
+**Lesson**: ALL `extern` global data from `libOpenFOAM.dll` accessed in template code is a potential JMP thunk crash. The `dimensionSet` globals (`dimless`, `dimTime`, etc.) are particularly dangerous because they're commonly used in field constructors. The proper fix is `FOAM_EXPORT_DATA` on the declarations, but replacing with default-constructed equivalents in template code provides immediate safety without rebuilding libOpenFOAM.
+
+---
+
+## Fix #19: Comprehensive `typeName` sweep in template code
+
+**Symptom**: Preventive fix - multiple template .C files under `src/OpenFOAM/` still contained bare `typeName` accesses that would crash if executed in downstream DLLs.
+
+**Root cause**: Many template files use `typeName` (static `word` data member) for header checking, error messages, and I/O. When template code is compiled into downstream DLLs, `typeName` is a cross-DLL data access via JMP thunk.
+
+**Fix**: Changed `typeName` to `typeName_()` in:
+- `DimensionedFieldIO.C:82` (readContents call)
+- `UniformDimensionedField.C:49,65,81` (readHeaderOk calls)
+- `GlobalIOField.C` (5 readHeaderOk calls)
+- `GlobalIOList.C` (4 readHeaderOk calls)
+- `CompactIOField.C` (7 instances - read path, error messages, and const_cast write path)
+- `CompactIOList.C` (7 instances - same pattern)
+- `objectRegistryTemplates.C:619,632` (error messages)
+- `indexedOctree.C:2302`, `dynamicIndexedOctree.C:2740` (debug output)
+- `cyclicPointPatchField.C:84`, `emptyPointPatchField.C:79`, `wedgePointPatchField.C:81`, `symmetryPointPatchField.C:79`, `symmetryPlanePointPatchField.C:82` (error messages)
+
+Also added `typeName_()` to `VectorSpace.H` and generic `pTraits.H` template to support `pTraits<Vector<double>>::typeName_()` and similar.
+
+**Lesson**: ANY `typeName` reference in a file included via `#ifdef NoRepository` is a cross-DLL ticking time bomb. Do a codebase-wide grep for `\btypeName\b` in all template .C files periodically to catch new instances.
+
+---
+
+## Fix #20: `DebugInFunction` accessing `debug` via JMP thunk
+
+**Symptom**: Segfault during `DebugInFunction` in GeometricField read constructor. `debug` value read as garbage (e.g., 1154360831) instead of 0, causing `if(debug)` to be true and crashing in the stream output code.
+
+**Root cause**: Template code (GeometricField constructor) compiled in simpleFoam.o accesses the `debug` static member of template classes (e.g., `volScalarField::debug` defined in libfiniteVolume.dll) via JMP thunk. The thunk's instruction bytes are read as a garbage non-zero int.
+
+**Fix**: Disabled all Debug* macros on Windows in `messageStream.H` using `#ifdef _WIN32` guards: `DebugInfo` → `if (false) Info`, `DebugInFunction` → `if (false) InfoInFunction`, `DebugPout` → `if (false) Pout`, `DebugPoutInFunction` → `if (false) PoutInFunction`, `DebugVar(var)` → `((void)0)`.
+
+**Lesson**: ANY static data member of a template class instantiated in a different DLL is accessed via JMP thunk without `__declspec(dllimport)`. Debug macros that check `debug` are particularly dangerous because the garbage non-zero value triggers code paths that crash.
+
+---
+
+## Fix #21: `readFields()` type name mismatch after `typeName` → `typeName_()` change
+
+**Symptom**: After Fix #20, simpleFoam exits with error "unexpected class name volScalarField expected GeometricField".
+
+**Root cause**: `readFields()` was using `typeName_()` (which returns the base template name "GeometricField") instead of `typeName` (which returns the specialized name "volScalarField"). Can't use `typeName` (cross-DLL crash) and can't use `typeName_()` (wrong value).
+
+**Fix**: Modified `readFields()` in GeometricField.C to construct `localIOdictionary` with `word()` (empty) to bypass the header class name check entirely. The `readStream()` function skips type validation when `expectName` is empty.
+
+**Lesson**: When replacing `typeName` with `typeName_()` in template code, check whether the VALUE matters. For `readContents()`, the type name is used for validation, so an empty word bypass is needed. Note: `word::null` is also an `extern` variable → cross-DLL access. Use `word()` (default constructor) instead.
+
+---
+
+## Fix #22: `fieldTypes::calculatedType` and other `extern const word` without `FOAM_EXPORT_DATA`
+
+**Symptom**: Segfault during `surfaceScalarField` construction. Crash at AVX2 memcpy instruction in libOpenFOAM.dll. `DimensionedField` construction works but full `GeometricField` (with boundary field) crashes.
+
+**Root cause**: `fieldTypes::calculatedType` is an `extern const word` in libOpenFOAM.dll WITHOUT `FOAM_EXPORT_DATA`. The inline function `fvsPatchField<Type>::calculatedType()` returns a reference to it. This function is used as the DEFAULT PARAMETER for every GeometricField constructor: `const word& patchFieldType = PatchField<Type>::calculatedType()`. Template code in downstream DLLs/EXEs evaluates this default → reads JMP thunk bytes as a `word` object → crash during boundary field construction.
+
+**Fix**: Added `FOAM_EXPORT_DATA` to all `extern` declarations in `fieldTypes.H`: `calculatedType`, `emptyType`, `extrapolatedCalculatedType`, `processorType`, `zeroGradientType`, and the `basic` wordList. Also added `#include "stdFoam.H"` for the FOAM_EXPORT_DATA macro definition. Required recompilation of ~123 .o files in libfiniteVolume.dll.
+
+**Lesson**: ANY `extern` data in libOpenFOAM.dll that is accessed from downstream code MUST have `FOAM_EXPORT_DATA`. Inline functions that return references to extern data are particularly insidious because they look like function calls but actually access data cross-DLL. Check ALL headers in `src/OpenFOAM` for `extern const` without `FOAM_EXPORT_DATA`.
+
+**Diagnostic technique**: Use `llvm-nm <file>.o | grep "symbolName"` and check for `__imp_` prefix. If present, `dllimport` is working. If absent, the access goes through JMP thunk. Use `for f in $(find build -name "*.o"); do if llvm-nm "$f" | grep -q "bareSymbol" && ! llvm-nm "$f" | grep -q "__imp_.*bareSymbol"; then echo "$f"; fi; done` to find all affected .o files.
+
+---
+
+## Fix #23: `DebugVar()` missing semicolon in `lduPrimitiveMeshAssemblyTemplates.C`
+
+**Symptom**: Compile error during finiteVolume rebuild: `lnInclude\lduPrimitiveMeshAssemblyTemplates.C:488:35: error: expected ';' after expression`.
+
+**Root cause**: `DebugVar(var)` on Windows expands to `((void)0)` (an expression), not a block statement. Line 488 had `DebugVar(lduAddr().size())` without a trailing semicolon. On Linux this works because `DebugVar` expands to `{...}` (block), but on Windows it needs the semicolon.
+
+**Fix**: Added semicolon after `DebugVar(lduAddr().size())` on line 488 of `lduPrimitiveMeshAssemblyTemplates.C`. Copied fix to lnInclude.
+
+**Lesson**: `DebugVar(x)` on Windows is just `((void)0)` - always follow it with a semicolon. Only one instance in the codebase lacked it.
+
+---
+
+## Fix #24: `turbulenceModel::propertiesName` cross-DLL access
+
+**Symptom**: Crash (exit code 127) during `turbulenceModel::New()` call in simpleFoam. Traces showed turbulenceProperties IOdictionary read succeeded but the actual `New()` call crashed.
+
+**Root cause**: `turbulenceModel::propertiesName` is a `static const word` defined in `libturbulenceModels.dll`, used as a default parameter in `IncompressibleTurbulenceModel::New()`. When called from simpleFoam.exe, the default parameter evaluates at the call site, creating a cross-DLL data access through a JMP thunk. `FOAM_EXPORT_DATA` cannot be used because it only works for libOpenFOAM.dll symbols (keyed on `FOAM_BUILDING_LIB`).
+
+**Fix**: Passed `word("turbulenceProperties")` explicitly at the call site in `createFields.H` instead of relying on the default parameter.
+
+**Lesson**: Default parameters that reference static data in OTHER DLLs (not libOpenFOAM) cannot use `FOAM_EXPORT_DATA`. Workaround: pass the value explicitly at the call site. A more systematic fix would be per-library export macros (e.g., `TURBULENCE_EXPORT_DATA`).
+
+---
+
+## Fix #25: `UPstream` static members cross-DLL access
+
+**Symptom**: Clean error exit (code 1) with message "Unsupported communications type -1" from `GeometricBoundaryField.C` at line 611. Turbulence model selection worked fine (RAS/kEpsilon), crash came during field evaluation.
+
+**Root cause**: `UPstream::defaultCommsType` is a static data member in libOpenFOAM.dll, used as a default parameter in `GeometricBoundaryField::evaluate(const UPstream::commsTypes commsType = UPstream::defaultCommsType)`. Template code compiled in downstream DLLs reads the JMP thunk bytes as a commsTypes enum value → gets -1 (0xFFFFFFFF from thunk instruction bytes), which is not a valid communications type.
+
+**Fix**: Added `FOAM_EXPORT_DATA` to 7 UPstream static data members in `UPstream.H`: `commsTypeNames`, `floatTransfer`, `nProcsSimpleSum`, `nProcsNonblockingExchange`, `nPollProcInterfaces`, `defaultCommsType`, `maxCommsSize`. Required recompilation of ~217 .o files across finiteVolume and all downstream DLLs.
+
+**Lesson**: `UPstream::defaultCommsType` is used as a default parameter in dozens of functions across the codebase. Any static data used as a default parameter in template code is a cross-DLL hazard. Apply `FOAM_EXPORT_DATA` to all frequently-accessed static members, especially those used in default parameters.
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:

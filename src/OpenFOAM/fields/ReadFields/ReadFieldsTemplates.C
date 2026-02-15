@@ -56,7 +56,7 @@ Foam::wordList Foam::ReadFields
     {
         if (!nFields)
         {
-            Info<< "Reading " << GeoField::typeName << ':';
+            Info<< "Reading " << GeoField::typeName_() << ':';
         }
         Info<< ' ' << fieldName;
 
@@ -110,7 +110,7 @@ Foam::wordList Foam::ReadFields
     {
         if (!nFields)
         {
-            Info<< "Reading " << GeoField::typeName << ':';
+            Info<< "Reading " << GeoField::typeName_() << ':';
         }
         Info<< ' ' << fieldName;
 
@@ -162,7 +162,7 @@ Foam::wordList Foam::ReadFields
     {
         if (!nFields)
         {
-            Info<< "Reading " << GeoField::typeName << ':';
+            Info<< "Reading " << GeoField::typeName_() << ':';
         }
         Info<< ' ' << fieldName;
 
@@ -334,7 +334,7 @@ void Foam::readFields
     {
         if (!nFields)
         {
-            Info<< "    " << GeoFieldType::typeName << ':';
+            Info<< "    " << GeoFieldType::typeName_() << ':';
         }
         Info<< ' ' << io.name();
 
@@ -386,7 +386,7 @@ void Foam::readUniformFields
     {
         if (!nFields)
         {
-            Info<< "    " << UniformFieldType::typeName << ':';
+            Info<< "    " << UniformFieldType::typeName_() << ':';
         }
         Info<< ' ' << io.name();
 

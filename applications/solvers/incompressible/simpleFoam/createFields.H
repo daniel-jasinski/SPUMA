@@ -43,9 +43,28 @@ std::fprintf(stderr, "TRACE:sf 7 - after setRefCell\n"); std::fflush(stderr);
 singlePhaseTransportModel laminarTransport(U, phi);
 std::fprintf(stderr, "TRACE:sf 8 - after laminarTransport\n"); std::fflush(stderr);
 
+std::fprintf(stderr, "TRACE:sf 8a - about to call turbulenceModel::New\n"); std::fflush(stderr);
+{
+    // Step-by-step to find crash in turbulenceModel::New
+    std::fprintf(stderr, "TRACE:sf 8b - reading turbulenceProperties IOobject\n"); std::fflush(stderr);
+    IOdictionary turbProps
+    (
+        IOobject
+        (
+            "turbulenceProperties",
+            runTime.constant(),
+            mesh,
+            IOobject::MUST_READ_IF_MODIFIED,
+            IOobject::NO_WRITE,
+            IOobject::NO_REGISTER
+        )
+    );
+    std::fprintf(stderr, "TRACE:sf 8c - turbulenceProperties read OK, type=%s\n", turbProps.get<word>("simulationType").c_str()); std::fflush(stderr);
+}
+std::fprintf(stderr, "TRACE:sf 8d - about to call New\n"); std::fflush(stderr);
 autoPtr<incompressible::turbulenceModel> turbulence
 (
-    incompressible::turbulenceModel::New(U, phi, laminarTransport)
+    incompressible::turbulenceModel::New(U, phi, laminarTransport, word("turbulenceProperties"))
 );
 std::fprintf(stderr, "TRACE:sf 9 - after turbulence\n"); std::fflush(stderr);
 

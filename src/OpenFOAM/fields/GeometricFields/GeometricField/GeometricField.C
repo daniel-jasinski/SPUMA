@@ -31,6 +31,7 @@ License
 #include "dictionary.H"
 #include "localIOdictionary.H"
 #include "meshState.H"
+#include <cstdio>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -76,27 +77,35 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields
 template<class Type, template<class> class PatchField, class GeoMesh>
 void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields()
 {
-    dictionary dict
+    std::fprintf(stderr, "TRACE:GF::readFields() - creating IOobject\n"); std::fflush(stderr);
+    // NOTE: Cannot use readContents(io, typeName_()) because typeName_()
+    // returns the base template name ("GeometricField"), not the specialized
+    // name ("volScalarField"). And we can't use readContents(io, typeName)
+    // because 'typeName' is a cross-DLL data access via JMP thunk on Windows.
+    // Instead, construct localIOdictionary directly with empty type to skip
+    // the header class name check.
+    IOobject rio
     (
-        localIOdictionary::readContents
-        (
-            IOobject
-            (
-                this->name(),
-                this->instance(),
-                this->local(),
-                this->db(),
-                IOobjectOption::MUST_READ,
-                IOobjectOption::NO_WRITE,
-                IOobjectOption::NO_REGISTER
-            ),
-            typeName
-        )
+        this->name(),
+        this->instance(),
+        this->local(),
+        this->db(),
+        IOobjectOption::MUST_READ,
+        IOobjectOption::NO_WRITE,
+        IOobjectOption::NO_REGISTER
     );
+    if (rio.readOpt() == IOobjectOption::READ_MODIFIED)
+    {
+        rio.readOpt(IOobjectOption::MUST_READ);
+    }
+    localIOdictionary reader(rio, word());
+    dictionary dict(std::move(static_cast<dictionary&>(reader)));
+    std::fprintf(stderr, "TRACE:GF::readFields() - dict read OK\n"); std::fflush(stderr);
 
     this->close();
 
     readFields(dict);
+    std::fprintf(stderr, "TRACE:GF::readFields() - done\n"); std::fflush(stderr);
 }
 
 
@@ -507,13 +516,17 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const bool readOldTime
 )
 :
-    Internal(io, mesh, dimless, false),
+    Internal(io, mesh, dimensionSet(), false),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary())
 {
+    std::fprintf(stderr, "TRACE:GF read-ctor body entered for '%s'\n", this->name().c_str()); std::fflush(stderr);
+
+    std::fprintf(stderr, "TRACE:GF-A debug=%d\n", debug); std::fflush(stderr);
     DebugInFunction
         << "Read construct" << nl << this->info() << endl;
 
+    std::fprintf(stderr, "TRACE:GF-B about to call isAnyRead()\n"); std::fflush(stderr);
     if (!this->isAnyRead())
     {
         // Do not warn about LAZY_READ since we may have already checked
@@ -524,6 +537,7 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
             << endl;
     }
 
+    std::fprintf(stderr, "TRACE:GF-C about to call readFields()\n"); std::fflush(stderr);
     readFields();
 
     if (readOldTime)
@@ -544,7 +558,7 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const dictionary& dict
 )
 :
-    Internal(io, mesh, dimless, false),
+    Internal(io, mesh, dimensionSet(), false),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary())
 {

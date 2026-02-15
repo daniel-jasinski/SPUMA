@@ -112,6 +112,7 @@ public:
     // Static Data Members
 
         static const char* const typeName;
+        static const char* typeName_() { return "int8"; }
         static const char* const componentNames[];
         static const int8_t zero;
         static const int8_t one;

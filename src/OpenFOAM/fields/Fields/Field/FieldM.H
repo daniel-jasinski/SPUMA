@@ -55,8 +55,8 @@ void checkFields
     if (f1.size() != f2.size())
     {
         FatalErrorInFunction
-            << " Field<"<<pTraits<Type1>::typeName<<"> f1("<<f1.size()<<')'
-            << " and Field<"<<pTraits<Type2>::typeName<<"> f2("<<f2.size()<<')'
+            << " Field<"<<pTraits<Type1>::typeName_()<<"> f1("<<f1.size()<<')'
+            << " and Field<"<<pTraits<Type2>::typeName_()<<"> f2("<<f2.size()<<')'
             << endl
             << " for operation " << op
             << abort(FatalError);
@@ -75,9 +75,9 @@ void checkFields
     if (f1.size() != f2.size() || f1.size() != f3.size())
     {
         FatalErrorInFunction
-            << " Field<"<<pTraits<Type1>::typeName<<"> f1("<<f1.size()<<')'
-            << ", Field<"<<pTraits<Type2>::typeName<<"> f2("<<f2.size()<<')'
-            << " and Field<"<<pTraits<Type3>::typeName<<"> f3("<<f3.size()<<')'
+            << " Field<"<<pTraits<Type1>::typeName_()<<"> f1("<<f1.size()<<')'
+            << ", Field<"<<pTraits<Type2>::typeName_()<<"> f2("<<f2.size()<<')'
+            << " and Field<"<<pTraits<Type3>::typeName_()<<"> f3("<<f3.size()<<')'
             << endl
             << "    for operation " << op
             << abort(FatalError);
@@ -102,10 +102,10 @@ void checkFields
     )
     {
         FatalErrorInFunction
-            << " Field<"<<pTraits<Type1>::typeName<<"> f1("<<f1.size()<<')'
-            << ", Field<"<<pTraits<Type2>::typeName<<"> f2("<<f2.size()<<')'
-            << ", Field<"<<pTraits<Type3>::typeName<<"> f3("<<f3.size()<<')'
-            << " and Field<"<<pTraits<Type4>::typeName<<"> f4("<<f4.size()<<')'
+            << " Field<"<<pTraits<Type1>::typeName_()<<"> f1("<<f1.size()<<')'
+            << ", Field<"<<pTraits<Type2>::typeName_()<<"> f2("<<f2.size()<<')'
+            << ", Field<"<<pTraits<Type3>::typeName_()<<"> f3("<<f3.size()<<')'
+            << " and Field<"<<pTraits<Type4>::typeName_()<<"> f4("<<f4.size()<<')'
             << endl
             << "    for operation " << op
             << abort(FatalError);

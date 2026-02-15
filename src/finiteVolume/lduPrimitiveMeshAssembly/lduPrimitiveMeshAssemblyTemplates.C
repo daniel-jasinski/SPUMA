@@ -485,7 +485,7 @@ void Foam::lduPrimitiveMeshAssembly::update
         DebugVar(cellOffsets_);
         DebugVar(faceMap_);
         (checkUpperTriangular(lduAddr().size(), lowerAddr(), upperAddr()));
-        DebugVar(lduAddr().size())
+        DebugVar(lduAddr().size());
     }
 }
 

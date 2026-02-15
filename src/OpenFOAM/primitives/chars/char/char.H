@@ -89,6 +89,7 @@ public:
     // Static Data Members
 
         static const char* const typeName;
+        static const char* typeName_() { return "char"; }
 
 
     // Constructors

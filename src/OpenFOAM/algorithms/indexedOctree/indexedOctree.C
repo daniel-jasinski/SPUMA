@@ -2299,7 +2299,7 @@ Foam::indexedOctree<Type>::indexedOctree
         int64_t memSize = Foam::memInfo{}.size();
 
         Pout<< "indexedOctree::indexedOctree"
-            << " : finished construction of tree of:" << shapes.typeName
+            << " : finished construction of tree of:" << shapes.typeName_()
             << nl
             << "    bb:" << this->bb() << nl
             << "    shapes:" << shapes.size() << nl

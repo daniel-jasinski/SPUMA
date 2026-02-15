@@ -150,6 +150,11 @@ public:
     // Static Data Members
 
         static const char* const typeName;
+        #if WM_LABEL_SIZE == 32
+        static const char* typeName_() { return "uLabel"; }
+        #else
+        static const char* typeName_() { return "uint32"; }
+        #endif
         static const char* const componentNames[];
         static const uint32_t zero;
         static const uint32_t one;

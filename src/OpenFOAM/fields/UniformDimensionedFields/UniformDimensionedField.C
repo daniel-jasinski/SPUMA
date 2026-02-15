@@ -46,7 +46,7 @@ Foam::UniformDimensionedField<Type>::UniformDimensionedField
     }
 
     // Read value
-    readHeaderOk(IOstreamOption::BINARY, typeName);
+    readHeaderOk(IOstreamOption::BINARY, typeName_());
 }
 
 
@@ -62,7 +62,7 @@ Foam::UniformDimensionedField<Type>::UniformDimensionedField
     dimensioned<Type>(regIOobject::name(), dims, val)
 {
     // Read value
-    readHeaderOk(IOstreamOption::BINARY, typeName);
+    readHeaderOk(IOstreamOption::BINARY, typeName_());
 }
 
 
@@ -78,7 +78,7 @@ Foam::UniformDimensionedField<Type>::UniformDimensionedField
     dimensioned<Type>(regIOobject::name(), dims, val)
 {
     // Read value
-    readHeaderOk(IOstreamOption::BINARY, typeName);
+    readHeaderOk(IOstreamOption::BINARY, typeName_());
 }
 
 
@@ -100,13 +100,13 @@ Foam::UniformDimensionedField<Type>::UniformDimensionedField
 )
 :
     regIOobject(io),
-    dimensioned<Type>(regIOobject::name(), dimless, Zero)
+    dimensioned<Type>(regIOobject::name(), dimensionSet(), Zero)
 {
     // For if MUST_READ_IF_MODIFIED
     addWatch();
 
     // Read unless NO_READ
-    readHeaderOk(IOstreamOption::BINARY, typeName);
+    readHeaderOk(IOstreamOption::BINARY, typeName_());
 }
 
 

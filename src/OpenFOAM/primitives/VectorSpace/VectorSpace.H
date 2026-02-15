@@ -115,6 +115,7 @@ public:
     // Static Data Members
 
         static const char* const typeName;
+        static const char* typeName_() { return typeName; }
         static const char* const componentNames[];
         static const Form zero;
         static const Form one;

@@ -76,7 +76,8 @@ public:
 
         const dimensionSet& dimensions() const noexcept
         {
-            return dimless;
+            static const dimensionSet ds;
+            return ds;
         }
 
         oneField field() const noexcept

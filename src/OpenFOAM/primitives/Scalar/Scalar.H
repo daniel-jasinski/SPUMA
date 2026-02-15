@@ -99,6 +99,7 @@ public:
     // Static Data Members
 
         static const char* const typeName;
+        static const char* typeName_() { return "scalar"; }
         static const char* const componentNames[];
         static const Scalar zero;
         static const Scalar one;

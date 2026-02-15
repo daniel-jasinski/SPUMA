@@ -81,6 +81,12 @@ class pTraits
 {
 public:
 
+    // Static Member Functions
+
+        //- Cross-DLL safe type name access (returns Base::typeName)
+        static const char* typeName_() { return Base::typeName; }
+
+
     // Constructors
 
         //- Copy construct from base class

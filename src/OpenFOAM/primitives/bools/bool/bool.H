@@ -94,6 +94,7 @@ public:
     // Static Data Members
 
         static const char* const typeName;
+        static const char* typeName_() { return "bool"; }
         static const char* const componentNames[];
         static const bool zero;
         static const bool one;

@@ -82,7 +82,7 @@ public:
     };
 
     //- Enumerated names for the communication types
-    static const Enum<commsTypes> commsTypeNames;
+    FOAM_EXPORT_DATA static const Enum<commsTypes> commsTypeNames;
 
     //- Different MPI-send modes (ignored for commsTypes::buffered)
     enum class sendModes : char
@@ -287,23 +287,23 @@ public:
         //- Should compact transfer be used in which floats replace doubles
         //- reducing the bandwidth requirement at the expense of some loss
         //- in accuracy
-        static bool floatTransfer;
+        FOAM_EXPORT_DATA static bool floatTransfer;
 
         //- Number of processors to change from linear to tree communication
-        static int nProcsSimpleSum;
+        FOAM_EXPORT_DATA static int nProcsSimpleSum;
 
         //- Number of processors to change to nonBlocking consensual
         //- exchange (NBX). Ignored for zero or negative values.
-        static int nProcsNonblockingExchange;
+        FOAM_EXPORT_DATA static int nProcsNonblockingExchange;
 
         //- Number of polling cycles in processor updates
-        static int nPollProcInterfaces;
+        FOAM_EXPORT_DATA static int nPollProcInterfaces;
 
         //- Default commsType
-        static commsTypes defaultCommsType;
+        FOAM_EXPORT_DATA static commsTypes defaultCommsType;
 
         //- Optional maximum message size (bytes)
-        static int maxCommsSize;
+        FOAM_EXPORT_DATA static int maxCommsSize;
 
         //- Tuning parameters for non-blocking exchange (NBX)
         static int tuning_NBX_;

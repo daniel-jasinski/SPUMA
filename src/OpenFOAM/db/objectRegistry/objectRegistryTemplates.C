@@ -616,7 +616,7 @@ const Type& Foam::objectRegistry::lookupObject
             << nl
             << "    bad lookup of " << name << " (objectRegistry "
             << this->name()
-            << ")\n    expected a " << Type::typeName
+            << ")\n    expected a " << Type::typeName_()
             << ", found a " << (*iter)->type() << nl
             << exit(FatalError);
     }
@@ -629,7 +629,7 @@ const Type& Foam::objectRegistry::lookupObject
         << nl
         << "    failed lookup of " << name << " (objectRegistry "
         << this->name()
-        << ")\n    available objects of type " << Type::typeName
+        << ")\n    available objects of type " << Type::typeName_()
         << ':' << nl
         << names<Type>() << nl
         << exit(FatalError);

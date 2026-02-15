@@ -276,6 +276,7 @@ public:
     // Static Data Members
 
         static const char* const typeName;
+        static const char* typeName_() { return "complex"; }
         static const char* const componentNames[];
 
         static const complex zero;      //!< complex (0,0)
