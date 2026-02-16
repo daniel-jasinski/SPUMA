@@ -141,7 +141,7 @@ public:
             inline ConstBlock(const vsType& vs);
 
             //- [i] const element access operator
-            inline const Cmpt& operator[](const direction i) const;
+            FOAM_DEVICE inline const Cmpt& operator[](const direction i) const;
 
             //- (i, 0) const element access operator
             inline const Cmpt& operator()
@@ -203,8 +203,8 @@ public:
 
     // Member Operators
 
-        inline const Cmpt& operator[](const direction) const;
-        inline Cmpt& operator[](const direction);
+        FOAM_DEVICE inline const Cmpt& operator[](const direction) const;
+        FOAM_DEVICE inline Cmpt& operator[](const direction);
 
         FOAM_DEVICE inline void operator=(const VectorSpace<Form, Cmpt, Ncmpts>&);
         FOAM_DEVICE inline void operator+=(const VectorSpace<Form, Cmpt, Ncmpts>&);

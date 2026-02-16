@@ -125,13 +125,13 @@ public:
         FOAM_DEVICE const Cmpt& z() const noexcept { return this->v_[Z]; }
 
         //- Access to the vector x component
-        Cmpt& x() noexcept { return this->v_[X]; }
+        FOAM_DEVICE Cmpt& x() noexcept { return this->v_[X]; }
 
         //- Access to the vector y component
-        Cmpt& y() noexcept { return this->v_[Y]; }
+        FOAM_DEVICE Cmpt& y() noexcept { return this->v_[Y]; }
 
         //- Access to the vector z component
-        Cmpt& z() noexcept { return this->v_[Z]; }
+        FOAM_DEVICE Cmpt& z() noexcept { return this->v_[Z]; }
 
 
     // Vector Operations
