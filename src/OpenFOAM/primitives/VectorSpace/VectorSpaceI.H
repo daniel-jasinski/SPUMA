@@ -191,7 +191,7 @@ Foam::VectorSpace<Form, Cmpt, Ncmpts>::block() const
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline const Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator[]
+FOAM_DEVICE inline const Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator[]
 (
     const direction d
 ) const
@@ -210,7 +210,7 @@ inline const Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator[]
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator[]
+FOAM_DEVICE inline Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator[]
 (
     const direction d
 )
@@ -230,7 +230,7 @@ inline Cmpt& Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator[]
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
 template<class SubVector, Foam::direction BStart>
-inline const Cmpt&
+FOAM_DEVICE inline const Cmpt&
 Foam::VectorSpace<Form, Cmpt, Ncmpts>::
 ConstBlock<SubVector, BStart>::operator[]
 (

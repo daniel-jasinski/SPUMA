@@ -97,6 +97,8 @@ void Foam::LduMatrix<Type, DType, LUType>::sumMagOffDiag
     const labelUList& l = lduAddr().lowerAddr();
     const labelUList& u = lduAddr().upperAddr();
 
+    foamExecutor exec;
+
     LUType* __restrict__ sumOffPtr = sumOff.begin();
     const LUType* const __restrict__ LowerPtr = Lower.cbegin();
     const LUType* const __restrict__ UpperPtr = Upper.cbegin();
