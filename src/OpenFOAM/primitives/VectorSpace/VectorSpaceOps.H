@@ -51,7 +51,7 @@ struct VectorSpaceOps
     //  \param [in] input indexable input data
     //  \param [out] result indexable output data
     template<class Input, class Output>
-    static inline void copy_n(Input input, Output result)
+    FOAM_DEVICE static inline void copy_n(Input input, Output result)
     {
         // if constexpr (I < N)
         {
@@ -64,7 +64,7 @@ struct VectorSpaceOps
     //  \param [out] result indexable output data
     //  \param val the value to assign for each entry
     template<class Output, class T>
-    static inline void fill_n(Output result, const T& val)
+    FOAM_DEVICE static inline void fill_n(Output result, const T& val)
     {
         // if constexpr (I < N)
         {
@@ -173,10 +173,10 @@ template<direction N>
 struct VectorSpaceOps<N, N>
 {
     template<class Input, class Output>
-    static inline void copy_n(Input, Output) {}
+    FOAM_DEVICE static inline void copy_n(Input, Output) {}
 
     template<class Output, class T>
-    static inline void fill_n(Output, const T&) {}
+    FOAM_DEVICE static inline void fill_n(Output, const T&) {}
 
     template<class V, class S, class EqOp>
     FOAM_DEVICE static inline void eqOpS(V&, const S&, EqOp) {}

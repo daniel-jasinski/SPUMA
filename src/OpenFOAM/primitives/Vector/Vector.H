@@ -125,13 +125,13 @@ public:
         FOAM_DEVICE const Cmpt& z() const noexcept { return this->v_[components::Z]; }
 
         //- Access to the vector x component
-        Cmpt& x() noexcept { return this->v_[components::X]; }
+        FOAM_DEVICE Cmpt& x() noexcept { return this->v_[components::X]; }
 
         //- Access to the vector y component
-        Cmpt& y() noexcept { return this->v_[components::Y]; }
+        FOAM_DEVICE Cmpt& y() noexcept { return this->v_[components::Y]; }
 
         //- Access to the vector z component
-        Cmpt& z() noexcept { return this->v_[components::Z]; }
+        FOAM_DEVICE Cmpt& z() noexcept { return this->v_[components::Z]; }
 
 
     // Vector Operations
@@ -206,7 +206,7 @@ public:
 
         //- Add compatible vector to this
         template<class Cmpt2>
-        std::enable_if_t<std::is_convertible_v<Cmpt2, Cmpt>, void>
+        FOAM_DEVICE std::enable_if_t<std::is_convertible_v<Cmpt2, Cmpt>, void>
         inline operator+=(const Vector<Cmpt2>& b)
         {
             this->x() += b.x();
@@ -216,7 +216,7 @@ public:
 
         //- Subtract compatible vector from this
         template<class Cmpt2>
-        std::enable_if_t<std::is_convertible_v<Cmpt2, Cmpt>, void>
+        FOAM_DEVICE std::enable_if_t<std::is_convertible_v<Cmpt2, Cmpt>, void>
         inline operator-=(const Vector<Cmpt2>& b)
         {
             this->x() -= b.x();

@@ -234,13 +234,13 @@ public:
     // Random access iterators (const and non-const)
 
         //- Return an iterator (pointer) to begin of VectorSpace
-        iterator begin() noexcept { return v_; }
+        FOAM_DEVICE iterator begin() noexcept { return v_; }
 
         //- Return const_iterator (const pointer) to begin of VectorSpace
-        const_iterator begin() const noexcept { return v_; }
+        FOAM_DEVICE const_iterator begin() const noexcept { return v_; }
 
         //- Return const_iterator (const pointer) to begin of VectorSpace
-        const_iterator cbegin() const noexcept { return v_; }
+        FOAM_DEVICE const_iterator cbegin() const noexcept { return v_; }
 
         //- Return an iterator (pointer) to end of VectorSpace
         iterator end() noexcept { return (v_ + Ncmpts); }
