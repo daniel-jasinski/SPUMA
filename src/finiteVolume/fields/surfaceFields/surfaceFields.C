@@ -168,6 +168,17 @@ registerOptSwitch
 } // End namespace Foam
 
 
+// * * * * * * * * * Explicit Instantiation of readFields() * * * * * * * * //
+
+// Force explicit instantiation to create strong (non-COMDAT) symbols.
+// See volFields.C for details (Fix #31).
+template void GeometricField<scalar, fvsPatchField, surfaceMesh>::readFields();
+template void GeometricField<vector, fvsPatchField, surfaceMesh>::readFields();
+template void GeometricField<sphericalTensor, fvsPatchField, surfaceMesh>::readFields();
+template void GeometricField<symmTensor, fvsPatchField, surfaceMesh>::readFields();
+template void GeometricField<tensor, fvsPatchField, surfaceMesh>::readFields();
+
+
 // * * * * * * * * * * * * * * * * Global Data * * * * * * * * * * * * * * * //
 
 // Note hard-coded values are more reliable than other alternatives

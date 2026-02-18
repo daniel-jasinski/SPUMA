@@ -121,6 +121,34 @@ symmTensor pinv(const symmTensor& st);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// Windows DLL: declare explicit specializations of VectorSpace static data
+// members so the compiler uses dllimport instead of implicit instantiation.
+#if defined(_WIN32) && !defined(FOAM_BUILDING_LIB)
+
+#define FOAM_VECTORSPACE_EXTERN_DATA(Form, Cmpt, N)                           \
+    template<> FOAM_EXPORT_DATA const char* const                             \
+        Foam::VectorSpace<Form, Cmpt, N>::typeName;                           \
+    template<> FOAM_EXPORT_DATA const char* const                             \
+        Foam::VectorSpace<Form, Cmpt, N>::componentNames[];                   \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::zero;                               \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::one;                                \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::max;                                \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::min;                                \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::rootMax;                            \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::rootMin;
+
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::SymmTensor<float>, float, 6)
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::SymmTensor<double>, double, 6)
+
+#undef FOAM_VECTORSPACE_EXTERN_DATA
+#endif
+
 #endif
 
 // ************************************************************************* //

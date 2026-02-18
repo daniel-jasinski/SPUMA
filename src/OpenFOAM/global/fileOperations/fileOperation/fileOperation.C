@@ -30,6 +30,7 @@ License
 #include "objectRegistry.H"
 #include "labelIOList.H"
 #include "registerSwitch.H"
+#include <cstdio>
 #include "stringOps.H"
 #include "Time.H"
 #include "OSspecific.H"  // for Foam::isDir etc
@@ -810,11 +811,21 @@ bool Foam::fileOperation::writeObject
 {
     if (writeOnProc)
     {
+        std::fprintf(stderr,
+            "TRACE:fileOp::writeObject '%s' start\n", io.name().c_str());
+        std::fflush(stderr);
         const fileName pathName(io.objectPath());
+        std::fprintf(stderr,
+            "TRACE:fileOp::writeObject path='%s'\n", pathName.c_str());
+        std::fflush(stderr);
 
         mkDir(pathName.path());
+        std::fprintf(stderr, "TRACE:fileOp::writeObject mkDir done\n");
+        std::fflush(stderr);
 
         autoPtr<OSstream> osPtr(NewOFstream(pathName, streamOpt));
+        std::fprintf(stderr, "TRACE:fileOp::writeObject stream opened\n");
+        std::fflush(stderr);
 
         if (!osPtr)
         {
@@ -825,21 +836,35 @@ bool Foam::fileOperation::writeObject
 
         // Update meta-data for current state
         const_cast<regIOobject&>(io).updateMetaData();
+        std::fprintf(stderr, "TRACE:fileOp::writeObject meta done\n");
+        std::fflush(stderr);
 
-        // If any of these fail, return (leave error handling to Ostream class)
+        std::fprintf(stderr, "TRACE:fileOp::writeObject calling writeHeader...\n");
+        std::fflush(stderr);
+        bool headerOk = os.good() && io.writeHeader(os);
+        std::fprintf(stderr, "TRACE:fileOp::writeObject writeHeader done ok=%d\n", (int)headerOk);
+        std::fflush(stderr);
 
-        const bool ok =
-        (
-            os.good()
-         && io.writeHeader(os)
-         && io.writeData(os)
-        );
+        bool dataOk = false;
+        if (headerOk)
+        {
+            std::fprintf(stderr, "TRACE:fileOp::writeObject calling writeData...\n");
+            std::fflush(stderr);
+            dataOk = io.writeData(os);
+            std::fprintf(stderr, "TRACE:fileOp::writeObject writeData done ok=%d\n", (int)dataOk);
+            std::fflush(stderr);
+        }
+
+        const bool ok = headerOk && dataOk;
 
         if (ok)
         {
             IOobject::writeEndDivider(os);
         }
 
+        std::fprintf(stderr, "TRACE:fileOp::writeObject '%s' done ok=%d\n",
+            io.name().c_str(), (int)ok);
+        std::fflush(stderr);
         return ok;
     }
     return true;

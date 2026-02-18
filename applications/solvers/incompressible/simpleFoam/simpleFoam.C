@@ -93,7 +93,9 @@ int main(int argc, char *argv[])
     #include "createFields.H"
     #include "initContinuityErrs.H"
 
+    std::fprintf(stderr, "TRACE:loop 0 - before validate\n"); std::fflush(stderr);
     turbulence->validate();
+    std::fprintf(stderr, "TRACE:loop 0a - after validate\n"); std::fflush(stderr);
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -102,23 +104,31 @@ int main(int argc, char *argv[])
     while (simple.loop())
     {
         Info<< "Time = " << runTime.timeName() << nl << endl;
+        std::fprintf(stderr, "TRACE:loop 1 - after Time=\n"); std::fflush(stderr);
 
         // Do any mesh changes
         mesh.controlledUpdate();
+        std::fprintf(stderr, "TRACE:loop 2 - after controlledUpdate\n"); std::fflush(stderr);
 
         if (mesh.changing())
         {
             MRF.update();
         }
+        std::fprintf(stderr, "TRACE:loop 3 - before UEqn\n"); std::fflush(stderr);
 
         // --- Pressure-velocity SIMPLE corrector
         {
             #include "UEqn.H"
+            std::fprintf(stderr, "TRACE:loop 4 - after UEqn, before pEqn\n"); std::fflush(stderr);
             #include "pEqn.H"
+            std::fprintf(stderr, "TRACE:loop 5 - after pEqn\n"); std::fflush(stderr);
         }
 
+        std::fprintf(stderr, "TRACE:loop 6 - before laminarTransport.correct\n"); std::fflush(stderr);
         laminarTransport.correct();
+        std::fprintf(stderr, "TRACE:loop 7 - before turbulence->correct\n"); std::fflush(stderr);
         turbulence->correct();
+        std::fprintf(stderr, "TRACE:loop 8 - before write\n"); std::fflush(stderr);
 
         runTime.write();
 

@@ -106,7 +106,7 @@ You should also regularly update the `Current Build Status` section with the lat
 
 ---
 
-## Current Build Status (2026-02-12)
+## Current Build Status (2026-02-18)
 
 ### What's Built
 
@@ -115,29 +115,36 @@ You should also regularly update the `Current Build Status` section with the lat
 - ✅ `libPstream.dll` (dummy, serial-only, for downstream libraries)
 - ✅ **`libOpenFOAM.dll`** (49 MB, ~600 source files, host + CUDA sm_86) - Loads successfully
 - ✅ `libfileFormats.dll`, `libsurfMesh.dll`, `libmeshTools.dll`, `libblockMesh.dll`
-- ✅ `libextrudeModel.dll`, `libfiniteVolume.dll`, `libdynamicMesh.dll`
+- ✅ `libextrudeModel.dll`, `libdynamicMesh.dll`, `libdynamicFvMesh.dll`
+- ✅ `libincompressibleTransportModels.dll`, `libturbulenceModels.dll`, `libincompressibleTurbulenceModels.dll`
+- ✅ `libsampling.dll`, `libfvOptions.dll`, `libatmosphericModels.dll`
 - ✅ **`blockMesh.exe`** - Runs successfully on pitzDaily (12,225 cells generated)
+- ✅ `libfiniteVolume.dll` (~250 MB) - Built, loads OK
+- ✅ **`simpleFoam.exe`** - **Runs to completion on pitzDaily! Writes all output files.**
 
-### Fixes Applied (since last update)
+### Fixes Applied (31 total)
 
-- Fix #13: `nullObject.H` - Added `FOAM_EXPORT_DATA` on `nullObjectPtr` for cross-DLL iterator access
-- Fix #14: `blockMeshTopology.C` - Changed `::typeName` to `::typeName_()` for cross-DLL safety
-- Fix #15: `FlexLexer.h` copied to `src/fileFormats/lnInclude/` for CUDA device compilation pass
-- Fix #16 (PENDING REBUILD): `GeometricBoundaryField.C` - Changed `emptyPolyPatch::typeName` and `cyclicPolyPatch::typeName` to `typeName_()` in template code instantiated by downstream DLLs
-- `simplifiedDynamicFvMesh.H` - Changed `DynamicMeshType::typeName_.c_str()` to `DynamicMeshType::typeName_()`
+All 31 fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
+- Fix #28: SYCL `reductionSum` CPU fallback (needs ~940 .o rebuild)
+- Fix #29: DEF generation must include static .lib files
+- Fix #30: `writeHeader()` uses `headerClassName()` instead of crashing `type()`. GeometricField.C headerClassName propagation fix needs finiteVolume rebuild.
+- Fix #31: Exit-time crash (cosmetic, low priority)
 
 ### Current State
 
-- **blockMesh works!** Successfully generates mesh for pitzDaily tutorial
-- **simpleFoam**: All DLLs built and loaded. Crashes during "Reading field p" (volScalarField constructor)
-- Fix #16 applied to source but `volFields.o` is stale (Feb 12 11:52, before fix). Must delete and rebuild.
-- See `doc/windows-sycl-cuda/Current-Status-Next-Steps.md` for exact rebuild commands.
+- **blockMesh works!** Generates mesh for pitzDaily tutorial
+- **simpleFoam works!** SIMPLE converges in 1 iteration. Writes p, U, k, epsilon, nut, phi, uniform/time. Prints "End". Exit code 139 (cosmetic destructor crash).
+- **Output class names wrong**: `class p;` instead of `class volScalarField;`. Fix in GeometricField.C needs finiteVolume rebuild.
+- **Solver residuals = 0**: Due to SYCL reduction bug (Fix #28 needs rebuild).
 
 ### What's Next
 
-1. **Immediate**: Delete stale `volFields.o`, rebuild `libfiniteVolume.dll` + `simpleFoam.exe`, re-test
-2. If crash persists: add traces inside GeometricField constructor, check for more `::typeName` in template code
-3. Get simpleFoam running on CPU (OMP backend), then test CUDA
+1. **IMMEDIATE**: Copy updated GeometricField.C to lnInclude, rebuild libfiniteVolume.dll (fixes class names + propagates Fix #28)
+2. Test simpleFoam output for correct class names
+3. Investigate exit-time crash (low priority)
+4. Full rebuild of ALL downstream DLLs for Fix #28
+5. Test with CUDA backend
+6. Remove all debug traces before committing
 
 ### Critical wmake Knowledge
 
@@ -149,6 +156,7 @@ You should also regularly update the `Current Build Status` section with the lat
 6. **Template code = cross-DLL code**: `#ifdef NoRepository` templates in `src/OpenFOAM/` get compiled into downstream DLLs. Any `::typeName` in them is a cross-DLL data access. Always use `::typeName_()`.
 7. **lnInclude staleness**: On Windows, lnInclude contains COPIES. After editing template/header files, MUST copy to lnInclude manually.
 8. **Force recompilation**: wmake may not detect template header changes. Delete the `.o` file to force recompilation.
+9. **dllimport ignored for template class statics**: Use explicit specialization declarations (FOAM_VECTORSPACE_EXTERN_DATA macro) - see Fix #27.
 
 ### Build Scripts
 
@@ -157,11 +165,13 @@ You should also regularly update the `Current Build Status` section with the lat
 - `rebuild-fv.sh` - Rebuild downstream chain: fileFormats → surfMesh → meshTools → blockMesh → extrudeModel → finiteVolume → dynamicMesh → blockMesh app
 - `rebuild-simplefoam-deps.sh` - Rebuild simpleFoam dependency chain
 - `rebuild-fv-sf.sh` - Quick rebuild: finiteVolume + simpleFoam only
+- `rebuild-fv-sf-fix27.sh` - Full rebuild: finiteVolume (wmake -k) + simpleFoam with Fix #27
 - `rebuild-blockmesh-quick.sh` - Quick rebuild: blockMesh lib + app only
 
 ### Debug Traces Still Present
 
 Remove before committing:
+- `src/OpenFOAM/fields/GeometricFields/GeometricField/GeometricField.C` - various traces
 - `src/OpenFOAM/include/createMemoryPool.H` - TRACE: createMemoryPool
 - `src/OpenFOAM/include/createTime.H` - TRACE: createTime
 - `applications/utilities/mesh/generation/blockMesh/blockMesh.C` - TRACE: blockMesh

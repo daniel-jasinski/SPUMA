@@ -85,27 +85,17 @@ void Foam::syclExecutor::_backendReductionSum
 {
     if (size <= 0) return;
 
-    sycl::queue& q = getSyclQueue();
+    // Host fallback: sycl::reduction with sycl::buffer returns 0
+    // on the AdaptiveCpp OMP backend (built without OpenMP support).
+    // Use CPU loop until proper GPU backend is available.
+    resultT localSum = Foam::Zero;
 
-    // Initialize result
-    resultT sum = Foam::Zero;
-
+    for (label i = 0; i < size; ++i)
     {
-        sycl::buffer<resultT, 1> sumBuf(&sum, sycl::range<1>(1));
-
-        q.submit([&](sycl::handler& h)
-        {
-            auto sumReduction = sycl::reduction(sumBuf, h, sycl::plus<resultT>());
-
-            h.parallel_for(sycl::range<1>(size), sumReduction,
-                [=](sycl::id<1> idx, auto& sumRef)
-                {
-                    sumRef += lambda(idx[0]);
-                });
-        }).wait();
+        localSum += lambda(i);
     }
 
-    *result += sum;
+    *result += localSum;
 }
 
 template <typename F, typename Op, typename resultT>

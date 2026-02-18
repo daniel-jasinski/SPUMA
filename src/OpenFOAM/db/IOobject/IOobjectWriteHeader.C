@@ -30,6 +30,7 @@ License
 #include "dictionary.H"
 #include "objectRegistry.H"
 #include "foamVersion.H"
+#include <cstdio>
 
 // * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
 
@@ -279,7 +280,15 @@ bool Foam::IOobject::writeHeader
 
 bool Foam::IOobject::writeHeader(Ostream& os) const
 {
-    return IOobject::writeHeader(os, this->type());
+    // On Windows DLLs, this->type() crashes when the inline virtual type()
+    // function accesses typeName data through DEF-file JMP thunks.
+    // Use headerClassName (set from file header at read time) if available.
+    // Objects read from files have headerClassName set via parseHeader().
+    // Programmatically-created objects should set it in their constructor.
+    // Fallback to name() for objects that have neither (Fix #30).
+    const word& hdrClass = this->headerClassName();
+    const word& objectType = hdrClass.empty() ? this->name() : hdrClass;
+    return IOobject::writeHeader(os, objectType);
 }
 
 

@@ -170,19 +170,19 @@ public:
 
     // Static Data Members
 
-        static const char* const typeName;
+        FOAM_EXPORT_DATA static const char* const typeName;
         #if WM_LABEL_SIZE == 32
         static const char* typeName_() { return "label"; }
         #else
         static const char* typeName_() { return "int32"; }
         #endif
-        static const char* const componentNames[];
-        static const int32_t zero;
-        static const int32_t one;
-        static const int32_t min;
-        static const int32_t max;
-        static const int32_t rootMax;
-        static const int32_t rootMin;
+        FOAM_EXPORT_DATA static const char* const componentNames[];
+        FOAM_EXPORT_DATA static const int32_t zero;
+        FOAM_EXPORT_DATA static const int32_t one;
+        FOAM_EXPORT_DATA static const int32_t min;
+        FOAM_EXPORT_DATA static const int32_t max;
+        FOAM_EXPORT_DATA static const int32_t rootMax;
+        FOAM_EXPORT_DATA static const int32_t rootMin;
 
 
     // Constructors

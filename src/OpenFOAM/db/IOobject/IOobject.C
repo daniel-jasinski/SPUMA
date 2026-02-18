@@ -30,6 +30,7 @@ License
 #include "Time.H"
 #include "Istream.H"
 #include "registerSwitch.H"
+#include <cstdio>
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -593,6 +594,10 @@ void Foam::IOobject::setBad(const string& s)
 
 void Foam::IOobject::resetHeader(const word& newName)
 {
+    std::fprintf(stderr,
+        "TRACE:resetHeader name='%s' headerClassName='%s' this=%p\n",
+        name_.c_str(), headerClassName_.c_str(), (const void*)this);
+    std::fflush(stderr);
     if (!newName.empty())
     {
         name_ = newName;

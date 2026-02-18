@@ -12,7 +12,7 @@ The SPUMA project (OpenFOAM with GPU acceleration) is being ported to Windows wi
 
 ---
 
-## Current Build State (2026-02-12)
+## Current Build State (2026-02-18)
 
 ### Built Successfully
 
@@ -27,7 +27,7 @@ The SPUMA project (OpenFOAM with GPU acceleration) is being ported to Windows wi
 | `libmeshTools.dll` | 23 MB | Built, loads OK |
 | `libblockMesh.dll` | 2.3 MB | Built, loads OK |
 | `libextrudeModel.dll` | 0.7 MB | Built, loads OK |
-| `libfiniteVolume.dll` | 250 MB | Built, loads OK |
+| `libfiniteVolume.dll` | ~250 MB | Built with Fix #27, runs OK |
 | `libdynamicMesh.dll` | 17 MB | Built, loads OK |
 | `libdynamicFvMesh.dll` | 3.4 MB | Built, loads OK |
 | `libincompressibleTransportModels.dll` | ~3 MB | Built, loads OK |
@@ -38,66 +38,46 @@ The SPUMA project (OpenFOAM with GPU acceleration) is being ported to Windows wi
 | `libfvOptions.dll` | ~45 MB | Built, loads OK |
 | `libatmosphericModels.dll` | ~5 MB | Built, loads OK |
 | `blockMesh.exe` | 0.5 MB | **Runs successfully on pitzDaily tutorial** |
-| `simpleFoam.exe` | ~1 MB | Built, crashes during field reading (see below) |
+| `simpleFoam.exe` | ~1 MB | **Runs to completion, writes all output files** |
 
 ### Runtime Status
 
 **blockMesh runs successfully!** Generated 12,225 cells for pitzDaily tutorial.
 
-**simpleFoam** starts up successfully through DLL loading, static init, mesh creation, and convergence criteria reading, but crashes (SIGSEGV) during `volScalarField p(IOobject, mesh)` construction ("Reading field p").
+**simpleFoam runs to completion!** SIMPLE solver converges in 1 iteration. All 6 field files + uniform/time written. Solver prints "End" successfully. Exits with code 139 (cosmetic crash during C++ destructor chain after main() returns).
 
-DLL static initialization works correctly:
-1. globals.C init: OK
-2. debug::controlDict loading: OK
-3. debug::switchSet (all groups): OK
-4. MemoryPool: OK (dummyMemoryPool)
-5. Runtime selection table registration: OK (benign duplicate warnings from TypeNameNoDebug/CentredFitScheme/LimitedScheme)
-6. blockMesh mesh generation: OK
+**Known issues:**
+1. **Output file class names wrong**: `class p;` instead of `class volScalarField;` — due to headerClassName_ not propagated from temporary reader in GeometricField::readFields(). Fix applied to GeometricField.C but requires finiteVolume rebuild.
+2. **Exit-time crash**: SIGSEGV during destructor chains after main() returns. Cosmetic — all output is correct.
+3. **Solver residuals are 0**: Due to broken SYCL reductions (Fix #28 needs ~940 .o rebuild).
 
-### Current Debugging: simpleFoam crash
+### Fixes Applied (Fixes #1-#31)
 
-**What works**: All DLLs load → static init OK → createMemoryPool → createTime → createDynamicFvMesh → createControl → SIMPLE convergence criteria → "Reading field p" printed.
+All 31 fixes applied. Key recent:
+- **Fix #28**: SYCL `reductionSum` CPU fallback. **Requires rebuilding ~940 .o files.**
+- **Fix #29**: DEF file must include static .lib files (libOSspecific.lib, libPstream_static.lib) when regenerating.
+- **Fix #30**: `writeHeader()` uses `headerClassName()` instead of `type()` to avoid DEF JMP thunk crash. GeometricField.C propagation fix applied but needs finiteVolume rebuild.
+- **Fix #31**: Exit-time crash (cosmetic, low priority).
 
-**Where it crashes**: Inside `volScalarField p(IOobject(...), mesh)` constructor (trace "sf 2" prints, "sf 3" does not).
+### Current Issues
 
-**Root cause (suspected)**: `GeometricBoundaryField.C` (template code) uses `emptyPolyPatch::typeName` and `cyclicPolyPatch::typeName` at lines 279, 286, 319. This template is instantiated in `libfiniteVolume.dll` via `volFields.C`, creating cross-DLL data access to static members in `libOpenFOAM.dll` — same JMP thunk pattern as Fixes #8, #10, #13, #14.
+#### Fix #30: Correct Class Names in Output (Rebuild Needed)
 
-**Fix applied but NOT YET COMPILED IN**: Changed `emptyPolyPatch::typeName` → `emptyPolyPatch::typeName_()` and `cyclicPolyPatch::typeName` → `cyclicPolyPatch::typeName_()` in `GeometricBoundaryField.C`. File also copied to `src/OpenFOAM/lnInclude/`.
+`IOobject::writeHeader(Ostream&)` no longer calls `this->type()` (crashes due to DEF thunks). Uses `headerClassName_` instead. For GeometricField types (volScalarField, surfaceScalarField), `headerClassName_` is empty because `readFields()` reads via a temporary IOobject. Fix: propagate `headerClassName_` from temporary to the actual object. Code change done in `GeometricField.C`, but since it's a NoRepository template compiled into libfiniteVolume, a full finiteVolume rebuild is needed.
 
-**Action needed**: Delete stale `volFields.o` (dated Feb 12 11:52, before the fix) and rebuild `libfiniteVolume.dll` + `simpleFoam.exe`:
-```bash
-# 1. Delete stale object file
-rm /c/OpenFOAM/SPUMA/build/win64MsvcSyclDPInt32Opt/src/finiteVolume/fields/volFields/volFields.o
+#### Fix #28: SYCL Reduction Returns Zero (Rebuild Needed)
 
-# 2. Fix any .dep.part files
-find /c/OpenFOAM/SPUMA/build -name "*.dep.part" -exec sh -c 'mv "$1" "${1%.part}"' _ {} \;
-
-# 3. Rebuild finiteVolume + simpleFoam (use rebuild-fv-sf.sh)
-cd /c/OpenFOAM/SPUMA && bash rebuild-fv-sf.sh
-
-# 4. Test
-cd /c/OpenFOAM/SPUMA/tutorials/incompressible/simpleFoam/pitzDaily
-PATH="/c/OpenFOAM/SPUMA/platforms/win64MsvcSyclDPInt32Opt/lib:/c/OpenFOAM/SPUMA/platforms/win64MsvcSyclDPInt32Opt/bin:/c/dev/llvm-acpp-msvc-21/bin:$PATH" \
-  WM_PROJECT_DIR="/c/OpenFOAM/SPUMA" WM_PROJECT="OpenFOAM" FOAM_INST_DIR="/c/OpenFOAM" \
-  ACPP_VISIBILITY_MASK=omp \
-  simpleFoam.exe 1>stdout.txt 2>stderr.txt
-```
-
-**If the crash persists**: There may be additional `::typeName` references in the field construction chain. Other candidates found by code search:
-- `fvExprDriverIO.C`: `cellZone::typeName`, `faceZone::typeName`, `pointZone::typeName`
-- `porosityModel.C`: `coordinateSystem::typeName`
-- `advectiveFvPatchField.C`: various ddtScheme `::typeName` references
-- `mappedPatchFieldBase.C`: `interpolationCell<Type>::typeName`
-
-**If it gets past field reading**: The SYCL OMP backend warnings ("kernel launcher without OpenMP support") may cause subsequent crashes in SYCL buffer operations. Testing with `ACPP_VISIBILITY_MASK=omp` disables CUDA but runs kernels sequentially.
+Same as before — ~940 .o files need recompiling. Can be combined with the Fix #30 finiteVolume rebuild.
 
 ### Next Steps (Priority Order)
 
-1. Rebuild libfiniteVolume.dll with GeometricBoundaryField.C fix (delete volFields.o first)
-2. Test simpleFoam - if crash persists, add traces inside GeometricField constructor
-3. Fix any remaining `::typeName` cross-DLL references in libfiniteVolume
-4. Get simpleFoam running on CPU (OMP backend)
-5. Test with CUDA backend (`ACPP_VISIBILITY_MASK` unset or `=cuda`)
+1. **Copy updated GeometricField.C to lnInclude** and **rebuild libfiniteVolume.dll** (fixes class names + includes Fix #28 sycl reduction fix)
+2. Relink simpleFoam.exe if needed
+3. Verify output files have correct class names
+4. Investigate exit-time crash (low priority)
+5. Full rebuild of ALL downstream DLLs to propagate Fix #28 everywhere
+6. Test with CUDA backend
+7. Remove all debug traces before committing
 
 ---
 
@@ -507,6 +487,6 @@ If non-zero, run the rename workaround above.
 | `SPUMA-Windows-CUDA-Build-Guide.md` | Complete build guide with environment setup and code changes overview |
 | `Windows-DLL-Export-Fixes.md` | Detailed code changes for each file with before/after examples |
 | `Runtime-Selection-Table-Fix.md` | Function-based table access pattern for cross-DLL type registration |
-| `Debugging-Conclusions.md` | All root causes, fixes, and diagnostic techniques (Fixes #1-#6) |
+| `Debugging-Conclusions.md` | All root causes, fixes, and diagnostic techniques (Fixes #1-#29) |
 | `Agent-Handoff-Spec.md` | Handoff specification for continuing DLL init debugging |
 | This file | Current status tracking and next steps |

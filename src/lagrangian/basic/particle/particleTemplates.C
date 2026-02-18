@@ -514,7 +514,7 @@ void Foam::particle::hitCyclicAMIPatch
         &displacementT,
         mesh_.faceOwner()[facei_],
         false,
-        "Particle crossed between " + cyclicAMIPolyPatch::typeName_() +
+        "Particle crossed between " + word(cyclicAMIPolyPatch::typeName_()) +
         " patches " + cpp.name() + " and " + receiveCpp.name() +
         " to a location outside of the mesh."
     );

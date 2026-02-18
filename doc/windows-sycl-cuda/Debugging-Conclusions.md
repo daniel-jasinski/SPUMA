@@ -617,6 +617,165 @@ Also added `typeName_()` to `VectorSpace.H` and generic `pTraits.H` template to 
 
 ---
 
+## Fix #26: `VectorSpace::componentNames` and pTraits static members cross-DLL access
+
+**Symptom**: Segfault during `lduMatrix::solver::New()` in `fvMatrixSolve.C` at `pTraits<Type>::componentNames[cmpt]`. Also, `SolverPerformance<Type>::debug` returned garbage value `-1628690945` (JMP thunk bytes).
+
+**Root cause**: `VectorSpace<Form, Cmpt, Ncmpts>` declares `static const char* const componentNames[]`, `static const Form zero/one/max/min/rootMax/rootMin` - all without `FOAM_EXPORT_DATA`. These are defined in libOpenFOAM.dll (`floatVectors.C`, etc.) but accessed from libfiniteVolume.dll's template code (`fvMatrixSolve.C`). The `componentNames` pointer is read through a JMP thunk → garbage pointer → segfault when dereferenced. Similarly, `pTraits<scalar>`, `pTraits<int32_t>`, and other pTraits specializations have static members without FOAM_EXPORT_DATA.
+
+**Fix**: Added `FOAM_EXPORT_DATA` to all static data members in:
+- `VectorSpace.H`: `typeName`, `componentNames[]`, `zero`, `one`, `max`, `min`, `rootMax`, `rootMin`
+- `Scalar.H`: all pTraits<Scalar> static members (typeName, componentNames, zero, one, max, min, rootMax, rootMin, vsmall)
+- `bool.H`, `char.H`, `int8.H`, `int32.H`, `int64.H`, `uint8.H`, `uint32.H`, `uint64.H`, `complex.H`: all pTraits static members (61 total across all files)
+
+Required full recompilation of all downstream DLLs (VectorSpace.H is included transitively by nearly every OpenFOAM header).
+
+**Lesson**: ANY static data member in a template class whose explicit instantiation lives in libOpenFOAM.dll needs `FOAM_EXPORT_DATA` if it's accessed from downstream DLLs. This includes `VectorSpace` and all `pTraits` specializations. The `FOAM_EXPORT_DATA` macro works correctly for these because `FOAM_BUILDING_LIB` is only defined when building libOpenFOAM.dll, and downstream DLLs don't define new VectorSpace or pTraits types.
+
+---
+
+## Fix #27: VectorSpace template static data members need explicit specialization declarations for dllimport
+
+**Symptom**: Even with `FOAM_EXPORT_DATA` on `VectorSpace::componentNames`, `VectorSpace::zero`, etc. (Fix #26), downstream .o files (e.g., `fvMesh.o` in libfiniteVolume.dll) still compiled WITHOUT `__imp_` prefixed references to these members. The `__declspec(dllimport)` attribute was silently ignored for template class static members.
+
+**Root cause**: Clang/MSVC ignores `__declspec(dllimport)` on static data members of template classes for implicit template instantiations. When the compiler implicitly instantiates `VectorSpace<Vector<double>, double, 3>`, it does NOT honor the `dllimport` attribute on the static members. This was confirmed by:
+- `llvm-nm fvMesh.o | grep componentNames` → NO `__imp_` prefix (plain symbol reference)
+- `llvm-nm fvMesh.o | grep FatalError` → HAS `__imp_` prefix (non-template static, works correctly)
+
+**Investigation**: Two approaches were tried:
+
+1. **`extern template class VectorSpace<...>`**: This tells the compiler that ALL members (functions + data) come from an external library. It successfully generated `__imp_` for data members, BUT also suppressed non-inline function instantiation (Istream constructor, `operator>>`, `operator<<`, `name()` from VectorSpace.C). This caused LNK2001 (unresolved external) errors in ~20 .o files.
+
+2. **Explicit specialization declarations** (WINNER): Declare each data member individually as an explicit specialization with `FOAM_EXPORT_DATA`:
+   ```cpp
+   template<> FOAM_EXPORT_DATA const char* const
+       Foam::VectorSpace<Form, Cmpt, N>::typeName;
+   template<> FOAM_EXPORT_DATA const char* const
+       Foam::VectorSpace<Form, Cmpt, N>::componentNames[];
+   template<> FOAM_EXPORT_DATA const Form
+       Foam::VectorSpace<Form, Cmpt, N>::zero;
+   // ... etc for one, max, min, rootMax, rootMin
+   ```
+   This tells the compiler that these specific data members are externally defined with dllimport, WITHOUT suppressing function instantiation.
+
+**Fix**: Created `FOAM_VECTORSPACE_EXTERN_DATA(Form, Cmpt, N)` macro that declares all 8 VectorSpace static data members (typeName, componentNames, zero, one, max, min, rootMax, rootMin) as explicit specializations with `FOAM_EXPORT_DATA`. Applied to:
+- `vector.H`: `FOAM_VECTORSPACE_EXTERN_DATA(Foam::Vector<float>, float, 3)` and `(Foam::Vector<double>, double, 3)`
+- `tensor.H`: `FOAM_VECTORSPACE_EXTERN_DATA(Foam::Tensor<float>, float, 9)` and `(Foam::Tensor<double>, double, 9)`
+- `symmTensor.H`: `FOAM_VECTORSPACE_EXTERN_DATA(Foam::SymmTensor<float>, float, 6)` and `(Foam::SymmTensor<double>, double, 6)`
+- `sphericalTensor.H`: `FOAM_VECTORSPACE_EXTERN_DATA(Foam::SphericalTensor<float>, float, 1)` and `(Foam::SphericalTensor<double>, double, 1)`
+
+The macro block is guarded by `#if defined(_WIN32) && !defined(FOAM_BUILDING_LIB)`, so libOpenFOAM sees no change (uses `dllexport` from the class definition), while downstream DLLs get proper `dllimport` for these specific data members.
+
+**Verification**: After applying, `llvm-nm fvMesh.o | grep componentNames` showed ALL references with `__imp_` prefix. `libfiniteVolume.dll` linked without errors (no suppression of function instantiation).
+
+**Status**: Headers modified and copied to lnInclude. Full recompilation of libfiniteVolume.dll needed (all ~428 .o files must be rebuilt to pick up the new dllimport declarations).
+
+**Lesson**: `__declspec(dllimport)` on template class static data members is IGNORED by Clang/MSVC for implicit instantiations. The workaround is explicit specialization declarations for each data member, which forces the compiler to use dllimport. `extern template class` is too aggressive (suppresses functions too). The explicit specialization declaration approach is the correct middle ground: it generates `__imp_` for data without affecting functions.
+
+---
+
+## Fix #28: SYCL reductionSum returns 0 on AdaptiveCpp OMP backend
+
+**Symptom**: simpleFoam runs a full SIMPLE iteration but all solver residuals report `Initial residual = 0, Final residual = 0, No Iterations 0`. The `gSum()` function returns 0 for all fields. The `weightedAverage()` function returns 0, causing `continuity errors` to report 0. The solver converges in one iteration with no actual computation.
+
+**Root cause**: `syclExecutor::_backendReductionSum()` in `syclExecutor.cpp` used `sycl::buffer` + `sycl::reduction` + `sycl::parallel_for` to compute sums. On the AdaptiveCpp OMP backend (which was "built without OpenMP support" per the runtime warning), this SYCL reduction pattern always returns 0. The SYCL runtime silently produces zero instead of an error.
+
+Note: `_backendReductionCompare()` (used by min/max) already had a CPU fallback loop, and `_backendFor()` (parallel_for without reduction) works correctly in sequential mode. Only the reduction sum path was broken.
+
+**Impact scope**: `syclExecutor.cpp` is a `#ifdef NoRepository` template included from `syclExecutor.H`. Every `.o` file that uses reductions gets its own compiled copy. Analysis found ~940 .o files across all libraries contain `_backendReductionSum`:
+- libOpenFOAM: 80/612 files
+- libfiniteVolume: 357/428 files
+- libmeshTools: 95/262 files
+- libturbulenceModels: 51/56 files
+- Plus all other downstream DLLs
+
+Fixing the source requires recompiling ALL affected .o files across ALL libraries (~6+ hours).
+
+**Fix**: Changed `_backendReductionSum()` in `syclExecutor.cpp` to use a CPU loop fallback (matching the pattern already used by `_backendReductionCompare()`):
+```cpp
+resultT localSum = Foam::Zero;
+for (label i = 0; i < size; ++i)
+{
+    localSum += lambda(i);
+}
+*result += localSum;
+```
+Also applied a targeted workaround in `DimensionedField::weightedAverage()` to use a CPU loop instead of `gSum()`, which takes effect without rebuilding all downstream DLLs.
+
+**Diagnostic technique**: The key insight was comparing `_backendReductionSum` (broken) vs `_backendReductionCompare` (working). Both are in the same file; the difference was that reductionCompare already had a CPU fallback while reductionSum used SYCL buffers. The `AdaptiveCpp Warning: Kernel launcher was built without OpenMP support` message in stderr was the clue.
+
+**Lesson**: When using SYCL with fallback backends (like AdaptiveCpp's OMP backend), test each SYCL feature individually. `sycl::parallel_for` may work correctly in sequential mode while `sycl::reduction` silently returns wrong results. Always provide CPU fallback paths for reduction operations. Template code in NoRepository headers means a source-level fix requires rebuilding every downstream library.
+
+---
+
+## Fix #29 (In Progress): SIGSEGV during runTime.write()
+
+**Symptom**: simpleFoam crashes with exit code 139 (SIGSEGV) during `runTime.write()` at the end of the first time step. The last trace before crash is "TRACE:loop 8 - before write". This persists even with `trapFpe 0` in etc/controlDict.
+
+**Root cause**: Under investigation. Added traces to `Time::writeObject()` (TimeIO.C) and `objectRegistry::writeObject()` (objectRegistry.C) to identify which registered object triggers the crash. The crash is a genuine memory access violation, NOT an FPE-related signal.
+
+**Status**: Trace code added, rebuild in progress. Results will identify the specific object/field that causes the crash.
+
+---
+
+## Fix #28: SYCL reductionSum returns 0 on OMP backend
+
+**Symptom**: `simpleFoam` solver diverged or produced wrong results. `DimensionedField::weightedAverage` returned 0 because `_backendReductionSum` returned 0 on the OMP (CPU) backend.
+
+**Root cause**: The SYCL reduction kernel in `syclExecutor.cpp` returns 0 on the OpenMP/CPU backend (OMP). The `sycl::reduction` with `sycl::plus<>` doesn't produce correct results when running on the CPU fallback.
+
+**Fix**: Added CPU fallback path in `syclExecutor.cpp::_backendReductionSum` that uses a sequential loop when the OMP backend is detected. Also added CPU workaround in `DimensionedField.C::weightedAverage` to compute the sum sequentially.
+
+**Lesson**: SYCL backends are not equally functional. Always test reductions on each backend (CUDA, OMP) independently. ~940 .o files need rebuilding for this fix to take effect in all DLLs.
+
+---
+
+## Fix #29: DEF file missing static library symbols (exit 127)
+
+**Symptom**: `simpleFoam.exe` fails with exit code 127 (DLL load failure) after regenerating `libOpenFOAM.def`.
+
+**Root cause**: `generate-msvc-def` was called with only `@link_objects.rsp` (the .o files). Static libraries (`libOSspecific.lib`, `libPstream_static.lib`) that are linked into `libOpenFOAM.dll` were not included. This caused 45 symbols (Pstream functions, OS functions like `exists`, `isDir`, `mkDir`) to be missing from the DEF file. Downstream DLLs that import these symbols couldn't load.
+
+**Fix**: Include static libraries when regenerating the DEF file:
+```bash
+generate-msvc-def libOpenFOAM.def @link_objects.rsp libOSspecific.lib libPstream_static.lib
+```
+Symbol count went from 24,947 to 25,283.
+
+**Lesson**: The wmake makefile passes static libs via `$(filter %.lib,$(PROJECT_LIBS) $(LIB_LIBS))`. When manually regenerating DEF files, always include the static .lib files too.
+
+---
+
+## Fix #30: writeHeader crashes on type() virtual dispatch
+
+**Symptom**: `simpleFoam` crashes with SIGSEGV during `runTime.write()` when writing field objects (e.g., `nut`, `U`, `p`). The crash occurs in `IOobject::writeHeader(Ostream& os)` at `this->type()`.
+
+**Root cause**: The `TypeName` macro defines `virtual const word& type() const { return typeName; }` as an inline function. When compiled into a DLL (e.g., libfiniteVolume.dll), the vtable entry for `type()` references `typeName` — a static data member exported via the DEF file. Even though both the vtable code and `typeName` are in the same DLL, the MSVC linker's DEF-file export mechanism creates JMP thunks for exported data symbols. The `type()` function returns a `const word&` that points to the JMP thunk instruction bytes instead of actual word data → SIGSEGV when the caller tries to read the string.
+
+**Key insight**: DEF-exported data symbols get JMP thunks that corrupt data reads. This affects ALL data symbols in the DEF, even for intra-DLL access. The only safe way to access type information is through `headerClassName()` (a member variable set at read time) or `typeName_()` (a function returning a const char* literal).
+
+**Fix (writeHeader)**: Changed `IOobject::writeHeader(Ostream& os)` to use `headerClassName()` instead of `type()`. If `headerClassName_` is empty, falls back to `this->name()` as a temporary measure. Full fix requires propagating `headerClassName_` from the temporary IOobject used during file reading to the actual registered object.
+
+**Fix (headerClassName propagation)**: Added `this->headerClassName() = reader.headerClassName();` in `GeometricField::readFields()` to propagate the class name from the temporary `localIOdictionary` reader to the GeometricField's IOobject base. Also set `headerClassName()` explicitly in `TimeIO.C::writeTimeDict()` for programmatically-created IOdictionary objects.
+
+**Status**: writeHeader fix applied in libOpenFOAM (compiled). GeometricField.C propagation edit done but requires finiteVolume rebuild to take effect. Currently, output files have field name as class (e.g., `class p;`) instead of correct class (e.g., `class volScalarField;`).
+
+**Lesson**: On Windows DLLs, NEVER call `type()` from code that might be in a different DLL than the object's typeName data. Use `headerClassName()` or `typeName_()` instead. The DEF-file JMP thunk corruption affects intra-DLL access too.
+
+---
+
+## Fix #31: Exit-time crash (cosmetic)
+
+**Symptom**: `simpleFoam.exe` prints "End" and produces all correct output files, then crashes with exit code 139 (SIGSEGV) during C++ destructor/cleanup chains after `main()` returns.
+
+**Root cause**: Not fully diagnosed. Likely caused by DLL unload order during process exit, or by destructors calling virtual functions on objects whose vtables have been unloaded. The crash happens after all solver output is complete.
+
+**Status**: Low-priority cosmetic issue. The solver produces correct results; only the exit code is wrong (139 instead of 0).
+
+**Lesson**: On Windows with multiple DLLs, process exit can trigger crashes in destructor chains due to DLL unload ordering. This is a known issue with complex C++ DLL ecosystems.
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:

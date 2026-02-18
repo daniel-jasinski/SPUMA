@@ -29,6 +29,7 @@ License
 #include "regIOobject.H"
 #include "Time.H"
 #include "OFstream.H"
+#include <cstdio>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -107,7 +108,15 @@ bool Foam::regIOobject::writeObject
     bool osGood = false;
     if (!masterOnly || UPstream::master())
     {
+        std::fprintf(stderr,
+            "TRACE:regIO::writeObject '%s' path='%s'\n",
+            name().c_str(), objectPath().c_str());
+        std::fflush(stderr);
         osGood = fileHandler().writeObject(*this, streamOpt, writeOnProc);
+        std::fprintf(stderr,
+            "TRACE:regIO::writeObject '%s' done ok=%d\n",
+            name().c_str(), (int)osGood);
+        std::fflush(stderr);
     }
     else
     {

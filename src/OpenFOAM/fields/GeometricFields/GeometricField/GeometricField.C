@@ -56,8 +56,10 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields
     const dictionary& dict
 )
 {
+    std::fprintf(stderr, "TRACE:GF::readFields(dict) - before internalField read\n"); std::fflush(stderr);
     Internal::readField(dict, "internalField");  // Includes size check
 
+    std::fprintf(stderr, "TRACE:GF::readFields(dict) - before boundaryField read\n"); std::fflush(stderr);
     boundaryField_.readField(*this, dict.subDict("boundaryField"));
 
     Type refLevel;
@@ -99,8 +101,13 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields()
         rio.readOpt(IOobjectOption::MUST_READ);
     }
     localIOdictionary reader(rio, word());
+    // Propagate headerClassName from the temporary reader to this object.
+    // On Windows DLLs, writeHeader() uses headerClassName() instead of the
+    // virtual type() to avoid cross-DLL data access crashes (Fix #29).
+    this->headerClassName() = reader.headerClassName();
     dictionary dict(std::move(static_cast<dictionary&>(reader)));
-    std::fprintf(stderr, "TRACE:GF::readFields() - dict read OK\n"); std::fflush(stderr);
+    std::fprintf(stderr, "TRACE:GF::readFields() headerClassName='%s'\n",
+        this->headerClassName().c_str()); std::fflush(stderr);
 
     this->close();
 

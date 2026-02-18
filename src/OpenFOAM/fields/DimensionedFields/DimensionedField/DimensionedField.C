@@ -482,12 +482,28 @@ Foam::dimensioned<Type> Foam::DimensionedField<Type, GeoMesh>::weightedAverage
     const DimensionedField<scalar, GeoMesh>& weightField
 ) const
 {
+    // Workaround: SYCL reductionSum returns 0 on OMP backend with
+    // dummyMemoryPool. Use CPU loop until syclExecutor rebuild (Fix #28).
+    Type num = Zero;
+    scalar den = scalar(0);
+    const Field<Type>& fld = field();
+    const label n = fld.size();
+    for (label i = 0; i < n; ++i)
+    {
+        const scalar w = weightField[i];
+        num += w * fld[i];
+        den += w;
+    }
+    if (den > VSMALL)
+    {
+        num /= den;
+    }
     return
         dimensioned<Type>
         (
             this->name() + ".weightedAverage(weights)",
             this->dimensions(),
-            gSum(weightField*field())/gSum(weightField)
+            num
         );
 }
 
