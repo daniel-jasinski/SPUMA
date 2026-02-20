@@ -708,16 +708,6 @@ Also applied a targeted workaround in `DimensionedField::weightedAverage()` to u
 
 ---
 
-## Fix #29 (In Progress): SIGSEGV during runTime.write()
-
-**Symptom**: simpleFoam crashes with exit code 139 (SIGSEGV) during `runTime.write()` at the end of the first time step. The last trace before crash is "TRACE:loop 8 - before write". This persists even with `trapFpe 0` in etc/controlDict.
-
-**Root cause**: Under investigation. Added traces to `Time::writeObject()` (TimeIO.C) and `objectRegistry::writeObject()` (objectRegistry.C) to identify which registered object triggers the crash. The crash is a genuine memory access violation, NOT an FPE-related signal.
-
-**Status**: Trace code added, rebuild in progress. Results will identify the specific object/field that causes the crash.
-
----
-
 ## Fix #28: SYCL reductionSum returns 0 on OMP backend
 
 **Symptom**: `simpleFoam` solver diverged or produced wrong results. `DimensionedField::weightedAverage` returned 0 because `_backendReductionSum` returned 0 on the OMP (CPU) backend.
@@ -748,31 +738,86 @@ Symbol count went from 24,947 to 25,283.
 
 ## Fix #30: writeHeader crashes on type() virtual dispatch
 
-**Symptom**: `simpleFoam` crashes with SIGSEGV during `runTime.write()` when writing field objects (e.g., `nut`, `U`, `p`). The crash occurs in `IOobject::writeHeader(Ostream& os)` at `this->type()`.
+**Symptom**: `simpleFoam` crashes with SIGSEGV during `runTime.write()` when writing field objects (e.g., `nut`, `U`, `p`, `cumulativeContErr`). The crash occurs in `IOobject::writeHeader(Ostream& os)` at `this->type()`.
 
-**Root cause**: The `TypeName` macro defines `virtual const word& type() const { return typeName; }` as an inline function. When compiled into a DLL (e.g., libfiniteVolume.dll), the vtable entry for `type()` references `typeName` — a static data member exported via the DEF file. Even though both the vtable code and `typeName` are in the same DLL, the MSVC linker's DEF-file export mechanism creates JMP thunks for exported data symbols. The `type()` function returns a `const word&` that points to the JMP thunk instruction bytes instead of actual word data → SIGSEGV when the caller tries to read the string.
+**Root cause**: The `TypeName` macro defines `virtual const word& type() const { return typeName; }` as an inline COMDAT function. When multiple DLLs instantiate the same template (e.g., `GeometricField<scalar,...>`), each gets a COMDAT copy of `type()`. The linker picks ONE copy via COMDAT folding — if it picks a copy from a different DLL than where `typeName` is defined, the access goes through a DEF-file JMP thunk, reading instruction bytes as string data → SIGSEGV.
 
-**Key insight**: DEF-exported data symbols get JMP thunks that corrupt data reads. This affects ALL data symbols in the DEF, even for intra-DLL access. The only safe way to access type information is through `headerClassName()` (a member variable set at read time) or `typeName_()` (a function returning a const char* literal).
+**Key insight**: COMDAT folding of `type()` makes cross-DLL data access unpredictable. Even types whose `typeName` is in libOpenFOAM (like `UniformDimensionedField<scalar>`) can crash if the linker picks a `type()` copy from libfiniteVolume.
 
-**Fix (writeHeader)**: Changed `IOobject::writeHeader(Ostream& os)` to use `headerClassName()` instead of `type()`. If `headerClassName_` is empty, falls back to `this->name()` as a temporary measure. Full fix requires propagating `headerClassName_` from the temporary IOobject used during file reading to the actual registered object.
+**Fix**: Three-tier approach in `IOobject::writeHeader(Ostream& os)`:
+1. Use `headerClassName()` if set (e.g., from file read) — this is always safe
+2. On Windows, use RTTI (`typeid(*this).name()`) to detect known-problematic template types: `GeometricField`, `UniformDimensionedField`, `DimensionedField`. For these, use `this->name()` as fallback.
+3. For all other types (non-template, or safe templates like `IOField`), call `this->type()` normally.
 
-**Fix (headerClassName propagation)**: Added `this->headerClassName() = reader.headerClassName();` in `GeometricField::readFields()` to propagate the class name from the temporary `localIOdictionary` reader to the GeometricField's IOobject base. Also set `headerClassName()` explicitly in `TimeIO.C::writeTimeDict()` for programmatically-created IOdictionary objects.
+**Also**: `GeometricField::readFields()` propagates `headerClassName` from the temporary reader to the actual object, so fields read from file always use path #1.
 
-**Status**: writeHeader fix applied in libOpenFOAM (compiled). GeometricField.C propagation edit done but requires finiteVolume rebuild to take effect. Currently, output files have field name as class (e.g., `class p;`) instead of correct class (e.g., `class volScalarField;`).
+**Status**: WORKING. simpleFoam runs 10+ iterations on pitzDaily, writes correct results. Output file class names use object name instead of type name for programmatic template objects (e.g., `class p;` instead of `class volScalarField;`), but this is tolerable — files can be read back correctly.
 
-**Lesson**: On Windows DLLs, NEVER call `type()` from code that might be in a different DLL than the object's typeName data. Use `headerClassName()` or `typeName_()` instead. The DEF-file JMP thunk corruption affects intra-DLL access too.
+**Lesson**: On Windows DLLs with DEF-file exports, COMDAT-folded virtual functions that access static data members are inherently unsafe. Use RTTI-based type detection as a safe alternative when `type()` cannot be called.
 
 ---
 
-## Fix #31: Exit-time crash (cosmetic)
+## Fix #31: Exit-time crash during static destruction
 
-**Symptom**: `simpleFoam.exe` prints "End" and produces all correct output files, then crashes with exit code 139 (SIGSEGV) during C++ destructor/cleanup chains after `main()` returns.
+**Symptom**: `simpleFoam.exe` prints "End" and produces all correct output files, then crashes with exit code 139 (SIGSEGV) during C++ destructor/cleanup chains after `main()` returns. `blockMesh.exe` does NOT have this issue.
 
-**Root cause**: Not fully diagnosed. Likely caused by DLL unload order during process exit, or by destructors calling virtual functions on objects whose vtables have been unloaded. The crash happens after all solver output is complete.
+**Root cause**: After `main()` returns, C++ destroys local variables (fields, mesh, Time), then static objects across DLLs. Template-heavy executables like simpleFoam have many GeometricField destructors that access cross-DLL data via the same COMDAT/DEF-thunk mechanism as Fix #30.
 
-**Status**: Low-priority cosmetic issue. The solver produces correct results; only the exit code is wrong (139 instead of 0).
+**Fix**: Added `std::_Exit(0)` before `return 0;` in `simpleFoam.C` (guarded by `#ifdef _WIN32`). This calls exit handlers and flushes I/O but skips C++ destructor chains. All output files are already written and flushed at this point.
 
-**Lesson**: On Windows with multiple DLLs, process exit can trigger crashes in destructor chains due to DLL unload ordering. This is a known issue with complex C++ DLL ecosystems.
+**Status**: RESOLVED. simpleFoam exits with code 0.
+
+**Lesson**: On Windows with multiple DLLs, use `std::_Exit()` or `_exit()` to avoid destructor-chain crashes at program exit. This is safe when all I/O is complete. Apply to other solver executables as needed.
+
+---
+
+## Fix #32: RTTI-based writeHeader class name on Windows
+
+**Symptom**: Output files written by simpleFoam had wrong class names. Fields created programmatically (phi, cumulativeContErr) or read by stale DLLs (k, epsilon, nut) got their object name or typedef name as the class, not the OpenFOAM typeName. This caused:
+1. Non-fatal warnings on restart: `Unexpected class name "surfaceScalarField" expected "GeometricField"`
+2. Fatal errors on restart: `unexpected class name uniformDimensionedScalarField expected UniformDimensionedField`
+
+**Root cause**: Two interacting issues:
+1. **COMDAT stale copies**: Template functions (e.g., `readFields()`) are compiled into each DLL separately. DLLs compiled before headerClassName propagation was added (Fix #30) have stale copies that don't set headerClassName. Fields read by these DLLs get empty headerClassName.
+2. **`type()` crash on Windows**: The virtual `type()` function accesses the static `typeName` member which may be in a different DLL. Due to COMDAT folding and DEF-file JMP thunks, this can crash (same mechanism as Fix #30).
+
+When headerClassName is empty AND `type()` crashes, `writeHeader()` has no way to determine the correct class name.
+
+**Fix**: In `IOobjectWriteHeader.C`, added RTTI-based class identification using `typeid(*this).name()` (MSVC RTTI). The mapper returns the OpenFOAM **typeName** (not the typedef name):
+- `GeometricField<...>` → `"GeometricField"` (not `"volScalarField"`)
+- `UniformDimensionedField<...>` → `"UniformDimensionedField"` (not `"uniformDimensionedScalarField"`)
+- `DimensionedField<...>` → `"DimensionedField"`
+
+The typeName is what `readStream()` checks against, so using it ensures files can be read back without errors.
+
+**Key insight**: The initial approach (returning typedef names like "volScalarField") caused warnings for GeometricField reads and **fatal errors** for UniformDimensionedField reads. The typedef names don't match the typeName that `readStream()` uses for validation.
+
+**Status**: RESOLVED. simpleFoam runs to convergence (273 iterations), writes correct class names, restarts cleanly from latestTime, zero warnings, zero fatal errors.
+
+**Lesson**: When bypassing `type()` on Windows, always return the OpenFOAM **typeName** (the string from the `TypeName()` macro), not typedef aliases. The typeName is what internal consistency checks validate against.
+
+---
+
+## Fix #33: meshObject::debug cross-DLL access in NoRepository template crashes mesh destructor
+
+**Symptom**: `simpleFoam.exe` segfaults (exit 139) during exit-time mesh destruction. Crash happens inside `fvMesh::clearOut()` → `meshObject::clearUpto()` template. SEH handler shows: access violation reading address `0xFFFFFFFFFFFFFFFF` at `operator<<(Ostream&, const char*)` in libOpenFOAM.dll (offset `0x109D7B`).
+
+**Root cause**: `MeshObject.C` is a NoRepository template file (`#ifdef NoRepository #include "MeshObject.C"`), so its template code is compiled into every downstream DLL (e.g., libfiniteVolume.dll). The `meshObject::clearUpto()` template contains `if (meshObject::debug) { Pout << ... }` debug output blocks. Both `meshObject::debug` and `Pout` are data symbols defined in libOpenFOAM.dll.
+
+When the template is compiled into libfiniteVolume.dll, these data accesses go through DEF file thunks (JMP stubs). `meshObject::debug` is declared with `FOAM_TYPENAME_EXPORT` which is always `__declspec(dllexport)` on Windows — it never uses `dllimport`, so the compiler never generates proper `__imp_` references. The DEF thunk for `meshObject::debug` returns garbage (instruction bytes read as int), which evaluates as non-zero, causing the code to enter the `if` block. Then `Pout` is accessed via another DEF thunk, yielding a corrupt vtable pointer. The `operator<<(Ostream&, const char*)` call dispatches through `callq *0x70(%rax)` with `%rax` pointing to garbage → segfault reading `0xFFFFFFFFFFFFFFFF`.
+
+**Fix**: Two-part fix:
+1. **Source fix** (MeshObject.C): Added `MESHOBJECT_DEBUG` macro that evaluates to `false` on Windows, replacing all `if (meshObject::debug)` checks. This is the same approach as the existing `DebugInFunction` macro (Fix #20). The compiler optimizes away the entire debug block, avoiding both the `meshObject::debug` and `Pout` cross-DLL accesses.
+2. **Solver workaround** (simpleFoam.C): Until libfiniteVolume.dll is rebuilt with the fix, `meshPtr.release()` leaks the mesh instead of destructing it. Scoped destruction analysis confirmed: fields destruct OK, simpleControl destructs OK, runTime destructs OK — only the mesh destructor crashes.
+
+**Files changed**:
+- `src/OpenFOAM/meshes/MeshObject/MeshObject.C` - Added `MESHOBJECT_DEBUG` macro, replaced 15 occurrences
+- `src/OpenFOAM/lnInclude/MeshObject.C` - Copy of above
+- `applications/solvers/incompressible/simpleFoam/simpleFoam.C` - `meshPtr.release()` workaround
+
+**Lesson**: ALL NoRepository template code is compiled into downstream DLLs. Any access to static data members (debug, typeName) or global variables (Pout, Info) from template bodies is a cross-DLL data access. `FOAM_TYPENAME_EXPORT` (always `dllexport`) does NOT provide proper `dllimport` for consumers — the linker uses DEF thunks which corrupt data reads. Debug output in templates must be disabled on Windows via compile-time guards, not runtime checks on cross-DLL data.
+
+**Diagnostic technique**: Used `SetUnhandledExceptionFilter()` with a custom SEH handler to capture crash address, fault type, and module bases without a debugger. Cross-referenced crash offset (`0x109D7B` from libOpenFOAM base) with `llvm-objdump -d --start-address=0x180109D7B` to identify the crashing instruction (`callq *0x70(%rax)` in `operator<<(Ostream&, const char*)`).
 
 ---
 

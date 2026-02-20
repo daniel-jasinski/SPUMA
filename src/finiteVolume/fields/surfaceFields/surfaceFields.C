@@ -172,11 +172,11 @@ registerOptSwitch
 
 // Force explicit instantiation to create strong (non-COMDAT) symbols.
 // See volFields.C for details (Fix #31).
-template void GeometricField<scalar, fvsPatchField, surfaceMesh>::readFields();
-template void GeometricField<vector, fvsPatchField, surfaceMesh>::readFields();
-template void GeometricField<sphericalTensor, fvsPatchField, surfaceMesh>::readFields();
-template void GeometricField<symmTensor, fvsPatchField, surfaceMesh>::readFields();
-template void GeometricField<tensor, fvsPatchField, surfaceMesh>::readFields();
+template void Foam::GeometricField<Foam::scalar, Foam::fvsPatchField, Foam::surfaceMesh>::readFields();
+template void Foam::GeometricField<Foam::vector, Foam::fvsPatchField, Foam::surfaceMesh>::readFields();
+template void Foam::GeometricField<Foam::sphericalTensor, Foam::fvsPatchField, Foam::surfaceMesh>::readFields();
+template void Foam::GeometricField<Foam::symmTensor, Foam::fvsPatchField, Foam::surfaceMesh>::readFields();
+template void Foam::GeometricField<Foam::tensor, Foam::fvsPatchField, Foam::surfaceMesh>::readFields();
 
 
 // * * * * * * * * * * * * * * * * Global Data * * * * * * * * * * * * * * * //

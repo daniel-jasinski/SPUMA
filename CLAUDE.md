@@ -106,45 +106,45 @@ You should also regularly update the `Current Build Status` section with the lat
 
 ---
 
-## Current Build Status (2026-02-18)
+## Current Build Status (2026-02-20)
 
 ### What's Built
 
 - ✅ `libOSspecific.lib` (1.7 MB static)
 - ✅ `libPstream_static.lib` (812 KB, llvm-ar from .o files)
 - ✅ `libPstream.dll` (dummy, serial-only, for downstream libraries)
-- ✅ **`libOpenFOAM.dll`** (49 MB, ~600 source files, host + CUDA sm_86) - Loads successfully
+- ✅ **`libOpenFOAM.dll`** (42 MB, ~612 .o files, host + CUDA sm_86) - Loads successfully
 - ✅ `libfileFormats.dll`, `libsurfMesh.dll`, `libmeshTools.dll`, `libblockMesh.dll`
 - ✅ `libextrudeModel.dll`, `libdynamicMesh.dll`, `libdynamicFvMesh.dll`
 - ✅ `libincompressibleTransportModels.dll`, `libturbulenceModels.dll`, `libincompressibleTurbulenceModels.dll`
 - ✅ `libsampling.dll`, `libfvOptions.dll`, `libatmosphericModels.dll`
-- ✅ **`blockMesh.exe`** - Runs successfully on pitzDaily (12,225 cells generated)
-- ✅ `libfiniteVolume.dll` (~250 MB) - Built, loads OK
-- ✅ **`simpleFoam.exe`** - **Runs to completion on pitzDaily! Writes all output files.**
+- ✅ **`blockMesh.exe`** - Runs successfully on pitzDaily (12,225 cells, exit 0)
+- ✅ `libfiniteVolume.dll` (~248 MB, 428 .o files) - Built, loads OK
+- ✅ **`simpleFoam.exe`** - **Runs to completion on pitzDaily, exit 0** (meshPtr.release() workaround)
 
-### Fixes Applied (31 total)
+### Fixes Applied (33 total)
 
-All 31 fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
-- Fix #28: SYCL `reductionSum` CPU fallback (needs ~940 .o rebuild)
-- Fix #29: DEF generation must include static .lib files
-- Fix #30: `writeHeader()` uses `headerClassName()` instead of crashing `type()`. GeometricField.C headerClassName propagation fix needs finiteVolume rebuild.
-- Fix #31: Exit-time crash (cosmetic, low priority)
+All 33 fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
+- Fix #29: DEF generation must include static .lib files (libOSspecific.lib, libPstream_static.lib)
+- Fix #30: `writeHeader()` headerClassName check avoids `type()` for template types
+- Fix #31: `std::_Exit(0)` workaround (superseded by Fix #33's targeted `meshPtr.release()`)
+- Fix #32: RTTI-based writeHeader returns OpenFOAM typeName (not typedef names). Fixes restart.
+- Fix #33: `meshObject::debug` cross-DLL access in NoRepository template crashes mesh destructor. `MESHOBJECT_DEBUG` macro in MeshObject.C + `meshPtr.release()` in solver.
 
 ### Current State
 
-- **blockMesh works!** Generates mesh for pitzDaily tutorial
-- **simpleFoam works!** SIMPLE converges in 1 iteration. Writes p, U, k, epsilon, nut, phi, uniform/time. Prints "End". Exit code 139 (cosmetic destructor crash).
-- **Output class names wrong**: `class p;` instead of `class volScalarField;`. Fix in GeometricField.C needs finiteVolume rebuild.
-- **Solver residuals = 0**: Due to SYCL reduction bug (Fix #28 needs rebuild).
+- **blockMesh works!** Exit 0.
+- **simpleFoam works!** Exit 0 (with `meshPtr.release()` workaround for Fix #33).
+- **Restart works!** Exit 0.
+- **Exit-time crash root cause identified**: `meshObject::debug` (cross-DLL data via DEF thunk) in NoRepository template MeshObject.C. Fix applied to source; requires libfiniteVolume.dll rebuild to fully eliminate mesh leak workaround.
 
 ### What's Next
 
-1. **IMMEDIATE**: Copy updated GeometricField.C to lnInclude, rebuild libfiniteVolume.dll (fixes class names + propagates Fix #28)
-2. Test simpleFoam output for correct class names
-3. Investigate exit-time crash (low priority)
-4. Full rebuild of ALL downstream DLLs for Fix #28
-5. Test with CUDA backend
-6. Remove all debug traces before committing
+1. Rebuild libfiniteVolume.dll with Fix #33 (MESHOBJECT_DEBUG macro) to eliminate mesh leak workaround
+2. Test with CUDA backend (currently using OMP via ACPP_VISIBILITY_MASK=omp)
+3. Full rebuild of ALL downstream DLLs for Fix #28 (SYCL reduction fix)
+4. Remove remaining debug traces from DLLs (require full rebuild to take effect)
+5. Check for other NoRepository templates with similar `if (debug)` patterns
 
 ### Critical wmake Knowledge
 
@@ -157,6 +157,7 @@ All 31 fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key
 7. **lnInclude staleness**: On Windows, lnInclude contains COPIES. After editing template/header files, MUST copy to lnInclude manually.
 8. **Force recompilation**: wmake may not detect template header changes. Delete the `.o` file to force recompilation.
 9. **dllimport ignored for template class statics**: Use explicit specialization declarations (FOAM_VECTORSPACE_EXTERN_DATA macro) - see Fix #27.
+10. **FOAM_TYPENAME_EXPORT is always dllexport**: `debug` and `typeName` static members never get dllimport. NoRepository templates accessing them crash. Use `#ifdef _WIN32` / `if (false)` guards - see Fix #33.
 
 ### Build Scripts
 
@@ -168,14 +169,6 @@ All 31 fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key
 - `rebuild-fv-sf-fix27.sh` - Full rebuild: finiteVolume (wmake -k) + simpleFoam with Fix #27
 - `rebuild-blockmesh-quick.sh` - Quick rebuild: blockMesh lib + app only
 
-### Debug Traces Still Present
+### Debug Traces
 
-Remove before committing:
-- `src/OpenFOAM/fields/GeometricFields/GeometricField/GeometricField.C` - various traces
-- `src/OpenFOAM/include/createMemoryPool.H` - TRACE: createMemoryPool
-- `src/OpenFOAM/include/createTime.H` - TRACE: createTime
-- `applications/utilities/mesh/generation/blockMesh/blockMesh.C` - TRACE: blockMesh
-- `applications/utilities/mesh/generation/blockMesh/findBlockMeshDict.H` - TRACE: findBlockMeshDict
-- `src/mesh/blockMesh/blockMesh/blockMeshTopology.C` - TRACE:topo
-- `applications/solvers/incompressible/simpleFoam/simpleFoam.C` - `#include <cstdio>`
-- `applications/solvers/incompressible/simpleFoam/createFields.H` - TRACE:sf
+All debug traces have been removed from source files (15 files cleaned, ~375 lines removed).

@@ -26,7 +26,6 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include <cstdio>
 #include "blockMesh.H"
 #include "blockMeshTools.H"
 #include "Time.H"
@@ -345,11 +344,8 @@ Foam::blockMesh::createTopology
     const word& regionName
 )
 {
-    std::fprintf(stderr, "TRACE:topo 1 - start\n"); std::fflush(stderr);
     word defaultPatchName = "defaultFaces";
-    std::fprintf(stderr, "TRACE:topo 2 - before emptyPolyPatch::typeName_()\n"); std::fflush(stderr);
     word defaultPatchType = emptyPolyPatch::typeName_();
-    std::fprintf(stderr, "TRACE:topo 3 - after typeName='%s'\n", defaultPatchType.c_str()); std::fflush(stderr);
 
     // Read the names/types for the unassigned patch faces
     // this is a bit heavy handed (and ugly), but there is currently
@@ -362,9 +358,7 @@ Foam::blockMesh::createTopology
 
 
     // Scaling, transformations
-    std::fprintf(stderr, "TRACE:topo 4 - before readPointTransforms\n"); std::fflush(stderr);
     readPointTransforms(meshDescription);
-    std::fprintf(stderr, "TRACE:topo 5 - after readPointTransforms\n"); std::fflush(stderr);
 
     // Read the block edges
     if (meshDescription.found("edges"))
@@ -390,7 +384,7 @@ Foam::blockMesh::createTopology
             Info<< "No non-linear block edges defined" << endl;
         }
     }
-    std::fprintf(stderr, "TRACE:topo 6 - after edges\n"); std::fflush(stderr);
+
 
     // Read the block faces
     if (meshDescription.found("faces"))
@@ -416,10 +410,8 @@ Foam::blockMesh::createTopology
             Info<< "No non-planar block faces defined" << endl;
         }
     }
-    std::fprintf(stderr, "TRACE:topo 7 - after faces\n"); std::fflush(stderr);
 
 
-    std::fprintf(stderr, "TRACE:topo 8 - before blocks\n"); std::fflush(stderr);
     // Create the blocks
     if (verbose_)
     {

@@ -30,20 +30,10 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-std::fprintf(stderr, "TRACE: createMemoryPool step 1 - before getOrDefault\n");
-std::fflush(stderr);
 const word pool = args.getOrDefault<word>("pool", "dummyMemoryPool");
 const scalar poolSize = args.getOrDefault<scalar>("poolSize", 0);
-std::fprintf(stderr, "TRACE: createMemoryPool step 2 - pool='%s' poolSize=%g\n", pool.c_str(), poolSize);
-std::fflush(stderr);
 
-std::fprintf(stderr, "TRACE: createMemoryPool step 3 - before Info\n");
-std::fflush(stderr);
 Info << "Create " << pool <<"\n " << endl;
-std::fprintf(stderr, "TRACE: createMemoryPool step 4 - after Info\n");
-std::fflush(stderr);
 MemoryPool* memPool = MemoryPool::New(pool, poolSize*1024*1024*1024ul);
-std::fprintf(stderr, "TRACE: createMemoryPool step 5 - after MemoryPool::New\n");
-std::fflush(stderr);
 
 // ************************************************************************* //

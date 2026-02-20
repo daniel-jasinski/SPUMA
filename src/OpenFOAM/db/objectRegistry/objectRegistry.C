@@ -29,7 +29,6 @@ License
 #include "objectRegistry.H"
 #include "Time.H"
 #include "predicates.H"
-#include <cstdio>
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -584,24 +583,8 @@ bool Foam::objectRegistry::writeObject
 {
     bool ok = true;
 
-    int objIdx = 0;
     for (const_iterator iter = cbegin(); iter != cend(); ++iter)
     {
-        const regIOobject* objPtr = iter.val();
-        std::fprintf(stderr,
-            "TRACE:writeObject [%d] key='%s' ptr=%p\n",
-            objIdx, iter.key().c_str(), (const void*)objPtr);
-        std::fflush(stderr);
-
-        if (objPtr)
-        {
-            std::fprintf(stderr,
-                "TRACE:writeObject [%d] writeOpt=%d name='%s'\n",
-                objIdx, static_cast<int>(objPtr->writeOpt()),
-                objPtr->name().c_str());
-            std::fflush(stderr);
-        }
-
         if (objectRegistry::debug)
         {
             const regIOobject& obj = *iter.val();
@@ -616,23 +599,9 @@ bool Foam::objectRegistry::writeObject
 
         if (iter.val()->writeOpt() != IOobjectOption::NO_WRITE)
         {
-            std::fprintf(stderr,
-                "TRACE:writeObject [%d] WRITING '%s'...\n",
-                objIdx, iter.key().c_str());
-            std::fflush(stderr);
             ok = iter.val()->writeObject(streamOpt, writeOnProc) && ok;
-            std::fprintf(stderr,
-                "TRACE:writeObject [%d] DONE '%s' ok=%d\n",
-                objIdx, iter.key().c_str(), (int)ok);
-            std::fflush(stderr);
         }
-        ++objIdx;
     }
-
-    std::fprintf(stderr,
-        "TRACE:writeObject ALL DONE, %d objects, ok=%d\n",
-        objIdx, (int)ok);
-    std::fflush(stderr);
 
     return ok;
 }

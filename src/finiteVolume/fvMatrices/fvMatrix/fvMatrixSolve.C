@@ -30,7 +30,6 @@ License
 #include "diagTensorField.H"
 #include "profiling.H"
 #include "PrecisionAdaptor.H"
-#include <cstdio>
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -114,7 +113,6 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
     const dictionary& solverControls
 )
 {
-    std::fprintf(stderr, "TRACE:solve 1 - solveSegregated entered\n"); std::fflush(stderr);
     if (useImplicit_)
     {
         FatalErrorInFunction
@@ -130,7 +128,6 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
                "solving fvMatrix<Type>"
             << endl;
     }
-    std::fprintf(stderr, "TRACE:solve 2 - after debug check\n"); std::fflush(stderr);
 
     const int logLevel =
         solverControls.getOrDefault<int>
@@ -138,7 +135,6 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
             "log",
             SolverPerformance<Type>::debug
         );
-    std::fprintf(stderr, "TRACE:solve 3 - logLevel=%d\n", logLevel); std::fflush(stderr);
 
     auto& psi =
         const_cast<GeometricField<Type, fvPatchField, volMesh>&>(psi_);
@@ -148,37 +144,29 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
         "fvMatrix<Type>::solveSegregated",
         psi.name()
     );
-    std::fprintf(stderr, "TRACE:solve 4 - before saveDiag\n"); std::fflush(stderr);
 
     scalarField saveDiag(diag());
-    std::fprintf(stderr, "TRACE:solve 5 - before source copy\n"); std::fflush(stderr);
 
     Field<Type> source(source_);
-    std::fprintf(stderr, "TRACE:solve 6 - before addBoundarySource\n"); std::fflush(stderr);
 
     // At this point include the boundary source from the coupled boundaries.
     // This is corrected for the implicit part by updateMatrixInterfaces within
     // the component loop.
     addBoundarySource(source);
-    std::fprintf(stderr, "TRACE:solve 7 - after addBoundarySource\n"); std::fflush(stderr);
 
     typename Type::labelType validComponents
     (
         psi.mesh().template validComponents<Type>()
     );
-    std::fprintf(stderr, "TRACE:solve 8 - beginning component loop\n"); std::fflush(stderr);
 
     for (direction cmpt=0; cmpt<Type::nComponents; cmpt++)
     {
         if (validComponents[cmpt] == -1) continue;
-        std::fprintf(stderr, "TRACE:solve 9 - cmpt=%d\n", (int)cmpt); std::fflush(stderr);
 
         // copy field and source
 
         scalarField psiCmpt(psi.primitiveField().component(cmpt));
-        std::fprintf(stderr, "TRACE:solve 10 - psiCmpt OK\n"); std::fflush(stderr);
         addBoundaryDiag(diag(), cmpt);
-        std::fprintf(stderr, "TRACE:solve 11 - boundaryDiag OK\n"); std::fflush(stderr);
 
         scalarField sourceCmpt(source.component(cmpt));
 
@@ -191,24 +179,18 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
         (
             internalCoeffs_.component(cmpt)
         );
-        std::fprintf(stderr, "TRACE:solve 12 - coeffs OK\n"); std::fflush(stderr);
 
-        std::fprintf(stderr, "TRACE:solve 12a - getting scalarInterfaces\n"); std::fflush(stderr);
         lduInterfaceFieldPtrsList interfaces =
             psi.boundaryField().scalarInterfaces();
-        std::fprintf(stderr, "TRACE:solve 12b - scalarInterfaces OK, size=%d\n", (int)interfaces.size()); std::fflush(stderr);
 
         // Use the initMatrixInterfaces and updateMatrixInterfaces to correct
         // bouCoeffsCmpt for the explicit part of the coupled boundary
         // conditions
         {
-            std::fprintf(stderr, "TRACE:solve 12c - PrecisionAdaptor\n"); std::fflush(stderr);
             PrecisionAdaptor<solveScalar, scalar> sourceCmpt_ss(sourceCmpt);
             ConstPrecisionAdaptor<solveScalar, scalar> psiCmpt_ss(psiCmpt);
-            std::fprintf(stderr, "TRACE:solve 12d - nRequests\n"); std::fflush(stderr);
 
             const label startRequest = UPstream::nRequests();
-            std::fprintf(stderr, "TRACE:solve 12e - initMatrixInterfaces\n"); std::fflush(stderr);
 
             initMatrixInterfaces
             (
@@ -219,7 +201,6 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
                 sourceCmpt_ss.ref(),
                 cmpt
             );
-            std::fprintf(stderr, "TRACE:solve 12f - updateMatrixInterfaces\n"); std::fflush(stderr);
 
             updateMatrixInterfaces
             (
@@ -231,14 +212,12 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
                 cmpt,
                 startRequest
             );
-            std::fprintf(stderr, "TRACE:solve 12g - interfaces done\n"); std::fflush(stderr);
         }
 
         solverPerformance solverPerf;
-        std::fprintf(stderr, "TRACE:solve 13 - about to create solver, componentName=%s\n", pTraits<Type>::componentNames[cmpt]); std::fflush(stderr);
 
         // Solver call
-        auto solverPtr = lduMatrix::solver::New
+        solverPerf = lduMatrix::solver::New
         (
             psi.name() + pTraits<Type>::componentNames[cmpt],
             *this,
@@ -246,10 +225,7 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
             intCoeffsCmpt,
             interfaces,
             solverControls
-        );
-        std::fprintf(stderr, "TRACE:solve 14 - solver created, about to solve\n"); std::fflush(stderr);
-        solverPerf = solverPtr->solve(psiCmpt, sourceCmpt, cmpt);
-        std::fprintf(stderr, "TRACE:solve 15 - solve done\n"); std::fflush(stderr);
+        )->solve(psiCmpt, sourceCmpt, cmpt);
 
         if (logLevel)
         {
@@ -261,12 +237,9 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
 
         psi.primitiveFieldRef().replace(cmpt, psiCmpt);
         diag() = saveDiag;
-        std::fprintf(stderr, "TRACE:solve 16 - component %d done\n", (int)cmpt); std::fflush(stderr);
     }
 
-    std::fprintf(stderr, "TRACE:solve 17 - before correctBoundaryConditions\n"); std::fflush(stderr);
     psi.correctBoundaryConditions();
-    std::fprintf(stderr, "TRACE:solve 18 - after correctBoundaryConditions\n"); std::fflush(stderr);
 
     psi.mesh().data().setSolverPerformance(psi.name(), solverPerfVec);
 

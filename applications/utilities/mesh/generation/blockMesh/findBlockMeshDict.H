@@ -16,17 +16,13 @@ Description
 \*---------------------------------------------------------------------------*/
 
 // Search for the appropriate blockMesh dictionary....
-std::fprintf(stderr, "TRACE: findDict 1 - creating dictName\n"); std::fflush(stderr);
 const word dictName("blockMeshDict");
-std::fprintf(stderr, "TRACE: findDict 2 - dictName created\n"); std::fflush(stderr);
 
 autoPtr<IOdictionary> meshDictPtr;
 
 {
     fileName dictPath;
-    std::fprintf(stderr, "TRACE: findDict 3 - before regionName\n"); std::fflush(stderr);
     const word& regionDir = polyMesh::regionName(regionName);
-    std::fprintf(stderr, "TRACE: findDict 4 - after regionName\n"); std::fflush(stderr);
 
     if (args.readIfPresent("dict", dictPath))
     {
@@ -70,7 +66,6 @@ autoPtr<IOdictionary> meshDictPtr;
 
         dictPath = runTime.system()/regionDir/dictName;
     }
-    std::fprintf(stderr, "TRACE: findDict 5 - dictPath='%s'\n", dictPath.c_str()); std::fflush(stderr);
 
     IOobject meshDictIO
     (
@@ -80,9 +75,6 @@ autoPtr<IOdictionary> meshDictPtr;
         IOobject::NO_WRITE,
         IOobject::NO_REGISTER
     );
-    std::fprintf(stderr, "TRACE: findDict 6 - IOobject created\n"); std::fflush(stderr);
-    std::fprintf(stderr, "TRACE: findDict 6a - IOdictionary::typeName at %p\n", (const void*)&IOdictionary::typeName); std::fflush(stderr);
-    std::fprintf(stderr, "TRACE: findDict 6b - about to call typeHeaderOk\n"); std::fflush(stderr);
 
     if (!meshDictIO.typeHeaderOk<IOdictionary>(true))
     {
@@ -90,18 +82,14 @@ autoPtr<IOdictionary> meshDictPtr;
             << meshDictIO.objectPath() << nl
             << exit(FatalError);
     }
-    std::fprintf(stderr, "TRACE: findDict 7 - header OK\n"); std::fflush(stderr);
 
     Info<< "Creating block mesh from "
         << meshDictIO.objectRelPath() << endl;
-    std::fprintf(stderr, "TRACE: findDict 8 - after Info\n"); std::fflush(stderr);
 
     meshDictPtr = autoPtr<IOdictionary>::New(meshDictIO);
-    std::fprintf(stderr, "TRACE: findDict 9 - dict read\n"); std::fflush(stderr);
 }
 
 const IOdictionary& meshDict = *meshDictPtr;
-std::fprintf(stderr, "TRACE: findDict 10 - dict deref OK\n"); std::fflush(stderr);
 
 
 // ************************************************************************* //

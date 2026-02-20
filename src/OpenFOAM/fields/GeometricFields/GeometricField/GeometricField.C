@@ -31,7 +31,6 @@ License
 #include "dictionary.H"
 #include "localIOdictionary.H"
 #include "meshState.H"
-#include <cstdio>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,10 +55,8 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields
     const dictionary& dict
 )
 {
-    std::fprintf(stderr, "TRACE:GF::readFields(dict) - before internalField read\n"); std::fflush(stderr);
     Internal::readField(dict, "internalField");  // Includes size check
 
-    std::fprintf(stderr, "TRACE:GF::readFields(dict) - before boundaryField read\n"); std::fflush(stderr);
     boundaryField_.readField(*this, dict.subDict("boundaryField"));
 
     Type refLevel;
@@ -79,7 +76,6 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields
 template<class Type, template<class> class PatchField, class GeoMesh>
 void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields()
 {
-    std::fprintf(stderr, "TRACE:GF::readFields() - creating IOobject\n"); std::fflush(stderr);
     // NOTE: Cannot use readContents(io, typeName_()) because typeName_()
     // returns the base template name ("GeometricField"), not the specialized
     // name ("volScalarField"). And we can't use readContents(io, typeName)
@@ -103,16 +99,13 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields()
     localIOdictionary reader(rio, word());
     // Propagate headerClassName from the temporary reader to this object.
     // On Windows DLLs, writeHeader() uses headerClassName() instead of the
-    // virtual type() to avoid cross-DLL data access crashes (Fix #29).
+    // virtual type() to avoid cross-DLL data access crashes (Fix #30).
     this->headerClassName() = reader.headerClassName();
     dictionary dict(std::move(static_cast<dictionary&>(reader)));
-    std::fprintf(stderr, "TRACE:GF::readFields() headerClassName='%s'\n",
-        this->headerClassName().c_str()); std::fflush(stderr);
 
     this->close();
 
     readFields(dict);
-    std::fprintf(stderr, "TRACE:GF::readFields() - done\n"); std::fflush(stderr);
 }
 
 
@@ -527,13 +520,9 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary())
 {
-    std::fprintf(stderr, "TRACE:GF read-ctor body entered for '%s'\n", this->name().c_str()); std::fflush(stderr);
-
-    std::fprintf(stderr, "TRACE:GF-A debug=%d\n", debug); std::fflush(stderr);
     DebugInFunction
         << "Read construct" << nl << this->info() << endl;
 
-    std::fprintf(stderr, "TRACE:GF-B about to call isAnyRead()\n"); std::fflush(stderr);
     if (!this->isAnyRead())
     {
         // Do not warn about LAZY_READ since we may have already checked
@@ -544,7 +533,6 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
             << endl;
     }
 
-    std::fprintf(stderr, "TRACE:GF-C about to call readFields()\n"); std::fflush(stderr);
     readFields();
 
     if (readOldTime)

@@ -29,7 +29,6 @@ License
 #include "Time.H"
 #include "argList.H"
 #include "Pstream.H"
-#include <cstdio>
 #include "simpleObjectRegistry.H"
 #include "dimensionedConstants.H"
 #include "profiling.H"
@@ -525,6 +524,7 @@ bool Foam::Time::writeTimeDict() const
             IOobjectOption::NO_REGISTER
         )
     );
+
     // Set headerClassName for writeHeader (Fix #30: avoid type() on Windows)
     timeDict.headerClassName() = IOdictionary::typeName_();
 
@@ -550,19 +550,11 @@ bool Foam::Time::writeObject
 {
     if (writeTime())
     {
-        std::fprintf(stderr, "TRACE:Time::writeObject - writeTimeDict\n");
-        std::fflush(stderr);
         bool writeOK = writeTimeDict();
-        std::fprintf(stderr, "TRACE:Time::writeObject - writeTimeDict done, ok=%d\n", (int)writeOK);
-        std::fflush(stderr);
 
         if (writeOK)
         {
-            std::fprintf(stderr, "TRACE:Time::writeObject - objectRegistry::writeObject\n");
-            std::fflush(stderr);
             writeOK = objectRegistry::writeObject(streamOpt, writeOnProc);
-            std::fprintf(stderr, "TRACE:Time::writeObject - objectRegistry::writeObject done, ok=%d\n", (int)writeOK);
-            std::fflush(stderr);
         }
 
         if (writeOK)
