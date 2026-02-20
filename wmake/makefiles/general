@@ -284,7 +284,7 @@ $(LIB).lib: $(OBJECTS)
 	@rm -f $(LIB).lib
 	$(call QUIET_MESSAGE,lib,$(LIB).lib)
 	@printf '%s\n' $(OBJECTS) | sed 's|^/\([a-zA-Z]\)/|\1:/|' > $(OBJECTS_DIR)/libo_objects.rsp
-	$E llvm-lib /OUT:$(LIB).lib @$(OBJECTS_DIR)/libo_objects.rsp
+	$E llvm-lib -out:$(LIB).lib @$(OBJECTS_DIR)/libo_objects.rsp
 else
 libo: $(LIB).o | silent
 

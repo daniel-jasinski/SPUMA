@@ -434,7 +434,13 @@
       "Bash(# Check for undefined symbols in the .o that might not exist in the DLLs # U = undefined, needs to be imported llvm-nm /c/OpenFOAM/SPUMA/build/win64MsvcSyclDPInt32Opt/applications/solvers/incompressible/simpleFoam/simpleFoam.o)",
       "Bash(# Check if strings works at all, and if DIAG was actually compiled into the .o /c/dev/llvm-acpp-msvc-21/bin/llvm-strings /c/OpenFOAM/SPUMA/build/win64MsvcSyclDPInt32Opt/applications/solvers/incompressible/simpleFoam/simpleFoam.o)",
       "Bash(__NEW_LINE_af75f2cbc2c7a189__ cd \"$WM_PROJECT_DIR/applications/solvers/incompressible/simpleFoam\")",
-      "Bash(PATH=\"/c/OpenFOAM/SPUMA/build/win64MsvcSycl/bin:$PATH\" which:*)"
+      "Bash(PATH=\"/c/OpenFOAM/SPUMA/build/win64MsvcSycl/bin:$PATH\" which:*)",
+      "Bash(MSYS2_ARG_CONV_EXCL=\"*\" llvm-lib:*)",
+      "Bash(MSYS_NO_PATHCONV=1 llvm-lib:*)",
+      "Bash(/c/msys64/usr/bin/bash.exe:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\" && grep -l \"\"meshPtr.release\\\\|std::_Exit\"\" \"\"{}\"\"')",
+      "Bash(xargs -I {} sh -c 'cat {}/options 2>/dev/null | grep -E \"\"EXE_LIBS|lfiniteArea|llagrangian\"\" | head -1')",
+      "Bash(xargs cat:*)"
     ]
   }
 }

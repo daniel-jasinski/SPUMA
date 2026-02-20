@@ -30,12 +30,12 @@ License
 #include "objectRegistry.H"
 #include "IOstreams.H"
 
-// Fix #33: On Windows, meshObject::debug and Pout are cross-DLL data accesses
-// when this template code is compiled into downstream DLLs (via NoRepository).
-// FOAM_TYPENAME_EXPORT uses __declspec(dllexport) always, so the DEF thunk
-// returns garbage for data reads. Disable debug output to avoid the crash.
+// Fix #33/#35: On Windows, meshObject::debug is a cross-DLL data access when
+// this template code is compiled into downstream DLLs (via NoRepository).
+// Use debug_() function accessor which goes through the DEF thunk correctly
+// (JMP thunks work for functions, only data reads return garbage).
 #ifdef _WIN32
-#define MESHOBJECT_DEBUG false
+#define MESHOBJECT_DEBUG meshObject::debug_()
 #else
 #define MESHOBJECT_DEBUG meshObject::debug
 #endif
@@ -45,7 +45,7 @@ License
 template<class Mesh, template<class> class MeshObjectType, class Type>
 Foam::MeshObject<Mesh, MeshObjectType, Type>::MeshObject(const Mesh& mesh)
 :
-    MeshObjectType<Mesh>(Type::typeName, mesh.thisDb()),
+    MeshObjectType<Mesh>(Type::typeName_(), mesh.thisDb()),
     mesh_(mesh)
 {}
 
@@ -74,7 +74,7 @@ const Type& Foam::MeshObject<Mesh, MeshObjectType, Type>::New
 {
     Type* ptr =
         mesh.thisDb().objectRegistry::template
-        getObjectPtr<Type>(Type::typeName);
+        getObjectPtr<Type>(Type::typeName_());
 
     if (ptr)
     {

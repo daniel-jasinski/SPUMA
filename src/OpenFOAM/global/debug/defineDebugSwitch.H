@@ -124,6 +124,15 @@ public:
 #define defineDebugSwitchWithName(Type, Name, Value)                           \
     int Type::debug(::Foam::debug::debugSwitch(Name, Value))
 
+//- Define the debug_() accessor function (cross-DLL safe alternative to
+//  reading the debug static member directly through DEF thunks)
+#define defineDebugFunction(Type)                                              \
+    int Type::debug_() { return Type::debug; }
+
+//- Define the debug_() accessor for template specializations
+#define defineTemplateDebugFunction(Type)                                      \
+    template<> int Type::debug_() { return Type::debug; }
+
 //- Define the debug information
 #define defineDebugSwitch(Type, Value)                                         \
     defineDebugSwitchWithName(Type, Type::typeName_(), Value);                 \

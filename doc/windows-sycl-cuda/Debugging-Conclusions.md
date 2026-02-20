@@ -821,6 +821,53 @@ When the template is compiled into libfiniteVolume.dll, these data accesses go t
 
 ---
 
+## Fix #34: FOAM_EXPORT_DATA on Pout/Perr/Sout/Serr/Sin + typeName_() in templates
+
+**Symptom**: Comprehensive audit of NoRepository template files revealed ~50+ potential crash sites where `Pout`, `Perr`, `Sout`, `Serr`, or `Sin` are accessed from template code compiled into downstream DLLs. These are behind `if (debug)` guards (already disabled on Windows via Fix #20/#33), but the global stream objects themselves lack `FOAM_EXPORT_DATA`, making any future access a corrupt-vtable crash. Additionally, `Type::typeName` (static data) is used in live (non-debug) code paths in MeshObject.C constructor and `New()` method.
+
+**Root cause**: `IOstreams.H` declared `Pout`, `Perr`, `Sout`, `Serr`, `Sin` as plain `extern` without `FOAM_EXPORT_DATA`. When accessed from downstream DLLs, the DEF thunk returns garbage (instruction bytes read as data → corrupt vtable). `Info` already had `FOAM_EXPORT_DATA` and was safe. In MeshObject.C, `Type::typeName` in the constructor (line 48) and `getObjectPtr` lookup (line 77) are live code paths that access cross-DLL static data through DEF thunks.
+
+**Fix**:
+1. Added `FOAM_EXPORT_DATA` to all 5 stream globals in `src/OpenFOAM/db/IOstreams/IOstreams.H` (Sin, Sout, Serr, Pout, Perr). This provides proper `__declspec(dllimport)` in downstream DLLs.
+2. Changed `Type::typeName` → `Type::typeName_()` in `MeshObject.C` lines 48 and 77 (constructor and New() method). The `typeName_()` function returns a `const char*` literal, avoiding cross-DLL data access entirely.
+3. Changed `ZoneType::typeName` → `ZoneType::typeName_()` in `ZoneMesh.C` line 1142 (verbose output in `operator()` method).
+
+**Files changed**:
+- `src/OpenFOAM/db/IOstreams/IOstreams.H` - Added `FOAM_EXPORT_DATA` to Sin, Sout, Serr, Pout, Perr
+- `src/OpenFOAM/meshes/MeshObject/MeshObject.C` - `Type::typeName` → `Type::typeName_()` in constructor and New()
+- `src/OpenFOAM/meshes/polyMesh/zones/ZoneMesh/ZoneMesh.C` - `ZoneType::typeName` → `ZoneType::typeName_()`
+- All three files copied to `src/OpenFOAM/lnInclude/`
+
+**Lesson**: All `extern` global data in libOpenFOAM headers must have `FOAM_EXPORT_DATA` if there is ANY chance it could be accessed from downstream DLLs. For template code (NoRepository pattern), prefer function-based accessors (`typeName_()`) over static data members (`typeName`) since the function call goes through a JMP thunk (which works correctly for functions) while data access through a JMP thunk returns garbage.
+
+---
+
+## Fix #35: debug_() function accessor for cross-DLL safe debug switch access
+
+**Symptom**: Fix #33 disabled ALL debug output on Windows by defining `MESHOBJECT_DEBUG false`. This was a blunt workaround — it eliminated crash risk but also eliminated the ability to debug MeshObject operations on Windows. The root cause (cross-DLL static data access through DEF thunks) applies to ALL `::debug` accesses from NoRepository template code.
+
+**Root cause**: The `ClassName` macro declares `static int debug` with `FOAM_TYPENAME_EXPORT` (always `__declspec(dllexport)`). This means downstream DLLs never get `__declspec(dllimport)` for `debug`, so they access it through a DEF thunk. Data reads through DEF thunks return garbage (instruction bytes). There was no function-based accessor for `debug` like there was for `typeName` (`typeName_()` returns a `const char*` literal).
+
+**Fix**: Added `debug_()` static member function pattern, mirroring `typeName_()`:
+1. `className.H`: Added `static int debug_()` declaration to the `ClassName` macro (after `static int debug`)
+2. `defineDebugSwitch.H`: Added `defineDebugFunction(Type)` macro → `int Type::debug_() { return Type::debug; }`, and `defineTemplateDebugFunction(Type)` → `template<> int Type::debug_() { return Type::debug; }`. Both are called from `defineDebugSwitch` and `defineTemplateDebugSwitchWithName` respectively.
+3. `MeshObject.C`: Changed `MESHOBJECT_DEBUG` from `false` to `meshObject::debug_()` on Windows, **restoring debug output capability**.
+
+When template code calls `SomeClass::debug_()` from a downstream DLL:
+- The function call goes through the DEF thunk JMP → lands in the source DLL
+- The function body reads `debug` locally within its own DLL (no cross-DLL data access)
+- Returns the runtime debug value correctly
+
+**Files changed**:
+- `src/OpenFOAM/db/typeInfo/className.H` — `ClassName` macro: added `static int debug_()`
+- `src/OpenFOAM/global/debug/defineDebugSwitch.H` — Added `defineDebugFunction`/`defineTemplateDebugFunction` macros, integrated into `defineDebugSwitch`/`defineTemplateDebugSwitchWithName`
+- `src/OpenFOAM/meshes/MeshObject/MeshObject.C` — `MESHOBJECT_DEBUG` = `meshObject::debug_()` on Windows
+- All copied to `src/OpenFOAM/lnInclude/`
+
+**Lesson**: For every static data member that might be accessed from NoRepository template code, provide a function accessor (`foo_()` returning the value). Functions go through DEF thunk JMP stubs correctly; data goes through DEF thunk JMP stubs and returns garbage. The accessor must be **non-inline** (defined in the source DLL's .C file via the define macro) so the function body lives in the DLL that owns the data. This is a general architectural principle: `typeName → typeName_()`, `debug → debug_()`.
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:

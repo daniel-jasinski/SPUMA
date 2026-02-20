@@ -71,6 +71,15 @@ public:
     template<typename F>
     void _backendSerialFor(F& lambda, const label& size);
 
+    //- Generic reduction: works for any binary op + identity
+    template<typename F, typename Op, typename resultT>
+    void _backendReduce
+    (
+        F& lambda, Op op, resultT identity,
+        resultT* const __restrict__ result,
+        const label& size
+    );
+
     template<typename F, typename resultT>
     void _backendReductionSum
     (
@@ -78,7 +87,7 @@ public:
         const label& size
     );
 
-    template<typename F,typename Op, typename resultT>
+    template<typename F, typename Op, typename resultT>
     void _backendReductionCompare
     (
         F& lambda, Op& op,

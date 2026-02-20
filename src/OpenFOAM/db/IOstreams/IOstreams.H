@@ -44,6 +44,7 @@ Description
 #include "char.H"
 #include "int.H"
 #include "uint.H"
+#include "stdFoam.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 // Global predefined streams for standard input, output
@@ -51,19 +52,19 @@ Description
 namespace Foam
 {
     //- ISstream wrapped stdin (std::cin)
-    extern ISstream Sin;
+    FOAM_EXPORT_DATA extern ISstream Sin;
 
     //- OSstream wrapped stdout (std::cout)
-    extern OSstream Sout;
+    FOAM_EXPORT_DATA extern OSstream Sout;
 
     //- OSstream wrapped stderr (std::cerr)
-    extern OSstream Serr;
+    FOAM_EXPORT_DATA extern OSstream Serr;
 
     //- OSstream wrapped stdout (std::cout) with parallel prefix
-    extern prefixOSstream Pout;
+    FOAM_EXPORT_DATA extern prefixOSstream Pout;
 
     //- OSstream wrapped stderr (std::cerr) with parallel prefix
-    extern prefixOSstream Perr;
+    FOAM_EXPORT_DATA extern prefixOSstream Perr;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

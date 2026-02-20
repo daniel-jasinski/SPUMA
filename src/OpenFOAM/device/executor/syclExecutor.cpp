@@ -32,6 +32,7 @@ License
 
 #include "syclExecutor.H"
 #include "deviceM.H"
+#include "zero.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -75,6 +76,67 @@ void Foam::syclExecutor::_backendSerialFor(F& lambda, const label& size)
     }).wait();
 }
 
+// Generic reduction: works for any binary op (plus, min, max, custom).
+// On GPU, maps to sycl::reduction which uses hardware-optimized primitives.
+// On CPU, falls back to sequential loop (OMP backend broken, Fix #28).
+template <typename F, typename Op, typename resultT>
+void Foam::syclExecutor::_backendReduce
+(
+    F& lambda,
+    Op op,
+    resultT identity,
+    resultT* const __restrict__ result,
+    const label& size
+)
+{
+    if (size <= 0) return;
+
+    sycl::queue& q = getSyclQueue();
+
+    if (q.get_device().is_gpu())
+    {
+        // GPU: sycl::reduction with identity and binary op.
+        // AdaptiveCpp maps known ops (plus, min, max) to hardware-optimized
+        // primitives (warp shuffles + shared memory on CUDA).
+        // Custom ops get a generic tree reduction.
+        resultT reduced = identity;
+
+        {
+            sycl::buffer<resultT, 1> buf(&reduced, sycl::range<1>(1));
+
+            q.submit([&](sycl::handler& h)
+            {
+                auto red = sycl::reduction(buf, h, identity, op);
+
+                h.parallel_for
+                (
+                    sycl::range<1>(size),
+                    red,
+                    [=](sycl::id<1> idx, auto& reducer)
+                    {
+                        reducer.combine(lambda(idx[0]));
+                    }
+                );
+            }).wait();
+        }
+
+        *result = op(*result, reduced);
+    }
+    else
+    {
+        // CPU fallback: sycl::reduction returns 0 on AdaptiveCpp OMP
+        // backend (Fix #28). Use sequential loop for correctness.
+        resultT local = identity;
+
+        for (label i = 0; i < size; ++i)
+        {
+            local = op(local, lambda(i));
+        }
+
+        *result = op(*result, local);
+    }
+}
+
 template <typename F, typename resultT>
 void Foam::syclExecutor::_backendReductionSum
 (
@@ -83,19 +145,7 @@ void Foam::syclExecutor::_backendReductionSum
     const label& size
 )
 {
-    if (size <= 0) return;
-
-    // Host fallback: sycl::reduction with sycl::buffer returns 0
-    // on the AdaptiveCpp OMP backend (built without OpenMP support).
-    // Use CPU loop until proper GPU backend is available.
-    resultT localSum = Foam::Zero;
-
-    for (label i = 0; i < size; ++i)
-    {
-        localSum += lambda(i);
-    }
-
-    *result += localSum;
+    _backendReduce(lambda, sycl::plus<resultT>(), resultT(Foam::Zero), result, size);
 }
 
 template <typename F, typename Op, typename resultT>
@@ -107,19 +157,7 @@ void Foam::syclExecutor::_backendReductionCompare
     const label& size
 )
 {
-    if (size <= 0) return;
-
-    // Host fallback for generic comparison reductions
-    // SYCL reduction requires known identity elements
-    resultT localResult = *result;
-
-    for (label i = 0; i < size; ++i)
-    {
-        resultT val = lambda(i);
-        localResult = op(localResult, val);
-    }
-
-    *result = localResult;
+    _backendReduce(lambda, op, *result, result, size);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
