@@ -74,7 +74,8 @@ public:                                                                        \
 //  Also declares debug information.
 #define NamespaceName(TypeNameString)                                          \
     NamespaceNameNoDebug(TypeNameString);                                      \
-    extern int debug
+    extern int debug;                                                         \
+    int debug_()
 
 //- Add typeName information from argument \a TypeNameString to a
 //  template class.  Also declares debug information.

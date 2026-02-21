@@ -868,6 +868,55 @@ When template code calls `SomeClass::debug_()` from a downstream DLL:
 
 ---
 
+## Fix #34: NamespaceName macro missing debug_() declaration
+
+**Symptom**: `finiteArea` library fails to compile with `defineTypeNameAndDebug(fa, 0)`:
+```
+fa.C:34:1: error: out-of-line definition of 'debug_' does not match any declaration in namespace 'Foam::fa'
+```
+
+**Root cause**: The `NamespaceName` macro in `className.H` declares `extern int debug` but NOT `int debug_()`. However, `defineTypeNameAndDebug` calls `defineDebugFunction(Type)` which expands to `int Type::debug_() { return Type::debug; }`. For namespaces, there's no matching declaration of `debug_()`. The `ClassName` macro correctly declares `static int debug_()` for classes, but the equivalent was missing for `NamespaceName`.
+
+This was latent since `defineDebugFunction` was added in commit c4e8221 — previously built namespace objects (like `fv.o` from Feb 18) predate that commit and don't contain `debug_()`.
+
+**Fix**: Added `int debug_()` declaration to the `NamespaceName` macro in `className.H`:
+```cpp
+#define NamespaceName(TypeNameString)                                          \
+    NamespaceNameNoDebug(TypeNameString);                                      \
+    extern int debug;                                                         \
+    int debug_()
+```
+Also copied to `src/OpenFOAM/lnInclude/className.H`.
+
+**Lesson**: When adding new members to definition macros (like `defineDebugFunction`), check ALL corresponding declaration macros — both class (`ClassName`) and namespace (`NamespaceName`) variants. The namespace variant is easily overlooked.
+
+## Fix #35: objectRegistryTemplates.C typeName_() breaks non-TypeName types
+
+**Symptom**: `snappyHexMesh` library fails to compile:
+```
+objectRegistryTemplates.C:619: error: no member named 'typeName_' in 'Foam::Field<double>'
+```
+Triggered by `lookupObject<scalarField>()` in `medialAxisMeshMover.C`.
+
+**Root cause**: In a previous commit (27954042), `Type::typeName` was changed to `Type::typeName_()` in `objectRegistryTemplates.C` error message paths for cross-DLL safety. But container types like `Field<T>` don't have a `TypeName` macro and therefore don't have `typeName_()`. The template is instantiated with these types, causing compilation failure.
+
+**Fix**: Reverted the two `Type::typeName_()` calls back to `Type::typeName` in the error message paths at lines 619 and 632. These are fatal error paths that always call `exit()`, so cross-DLL data access is not a concern.
+
+**Lesson**: Template code that uses `typeName_()` can only be used with types that have the `ClassName`/`TypeName` macro. Error message paths in generic templates should use `Type::typeName` (the data member) since all TypeName types have it, and for types without it, the compiler gives a clear error at the actual instantiation site.
+
+## Fix #36: dummyThirdParty stubs need lnInclude from real libraries
+
+**Symptom**: All 4 dummyThirdParty decomposition stubs fail:
+```
+dummyScotchDecomp.cxx:29:10: fatal error: 'scotchDecomp.H' file not found
+```
+
+**Root cause**: The dummy stubs include headers from the real decomposition libraries via `-I$(LIB_SRC)/parallel/decompose/scotchDecomp/lnInclude`. These lnInclude directories only get created when the real libraries are built (via `wmakeLnInclude`). Since the real libraries are skipped (no scotch/metis/kahip installed), the lnInclude dirs don't exist.
+
+**Fix**: Run `AllwmakeLnInclude` from `src/parallel/decompose/` before building dummyThirdParty stubs. This creates the lnInclude directories with header copies. Added to rebuild-failed.sh and rebuild-all.sh.
+
+**Lesson**: Dummy stub libraries that include headers from their "real" counterparts need those lnInclude directories pre-created. The `AllwmakeLnInclude` script in the parent directory handles this.
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:

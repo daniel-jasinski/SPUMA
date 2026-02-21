@@ -440,7 +440,9 @@
       "Bash(/c/msys64/usr/bin/bash.exe:*)",
       "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\" && grep -l \"\"meshPtr.release\\\\|std::_Exit\"\" \"\"{}\"\"')",
       "Bash(xargs -I {} sh -c 'cat {}/options 2>/dev/null | grep -E \"\"EXE_LIBS|lfiniteArea|llagrangian\"\" | head -1')",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(cat:*)",
+      "Bash(xargs:*)"
     ]
   }
 }

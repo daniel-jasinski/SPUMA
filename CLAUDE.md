@@ -106,45 +106,83 @@ You should also regularly update the `Current Build Status` section with the lat
 
 ---
 
-## Current Build Status (2026-02-20)
+## Current Build Status (2026-02-21)
 
 ### What's Built
 
-- ✅ `libOSspecific.lib` (1.7 MB static)
-- ✅ `libPstream_static.lib` (812 KB, llvm-ar from .o files)
-- ✅ `libPstream.dll` (dummy, serial-only, for downstream libraries)
-- ✅ **`libOpenFOAM.dll`** (42 MB, ~612 .o files, host + CUDA sm_86) - Loads successfully
+**99 DLLs** and **127 EXEs** in `platforms/win64MsvcSyclDPInt32Opt/`
+
+#### Core libraries (all built)
+- ✅ `libOSspecific.lib`, `libPstream_static.lib`, `libPstream.dll` (dummy)
+- ✅ **`libOpenFOAM.dll`**, `libfiniteVolume.dll`, `libfiniteArea.dll`
 - ✅ `libfileFormats.dll`, `libsurfMesh.dll`, `libmeshTools.dll`, `libblockMesh.dll`
 - ✅ `libextrudeModel.dll`, `libdynamicMesh.dll`, `libdynamicFvMesh.dll`
-- ✅ `libincompressibleTransportModels.dll`, `libturbulenceModels.dll`, `libincompressibleTurbulenceModels.dll`
-- ✅ `libsampling.dll`, `libfvOptions.dll`, `libatmosphericModels.dll`
-- ✅ **`blockMesh.exe`** - Runs successfully on pitzDaily (12,225 cells, exit 0)
-- ✅ `libfiniteVolume.dll` (~248 MB, 428 .o files) - Built, loads OK
-- ✅ **`simpleFoam.exe`** - **Runs to completion on pitzDaily, exit 0** (meshPtr.release() workaround)
+- ✅ `libsnappyHexMesh.dll`, `libconversion.dll`, `libfvMotionSolvers.dll`
 
-### Fixes Applied (33 total)
+#### Transport, turbulence, thermo (all built)
+- ✅ All transport models (incompressible, compressible, twoPhaseMixture, etc.)
+- ✅ All turbulence models (incompressible, compressible, schemes)
+- ✅ All thermophysical models (specie, basic, reactionThermo, radiation, etc.)
+- ✅ `libcombustionModels.dll`, `libODE.dll`
 
-All 33 fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
-- Fix #29: DEF generation must include static .lib files (libOSspecific.lib, libPstream_static.lib)
-- Fix #30: `writeHeader()` headerClassName check avoids `type()` for template types
-- Fix #31: `std::_Exit(0)` workaround (superseded by Fix #33's targeted `meshPtr.release()`)
-- Fix #32: RTTI-based writeHeader returns OpenFOAM typeName (not typedef names). Fixes restart.
-- Fix #33: `meshObject::debug` cross-DLL access in NoRepository template crashes mesh destructor. `MESHOBJECT_DEBUG` macro in MeshObject.C + `meshPtr.release()` in solver.
+#### Phase system models (all built)
+- ✅ reactingEuler (saturation, multiphase, twoPhase, turbulence)
+- ✅ multiphaseInter, multiphaseEuler, twoPhaseEuler, twoPhaseInter
+
+#### Lagrangian, region models, function objects (all built)
+- ✅ All lagrangian libs (basic, intermediate, turbulence, spray, DSMC, coalCombustion, molecularDynamics)
+- ✅ All region models (regionModel, pyrolysis, surfaceFilm, thermalBaffle, regionCoupling)
+- ✅ All function objects (field, forces, initialisation, utilities, solvers, phaseSystems, lagrangian)
+- ✅ `libfaOptions.dll`, `libregionFaModels.dll`, `libthermoTools.dll`
+
+#### Mesh, motion, other (all built)
+- ✅ `liboverset.dll`, `libfvOptions.dll`, `libsampling.dll`, `libatmosphericModels.dll`
+- ✅ `libtopoChangerFvMesh.dll`, `libwaveModels.dll`, `libengine.dll`
+- ✅ `libsixDoFRigidBodyMotion.dll`, `librigidBodyDynamics.dll`, `librigidBodyMeshMotion.dll`
+- ✅ `libinterfaceTrackingFvMesh.dll`, `libgenericPatchFields.dll`
+- ✅ Decomposition: `libdecompositionMethods.dll`, `librenumberMethods.dll`, all dummyThirdParty stubs
+- ✅ Parallel: `libdistributed.dll`, `libreconstruct.dll`, `libfaDecompose.dll`, `libfaReconstruct.dll`
+
+#### Solvers (7 built)
+- ✅ simpleFoam, icoFoam, pisoFoam, SRFSimpleFoam, laplacianFoam, potentialFoam
+- ✅ pimpleFoam, rhoPimpleFoam
+
+#### Utilities (120 built)
+- ✅ blockMesh, PDRblockMesh, extrude2DMesh, checkMesh, checkFaMesh, makeFaMesh
+- ✅ Most mesh manipulation (topoSet, transformPoints, splitMeshRegions, etc.)
+- ✅ Most mesh conversion (gmshToFoam, ensightToFoam, star4ToFoam, etc.)
+- ✅ Most surface utilities, pre/post-processing, thermophysical
+
+#### Not built (expected)
+- ❌ `libdecompose.dll` — ptxas: unresolved MemoryPool::getInstance() in CUDA device code
+- ❌ `libadjoint.dll` — CUDA backend: circular dependency in global variable set
+- ❌ snappyHexMesh.exe — needs decompose.lib
+- ❌ 4 mesh converters (ansys/fluent/gambit) — missing FlexLexer.h (need `flex` dev headers in include path)
+- ❌ 2 utilities (createBaffles, surfacePatch) — FatalIOErrorInLookup DEF thunk issue
+- ❌ Some utilities need lnInclude setup (foamHelp, boxTurb, setAlphaField, noise, etc.)
+- ❌ CGAL-dependent utilities (viewFactorsGen, surfaceBooleanFeatures)
+
+### Fixes Applied (36 total)
+
+All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
+- Fix #34: `NamespaceName` macro must declare `debug_()` function (className.H). Without it, `defineTypeNameAndDebug` on namespaces (fa, fv) fails because `defineDebugFunction` tries to define undeclared `debug_()`.
+- Fix #35: `objectRegistryTemplates.C` error paths reverted from `Type::typeName_()` to `Type::typeName`. Container types like `Field<T>` don't have `typeName_()` — it's a cold error path, cross-DLL safety not needed.
+- Fix #36: dummyThirdParty stubs need lnInclude dirs from real decomposition libraries. Run `AllwmakeLnInclude` before building stubs.
 
 ### Current State
 
 - **blockMesh works!** Exit 0.
 - **simpleFoam works!** Exit 0 (with `meshPtr.release()` workaround for Fix #33).
 - **Restart works!** Exit 0.
-- **Exit-time crash root cause identified**: `meshObject::debug` (cross-DLL data via DEF thunk) in NoRepository template MeshObject.C. Fix applied to source; requires libfiniteVolume.dll rebuild to fully eliminate mesh leak workaround.
+- **99 DLLs, 127 EXEs built.** Full SPUMA library suite compiled.
 
 ### What's Next
 
-1. Rebuild libfiniteVolume.dll with Fix #33 (MESHOBJECT_DEBUG macro) to eliminate mesh leak workaround
+1. Test pimpleFoam, rhoPimpleFoam, icoFoam, pisoFoam, potentialFoam on test cases
 2. Test with CUDA backend (currently using OMP via ACPP_VISIBILITY_MASK=omp)
-3. Full rebuild of ALL downstream DLLs for Fix #28 (SYCL reduction fix)
-4. Remove remaining debug traces from DLLs (require full rebuild to take effect)
-5. Check for other NoRepository templates with similar `if (debug)` patterns
+3. Fix decompose library ptxas issue (MemoryPool::getInstance not available in device code)
+4. Fix FlexLexer.h include path for mesh conversion utilities
+5. Fix FatalIOErrorInLookup DEF thunk issue for createBaffles/surfacePatch
 
 ### Critical wmake Knowledge
 
