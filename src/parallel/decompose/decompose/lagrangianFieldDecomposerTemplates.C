@@ -82,14 +82,14 @@ Foam::lagrangianFieldDecomposer::decomposeFieldField
         ),
         // Mapping internal field values
         // Workaround for NVC++
-        #if defined(have_cuda) || defined(have_hip)
+        #if defined(have_cuda) || defined(have_hip) || defined(have_sycl)
         Field<Field<Type>>()
         #else
         Field<Field<Type>>(field, particleIndices_)
         #endif
     );
 
-    #if defined(have_cuda) || defined(have_hip)
+    #if defined(have_cuda) || defined(have_hip) || defined(have_sycl)
     auto& cfield = tcfield.ref();
 
     for (label i=0; i<field.size(); ++i)

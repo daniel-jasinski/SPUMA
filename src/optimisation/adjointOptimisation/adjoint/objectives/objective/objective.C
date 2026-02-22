@@ -514,8 +514,8 @@ void objective::nullify()
         }
         if (hasBoundaryEdgeContribution())
         {
-        // Workaround for NVC++
-        #if defined(have_cuda) || defined(have_hip)
+        // Workaround for NVC++ / SYCL+CUDA: avoid parallelFor on nested Field types
+        #if defined(have_cuda) || defined(have_hip) || defined(have_sycl)
             for (Field<vectorField>& field : bEdgeContribution_())
             {
                 for (vectorField& subField : field)

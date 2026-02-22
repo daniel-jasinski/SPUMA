@@ -983,6 +983,74 @@ Files: faceSelection.C, searchableSurfaceModifier.C, helpTypeNew.C, helpBoundary
 
 ---
 
+## Fix #41: Root cause analysis — MemoryPool in CUDA device code (Fix #37 deep dive)
+
+**Symptom**: When building the `decompose` library with `--acpp-targets=cuda:sm_86`, ptxas reported `Unresolved extern function '_ZN4Foam10MemoryPool11getInstanceEv'`. Specifically, compiling `lagrangianFieldDecomposerCache.C` produced "363 warnings when compiling for sm_86" followed by the ptxas fatal error.
+
+**Root cause**: The issue is triggered by **nested Field types** (e.g., `Field<Field<tensor>>` from `CompactIOField`) whose mapping constructor uses `parallelFor` on element types that have non-trivial assignment operators.
+
+The precise chain:
+
+1. `CompactIOField<Field<tensor>, tensor>` inherits from `Field<Field<tensor>>`.
+2. `lagrangianFieldDecomposerTemplates.C` (included via NoRepository) calls the mapping constructor: `Field<Field<tensor>>(field, particleIndices_)`.
+3. The mapping constructor calls `Field::map(mapF, mapAddressing)` (Field.C:310).
+4. `map()` uses `parallelFor` with a kernel lambda that captures **only raw pointers**:
+   ```cpp
+   auto fPtr = f.begin();         // Field<tensor>*
+   auto mapFPtr = mapF.cbegin();  // const Field<tensor>*
+   auto mapAddr = [=](label i) {
+       fPtr[i] = mapFPtr[mapI];   // Element assignment via raw pointer
+   };
+   exec.parallelFor(mapAddr, f.size());
+   ```
+5. The lambda only captures raw pointers — no Field/List objects. But `fPtr[i] = mapFPtr[mapI]` where elements are `Field<tensor>` invokes `Field<tensor>::operator=` → `List<tensor>::operator=` → `List::doResize()` → `MemoryPool::getInstance()`.
+6. AdaptiveCpp's Clang plugin (`Frontend.hpp`) traces from the kernel through `CompleteCallSet`, following:
+   - `VisitCallExpr`: direct function calls
+   - `VisitCXXConstructExpr`: constructors and destructors
+   - Template instantiations (`shouldVisitTemplateInstantiations() = true`)
+   - Implicit code (`shouldVisitImplicitCode() = true`)
+7. The trace follows: kernel → lambda `operator()` → `operator=` on `Field<tensor>` (pointer subscript returns a reference to a complex type) → `List::operator=` → `doResize` → `MemoryPool::getInstance()`.
+8. ALL traced functions get `CUDAHostAttr + CUDADeviceAttr` and are re-emitted in the device pass.
+9. `MemoryPool::getInstance()` is defined in `MemoryPool.C` (host-only) → ptxas error.
+
+**Key insight**: The kernel lambda captures only raw pointers, but the **element type's operators** (accessed through those pointers) cascade into List allocation methods. For simple types (scalar, vector, tensor), element assignment is a trivial `FOAM_DEVICE_I` operation. For nested Field types, it's a full C++ assignment involving memory allocation.
+
+**Cineca already knew about this for CUDA/HIP** (see `lagrangianFieldDecomposerTemplates.C` lines 85-100):
+```cpp
+#if defined(have_cuda) || defined(have_hip)
+    Field<Field<Type>>()   // avoids mapping constructor + parallelFor on nested types
+#else
+    Field<Field<Type>>(field, particleIndices_)  // uses mapping constructor → parallelFor
+#endif
+```
+But they didn't add `have_sycl` to the guard. When building SYCL+CUDA via acpp, `have_sycl` is defined but `have_cuda` is NOT, so the unguarded path is taken.
+
+**Verified empirically**:
+- Test with `Field<scalar>` + `negate()` + `operator+=`: compiles cleanly, no ptxas error (element ops are trivial).
+- Test with `Field<Field<tensor>>` mapping constructor: compiles cleanly only because Fix #37 guards are already in place.
+- Test with no kernel code (no `parallelFor` calls): device pass doesn't even run — no functions to mark.
+- `-foffload-implicit-host-device-templates` NOT on by default in this Clang build — confirmed by test (not the mechanism).
+
+**Why the plugin marking cannot be disabled**: The `CompleteCallSet` tracing is fundamental to SYCL kernel compilation — without it, the actual kernel body wouldn't be compiled for device. The trace is correct; the problem is that nested types have operators that cascade into host-only code.
+
+**Fix**: `#ifndef SYCL_DEVICE_ONLY` guards around MemoryPool and FatalErrorInFunction blocks in List/UList templates (Fix #37). `SYCL_DEVICE_ONLY` is defined by AdaptiveCpp during the CUDA device pass (`cuda_backend.hpp` line 42 → `backend.hpp` line 60-62), so the guards correctly strip host-only code from the device compilation, letting List methods compile for device using fallback paths (`new[]`/`delete[]` instead of pool, no error checking).
+
+**Additional recommended fix**: Add `have_sycl` to the existing guards in `lagrangianFieldDecomposerTemplates.C`:
+```cpp
+#if defined(have_cuda) || defined(have_hip) || defined(have_sycl)
+```
+This avoids running `parallelFor` on nested Field types entirely, which is both safer and more efficient (no GPU dynamic allocation for nested types).
+
+**Key files**:
+- `src/parallel/decompose/decompose/lagrangianFieldDecomposerTemplates.C` — the trigger: mapping constructor on nested Field types
+- `src/OpenFOAM/fields/Fields/Field/Field.C:310` — `Field::map()` with `parallelFor`
+- `<acpp>/include/AdaptiveCpp/AdaptiveCpp/compiler/Frontend.hpp` — plugin AST visitor, `CompleteCallSet`, `applyAttributes()`
+- `<acpp>/include/AdaptiveCpp/AdaptiveCpp/sycl/libkernel/backend.hpp` — defines `SYCL_DEVICE_ONLY`
+
+**Lesson**: When using `parallelFor` on `Field<Type>`, the kernel lambda's element operations (`fPtr[i] = ...`) are compiled for device. If `Type` itself is a complex type with non-trivial operators (like `Field<T>`), those operators and their full transitive call graph end up in device code. The plugin's `CompleteCallSet` correctly traces this. Guard host-only code with `#ifndef SYCL_DEVICE_ONLY`, or avoid `parallelFor` on nested types (as Cineca does for CUDA/HIP). When targeting CUDA via SYCL (acpp), existing `#if defined(have_cuda)` guards need `|| defined(have_sycl)` added.
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:
