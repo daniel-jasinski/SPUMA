@@ -110,7 +110,7 @@ You should also regularly update the `Current Build Status` section with the lat
 
 ### What's Built
 
-**99 DLLs** and **127 EXEs** in `platforms/win64MsvcSyclDPInt32Opt/`
+**105 DLLs** and **144 EXEs** in `platforms/win64MsvcSyclDPInt32Opt/`
 
 #### Core libraries (all built)
 - ✅ `libOSspecific.lib`, `libPstream_static.lib`, `libPstream.dll` (dummy)
@@ -140,49 +140,48 @@ You should also regularly update the `Current Build Status` section with the lat
 - ✅ `libtopoChangerFvMesh.dll`, `libwaveModels.dll`, `libengine.dll`
 - ✅ `libsixDoFRigidBodyMotion.dll`, `librigidBodyDynamics.dll`, `librigidBodyMeshMotion.dll`
 - ✅ `libinterfaceTrackingFvMesh.dll`, `libgenericPatchFields.dll`
-- ✅ Decomposition: `libdecompositionMethods.dll`, `librenumberMethods.dll`, all dummyThirdParty stubs
+- ✅ Decomposition: `libdecompositionMethods.dll`, `libdecompose.dll`, `librenumberMethods.dll`, all dummyThirdParty stubs
 - ✅ Parallel: `libdistributed.dll`, `libreconstruct.dll`, `libfaDecompose.dll`, `libfaReconstruct.dll`
+- ✅ Utility sub-libs: `libhelpTypes.dll`, `libalphaFieldFunctions.dll`, `libtabulatedWallFunctions.dll`, `libsurfaceFeatureExtract.dll`
 
-#### Solvers (7 built)
+#### Solvers (8 built)
 - ✅ simpleFoam, icoFoam, pisoFoam, SRFSimpleFoam, laplacianFoam, potentialFoam
 - ✅ pimpleFoam, rhoPimpleFoam
 
-#### Utilities (120 built)
+#### Utilities (136 built)
 - ✅ blockMesh, PDRblockMesh, extrude2DMesh, checkMesh, checkFaMesh, makeFaMesh
-- ✅ Most mesh manipulation (topoSet, transformPoints, splitMeshRegions, etc.)
-- ✅ Most mesh conversion (gmshToFoam, ensightToFoam, star4ToFoam, etc.)
-- ✅ Most surface utilities, pre/post-processing, thermophysical
+- ✅ Most mesh manipulation (topoSet, transformPoints, splitMeshRegions, createBaffles, renumberMesh, etc.)
+- ✅ Most mesh conversion (gmshToFoam, ensightToFoam, star4ToFoam, ansysToFoam, fluent3DMeshToFoam, fluentMeshToFoam, gambitToFoam, etc.)
+- ✅ snappyHexMesh, decomposePar, redistributePar, mapFields, surfaceRedistributePar
+- ✅ foamHelp, setAlphaField, wallFunctionTable, surfaceFeatureExtract, surfacePatch
+- ✅ Most surface utilities, pre/post-processing, thermophysical (chemkinToFoam)
 
 #### Not built (expected)
-- ❌ `libdecompose.dll` — ptxas: unresolved MemoryPool::getInstance() in CUDA device code
-- ❌ `libadjoint.dll` — CUDA backend: circular dependency in global variable set
-- ❌ snappyHexMesh.exe — needs decompose.lib
-- ❌ 4 mesh converters (ansys/fluent/gambit) — missing FlexLexer.h (need `flex` dev headers in include path)
-- ❌ 2 utilities (createBaffles, surfacePatch) — FatalIOErrorInLookup DEF thunk issue
-- ❌ Some utilities need lnInclude setup (foamHelp, boxTurb, setAlphaField, noise, etc.)
-- ❌ CGAL-dependent utilities (viewFactorsGen, surfaceBooleanFeatures)
+- ❌ `libadjoint.dll` — CUDA backend: circular dependency in global variable set (compiler bug)
+- ❌ CGAL-dependent utilities (viewFactorsGen, surfaceBooleanFeatures) — require CGAL (not installed)
+- ❌ FFTW3-dependent utilities (noise, boxTurb) — require FFTW3 + randomProcesses lib (not installed)
 
-### Fixes Applied (36 total)
+### Fixes Applied (40 total)
 
 All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
-- Fix #34: `NamespaceName` macro must declare `debug_()` function (className.H). Without it, `defineTypeNameAndDebug` on namespaces (fa, fv) fails because `defineDebugFunction` tries to define undeclared `debug_()`.
-- Fix #35: `objectRegistryTemplates.C` error paths reverted from `Type::typeName_()` to `Type::typeName`. Container types like `Field<T>` don't have `typeName_()` — it's a cold error path, cross-DLL safety not needed.
-- Fix #36: dummyThirdParty stubs need lnInclude dirs from real decomposition libraries. Run `AllwmakeLnInclude` before building stubs.
+- Fix #37: `#ifndef SYCL_DEVICE_ONLY` guards around MemoryPool and FatalErrorInFunction in List/UList templates. Unblocks decompose lib + 6 apps.
+- Fix #38: RTS table pointer accessor `()` — `*dictionaryConstructorTablePtr_` → `*dictionaryConstructorTablePtr_()` in 9 files.
+- Fix #39: FlexLexer.h copied to `wmake/include/` (isolated from MSYS2 system headers). 5 flex-based apps unblocked.
+- Fix #40: Build sub-libraries (helpTypes, alphaFieldFunctions, tabulatedWallFunctions, surfaceFeatureExtract) before parent apps.
 
 ### Current State
 
 - **blockMesh works!** Exit 0.
 - **simpleFoam works!** Exit 0 (with `meshPtr.release()` workaround for Fix #33).
 - **Restart works!** Exit 0.
-- **99 DLLs, 127 EXEs built.** Full SPUMA library suite compiled.
+- **105 DLLs, 144 EXEs built.** Full SPUMA library suite + utilities compiled.
 
 ### What's Next
 
 1. Test pimpleFoam, rhoPimpleFoam, icoFoam, pisoFoam, potentialFoam on test cases
-2. Test with CUDA backend (currently using OMP via ACPP_VISIBILITY_MASK=omp)
-3. Fix decompose library ptxas issue (MemoryPool::getInstance not available in device code)
-4. Fix FlexLexer.h include path for mesh conversion utilities
-5. Fix FatalIOErrorInLookup DEF thunk issue for createBaffles/surfacePatch
+2. Test snappyHexMesh, decomposePar on test cases
+3. Test with CUDA backend (currently using OMP via ACPP_VISIBILITY_MASK=omp)
+4. Fix adjoint library LLVM/CUDA circular dependency (compiler bug — may need LLVM update)
 
 ### Critical wmake Knowledge
 

@@ -917,6 +917,72 @@ dummyScotchDecomp.cxx:29:10: fatal error: 'scotchDecomp.H' file not found
 
 **Lesson**: Dummy stub libraries that include headers from their "real" counterparts need those lnInclude directories pre-created. The `AllwmakeLnInclude` script in the parent directory handles this.
 
+## Fix #37: Guard MemoryPool::getInstance() and FatalErrorInFunction in SYCL device pass
+
+**Symptom**: `libdecompose.dll` failed to compile with `ptxas fatal: Unresolved extern function` — first `MemoryPool::getInstance()`, then `Foam::error::operator()` from `FatalErrorInFunction`.
+
+**Root cause**: acpp compiles ALL `.C` files for both host and device passes when `--acpp-targets=cuda:sm_86` is set. Template code in `List.C`, `ListI.H`, `UListI.H`, and `UList.C` contains `MemoryPool::getInstance()` calls and `FatalErrorInFunction` error handling. These are host-only functions that ptxas cannot resolve in device code.
+
+**Fix**: Wrapped all `MemoryPool::getInstance()` call blocks AND all `FatalErrorInFunction` blocks in the 4 List/UList template files with `#ifndef SYCL_DEVICE_ONLY` / `#endif`. The device pass falls through to the standard `new[]`/`delete[]`/`std::copy` paths. Files modified:
+- `src/OpenFOAM/containers/Lists/List/ListI.H` — doAlloc(), clear(), push_back()
+- `src/OpenFOAM/containers/Lists/List/List.C` — doResize(), ~List(), transfer(), 3 constructors
+- `src/OpenFOAM/containers/Lists/List/UListI.H` — fill_uniform(T), fill_uniform(zero)
+- `src/OpenFOAM/containers/Lists/List/UList.C` — deepCopy() (2 overloads), byteSize()
+- All 4 files copied to `src/OpenFOAM/lnInclude/`
+
+**Unblocked**: libdecompose + snappyHexMesh, decomposePar, redistributePar, renumberMesh, mapFields, surfaceRedistributePar (7 targets).
+
+**Lesson**: On Windows CUDA, the device pass is strict about unresolved symbols. Any host-only function called from template code needs `#ifndef SYCL_DEVICE_ONLY` guards. This includes both MemoryPool operations AND error handling paths (FatalErrorInFunction, abort(FatalError)).
+
+---
+
+## Fix #38: RTS table pointer accessor `()` for function-based access
+
+**Symptom**: `createBaffles` and `surfacePatch` failed to link with DEF thunk issues on `dictionaryConstructorTablePtr_`.
+
+**Root cause**: On Windows, `dictionaryConstructorTablePtr_` is a function (returns pointer reference) not a bare pointer variable. Code using `*dictionaryConstructorTablePtr_` or `dictionaryConstructorTablePtr_->` without `()` fails because it tries to dereference/access a function instead of calling it.
+
+**Fix**: Changed bare pointer access to function call syntax in 9 files:
+- `*dictionaryConstructorTablePtr_` → `*dictionaryConstructorTablePtr_()`
+- `dictionaryConstructorTablePtr_->` → `dictionaryConstructorTablePtr_()->`
+- `*dictConstructorTablePtr_` → `*dictConstructorTablePtr_()`
+
+Files: faceSelection.C, searchableSurfaceModifier.C, helpTypeNew.C, helpBoundaryTemplates.C, addToolOption.H, implicitFunction.C, tabulatedWallFunctionNew.C, surfaceFeaturesExtraction.C.
+
+**Unblocked**: createBaffles, surfacePatch, + all Fix #40 sub-libraries (foamHelp, setAlphaField, wallFunctionTable, surfaceFeatureExtract).
+
+**Lesson**: ALL uses of `*XXXConstructorTablePtr_` and `XXXConstructorTablePtr_->` throughout the codebase need the `()` suffix on Windows. Search for these patterns when adding new utilities.
+
+---
+
+## Fix #39: FlexLexer.h include path isolation
+
+**Symptom**: Flex-based utilities (ansysToFoam, fluent3DMeshToFoam, fluentMeshToFoam, gambitToFoam, chemkinToFoam) failed because `#include <FlexLexer.h>` couldn't find the header.
+
+**Root cause**: FlexLexer.h exists at `/c/msys64/usr/include/FlexLexer.h` but acpp doesn't search this path. Adding `-I/usr/include` caused MSYS2's `stdlib.h` to conflict with MSVC's `cstdlib` during the CUDA device pass.
+
+**Fix**: Copied FlexLexer.h to `wmake/include/FlexLexer.h` (isolated directory with only this header). Changed all 5 Make/options files to use `-I$(WM_DIR)/include` instead of `-I/usr/include`.
+
+**Unblocked**: 5 flex-based utilities.
+
+**Lesson**: Never add MSYS2 system include paths (`/usr/include`) to MSVC/CUDA builds — they conflict with MSVC C runtime headers. Copy individual headers to an isolated directory instead.
+
+---
+
+## Fix #40: Build sub-libraries before utility apps
+
+**Symptom**: foamHelp, setAlphaField, wallFunctionTable, surfaceFeatureExtract failed because their sub-libraries weren't built.
+
+**Root cause**: These utilities have sub-libraries (helpTypes, alphaFieldFunctions, tabulatedWallFunction, extractionMethod) that are normally built by their `Allwmake` scripts. Our rebuild script called `wmake` directly, skipping the sub-library build step.
+
+**Fix**: Added `wmake libso` calls for each sub-library before building the parent app in `rebuild-remaining.sh`. Also required Fix #38 (RTS accessor) for the sub-library source files.
+
+**Unblocked**: 4 utility apps + 4 sub-libraries.
+
+**Lesson**: When building utilities outside of the full `Allwmake` flow, check for sub-directories with their own `Make/files` that produce `LIB =` targets. Build these before the parent app.
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:

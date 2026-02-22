@@ -52,6 +52,7 @@ void Foam::List<T>::doResize(const label len)
             // Recover overlapping content when resizing
             T* old = this->v_;
             this->size_ = len;
+#ifndef SYCL_DEVICE_ONLY
             if (this->usePool_)
             {
                 this->v_ = static_cast<T*>
@@ -60,6 +61,7 @@ void Foam::List<T>::doResize(const label len)
                     );
             }
             else
+#endif
             {
                 this->v_ = new T[len];
             };
@@ -69,11 +71,13 @@ void Foam::List<T>::doResize(const label len)
             // - std::execution::unsequenced_policy
             std::move(old, (old + overlap), this->v_);
 
+#ifndef SYCL_DEVICE_ONLY
             if (this->usePool_)
             {
                 MemoryPool::getInstance()->free(old);
             }
             else
+#endif
             {
                 delete[] old;
             };
@@ -81,17 +85,20 @@ void Foam::List<T>::doResize(const label len)
         else
         {
             // No overlapping content
+#ifndef SYCL_DEVICE_ONLY
             if (this->usePool_)
             {
                 MemoryPool::getInstance()->free(this->v_);
             }
             else
+#endif
             {
                 delete[] this->v_;
             };
 
             this->size_ = len;
 
+#ifndef SYCL_DEVICE_ONLY
             if (this->usePool_)
             {
                 this->v_ = static_cast<T*>
@@ -100,6 +107,7 @@ void Foam::List<T>::doResize(const label len)
                     );
             }
             else
+#endif
             {
                 this->v_ = new T[len];
             };
@@ -108,12 +116,14 @@ void Foam::List<T>::doResize(const label len)
     else
     {
         // Or only #ifdef FULLDEBUG
+#ifndef SYCL_DEVICE_ONLY
         if (len < 0)
         {
             FatalErrorInFunction
                 << "bad size " << len
                 << abort(FatalError);
         }
+#endif
         // #endif
 
         clear();
@@ -134,12 +144,14 @@ Foam::List<T>::List(const label len, poolSwitch usePool)
     UList<T>(nullptr, len, usePool)
 {
     //Info << "alloc use pool : "<< usePool << nl;
+#ifndef SYCL_DEVICE_ONLY
     if (len < 0)
     {
         FatalErrorInFunction
             << "bad size " << len
             << abort(FatalError);
     }
+#endif
 
     doAlloc();
 }
@@ -151,12 +163,14 @@ Foam::List<T>::List(const label len, const T& val, poolSwitch usePool)
     UList<T>(nullptr, len, usePool)
 {
     //Info << "alloc use pool : "<< usePool << nl;
+#ifndef SYCL_DEVICE_ONLY
     if (len < 0)
     {
         FatalErrorInFunction
             << "bad size " << len
             << abort(FatalError);
     }
+#endif
 
     if (len)
     {
@@ -171,12 +185,14 @@ Foam::List<T>::List(const label len, const Foam::zero, poolSwitch usePool)
 :
     UList<T>(nullptr, len, usePool)
 {
+#ifndef SYCL_DEVICE_ONLY
     if (len < 0)
     {
         FatalErrorInFunction
             << "bad size " << len
             << abort(FatalError);
     }
+#endif
 
     if (len)
     {
@@ -352,12 +368,14 @@ Foam::List<T>::~List()
 {
     if (this->size_ > 0)
     {
+#ifndef SYCL_DEVICE_ONLY
         if(this->usePool_)
         {
             MemoryPool::getInstance()->free(this->v_);
 
         }
         else
+#endif
         {
             delete[] this->v_;
         }
@@ -397,6 +415,7 @@ void Foam::List<T>::transfer(List<T>& list)
     this->size_ = list.size_;
 
     //if input list is not on pool trigger copy
+#ifndef SYCL_DEVICE_ONLY
     if (this->usePool() && !list.usePool())
     {
         doAlloc();
@@ -404,6 +423,7 @@ void Foam::List<T>::transfer(List<T>& list)
         list.clear();
     }
     else
+#endif
     {
         this->v_ = list.v_;
     }

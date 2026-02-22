@@ -46,7 +46,7 @@ Foam::autoPtr<Foam::helpType> Foam::helpType::New
             FatalErrorInFunction
                 << "Valid helpType selections:" << nl
                 << "    "
-                << flatOutput(dictionaryConstructorTablePtr_->sortedToc()) << nl
+                << flatOutput(dictionaryConstructorTablePtr_()->sortedToc()) << nl
                 << exit(FatalError);
         }
         else
@@ -55,7 +55,7 @@ Foam::autoPtr<Foam::helpType> Foam::helpType::New
                 << "Unknown helpType type '" << helpTypeName << "'" << nl << nl
                 << "Valid helpType selections:" << nl
                 << "    "
-                << flatOutput(dictionaryConstructorTablePtr_->sortedToc()) << nl
+                << flatOutput(dictionaryConstructorTablePtr_()->sortedToc()) << nl
                 << abort(FatalError);
         }
     }

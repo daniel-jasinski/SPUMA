@@ -80,7 +80,7 @@ Foam::autoPtr<Foam::faceSelection> Foam::faceSelection::New
             dict,
             "faceSelection",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

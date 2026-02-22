@@ -35,6 +35,7 @@ inline void Foam::List<T>::doAlloc()
     if (this->size_ > 0)
     {
         // With sign-check to avoid spurious -Walloc-size-larger-than
+#ifndef SYCL_DEVICE_ONLY
         if (this->usePool_)
         {
             this->v_ = reinterpret_cast<T*>
@@ -43,6 +44,7 @@ inline void Foam::List<T>::doAlloc()
             );
         }
         else
+#endif
         {
             this->v_ = new T[this->size_];
         }
@@ -149,11 +151,13 @@ inline void Foam::List<T>::clear()
 {
     if (this->v_)
     {
+#ifndef SYCL_DEVICE_ONLY
         if (this->usePool_)
         {
             MemoryPool::getInstance()->free((void*)this->v_);
         }
         else
+#endif
         {
             delete[] this->v_;
         }
@@ -264,11 +268,13 @@ inline void Foam::List<T>::push_back(T&& val)
 template<class T>
 inline void Foam::List<T>::push_back(const UList<T>& list)
 {
+#ifndef SYCL_DEVICE_ONLY
     if (this == &list)
     {
         FatalErrorInFunction
             << "Attempted push_back to self" << abort(FatalError);
     }
+#endif
 
     const label idx = this->size();
     resize(idx + list.size());
