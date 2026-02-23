@@ -1051,6 +1051,32 @@ This avoids running `parallelFor` on nested Field types entirely, which is both 
 
 ---
 
+## Fix #41: MemoryPool::New() silently returns dummyMemoryPool instead of fixedSizeMemoryPool
+
+**Symptom**: `simpleFoam -pool fixedSizeMemoryPool -poolSize 1` with `ACPP_VISIBILITY_MASK=cuda` crashes with `CUDA:700` (`cudaErrorIllegalAddress`) during the first GPU kernel launch. Diagnostics showed no `malloc_shared` call, meaning the pool was never actually created.
+
+**Root cause**: Fix #2 added auto-creation of `dummyMemoryPool` in `MemoryPool::getInstance()` during DLL static init. When `MemoryPool::New("fixedSizeMemoryPool", ...)` was later called from `main()`, the `if (!instance)` check at line 73 found the dummyMemoryPool already existed and returned it instead of creating the requested fixedSizeMemoryPool. All Field data was allocated via `std::malloc()` (CPU-only heap), not `sycl::malloc_shared()` (GPU-accessible USM). GPU kernels then accessed non-USM pointers → `cudaErrorIllegalAddress`.
+
+**Fix**: Added logic in `MemoryPool::New()` to detect and replace the auto-created dummyMemoryPool (identified by `size() == 0` and type != "dummyMemoryPool" being requested) by deleting it and setting `instance = nullptr` before proceeding with the normal creation path.
+
+**Lesson**: When implementing fallback/auto-creation patterns for singletons, ensure the explicit creation path (`New()`) can override the auto-created instance. The auto-created dummyMemoryPool was essential for DLL static init safety (Fix #2), but it must not prevent the real pool from being created later.
+
+---
+
+## Fix #42: Exit-time crash with CUDA backend on Windows
+
+**Symptom**: `simpleFoam` with CUDA backend runs to completion (prints `End`, writes all output files), but crashes with segfault (exit code 139) during process exit. Even `_exit(0)` triggers the crash because Windows DLL termination routines run CUDA cleanup code.
+
+**Root cause**: On Windows, process termination calls `DllMain(DLL_PROCESS_DETACH)` for all loaded DLLs. The AdaptiveCpp CUDA runtime and/or CUDA driver cleanup code runs during this phase and segfaults — likely accessing already-freed USM memory or tearing down CUDA context in the wrong order.
+
+**Fix**: Added `_exit(0)` before `return 0` in simpleFoam (guarded by `#ifdef _WIN32`). The solver output is functionally correct — all time steps computed, results written, `End` printed. The crash is purely at exit-time cleanup. Exit code from bash is 139 but the solver completed successfully.
+
+**Status**: Workaround only. The exit-time crash does not affect correctness. True fix requires either: (a) explicit CUDA context teardown before `_exit()`, (b) AdaptiveCpp fix for Windows DLL detach, or (c) using TCC driver mode instead of WDDM.
+
+**Lesson**: On Windows WDDM with CUDA, process exit can trigger segfaults in GPU runtime cleanup. `_exit()` is insufficient because DLL detach still runs. For production use, ignore the exit code and check `End` in stdout instead.
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:

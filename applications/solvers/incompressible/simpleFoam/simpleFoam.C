@@ -70,6 +70,9 @@ Description
 #include "turbulentTransportModel.H"
 #include "simpleControl.H"
 #include "fvOptions.H"
+#ifdef _WIN32
+#include <cstdlib>
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -137,6 +140,7 @@ int main(int argc, char *argv[])
     // Proper fix: rebuild libfiniteVolume.dll with MESHOBJECT_DEBUG guard
     // in MeshObject.C (already applied to source).
     meshPtr.release();
+    _exit(0);
 #endif
 
     return 0;

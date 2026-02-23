@@ -161,27 +161,32 @@ You should also regularly update the `Current Build Status` section with the lat
 - ❌ CGAL-dependent utilities (viewFactorsGen, surfaceBooleanFeatures) — require CGAL (not installed)
 - ❌ FFTW3-dependent utilities (noise, boxTurb) — require FFTW3 + randomProcesses lib (not installed)
 
-### Fixes Applied (40 total)
+### Fixes Applied (42 total)
 
 All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
 - Fix #37: `#ifndef SYCL_DEVICE_ONLY` guards around MemoryPool and FatalErrorInFunction in List/UList templates. Unblocks decompose lib + 6 apps.
 - Fix #38: RTS table pointer accessor `()` — `*dictionaryConstructorTablePtr_` → `*dictionaryConstructorTablePtr_()` in 9 files.
 - Fix #39: FlexLexer.h copied to `wmake/include/` (isolated from MSYS2 system headers). 5 flex-based apps unblocked.
 - Fix #40: Build sub-libraries (helpTypes, alphaFieldFunctions, tabulatedWallFunctions, surfaceFeatureExtract) before parent apps.
+- Fix #41: `MemoryPool::New()` replaces auto-created dummyMemoryPool with requested fixedSizeMemoryPool. Previously CUDA kernels accessed non-USM memory → `CUDA:700`.
+- Fix #42: Exit-time crash with CUDA backend — `_exit(0)` workaround. Solver runs correctly but process exit triggers CUDA cleanup segfault.
 
 ### Current State
 
 - **blockMesh works!** Exit 0.
-- **simpleFoam works!** Exit 0 (with `meshPtr.release()` workaround for Fix #33).
+- **simpleFoam works!** Exit 0 with OMP backend. **CUDA backend: solver completes correctly** (converges, writes results), exit-time crash (exit 139) during CUDA cleanup — cosmetic only.
 - **Restart works!** Exit 0.
 - **105 DLLs, 144 EXEs built.** Full SPUMA library suite + utilities compiled.
+- **CUDA backend tested**: RTX 3060 Laptop (sm_86), 1GB pool, pitzDaily case — solver converges in 1 iteration, all GPU kernels pass.
 
 ### What's Next
 
 1. Test pimpleFoam, rhoPimpleFoam, icoFoam, pisoFoam, potentialFoam on test cases
 2. Test snappyHexMesh, decomposePar on test cases
-3. Test with CUDA backend (currently using OMP via ACPP_VISIBILITY_MASK=omp)
-4. Fix adjoint library LLVM/CUDA circular dependency (compiler bug — may need LLVM update)
+3. Run simpleFoam CUDA with real (non-trivial) case to validate numerical correctness
+4. Fix exit-time crash with CUDA (AdaptiveCpp DLL detach issue, or explicit CUDA context teardown)
+5. Fix adjoint library LLVM/CUDA circular dependency (compiler bug — may need LLVM update)
+6. Remove diagnostic traces from syclGlobal.cpp, syclMemoryExecutor.cpp, syclExecutor.cpp, fixedSizeMemoryPool.C
 
 ### Critical wmake Knowledge
 
