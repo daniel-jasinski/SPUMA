@@ -77,8 +77,11 @@ void Foam::syclExecutor::_backendSerialFor(F& lambda, const label& size)
 }
 
 // Generic reduction: works for any binary op (plus, min, max, custom).
-// On GPU, maps to sycl::reduction which uses hardware-optimized primitives.
-// On CPU, falls back to sequential loop (OMP backend broken, Fix #28).
+// Fix #43: Fixed value-copy semantics bug in AdaptiveCpp's reduction_engine.hpp.
+// The MSVC ABI refactoring (lambdas→named functors) introduced by-value copies
+// that broke the reference chain between combine() and finalize(). Fixed by
+// passing wi_reducers by reference through the kernel invocation chain.
+// GPU uses sycl::reduction (buffer-based). OMP uses CPU fallback (Fix #28).
 template <typename F, typename Op, typename resultT>
 void Foam::syclExecutor::_backendReduce
 (
@@ -95,10 +98,8 @@ void Foam::syclExecutor::_backendReduce
 
     if (q.get_device().is_gpu())
     {
-        // GPU: sycl::reduction with identity and binary op.
-        // AdaptiveCpp maps known ops (plus, min, max) to hardware-optimized
-        // primitives (warp shuffles + shared memory on CUDA).
-        // Custom ops get a generic tree reduction.
+        // GPU: sycl::reduction with buffer.
+        // Works correctly after fixing reduction_engine.hpp value-copy bug.
         resultT reduced = identity;
 
         {
@@ -124,7 +125,7 @@ void Foam::syclExecutor::_backendReduce
     }
     else
     {
-        // CPU fallback: sycl::reduction returns 0 on AdaptiveCpp OMP
+        // CPU fallback: sycl::reduction still returns 0 on AdaptiveCpp OMP
         // backend (Fix #28). Use sequential loop for correctness.
         resultT local = identity;
 
