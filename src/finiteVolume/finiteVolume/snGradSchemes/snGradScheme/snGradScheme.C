@@ -52,7 +52,7 @@ tmp<snGradScheme<Type>> snGradScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debug_())
     {
         InfoInFunction << "Constructing snGradScheme<Type>" << endl;
     }

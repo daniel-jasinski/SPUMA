@@ -45,7 +45,7 @@ namespace Foam
 
 void Foam::pointConstraints::makePatchPatchAddressing()
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "pointConstraints::makePatchPatchAddressing() : "
             << "constructing boundary addressing"
@@ -75,7 +75,7 @@ void Foam::pointConstraints::makePatchPatchAddressing()
 
             nPatchPatchPoints += bp.size();
 
-            if (debug)
+            if (debug_())
             {
                 Pout<< indent << "On patch:" << pbm[patchi].name()
                     << " nBoundaryPoints:" << bp.size() << endl;
@@ -83,7 +83,7 @@ void Foam::pointConstraints::makePatchPatchAddressing()
         }
     }
 
-    if (debug)
+    if (debug_())
     {
         Pout<< indent << "Found nPatchPatchPoints:" << nPatchPatchPoints
             << endl;
@@ -147,7 +147,7 @@ void Foam::pointConstraints::makePatchPatchAddressing()
         }
     }
 
-    if (debug)
+    if (debug_())
     {
         Pout<< indent << "Have (local) constrained points:"
             << nPatchPatchPoints << endl;
@@ -297,7 +297,7 @@ void Foam::pointConstraints::makePatchPatchAddressing()
     patchPatchPointConstraints_.setSize(nPatchPatchPoints);
 
 
-    if (debug)
+    if (debug_())
     {
         Pout<< indent << "Have (global) constrained points:"
             << nPatchPatchPoints << endl;
@@ -329,7 +329,7 @@ void Foam::pointConstraints::makePatchPatchAddressing()
         }
     }
 
-    if (debug)
+    if (debug_())
     {
         Pout<< indent << "Have non-trivial constrained points:"
             << nConstraints << endl;
@@ -340,7 +340,7 @@ void Foam::pointConstraints::makePatchPatchAddressing()
     patchPatchPointConstraintTensors_.setSize(nConstraints);
 
 
-    if (debug)
+    if (debug_())
     {
         Pout<< decrIndent
             << "pointConstraints::makePatchPatchAddressing() : "
@@ -356,7 +356,7 @@ Foam::pointConstraints::pointConstraints(const pointMesh& pm)
 :
     MeshObject_type(pm)
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "pointConstraints::pointConstraints(const pointMesh&): "
             << "Constructing from pointMesh " << pm.name()
@@ -371,7 +371,7 @@ Foam::pointConstraints::pointConstraints(const pointMesh& pm)
 
 Foam::pointConstraints::~pointConstraints()
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "pointConstraints::~pointConstraints()" << endl;
     }

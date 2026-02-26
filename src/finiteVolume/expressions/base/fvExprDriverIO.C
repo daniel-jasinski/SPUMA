@@ -223,7 +223,7 @@ Foam::Ostream& Foam::expressions::fvExprDriver::writeCommon
     // Write "variables", even if empty
     writeVariableStrings(os, "variables");
 
-    if (debug)
+    if (debug_())
     {
         os.writeEntry("variableValues", variables_);
     }

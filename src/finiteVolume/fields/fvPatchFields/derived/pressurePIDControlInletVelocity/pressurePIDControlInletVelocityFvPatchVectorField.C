@@ -330,7 +330,7 @@ void Foam::pressurePIDControlInletVelocityFvPatchVectorField::updateCoeffs()
     );
 
     // Log output
-    if (debug)
+    if (debug_())
     {
         const dimensionSet pDimensions(phi.dimensions()*dimVelocity/dimArea);
         const scalar error = deltaP/deltaP_ - 1;

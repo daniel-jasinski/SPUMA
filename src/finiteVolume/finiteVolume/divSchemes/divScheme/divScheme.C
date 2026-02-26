@@ -52,7 +52,7 @@ tmp<divScheme<Type>> divScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debug_())
     {
         InfoInFunction << "Constructing divScheme<Type>" << endl;
     }

@@ -52,10 +52,6 @@ Foam::IOstreamOption Foam::IOobject::parseHeader(const dictionary& headerDict)
     streamOpt.format(headerDict.get<word>("format"));
 
     headerClassName_ = headerDict.get<word>("class");
-    std::fprintf(stderr,
-        "TRACE:parseHeader name='%s' headerClassName='%s' this=%p\n",
-        name().c_str(), headerClassName_.c_str(), (const void*)this);
-    std::fflush(stderr);
 
     const word headerObject(headerDict.get<word>("object"));
 

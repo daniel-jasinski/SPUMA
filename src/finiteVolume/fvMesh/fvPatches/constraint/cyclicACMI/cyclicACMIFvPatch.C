@@ -55,7 +55,7 @@ bool Foam::cyclicACMIFvPatch::updateAreas() const
 
     if (updated || !cyclicACMIPolyPatch_.upToDate(areaTime_))
     {
-        if (debug)
+        if (debug_())
         {
             Pout<< "cyclicACMIFvPatch::updateAreas() : updating fv areas for "
                 << name() << " and " << this->nonOverlapPatch().name()
@@ -319,7 +319,7 @@ void Foam::cyclicACMIFvPatch::movePoints()
     // If anything changed update the mesh flux
     if (cyclicACMIPolyPatch_.owner() && updated)
     {
-        if (debug)
+        if (debug_())
         {
             Pout<< "cyclicACMIFvPatch::movePoints() : areas updated for "
                 << name() << "; updating mesh flux now"

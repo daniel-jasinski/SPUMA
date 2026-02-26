@@ -71,7 +71,7 @@ limitedSnGrad<Type>::correction
         )
     );
 
-    if (fv::debug)
+    if (fv::debug_())
     {
         InfoInFunction
             << "limiter min: " << min(limiter.primitiveField())
@@ -79,7 +79,7 @@ limitedSnGrad<Type>::correction
             << " avg: " << average(limiter.primitiveField()) << endl;
 
 
-        if (fv::debug & 2)
+        if (fv::debug_() & 2)
         {
             static scalar oldTime = -1;
             static label subIter = 0;

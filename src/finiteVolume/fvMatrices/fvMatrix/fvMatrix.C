@@ -459,7 +459,7 @@ bool Foam::fvMatrix<Type>::checkImplicit(const label fieldi)
     {
         if (bpsi[patchi].useImplicit())
         {
-            if (debug)
+            if (debug_())
             {
                 Pout<< "fvMatrix<Type>::checkImplicit "
                     << " field:" << this->psi(fieldi).name()
@@ -1293,7 +1293,7 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
     }
 
 
-    if (debug)
+    if (debug_())
     {
         // Calculate amount of non-dominance.
         label nNon = 0;

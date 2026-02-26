@@ -54,7 +54,7 @@ Foam::surfaceInterpolationScheme<Type>::New
 
     const word schemeName(schemeData);
 
-    if (surfaceInterpolation::debug || surfaceInterpolationScheme<Type>::debug)
+    if (surfaceInterpolation::debug_() || surfaceInterpolationScheme<Type>::debug_())
     {
         InfoInFunction << "Discretisation scheme = " << schemeName << endl;
     }
@@ -97,7 +97,7 @@ Foam::surfaceInterpolationScheme<Type>::New
 
     const word schemeName(schemeData);
 
-    if (surfaceInterpolation::debug || surfaceInterpolationScheme<Type>::debug)
+    if (surfaceInterpolation::debug_() || surfaceInterpolationScheme<Type>::debug_())
     {
         InfoInFunction << "Discretisation scheme = " << schemeName << endl;
     }
@@ -130,7 +130,7 @@ Foam::surfaceInterpolationScheme<Type>::interpolate
     const tmp<surfaceScalarField>& tys
 )
 {
-    if (surfaceInterpolation::debug)
+    if (surfaceInterpolation::debug_())
     {
         InfoInFunction
             << "Interpolating "
@@ -229,7 +229,7 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
     const tmp<surfaceScalarField>& tlambdas
 )
 {
-    if (surfaceInterpolation::debug)
+    if (surfaceInterpolation::debug_())
     {
         InfoInFunction
             << "Interpolating "
@@ -359,7 +359,7 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
     const GeometricField<Type, fvPatchField, volMesh>& vf
 ) const
 {
-    if (surfaceInterpolation::debug)
+    if (surfaceInterpolation::debug_())
     {
         InfoInFunction
             << "Interpolating "
@@ -428,7 +428,7 @@ Foam::surfaceInterpolationScheme<Type>::interpolate
     const GeometricField<Type, fvPatchField, volMesh>& vf
 ) const
 {
-    if (surfaceInterpolation::debug)
+    if (surfaceInterpolation::debug_())
     {
         InfoInFunction
             << "Interpolating "

@@ -385,7 +385,7 @@ Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField() const
         else
         {
             // Have cached value. Check
-            //if (debug)
+            //if (debug_())
             //{
             //    tmp<Field<Type>> tpnf
             //    (

@@ -328,7 +328,7 @@ void Foam::wallDistAddressing::correct(volScalarField& y)
     transformedWallInfo.resize(transformi);
     transformedPatchStarts_.back() = transformi;
 
-    if (debug)
+    if (debug_())
     {
         Pout<< typeName
             << " : untransformed:" << untransformi

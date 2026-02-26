@@ -582,7 +582,7 @@ Foam::averageNeighbourFvGeometryScheme::averageNeighbourFvGeometryScheme
         )
     )
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "averageNeighbourFvGeometryScheme :"
             << " nIters:" << nIters_
@@ -599,7 +599,7 @@ Foam::averageNeighbourFvGeometryScheme::averageNeighbourFvGeometryScheme
 
 void Foam::averageNeighbourFvGeometryScheme::movePoints()
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "averageNeighbourFvGeometryScheme::movePoints() : "
             << "recalculating primitiveMesh centres" << endl;
@@ -654,7 +654,7 @@ void Foam::averageNeighbourFvGeometryScheme::movePoints()
 
         autoPtr<OBJstream> osPtr;
         autoPtr<surfaceWriter> writerPtr;
-        if (debug)
+        if (debug_())
         {
             osPtr.reset
             (
@@ -742,7 +742,7 @@ void Foam::averageNeighbourFvGeometryScheme::movePoints()
                     writerPtr->endTime();
                 }
 
-                if (debug)
+                if (debug_())
                 {
                     forAll(cosAngles, facei)
                     {
@@ -785,7 +785,7 @@ void Foam::averageNeighbourFvGeometryScheme::movePoints()
 
             cellCentres += correction;
 
-            if (debug)
+            if (debug_())
             {
                 forAll(cellCentres, celli)
                 {
@@ -843,7 +843,7 @@ void Foam::averageNeighbourFvGeometryScheme::movePoints()
         );
         vectorField faceCentres(mesh_.faceCentres() + faceCorrection);
 
-        if (debug)
+        if (debug_())
         {
             Pout<< "averageNeighbourFvGeometryScheme::movePoints() :"
                 << " averageNeighbour weight"
@@ -863,7 +863,7 @@ void Foam::averageNeighbourFvGeometryScheme::movePoints()
                 str.writeLine(oldCc, newCc);
             }
         }
-        if (debug)
+        if (debug_())
         {
             // Dump lines from old to new location
             const fileName tp(mesh_.time().timePath());

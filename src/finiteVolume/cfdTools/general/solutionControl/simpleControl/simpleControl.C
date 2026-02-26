@@ -72,7 +72,7 @@ bool Foam::simpleControl::criteriaSatisfied()
 
             achieved = achieved && absCheck;
 
-            if (debug)
+            if (debug_())
             {
                 Info<< algorithmName_ << " solution statistics:" << endl;
 

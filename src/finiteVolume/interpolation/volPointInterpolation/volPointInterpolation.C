@@ -64,7 +64,7 @@ bool Foam::volPointInterpolation::hasSeparated(const pointMesh& pMesh)
 
 void Foam::volPointInterpolation::calcBoundaryAddressing()
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "volPointInterpolation::calcBoundaryAddressing() : "
             << "constructing boundary addressing"
@@ -139,7 +139,7 @@ void Foam::volPointInterpolation::calcBoundaryAddressing()
     isPatchPoint_.setSize(mesh().nPoints());
     isPatchPoint_.assign(isPatchPoint);
 
-    if (debug)
+    if (debug_())
     {
         label nPatchFace = 0;
         forAll(boundaryIsPatchFace_, i)
@@ -168,7 +168,7 @@ void Foam::volPointInterpolation::calcBoundaryAddressing()
 
 void Foam::volPointInterpolation::makeInternalWeights(scalarField& sumWeights)
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "volPointInterpolation::makeInternalWeights() : "
             << "constructing weighting factors for internal and non-coupled"
@@ -208,7 +208,7 @@ void Foam::volPointInterpolation::makeInternalWeights(scalarField& sumWeights)
 
 void Foam::volPointInterpolation::makeBoundaryWeights(scalarField& sumWeights)
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "volPointInterpolation::makeBoundaryWeights() : "
             << "constructing weighting factors for boundary points." << endl;
@@ -260,7 +260,7 @@ void Foam::volPointInterpolation::interpolateOne
     pointScalarField& pf
 ) const
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "volPointInterpolation::interpolateOne("
             << "pointScalarField&) : "
@@ -348,7 +348,7 @@ void Foam::volPointInterpolation::interpolateOne
 
 void Foam::volPointInterpolation::makeWeights()
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "volPointInterpolation::makeWeights() : "
             << "constructing weighting factors"
@@ -439,7 +439,7 @@ void Foam::volPointInterpolation::makeWeights()
     // Normalise separated contributions
     if (hasSeparated_)
     {
-        if (debug)
+        if (debug_())
         {
             Pout<< "volPointInterpolation::makeWeights() : "
                 << "detected separated coupled patches"
@@ -460,7 +460,7 @@ void Foam::volPointInterpolation::makeWeights()
     }
 
 
-    if (debug)
+    if (debug_())
     {
         Pout<< "volPointInterpolation::makeWeights() : "
             << "finished constructing weighting factors"

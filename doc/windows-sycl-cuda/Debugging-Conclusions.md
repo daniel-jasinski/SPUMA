@@ -1077,6 +1077,54 @@ This avoids running `parallelFor` on nested Field types entirely, which is both 
 
 ---
 
+## Fix #43: CUDA backend sycl::reduction returning 0
+
+**Symptom**: `sycl::reduction` with `sycl::buffer` returned 0 on CUDA backend via AdaptiveCpp. Solver residuals incorrectly zero.
+
+**Root cause**: AdaptiveCpp's `reduction_engine.hpp` passed the reduction result by value instead of by reference through the lambda chain. The value never propagated back.
+
+**Fix**: Patched AdaptiveCpp `reduction_engine.hpp` (pass-by-reference). Also replaced buffer-based reduction in `syclExecutor.cpp` with USM-based (`sycl::malloc_shared`) to avoid buffer warnings.
+
+**Lesson**: When AdaptiveCpp reduction returns 0, check the pass-by-value/reference chain in `reduction_engine.hpp`.
+
+---
+
+## Fix #44: Spurious debug output from NoRepository templates on Windows
+
+**Symptom**: simpleFoam stdout flooded with debug messages: "From New", "Constructing laplacianScheme<Type, GType>", "Matrix dominance test", "Cache: Calculating grad(U)" — 87 messages per run. These appeared even though all debug switches were set to 0.
+
+**Root cause**: Multiple interacting causes:
+
+1. **DEF thunk data corruption**: NoRepository template `.C` files (e.g., `laplacianScheme.C`, `gradScheme.C`) are compiled into every downstream DLL that includes their headers. These templates check `fv::debug`, `surfaceInterpolation::debug`, `solution::debug` etc. When accessed cross-DLL through DEF file thunks, the JMP instruction bytes are read as an int value (e.g., 1034561023 instead of 0) — always non-zero, so debug output always fires.
+
+2. **Template class static `debug` members**: `surfaceInterpolationScheme<Type>::debug` is a template class static. Even with `__declspec(dllimport)`, MSVC ignores dllimport for template class statics. The `||` in `if (surfaceInterpolation::debug_() || surfaceInterpolationScheme<Type>::debug)` bypasses the safe accessor.
+
+3. **`ddtScheme.C` class-level `debug` access**: `if (debug > 1)` uses the inherited class `debug` member, which is also corrupt through DEF thunks when accessed from downstream DLLs.
+
+4. **Stale DLLs**: Even after fixing the template source code, ALL downstream DLLs that include NoRepository templates must be rebuilt. Missing even one (e.g., `libincompressibleTurbulenceModels.dll`) causes messages to persist.
+
+**Fix**: Changed ~56 files across `src/finiteVolume/` and `src/OpenFOAM/`:
+
+- `fv::debug` → `fv::debug_()` in 11 scheme `.C` files (laplacian, grad, ddt, convection, div, snGrad, limited variants, multivariate)
+- `surfaceInterpolation::debug` → `surfaceInterpolation::debug_()` in 3 files
+- `surfaceInterpolationScheme<Type>::debug` → `surfaceInterpolationScheme<Type>::debug_()` in surfaceInterpolationScheme.C (2 occurrences)
+- `if (debug > 1)` → `if (debug_() > 1)` in ddtScheme.C (2 occurrences)
+- `if (debug)` → `if (debug_())` in ~30+ finiteVolume `.C` files (fvMatrix, fvMatrixSolve, fvScalarMatrix, fvMesh, solutionControl, simpleControl, pimpleControl, MRFZone, fvOptionListTemplates, volPointInterpolation, wallDistAddressing, etc.)
+- `solution::debug` → `solution::debug_()` in solutionTemplates.C (added `debug_()` to solution.H/C)
+- Set `lduMatrix 0;` in etc/controlDict
+- Rebuilt 6 DLLs: finiteVolume, fvOptions, turbulenceModels, incompressibleTurbulenceModels, atmosphericModels + simpleFoam
+- Also removed 4 diagnostic fprintf traces from globals.C, debug.C, IOobjectReadHeader.C, IOobject.C
+
+**Diagnostic approach**:
+1. Added `fprintf(stderr, "DIAG: fv::debug_()=%d fv::debug=%d\n", fv::debug_(), fv::debug)` — confirmed DEF thunk garbage (1034561023 vs 0).
+2. Hardcoded `fv::debug_() { return 0; }` — messages persisted (proving not all DLLs were rebuilt).
+3. Replaced all debug checks with `if(false)` + rebuilt all downstream DLLs — confirmed messages from these exact code paths.
+4. Restored `debug_()` checks + all DLLs rebuilt — clean output, 0 debug messages.
+
+**Lesson**: When fixing cross-DLL data access in NoRepository templates, you MUST rebuild ALL downstream DLLs, not just the library that defines the template. Each DLL has its own compiled copy of the template code. Use `grep -rl "string literal" build/` to find ALL .o files containing old code, and check DLL timestamps to identify which are stale.
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:

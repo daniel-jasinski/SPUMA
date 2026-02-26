@@ -70,7 +70,7 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregatedOrCoupled
     }
     addProfiling(solve, "fvMatrix::solve.", regionName, psi_.name());
 
-    if (debug)
+    if (debug_())
     {
         Info.masterStream(this->mesh().comm())
             << "fvMatrix<Type>::solveSegregatedOrCoupled"
@@ -120,7 +120,7 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
             << exit(FatalError);
     }
 
-    if (debug)
+    if (debug_())
     {
         Info.masterStream(this->mesh().comm())
             << "fvMatrix<Type>::solveSegregated"
@@ -253,7 +253,7 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveCoupled
     const dictionary& solverControls
 )
 {
-    if (debug)
+    if (debug_())
     {
         Info.masterStream(this->mesh().comm())
             << "fvMatrix<Type>::solveCoupled"

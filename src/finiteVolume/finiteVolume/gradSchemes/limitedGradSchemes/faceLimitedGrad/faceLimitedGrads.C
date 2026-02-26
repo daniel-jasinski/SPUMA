@@ -160,7 +160,7 @@ Foam::fv::faceLimitedGrad<Foam::scalar>::calcGrad
         }
     }
 
-    if (fv::debug)
+    if (fv::debug_())
     {
         Info<< "gradient limiter for: " << vsf.name()
             << " max = " << gMax(limiter)
@@ -321,7 +321,7 @@ Foam::fv::faceLimitedGrad<Foam::vector>::calcGrad
         }
     }
 
-    if (fv::debug)
+    if (fv::debug_())
     {
         Info<< "gradient limiter for: " << vvf.name()
             << " max = " << gMax(limiter)

@@ -39,7 +39,7 @@ Foam::tmp<Foam::fv::gradScheme<Type>> Foam::fv::gradScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debug_())
     {
         InfoInFunction << "Constructing gradScheme<Type>" << endl;
     }

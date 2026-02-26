@@ -64,7 +64,7 @@ tmp<convectionScheme<Type>> convectionScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debug_())
     {
         InfoInFunction << "Constructing convectionScheme<Type>" << endl;
     }
@@ -80,7 +80,7 @@ tmp<convectionScheme<Type>> convectionScheme<Type>::New
 
     const word schemeName(schemeData);
 
-    if (fv::debug)
+    if (fv::debug_())
     {
         InfoInFunction << "schemeName:" << schemeName << endl;
     }
@@ -112,7 +112,7 @@ tmp<convectionScheme<Type>> convectionScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debug_())
     {
         InfoInFunction << "Constructing convectionScheme<Type>" << endl;
     }

@@ -138,7 +138,7 @@ void Foam::lduPrimitiveMeshAssembly::update
         oldFaces += meshes_[i].lduAddr().upperAddr().size();
     }
 
-    if (debug)
+    if (debug_())
     {
         Info<< " old total faces : " << oldFaces
             << " new total faces (internal) : " << newFaces

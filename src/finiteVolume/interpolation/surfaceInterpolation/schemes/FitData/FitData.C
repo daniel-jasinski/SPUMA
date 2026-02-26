@@ -299,7 +299,7 @@ void Foam::FitData<FitDataType, ExtendedStencil, Polynomial>::calcFit
     }
     else
     {
-        // if (debug)
+        // if (debug_())
         // {
             WarningInFunction
                 << "Could not fit face " << facei

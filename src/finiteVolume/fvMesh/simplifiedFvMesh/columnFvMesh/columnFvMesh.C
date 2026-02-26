@@ -265,7 +265,7 @@ void Foam::simplifiedMeshes::columnFvMeshInfo::initialise(const Time& runTime)
         points1D_[i*n + 3] = points1D_[3] + idx;
     }
 
-    if (debug) Pout<< "points:" << points1D_ << endl;
+    if (debug_()) Pout<< "points:" << points1D_ << endl;
 
     label facei = 0;
 
@@ -376,7 +376,7 @@ void Foam::simplifiedMeshes::columnFvMeshInfo::addLocalPatches
 
     mesh.addFvPatches(patches);
 
-    if (debug)
+    if (debug_())
     {
         Pout<< "patches:" << nl << mesh.boundaryMesh() << endl;
     }
@@ -473,7 +473,7 @@ Foam::simplifiedMeshes::columnFvMesh::columnFvMesh
     // Add the zones if constructed from mesh
     initialiseZones(*this);
 
-    if (debug)
+    if (debug_())
     {
         setInstance(runTime.timeName());
         objectRegistry::write();

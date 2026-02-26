@@ -442,7 +442,19 @@
       "Bash(xargs -I {} sh -c 'cat {}/options 2>/dev/null | grep -E \"\"EXE_LIBS|lfiniteArea|llagrangian\"\" | head -1')",
       "Bash(xargs cat:*)",
       "Bash(cat:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "WebFetch(domain:adaptivecpp.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:rocm.docs.amd.com)",
+      "Bash(tail:*)",
+      "Bash(# Check acpp config for cuda-cxx-flags\ncat /c/dev/llvm-acpp-msvc-21/etc/AdaptiveCpp/acpp-core.json 2>/dev/null | python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\('cuda-cxx-flags',''\\)\\)\" 2>/dev/null || grep \"cuda-cxx-flags\" /c/dev/llvm-acpp-msvc-21/etc/AdaptiveCpp/acpp-core.json 2>/dev/null)",
+      "Bash(cd:*)",
+      "Bash(grep SYCL-DIAG:*)",
+      "Bash(grep USM-based\\\\|Fix #43:*)",
+      "Bash(# How many dep files reference syclExecutor? grep -rl \"\"syclExecutor\"\" /c/OpenFOAM/SPUMA/build/win64MsvcSyclDPInt32Opt/src/finiteVolume/ --include=\"\"*.dep\"\")",
+      "Bash(cp:*)",
+      "Bash(echo === $f ===:*)",
+      "Bash(rm:*)"
     ]
   }
 }

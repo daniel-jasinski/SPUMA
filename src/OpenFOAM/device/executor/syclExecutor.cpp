@@ -98,30 +98,23 @@ void Foam::syclExecutor::_backendReduce
 
     if (q.get_device().is_gpu())
     {
-        // GPU: sycl::reduction with buffer.
+        // GPU: USM-based sycl::reduction (no buffers, no accessor overhead).
         // Works correctly after fixing reduction_engine.hpp value-copy bug.
-        resultT reduced = identity;
+        resultT* reduced = sycl::malloc_shared<resultT>(1, q);
+        *reduced = identity;
 
-        {
-            sycl::buffer<resultT, 1> buf(&reduced, sycl::range<1>(1));
-
-            q.submit([&](sycl::handler& h)
+        q.parallel_for
+        (
+            sycl::range<1>(size),
+            sycl::reduction(reduced, identity, op),
+            [=](sycl::id<1> idx, auto& reducer)
             {
-                auto red = sycl::reduction(buf, h, identity, op);
+                reducer.combine(lambda(idx[0]));
+            }
+        ).wait();
 
-                h.parallel_for
-                (
-                    sycl::range<1>(size),
-                    red,
-                    [=](sycl::id<1> idx, auto& reducer)
-                    {
-                        reducer.combine(lambda(idx[0]));
-                    }
-                );
-            }).wait();
-        }
-
-        *result = op(*result, reduced);
+        *result = op(*result, *reduced);
+        sycl::free(reduced, q);
     }
     else
     {

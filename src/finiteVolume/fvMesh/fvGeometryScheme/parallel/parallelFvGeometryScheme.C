@@ -323,7 +323,7 @@ const Foam::fvGeometryScheme& Foam::parallelFvGeometryScheme::geometry() const
 {
     if (!geometryPtr_)
     {
-        if (debug)
+        if (debug_())
         {
             Pout<< "parallelFvGeometryScheme::geometry() : "
                 << "constructing underlying scheme from " << dict_
@@ -342,7 +342,7 @@ const Foam::fvGeometryScheme& Foam::parallelFvGeometryScheme::geometry() const
 
 void Foam::parallelFvGeometryScheme::movePoints()
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "parallelFvGeometryScheme::movePoints() : "
             << "recalculating primitiveMesh centres" << endl;

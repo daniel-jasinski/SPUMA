@@ -160,7 +160,7 @@ void Foam::stabilisedFvGeometryScheme::movePoints()
 {
     fvGeometryScheme::movePoints();
 
-    if (debug)
+    if (debug_())
     {
         Pout<< "stabilisedFvGeometryScheme::movePoints() : "
             << "recalculating primitiveMesh centres" << endl;

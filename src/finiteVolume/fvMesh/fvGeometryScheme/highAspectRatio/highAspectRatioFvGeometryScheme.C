@@ -233,7 +233,7 @@ void Foam::highAspectRatioFvGeometryScheme::makeAverageCentres
     pointField& cellCentres
 )
 {
-    if (debug)
+    if (debug_())
     {
         Pout<< "highAspectRatioFvGeometryScheme::makeAverageCentres() : "
             << "calculating weighted average face/cell centre" << endl;
@@ -382,7 +382,7 @@ void Foam::highAspectRatioFvGeometryScheme::movePoints()
     //basicFvGeometryScheme::movePoints();
     fvGeometryScheme::movePoints();
 
-    if (debug)
+    if (debug_())
     {
         Pout<< "highAspectRatioFvGeometryScheme::movePoints() : "
             << "recalculating primitiveMesh centres" << endl;
@@ -432,7 +432,7 @@ void Foam::highAspectRatioFvGeometryScheme::movePoints()
         );
 
 
-        if (debug)
+        if (debug_())
         {
             Pout<< "highAspectRatioFvGeometryScheme::movePoints() :"
                 << " highAspectRatio weight"

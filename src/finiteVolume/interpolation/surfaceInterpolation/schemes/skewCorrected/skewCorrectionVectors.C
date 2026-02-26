@@ -143,7 +143,7 @@ void Foam::skewCorrectionVectors::calcSkewCorrectionVectors()
         skew_ = true;
     }
 
-    if (debug)
+    if (debug_())
     {
         Info<< "    Finished constructing skew correction vectors" << endl;
     }
