@@ -76,7 +76,11 @@ namespace Foam
     CombustionModel<Comp>::                                                    \
         add##dictionary##ConstructorToTable<CombModel##Comp##Thermo>           \
         add##CombModel##Comp##Thermo##dictionary##ConstructorTo##\
-CombustionModel##Comp##Table_;
+CombustionModel##Comp##Table_                                                  \
+        (                                                                      \
+            word(CombModel##Comp##Thermo::typeName_()) + "<" + Comp::typeName  \
+          + "," + Thermo::typeName() + ">"                                     \
+        );
 
 
 #define makeCombustionTypes(CombModel, Comp)                                   \
@@ -95,7 +99,10 @@ CombustionModel##Comp##Table_;
     CombustionModel<Comp>::                                                    \
         add##dictionary##ConstructorToTable<CombModel##Comp>                   \
         add##CombModel##Comp##dictionary##ConstructorTo##CombustionModel##Comp\
-##Table_;
+##Table_                                                                       \
+        (                                                                      \
+            word(CombModel##Comp::typeName_()) + "<" + Comp::typeName + ">"    \
+        );
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

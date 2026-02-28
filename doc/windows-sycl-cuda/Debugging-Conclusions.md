@@ -1125,6 +1125,71 @@ This avoids running `parallelFor` on nested Field types entirely, which is both 
 
 ---
 
+## Fix #45: Duplicate RTS registration entries (typeName_() vs typeName)
+
+**Symptom**: simpleFoam stderr shows 458 "Duplicate entry" warnings during startup:
+```
+Duplicate entry LimitedScheme in runtime table surfaceInterpolationScheme
+Duplicate entry multivariateScheme in runtime table surfaceInterpolationScheme
+Duplicate entry LeastSquares in runtime table gradScheme
+Duplicate entry cellLimited in runtime table gradScheme
+```
+All template-based RTS registrations (LimitedScheme, multivariateScheme, LeastSquares, cellLimited, CentredFitScheme, CentredFitSnGradScheme) registered under the generic template name instead of their per-specialization names (vanLeer, Gamma, MUSCL, etc.).
+
+**Root cause**: Fix #5 (commit b74b78d359) changed the RTS registration default argument in `runTimeSelectionTables.H` from `baseType##Type::typeName` to `baseType##Type::typeName_()` to avoid cross-DLL data access crashes on Windows. However:
+- `typeName` is a `word` static data member set per-specialization by `defineTemplateTypeNameAndDebugWithName` (e.g., `"vanLeer"`).
+- `typeName_()` is an inline `const char*` function from the `TypeName(...)` macro returning the **generic template** name (e.g., `"LimitedScheme"`).
+
+This meant ALL limited schemes registered under `"LimitedScheme"` instead of their correct names. Not just cosmetic — any case using vanLeer, Gamma, MUSCL etc. in fvSchemes would fail at runtime lookup ("Unknown laplacian type Gauss"). The pitzDaily test case happened to only use linear/upwind (non-template schemes), masking the bug initially.
+
+**Failed approach (Solution C)**: Reverting all 4 locations in `runTimeSelectionTables.H` to `typeName` broke fvPatchField registrations. `fvPatchField<Type>` is a template whose registrations happen in *downstream* DLLs (finiteVolume compiles `fvPatchFields.C` which instantiates templates). The fvPatchField RTS macros use the default argument, so they accessed `typeName` through cross-DLL DEF thunks → empty string → crash.
+
+**Working fix (hybrid approach)**: Keep `typeName_()` as the global default in `runTimeSelectionTables.H` (safe for cross-DLL template registrations). For specific registration macros that need per-specialization names, pass the name explicitly:
+- `LimitedScheme.H` / `makeLimitedSurfaceInterpolationTypeScheme`: passes `#SS` (e.g., `"vanLeer"`)
+- `PhiScheme.H` / `makePhiSurfaceInterpolationTypeScheme`: passes `#SS`
+- `multivariateScheme.H` / `makeMultivariateSurfaceInterpolationTypeScheme`: passes `#SS`
+- Various gradScheme, laplacianScheme, ddtScheme, convectionScheme, snGradScheme, d2dt2Scheme macros: all use `addToRunTimeSelectionTable` with default argument which resolves to `typeName_()` — but these work correctly because the `TypeName("Gauss")` etc. provides the right string through `typeName_()`.
+
+**Result**: Duplicates reduced from 458 to 13 (12 Compound<T> + 1 empty Reaction, both pre-existing and harmless).
+
+**Files changed**: `runTimeSelectionTables.H` (kept `typeName_()`), `LimitedScheme.H`, `PhiScheme.H`, `multivariateScheme.H` (explicit name passing in registration macros). Full rebuild of all 428 finiteVolume .o files required.
+
+**Lesson**: The RTS default argument is a tradeoff:
+- `typeName_()` is safe for cross-DLL but gives generic template names for specializations.
+- `typeName` gives correct names but crashes when accessed cross-DLL.
+- The hybrid approach: keep `typeName_()` as default for safety, and pass explicit names in macros where the generic name is wrong. This works because registration macro invocations are in the same TU as the concrete type and know the correct name.
+
+---
+
+## Fix #46: Compound<T> duplicate RTS entries (stale .o files)
+
+**Symptom**: 12 "Duplicate entry Compound<T> in runtime table compound" warnings in stderr when running simpleFoam on the pitzDaily case.
+
+**Root cause**: The `addCompoundToRunTimeSelectionTable` macro in `token.H` was updated (Fix #45 timeframe) to pass `(#Type)` as an explicit key (e.g., `"List<scalar>"`). However, the 11 `.o` files in `build/win64MsvcSyclDPInt32Opt/src/OpenFOAM/` were compiled from a stale lnInclude copy that did NOT have `(#Type)`. The old code used the default argument `typeName_()` = `"Compound<T>"` for all 13 compound instantiations, producing 12 duplicates.
+
+**Fix**: Deleted the 11 stale `.o` files and rebuilt libOpenFOAM with `wmake libso`:
+- `primitives/Scalar/lists/scalarList.o`
+- `primitives/Vector/lists/vectorList.o`
+- `primitives/Tensor/lists/tensorList.o`
+- `primitives/Tensor/lists/symmTensorList.o`
+- `primitives/Tensor/lists/sphericalTensorList.o`
+- `primitives/bools/lists/boolList.o`
+- `primitives/chars/lists/charList.o`
+- `primitives/ints/lists/labelIOList.o`
+- `primitives/strings/string/stringIOList.o`
+- `primitives/strings/word/wordIOList.o`
+- `meshes/meshShapes/edge/edgeIOList.o`
+
+CRITICAL: Must set `export FOAM_LINK_DUMMY_PSTREAM=libo` during rebuild, otherwise `libPstream_static.lib` is not included in DEF generation → 22 Pstream symbols missing → `STATUS_ENTRYPOINT_NOT_FOUND` (0xC0000139 / exit 127) for all downstream executables.
+
+**Result**: 0 Compound<T> duplicates.
+
+**Note on Reaction duplicates**: The remaining 459 "Duplicate entry in runtime table Reaction" warnings (202 irreversible + 202 reversible + 54 nonEquilibriumReversible + 1 empty basicThermo) are **by-design OpenFOAM behavior**. The `makeReaction` macro uses `addToRunTimeSelectionTable` with default `typeName_()` key, which resolves to the base class name (e.g., "irreversible"). Multiple specializations (e.g., `IrreversibleReaction<Reaction, gasHThermoPhysics, ArrheniusReactionRate>`) all register under the same key. On Linux, each silently overwrites the previous entry. On Windows, our duplicate detection reports them. Attempting to fix this by reading `::typeName` (the per-specialization static data member) fails because it's a cross-DLL data access (FOAM_TYPENAME_EXPORT is always dllexport, never dllimport). These duplicates are harmless and do not affect solver correctness.
+
+**Lesson**: When wmake doesn't detect header changes (especially via lnInclude copies on Windows), delete the specific `.o` files to force recompilation. Always include `FOAM_LINK_DUMMY_PSTREAM=libo` when rebuilding libOpenFOAM.
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:

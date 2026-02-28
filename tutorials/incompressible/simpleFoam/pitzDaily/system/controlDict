@@ -22,13 +22,13 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         2000;
+endTime         3;
 
 deltaT          1;
 
 writeControl    timeStep;
 
-writeInterval   100;
+writeInterval   3;
 
 purgeWrite      0;
 
@@ -44,10 +44,11 @@ timePrecision   6;
 
 runTimeModifiable true;
 
-functions
-{
-    #includeFunc streamlines
-}
+// functions disabled for Windows SYCL testing
+//functions
+//{
+//    #includeFunc streamlines
+//}
 
 
 // ************************************************************************* //

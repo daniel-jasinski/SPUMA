@@ -167,11 +167,11 @@ defineTemplateTypeNameAndDebugWithName                                         \
                                                                                \
 surfaceInterpolationScheme<TYPE>::addMeshConstructorToTable                    \
 <CentredFitScheme<TYPE, POLYNOMIAL, STENCIL>>                                  \
-    add##SS##STENCIL##TYPE##MeshConstructorToTable_;                           \
+    add##SS##STENCIL##TYPE##MeshConstructorToTable_(#SS);                      \
                                                                                \
 surfaceInterpolationScheme<TYPE>::addMeshFluxConstructorToTable                \
 <CentredFitScheme<TYPE, POLYNOMIAL, STENCIL>>                                  \
-    add##SS##STENCIL##TYPE##MeshFluxConstructorToTable_;
+    add##SS##STENCIL##TYPE##MeshFluxConstructorToTable_(#SS);
 
 #define makeCentredFitSurfaceInterpolationScheme(SS, POLYNOMIAL, STENCIL)      \
                                                                                \

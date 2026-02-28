@@ -946,7 +946,7 @@ Ostream& operator<<(Ostream& os, const InfoProxy<token>& ip);
 //- Add compound to selection tables, lookup using typeName
 #define addCompoundToRunTimeSelectionTable(Type, Tag)                          \
     token::compound::addemptyConstructorToTable<token::Compound<Type>>         \
-        add##Tag##emptyConstructorToTable_;
+        add##Tag##emptyConstructorToTable_(#Type);
 
 //- Add compound to selection tables, lookup as \a Name
 #define addNamedCompoundToRunTimeSelectionTable(Type, Tag, Name)               \
