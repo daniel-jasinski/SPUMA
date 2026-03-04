@@ -161,30 +161,35 @@ You should also regularly update the `Current Build Status` section with the lat
 - ❌ CGAL-dependent utilities (viewFactorsGen, surfaceBooleanFeatures) — require CGAL (not installed)
 - ❌ FFTW3-dependent utilities (noise, boxTurb) — require FFTW3 + randomProcesses lib (not installed)
 
-### Fixes Applied (44 total)
+### Fixes Applied (48 total)
 
 All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
 - Fix #41: `MemoryPool::New()` replaces auto-created dummyMemoryPool with requested fixedSizeMemoryPool. Previously CUDA kernels accessed non-USM memory → `CUDA:700`.
 - Fix #42: Exit-time crash with CUDA backend — `_exit(0)` workaround. Solver runs correctly but process exit triggers CUDA cleanup segfault.
 - Fix #43: CUDA backend sycl::reduction returning 0. Patched AdaptiveCpp `reduction_engine.hpp` (pass-by-reference). USM-based reduction in syclExecutor.cpp.
 - Fix #44: Spurious debug output from NoRepository templates. ~56 files changed: `debug` → `debug_()` in all cross-DLL template code. Removed diagnostic fprintf traces.
+- Fix #45: RTS registration used `typeName_()` (generic template name) instead of `typeName` (per-specialization name). LimitedScheme, gradScheme etc. registered under wrong keys. Hybrid fix: keep `typeName_()` as global default (safe for cross-DLL), pass explicit names in specific macros (LimitedScheme.H, PhiScheme.H, multivariateScheme.H). Duplicates: 458 → 13.
+- Fix #46: Compound<T> duplicate RTS entries. Deleted 11 stale `.o` files compiled before `(#Type)` was added to `addCompoundToRunTimeSelectionTable`. Compound<T> duplicates: 12 → 0. Remaining 459 Reaction duplicates are by-design OpenFOAM behavior (harmless).
+- Fix #47: Failed DLL load destroys RTS tables. `LoadLibrary` failure triggers DLL unload → static destructors delete shared RTS tables → SIGSEGV. Fix: `Foam::RTS_TABLE_CLEANUP = false` on Windows (no-op in `construct(false)`). Safe since solvers use `_exit(0)`.
+- Fix #48: Remaining 4 RTS duplicates. liquidThermo.C → `addToRunTimeSelectionTableKey` with explicit names. Stale `libcompressibleTurbulenceModels.dll` (Feb 8) rebuilt with current headers. **0 duplicate warnings in simpleFoam.**
 
 ### Current State
 
 - **blockMesh works!** Exit 0.
-- **simpleFoam works!** Clean output, no debug spam. OMP: exit 0. **CUDA backend: solver completes correctly** (converges, writes results), exit-time crash (exit 139) during CUDA cleanup — cosmetic only.
+- **simpleFoam works!** Clean output, no debug spam, **0 RTS duplicate warnings**. CUDA backend: solver completes correctly (converges, writes results), exit-time crash (exit 139) during CUDA cleanup — cosmetic only.
 - **Restart works!** Exit 0.
 - **105 DLLs, 144 EXEs built.** Full SPUMA library suite + utilities compiled.
 - **CUDA backend tested**: RTX 3060 Laptop (sm_86), 1GB pool, pitzDaily case — solver converges, all GPU kernels pass.
 - **Diagnostic traces removed**: All debug fprintf removed from source files.
+- **RTS duplicate warnings eliminated**: Fix #48 resolved all remaining duplicate warnings (was 1237, now 0).
 
 ### What's Next
 
 1. Test pimpleFoam, rhoPimpleFoam, icoFoam, pisoFoam, potentialFoam on test cases
-2. Test snappyHexMesh, decomposePar on test cases
-3. Run simpleFoam CUDA with real (non-trivial) case to validate numerical correctness
-4. Fix exit-time crash with CUDA (AdaptiveCpp DLL detach issue, or explicit CUDA context teardown)
-5. Fix adjoint library LLVM/CUDA circular dependency (compiler bug — may need LLVM update)
+3. Test snappyHexMesh, decomposePar on test cases
+4. Run simpleFoam CUDA with real (non-trivial) case to validate numerical correctness
+5. Fix exit-time crash with CUDA (AdaptiveCpp DLL detach issue, or explicit CUDA context teardown)
+6. Fix adjoint library LLVM/CUDA circular dependency (compiler bug — may need LLVM update)
 
 ### Critical wmake Knowledge
 
@@ -192,12 +197,13 @@ All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key re
 2. **sourceFiles generation**: Uses cpp+sed, does NOT expand Make variables. Use `#ifdef` in C++ instead.
 3. **Windows system libs**: Use `-Wl,/DEFAULTLIB:libname` not bare `libname.lib` (clang++ fails on bare `.lib`).
 4. **`.dep.part` workaround**: After header changes, run `find build -name "*.dep.part" -exec sh -c 'mv "$1" "${1%.part}"' _ {} \;` to fix stale dependencies.
-5. **Static init order**: Never use `typeName` (dynamic init) as default arg in registration constructors. Use `typeName_()` (`const char*` literal).
+5. **Static init order in NoRepository templates**: Never use `typeName` (dynamic init) in NoRepository template code that crosses DLL boundaries. Use `typeName_()`. RTS registration default arg is `typeName_()` (safe for cross-DLL), specific macros pass explicit names where needed (Fix #45).
 6. **Template code = cross-DLL code**: `#ifdef NoRepository` templates in `src/OpenFOAM/` get compiled into downstream DLLs. Any `::typeName` in them is a cross-DLL data access. Always use `::typeName_()`.
 7. **lnInclude staleness**: On Windows, lnInclude contains COPIES. After editing template/header files, MUST copy to lnInclude manually.
 8. **Force recompilation**: wmake may not detect template header changes. Delete the `.o` file to force recompilation.
 9. **dllimport ignored for template class statics**: Use explicit specialization declarations (FOAM_VECTORSPACE_EXTERN_DATA macro) - see Fix #27.
 10. **FOAM_TYPENAME_EXPORT is always dllexport**: `debug` and `typeName` static members never get dllimport. NoRepository templates accessing them crash. Use `#ifdef _WIN32` / `if (false)` guards - see Fix #33.
+11. **Failed LoadLibrary destroys RTS tables**: Windows unloads partially-loaded transitive deps on failure → static destructors call `construct(false)` → shared tables deleted. Fix #47 disables table cleanup on Windows (`RTS_TABLE_CLEANUP = false`).
 
 ### Build Scripts
 

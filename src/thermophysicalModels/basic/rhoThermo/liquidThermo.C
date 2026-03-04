@@ -42,25 +42,28 @@ defineTemplateTypeNameAndDebugWithName
     0
 );
 
-addToRunTimeSelectionTable
+addToRunTimeSelectionTableKey
 (
     basicThermo,
     heRhoThermopureMixtureliquidProperties,
-    fvMesh
+    fvMesh,
+    "heRhoThermo<pureMixture<liquid,sensibleInternalEnergy>>"
 );
 
-addToRunTimeSelectionTable
+addToRunTimeSelectionTableKey
 (
     fluidThermo,
     heRhoThermopureMixtureliquidProperties,
-    fvMesh
+    fvMesh,
+    "heRhoThermo<pureMixture<liquid,sensibleInternalEnergy>>"
 );
 
-addToRunTimeSelectionTable
+addToRunTimeSelectionTableKey
 (
     rhoThermo,
     heRhoThermopureMixtureliquidProperties,
-    fvMesh
+    fvMesh,
+    "heRhoThermo<pureMixture<liquid,sensibleInternalEnergy>>"
 );
 
 
@@ -71,25 +74,28 @@ defineTemplateTypeNameAndDebugWithName
     0
 );
 
-addToRunTimeSelectionTable
+addToRunTimeSelectionTableKey
 (
     basicThermo,
     heRhoThermopureMixtureEnthalpyliquidProperties,
-    fvMesh
+    fvMesh,
+    "heRhoThermo<pureMixture<liquid,sensibleEnthalpy>>"
 );
 
-addToRunTimeSelectionTable
+addToRunTimeSelectionTableKey
 (
     fluidThermo,
     heRhoThermopureMixtureEnthalpyliquidProperties,
-    fvMesh
+    fvMesh,
+    "heRhoThermo<pureMixture<liquid,sensibleEnthalpy>>"
 );
 
-addToRunTimeSelectionTable
+addToRunTimeSelectionTableKey
 (
     rhoThermo,
     heRhoThermopureMixtureEnthalpyliquidProperties,
-    fvMesh
+    fvMesh,
+    "heRhoThermo<pureMixture<liquid,sensibleEnthalpy>>"
 );
 
 

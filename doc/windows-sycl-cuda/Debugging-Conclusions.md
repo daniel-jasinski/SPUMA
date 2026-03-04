@@ -1190,6 +1190,89 @@ CRITICAL: Must set `export FOAM_LINK_DUMMY_PSTREAM=libo` during rebuild, otherwi
 
 ---
 
+## Fix #47: Failed DLL load destroys RTS tables (SIGSEGV at "Reading field p")
+
+**Symptom**: After rebuilding thermo DLLs (libfluidThermophysicalModels.dll, libspecie.dll) on Mar 2, simpleFoam crashed with SIGSEGV at "Reading field p". The crash persisted even after reverting the source changes because wmake recompiled all `.o` files with current headers (Fixes #44/#45/#46 applied).
+
+**Root cause**: A cascade of events during `foamDlOpenLibs.H` processing:
+
+1. `Foam::dlOpen("fvOptions")` is called during solver startup (from `foamDlOpenLibs.H`)
+2. libfvOptions.dll (Feb 26) imports from rebuilt thermo DLLs (Mar 2). If exports changed, `LoadLibrary()` fails
+3. During the **failed** LoadLibrary, Windows **partially loads** transitive dependency DLLs (thermo DLLs), running their CRT initialization and static constructors
+4. Thermo DLL static constructors register entries into RTS tables (e.g., `fvPatchField<scalar>::patchConstructorTable`) by importing `patchConstructorTablePtr_construct()` from libfiniteVolume.dll
+5. When LoadLibrary fails, Windows **unloads** the partially-loaded DLLs, triggering their static **destructors**
+6. The `addXXXConstructorToTable` destructor calls `patchConstructorTablePtr_construct(false)`, which **DELETES the entire RTS table** and sets the pointer to NULL
+7. Since thermo DLLs import `patchConstructorTablePtr_construct` from libfiniteVolume, they destroy **libfiniteVolume's** table
+8. When simpleFoam later tries to create `volScalarField p`, it looks up `fvPatchField<scalar>::patchConstructorTable` → NULL → SIGSEGV
+
+**Diagnostic technique**: Added before/after RTS table pointer checks at multiple points in solver initialization:
+- Before `argList` construction: table populated (94 entries) ✓
+- After `argList` construction: table still populated ✓
+- After `foamDlOpenLibs.H`: table is NULL ✗
+- Per-DLL loading test: `fvOptions` identified as the specific trigger (returns h=0 from LoadLibrary but table goes NULL)
+- Loading thermo DLLs FIRST (before fvOptions): tables grew correctly (94→99→104) and solver worked
+
+**Fix**: Modified `runTimeSelectionTables.H` to make `construct(false)` a no-op on Windows:
+
+```cpp
+namespace Foam
+{
+    #ifdef _WIN32
+    inline constexpr bool RTS_TABLE_CLEANUP = false;
+    #else
+    inline constexpr bool RTS_TABLE_CLEANUP = true;
+    #endif
+}
+```
+
+In the `defineRunTimeSelectionTableBase` macro, the `construct(false)` branch now checks `RTS_TABLE_CLEANUP`:
+
+```cpp
+else if (!::Foam::RTS_TABLE_CLEANUP)
+{
+    /* no-op on Windows */
+}
+else if (prefix##TablePtr_())
+{
+    delete prefix##TablePtr_();
+    prefix##TablePtr_() = nullptr;
+}
+```
+
+This is safe because Windows solvers already use `_exit(0)` (Fix #33) to skip destructors at exit.
+
+**Files changed**: `src/OpenFOAM/db/runTimeSelection/construction/runTimeSelectionTables.H` + lnInclude copy. Only `fvPatchFields.o` in libfiniteVolume needed recompilation (the `construct` function is exported from libfiniteVolume.def, so thermo DLLs import the updated no-op version without rebuilding).
+
+**Result**: simpleFoam runs to "End" with correct output. 1237 duplicate entries in stderr (459 Reaction by-design + ~778 phantom thermo registrations from partially-loaded DLLs that now persist because tables are never cleaned up). Phantom entries are harmless for incompressible solvers. Rebuilding the 14 stale downstream DLLs would eliminate the phantom entries.
+
+**Stale downstream DLLs**: The following 14 DLLs have stale imports against rebuilt thermo DLLs: libchemistryModel, libcombustionModels, libcompressibleTwoPhaseSystem, libfieldFunctionObjects, libforces, libfvOptions, libincompressibleMultiphaseSystems, libinitialisationFunctionObjects, libradiationModels, libreactingMultiphaseSystem, libregionFaModels, libsolidChemistryModel, libthermoTools, libutilityFunctionObjects.
+
+**Lesson**: On Windows, failed `LoadLibrary()` calls can have destructive side effects. Partially-loaded transitive dependencies run their static constructors, then get unloaded — their destructors run against shared state (RTS tables) in other DLLs. The safest approach is to never destroy RTS tables on Windows, relying on `_exit(0)` for cleanup. When debugging RTS table corruption, check `foamDlOpenLibs.H` processing and test each DLL load individually.
+
+---
+
+## Fix #48: Remaining RTS duplicate entries (liquidThermo + stale compressible turbulence DLL)
+
+**Symptom**: After Fix #45/#46, 4 RTS duplicate warnings remained in simpleFoam stderr:
+- 3x "Duplicate entry heRhoThermo in runtime table basicThermo/fluidThermo/rhoThermo"
+- 1x "Duplicate entry  in runtime table TurbulenceModel" (empty key)
+
+**Root cause (heRhoThermo, 3 warnings)**: `src/thermophysicalModels/basic/rhoThermo/liquidThermo.C` still used the old 3-arg `addToRunTimeSelectionTable` macro. The default key falls back to `typeName_()` which returns bare "heRhoThermo" for both liquid thermo specializations (sensibleInternalEnergy and sensibleEnthalpy). Both register under the same key into the same 3 tables (basicThermo, fluidThermo, rhoThermo) → 3 duplicates.
+
+**Root cause (TurbulenceModel, 1 warning)**: `libcompressibleTurbulenceModels.dll` was built on Feb 8, long before the RTS fixes (Fix #45 changed default key to `typeName_()`). `libatmosphericModels.dll` (linked by simpleFoam) depends on `libcompressibleTurbulenceModels.dll`, so it gets loaded transitively. The old DLL's `makeBaseTurbulenceModel` registrations used stale headers where `typeName_()` was not yet the default — the cross-DLL data access returned empty string.
+
+**Fix**:
+1. **liquidThermo.C**: Converted all 6 `addToRunTimeSelectionTable` calls to `addToRunTimeSelectionTableKey` with explicit key strings matching the `defineTemplateTypeNameAndDebugWithName` entries (e.g., `"heRhoThermo<pureMixture<liquid,sensibleInternalEnergy>>"`).
+2. **Rebuilt stale DLLs**: Rebuilt `libcompressibleTurbulenceModels.dll` (Feb 8 → Mar 3) and `libatmosphericModels.dll` (Feb 26 → Mar 3) to pick up current `runTimeSelectionTables.H` with `typeName_()` default.
+
+**Files changed**: `src/thermophysicalModels/basic/rhoThermo/liquidThermo.C`. Rebuilt: libfluidThermophysicalModels.dll, libcompressibleTurbulenceModels.dll, libatmosphericModels.dll.
+
+**Result**: 0 RTS duplicate warnings in simpleFoam stderr. Only AdaptiveCpp OMP kernel warnings remain (expected, harmless).
+
+**Lesson**: When hunting RTS duplicate sources, check transitive DLL dependencies (not just direct links). Use `Make/options` to trace `LIB_LIBS` chains. Stale DLLs compiled before header changes won't pick up new default parameters — they must be rebuilt. The `declareRunTimeNewSelectionTable` macro's `#baseType` resolves to the template class name (e.g., "TurbulenceModel") which is shared across ALL template instantiations, making it hard to identify which specific instantiation produces the duplicate.
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:
