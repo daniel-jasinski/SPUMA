@@ -410,11 +410,18 @@ void Foam::List<T>::transfer(List<T>& list)
     clear();
     this->size_ = list.size_;
 
-    //if input list is not on pool trigger copy
+    // If allocators differ, deep-copy and release source with its own allocator.
+    // This avoids transferring raw pointers across different deallocation paths.
     if (this->usePool() && !list.usePool())
     {
         doAlloc(list.size());
         Spuma::MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+        list.clear();
+    }
+    else if (!this->usePool() && list.usePool())
+    {
+        this->v_ = new T[this->size_];
+        std::copy(list.begin(), list.end(), this->v_);
         list.clear();
     }
     else

@@ -614,6 +614,7 @@ inline void Foam::UList<T>::swap(UList<T>& list) noexcept
 
     std::swap(size_, list.size_);
     std::swap(v_, list.v_);
+    std::swap(usePool_, list.usePool_);
 }
 
 
