@@ -62,7 +62,7 @@ void MapDimensionedFields(const MeshMapper& mapper)
             if (polyMesh::debug)
             {
                 Info<< "Mapping "
-                    << FieldType::typeName_() << ' ' << field.name() << endl;
+                    << FieldType::baseTypeName() << ' ' << field.name() << endl;
             }
 
             MapInternalField<Type, MeshMapper, GeoMesh>()(field, mapper);
@@ -72,7 +72,7 @@ void MapDimensionedFields(const MeshMapper& mapper)
         else if (polyMesh::debug)
         {
             Info<< "Not mapping "
-                << FieldType::typeName_() << ' ' << field.name()
+                << FieldType::baseTypeName() << ' ' << field.name()
                 << " since originating mesh differs from that of mapper."
                 << endl;
         }

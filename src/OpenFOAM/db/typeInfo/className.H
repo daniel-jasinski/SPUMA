@@ -40,14 +40,27 @@ Description
 //- Add typeName information from argument \a TypeNameString to a class.
 //  Without debug information
 #define ClassNameNoDebug(TypeNameString)                                       \
-    static const char* typeName_() { return TypeNameString; }                  \
-    FOAM_TYPENAME_EXPORT static const ::Foam::word typeName
+    static const char* baseTypeName() { return TypeNameString; }              \
+    static const char* typeName_() { return TypeNameString; }                 \
+    FOAM_TYPENAME_EXPORT static const ::Foam::word typeName;                  \
+    FOAM_HOST_ONLY                                                            \
+    static const ::Foam::word& staticTypeName()                               \
+    {                                                                         \
+        static const ::Foam::word tn(baseTypeName());                         \
+        return tn;                                                            \
+    }
 
 //- Add typeName information from argument \a TypeNameString to a namespace.
 //  Without debug information.
 #define NamespaceNameNoDebug(TypeNameString)                                   \
-    inline const char* typeName_() { return TypeNameString; }                  \
-    extern const ::Foam::word typeName
+    inline const char* baseTypeName() { return TypeNameString; }              \
+    extern const ::Foam::word typeName;                                       \
+    FOAM_HOST_ONLY                                                            \
+    inline const ::Foam::word& staticTypeName()                               \
+    {                                                                         \
+        static const ::Foam::word tn(baseTypeName());                         \
+        return tn;                                                            \
+    }
 
 //- Add typeName information from argument \a TemplateNameString to a
 //  template class.  Without debug information.
@@ -68,14 +81,14 @@ public:                                                                        \
 #define ClassName(TypeNameString)                                              \
     ClassNameNoDebug(TypeNameString);                                          \
     FOAM_TYPENAME_EXPORT static int debug;                                    \
-    static int debug_()
+    static int debugLevel()
 
 //- Add typeName information from argument \a TypeNameString to a namespace.
 //  Also declares debug information.
 #define NamespaceName(TypeNameString)                                          \
     NamespaceNameNoDebug(TypeNameString);                                      \
     extern int debug;                                                         \
-    int debug_()
+    int debugLevel()
 
 //- Add typeName information from argument \a TypeNameString to a
 //  template class.  Also declares debug information.
@@ -97,7 +110,7 @@ public:                                                                        \
 
 //- Define the typeName
 #define defineTypeName(Type)                                                   \
-    defineTypeNameWithName(Type, Type::typeName_())
+    defineTypeNameWithName(Type, Type::baseTypeName())
 
 //- Define the typeName as \a Name for template classes
 #define defineTemplateTypeNameWithName(Type, Name)                             \
@@ -110,7 +123,30 @@ public:                                                                        \
 
 //- Define the typeName directly for template classes
 #define defineNamedTemplateTypeName(Type)                                      \
-    defineTemplateTypeNameWithName(Type, Type::typeName_())
+    defineTemplateTypeNameWithName(Type, Type::baseTypeName())
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// staticTypeName definitions
+
+//- Define the staticTypeName function for non-template classes
+//  (only needed when an override of the inline default is required)
+//  Variadic to support types with commas (e.g. CompactIOList<face, label>)
+#define defineStaticTypeNameFunction(...)                                      \
+    const ::Foam::word& __VA_ARGS__::staticTypeName()                          \
+    { return __VA_ARGS__::typeName; }
+
+//- Define the staticTypeName function for template specializations
+//  Variadic to support types with commas (e.g. CompactIOList<face, label>)
+#define defineTemplateStaticTypeNameFunction(...)                              \
+    template<>                                                                 \
+    const ::Foam::word& __VA_ARGS__::staticTypeName()                          \
+    { return __VA_ARGS__::typeName; }
+
+//- Forward-declare the staticTypeName specialization (for use in headers)
+//  Variadic to support types with commas (e.g. CompactIOList<face, label>)
+#define declareStaticTypeName(...)                                             \
+    template<> const ::Foam::word& __VA_ARGS__::staticTypeName()
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -120,13 +156,14 @@ public:                                                                        \
 #define defineTypeNameAndDebug(Type, DebugSwitch)                              \
     defineTypeName(Type);                                                      \
     defineDebugSwitch(Type, DebugSwitch);                                      \
-    defineDebugFunction(Type)
+    defineDebugLevelFunction(Type)
 
 //- Define the typeName and debug information, lookup as \a Name
 #define defineTemplateTypeNameAndDebugWithName(Type, Name, DebugSwitch)        \
     defineTemplateTypeNameWithName(Type, Name);                                \
     defineTemplateDebugSwitchWithName(Type, Name, DebugSwitch);                \
-    defineTemplateDebugFunction(Type)
+    defineTemplateDebugLevelFunction(Type);                                    \
+    defineTemplateStaticTypeNameFunction(Type)
 
 //- Define the typeName and debug information for templates, useful
 //  with typedefs
@@ -137,7 +174,8 @@ public:                                                                        \
 #define defineNamedTemplateTypeNameAndDebug(Type, DebugSwitch)                 \
     defineNamedTemplateTypeName(Type);                                         \
     defineNamedTemplateDebugSwitch(Type, DebugSwitch);                         \
-    defineTemplateDebugFunction(Type)
+    defineTemplateDebugLevelFunction(Type);                                    \
+    defineTemplateStaticTypeNameFunction(Type)
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -151,7 +189,8 @@ public:                                                                        \
 #define defineTemplate2TypeNameAndDebugWithName(Type, Name, DebugSwitch)       \
     defineTemplateTypeNameWithName(Type, Name);                                \
     defineTemplateDebugSwitchWithName(Type, Name, DebugSwitch);                \
-    defineTemplateDebugFunction(Type)
+    defineTemplateDebugLevelFunction(Type);                                    \
+    defineTemplateStaticTypeNameFunction(Type)
 
 // Same as defineTemplateTypeNameAndDebug
 #define defineTemplate2TypeNameAndDebug(Type, DebugSwitch)                     \

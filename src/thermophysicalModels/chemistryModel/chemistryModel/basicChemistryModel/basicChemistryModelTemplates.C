@@ -161,7 +161,7 @@ Foam::autoPtr<ChemistryModel> Foam::basicChemistryModel::New
         }
 
         FatalErrorInFunction
-            << "Unknown " << typeName_() << " type " << solverName << nl << nl;
+            << "Unknown " << baseTypeName() << " type " << solverName << nl << nl;
 
         if (validNames.size() > 1)
         {

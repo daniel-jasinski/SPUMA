@@ -1273,6 +1273,77 @@ This is safe because Windows solvers already use `_exit(0)` (Fix #33) to skip de
 
 ---
 
+## Fix #49: IO class names write generic template names instead of per-specialization names
+
+**Symptom**: blockMesh writes `class List;` in the `faces` file header instead of `class faceCompactList;` / `class faceList;`. Stock OpenFOAM v2506 rejects these files with: `Unexpected class name List expected faceCompactList or faceList`.
+
+**Root cause**: Two issues combined:
+1. Commit 27954042ddc changed CompactIOList.C, CompactIOField.C, GlobalIOField.C, GlobalIOList.C from `typeName` to `typeName_()` in read/error paths.
+2. The SPUMA `TypeName` macro (typeInfo.H) changed `type()` to return `typeName_()` instead of `typeName` (for Windows DLL safety). This broke CompactIOList::writeObject's `const_cast<word&>(typeName)` trick — modifying `typeName` has no effect when `writeHeader` calls `type()` which returns `typeName_()` (a different value).
+3. IOList.H has a CUSTOM `type()` override returning `typeName` (the data member), which is why owner/neighbour files got correct class names. CompactIOList/CompactIOField lacked this override.
+
+**Fix**:
+- Reverted `typeName_()` → `typeName` in read/error paths of all 4 template files (matches upstream).
+- Replaced `const_cast<word&>(typeName)` trick in CompactIOList/CompactIOField writeObject with `headerClassName()` approach: set `headerClassName` to `IOList<T>::typeName` (ASCII) or `typeName` (binary) before calling `regIOobject::writeObject`. The `writeHeader(os)` function checks `headerClassName()` first, bypassing `type()`.
+- Deleted ALL .o files containing CompactIOList/CompactIOField template code (found via `llvm-nm | grep CompactIOList`), including polyMesh.o, polyMeshFromShapeMesh.o, polyMeshIO.o — the key files where writeObject is actually instantiated. Critical lesson: faceIOList.o only has typeName/debug definitions, NOT the writeObject instantiation.
+
+**Lesson**:
+1. The SPUMA `TypeName` macro's `type()` returns `typeName_()` (generic name), NOT `typeName` (per-specialization). Any code that modifies `typeName` and expects `type()` to reflect the change is broken. Use `headerClassName()` instead.
+2. IOList has a custom `type()` returning `typeName` — CompactIOList does not. Check for custom overrides when comparing behavior between related classes.
+3. Template method instantiation happens in the .o that first USES the type (e.g., polyMesh.o constructs CompactIOList objects → generates vtable + writeObject), NOT in the .o that defines static data (faceIOList.o). When hunting stale template code, use `llvm-nm file.o | grep ClassName` to find ALL .o files, not just the obvious ones.
+
+---
+
+## Fix #50: IOField/IOList write generic class names + stale bin/libOpenFOAM.dll
+
+**Symptom**: Two related issues:
+1. `blockMesh.exe` and all other executables fail with `STATUS_ENTRYPOINT_NOT_FOUND` (exit 127 in bash, -1073741511 in PowerShell) after rebuilding `libOpenFOAM.dll`.
+2. `simpleFoam.exe` crashes with SIGSEGV during `fvMesh::init(true)` because mesh files have `class Field` instead of `class vectorField` in the header.
+
+**Root cause**:
+1. **Stale `bin/libOpenFOAM.dll`**: wmake copies `libOpenFOAM.dll` to `platforms/.../bin/` during initial linking. On Windows, the PE loader searches the EXE's directory FIRST for DLLs. After rebuilding `libOpenFOAM.dll`, only `lib/libOpenFOAM.dll` was updated — the `bin/` copy remained stale (Mar 8, different file size). Downstream DLLs linked against the new import library referenced symbols not in the old `bin/` copy → `STATUS_ENTRYPOINT_NOT_FOUND`. LoadLibrary succeeded because it found the correct DLL via PATH (`lib/` is on PATH), while the PE loader found the stale copy in `bin/` first.
+2. **IOField/IOList `writeObject()`**: The SPUMA `TypeName("Field")` macro makes `type()` return `typeName_()` which is the compile-time generic string `"Field"`. `writeHeader()` calls `type()` when `headerClassName()` is empty (newly created objects, not read from file). So `blockMesh` writes mesh files with `class Field;` instead of `class vectorField;`. When `simpleFoam` reads these files, `readStream(typeName)` validates against the per-specialization `typeName` (`"vectorField"`) which doesn't match → `FatalIOError` → SIGSEGV (caught by signal handler).
+
+**Fix**:
+1. Always copy `lib/libOpenFOAM.dll` to `bin/libOpenFOAM.dll` after rebuilding.
+2. Override `writeObject()` in `IOField<Type>` and `IOList<T>` (in IOField.C and IOList.C) to set `headerClassName()` to `staticTypeName()` before calling `regIOobject::writeObject()`, then restore it. `staticTypeName()` is a function call (safe for cross-DLL via DEF JMP thunks) that returns the per-specialization name for template types that have `defineTemplateTypeNameAndDebugWithName` (e.g., "vectorField" for IOField<vector>). Same pattern as CompactIOField (Fix #49). Also declared `writeObject()` in IOField.H and IOList.H.
+
+**Files changed**:
+- `src/OpenFOAM/db/IOobjects/IOField/IOField.H` — added `writeObject()` declaration
+- `src/OpenFOAM/db/IOobjects/IOField/IOField.C` — added `writeObject()` implementation
+- `src/OpenFOAM/db/IOobjects/IOList/IOList.H` — added `writeObject()` declaration
+- `src/OpenFOAM/db/IOobjects/IOList/IOList.C` — added `writeObject()` implementation
+- `applications/solvers/incompressible/simpleFoam/simpleFoam.C` — reverted debug modifications
+
+**Lesson**:
+1. On Windows, the EXE's directory takes priority over PATH for DLL search. If a DLL exists in both `bin/` and `lib/`, the `bin/` copy must be kept in sync. Always copy after rebuilding.
+2. `LoadLibrary` succeeds but `CreateProcess` fails (`STATUS_ENTRYPOINT_NOT_FOUND`): the DLL search order differs between explicit `LoadLibrary` (uses PATH) and the PE loader at process startup (EXE directory first).
+3. Every class that uses `TypeName(...)` and writes files needs a `writeObject()` override on Windows/SPUMA because `type()` returns the generic template name, not the per-specialization name. `staticTypeName()` is the safe cross-DLL accessor for the per-specialization name.
+
+---
+
+## Fix #50: writeObject override for IOField/IOList/GlobalIOField/GlobalIOList + downstream DLL rebuild
+
+**Symptom**: After adding `writeObject()` virtual overrides to IOField, IOList, GlobalIOField, and GlobalIOList (to write correct per-specialization class names like `vectorField`, `labelList`), simpleFoam crashed with `STATUS_ACCESS_VIOLATION` inside `libincompressibleTurbulenceModels.dll`. The crash occurred at `turbulence->correct()` — a virtual call dispatching into the turbulence DLL. WER report: fault offset 0 in the DLL, reading address 0x8 (null pointer + offset). Other operations (type(), nut(), nu(), fvc::grad, fvm::laplacian) called from simpleFoam.exe worked fine. Laminar turbulence model worked. Only kEpsilon/RAS crashed.
+
+**Root cause**: ABI mismatch between the rebuilt `libOpenFOAM.dll` (March 10) and the stale `libturbulenceModels.dll` + `libincompressibleTurbulenceModels.dll` (March 7). When `libOpenFOAM.dll` was rebuilt with different .o files (polyMesh.o and IO*.o recompiled for Fix #50), the linker's COMDAT folding selected different template function bodies for export. The turbulence model DLLs were compiled against old headers and linked against the old libOpenFOAM.dll import library. Although all symbol imports were satisfied by name, the internal behavior of some template instantiations changed (different COMDAT winner = different function body), causing crashes in the turbulence model code that depended on those functions.
+
+**Fix**: Rebuilt `libturbulenceModels.dll` and `libincompressibleTurbulenceModels.dll` from scratch (deleted all 54 .o files, recompiled with current headers, relinked against current `libOpenFOAM.dll`). wmake did NOT auto-detect the need to rebuild because no source files changed — must manually delete .o files to force recompilation.
+
+**Lesson**: When rebuilding `libOpenFOAM.dll` with different .o files (even just recompiling a few), ALL downstream DLLs that use template code from libOpenFOAM headers MUST be rebuilt. COMDAT folding is non-deterministic — the linker picks one function body from multiple .o files, and recompiling any .o file can change which body wins. Name-based import resolution does NOT guarantee ABI compatibility when function bodies change. On Windows with MSVC, partial rebuilds of the core library require full downstream rebuilds.
+
+**Files changed (Fix #50)**:
+- `src/OpenFOAM/db/IOobjects/IOField/IOField.H` — added `writeObject()` declaration
+- `src/OpenFOAM/db/IOobjects/IOField/IOField.C` — added `writeObject()` implementation
+- `src/OpenFOAM/db/IOobjects/IOList/IOList.H` — added `writeObject()` declaration
+- `src/OpenFOAM/db/IOobjects/IOList/IOList.C` — added `writeObject()` implementation
+- `src/OpenFOAM/db/IOobjects/GlobalIOField/GlobalIOField.H` — added `writeObject()` declaration
+- `src/OpenFOAM/db/IOobjects/GlobalIOField/GlobalIOField.C` — added `writeObject()` implementation
+- `src/OpenFOAM/db/IOobjects/GlobalIOList/GlobalIOList.H` — already had `writeObject()` from Fix #49
+- `src/OpenFOAM/db/IOobjects/GlobalIOList/GlobalIOList.C` — already had `writeObject()` from Fix #49
+
+---
+
 ## Adding New Entries
 
 When debugging issues in this project, append your findings to this document following this template:

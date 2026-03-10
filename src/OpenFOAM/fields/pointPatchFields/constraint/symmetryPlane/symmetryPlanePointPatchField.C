@@ -79,7 +79,7 @@ Foam::symmetryPlanePointPatchField<Type>::symmetryPlanePointPatchField
         FatalErrorInFunction
             << "Field type does not correspond to patch type for patch "
             << this->patch().index() << "." << endl
-            << "Field type: " << typeName_() << endl
+            << "Field type: " << baseTypeName() << endl
             << "Patch type: " << this->patch().type()
             << exit(FatalError);
     }

@@ -57,7 +57,7 @@ class genericFvPatch
 public:
 
     //- Runtime type information
-    TypeName(genericPolyPatch::typeName_());
+    TypeName(genericPolyPatch::baseTypeName());
 
 
     // Constructors

@@ -112,7 +112,7 @@ public:
     // Static Data Members
 
         FOAM_EXPORT_DATA static const char* const typeName;
-        static const char* typeName_() { return "int8"; }
+        static const char* baseTypeName() { return "int8"; }
         FOAM_EXPORT_DATA static const char* const componentNames[];
         FOAM_EXPORT_DATA static const int8_t zero;
         FOAM_EXPORT_DATA static const int8_t one;

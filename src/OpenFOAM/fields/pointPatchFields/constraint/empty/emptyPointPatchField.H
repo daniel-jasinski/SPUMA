@@ -57,7 +57,7 @@ class emptyPointPatchField
 public:
 
     //- Runtime type information
-    TypeName(emptyPointPatch::typeName_());  // fieldTypes::emptyTypeName_()
+    TypeName(emptyPointPatch::baseTypeName());  // fieldTypes::emptyTypeName_()
 
 
     // Constructors

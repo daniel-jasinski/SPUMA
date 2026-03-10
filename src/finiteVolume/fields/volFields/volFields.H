@@ -86,6 +86,19 @@ bool GeometricBoundaryField<tensor, fvPatchField, volMesh>::check() const;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::volScalarField);
+declareStaticTypeName(Foam::volVectorField);
+declareStaticTypeName(Foam::volSphericalTensorField);
+declareStaticTypeName(Foam::volSymmTensorField);
+declareStaticTypeName(Foam::volTensorField);
+declareStaticTypeName(Foam::DimensionedField<Foam::scalar, Foam::volMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::vector, Foam::volMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::sphericalTensor, Foam::volMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::symmTensor, Foam::volMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::tensor, Foam::volMesh>);
+#endif
+
 #endif
 
 // ************************************************************************* //

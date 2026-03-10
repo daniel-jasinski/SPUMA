@@ -41,7 +41,7 @@ bool Foam::functionObjects::valueAverageBase::calc
     const word valueType =
         state_.objectResultType(functionObjectName_, fieldName);
 
-    if (pTraits<Type>::typeName_() != valueType)
+    if (pTraits<Type>::baseTypeName() != valueType)
     {
         return false;
     }

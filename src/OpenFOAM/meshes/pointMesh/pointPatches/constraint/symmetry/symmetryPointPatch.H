@@ -60,7 +60,7 @@ class symmetryPointPatch
 public:
 
     //- Runtime type information
-    TypeName(symmetryPolyPatch::typeName_());
+    TypeName(symmetryPolyPatch::baseTypeName());
 
 
     // Constructors

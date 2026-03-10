@@ -58,7 +58,7 @@ class nonuniformTransformCyclicPointPatch
 public:
 
     //- Runtime type information
-    TypeName(nonuniformTransformCyclicPolyPatch::typeName_());
+    TypeName(nonuniformTransformCyclicPolyPatch::baseTypeName());
 
 
     // Constructors

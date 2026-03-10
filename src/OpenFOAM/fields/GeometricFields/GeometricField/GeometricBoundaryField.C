@@ -276,14 +276,14 @@ void Foam::GeometricBoundaryField<Type, PatchField, GeoMesh>::readField
     {
         if (!this->set(patchi))
         {
-            if (bmesh_[patchi].type() == emptyPolyPatch::typeName_())
+            if (bmesh_[patchi].type() == emptyPolyPatch::baseTypeName())
             {
                 this->set
                 (
                     patchi,
                     PatchField<Type>::New
                     (
-                        emptyPolyPatch::typeName_(),
+                        emptyPolyPatch::baseTypeName(),
                         bmesh_[patchi],
                         iField
                     )
@@ -316,7 +316,7 @@ void Foam::GeometricBoundaryField<Type, PatchField, GeoMesh>::readField
     {
         if (!this->set(patchi))
         {
-            if (bmesh_[patchi].type() == cyclicPolyPatch::typeName_())
+            if (bmesh_[patchi].type() == cyclicPolyPatch::baseTypeName())
             {
                 FatalIOErrorInFunction(dict)
                     << "Cannot find patchField entry for cyclic "

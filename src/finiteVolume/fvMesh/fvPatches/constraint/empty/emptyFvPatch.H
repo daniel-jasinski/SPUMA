@@ -63,7 +63,7 @@ class emptyFvPatch
 public:
 
     //- Runtime type information
-    TypeName(emptyPolyPatch::typeName_());
+    TypeName(emptyPolyPatch::baseTypeName());
 
 
     // Constructors

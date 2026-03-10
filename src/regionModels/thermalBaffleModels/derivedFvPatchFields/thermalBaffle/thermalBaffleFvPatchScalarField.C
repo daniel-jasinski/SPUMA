@@ -160,16 +160,16 @@ void thermalBaffleFvPatchScalarField::createPatchMesh()
     }
     else
     {
-        patchTypes[topPatchID] = polyPatch::typeName_();
+        patchTypes[topPatchID] = polyPatch::baseTypeName();
     }
 
     if (dict_.get<bool>("columnCells"))
     {
-        patchTypes[sidePatchID] = emptyPolyPatch::typeName_();
+        patchTypes[sidePatchID] = emptyPolyPatch::baseTypeName();
     }
     else
     {
-        patchTypes[sidePatchID] = polyPatch::typeName_();
+        patchTypes[sidePatchID] = polyPatch::baseTypeName();
     }
 
     const auto& mpp = refCast<const mappedPatchBase>(patch().patch(), dict_);

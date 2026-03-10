@@ -185,6 +185,28 @@ Foam::Field<Type> Foam::IOField<Type>::readContents(const IOobject& io)
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Type>
+bool Foam::IOField<Type>::writeObject
+(
+    IOstreamOption streamOpt,
+    const bool writeOnProc
+) const
+{
+    // Set headerClassName so writeHeader uses the correct per-specialization
+    // type name (e.g., "vectorField") instead of type() which returns the
+    // generic typeName_() ("Field") on Windows/SPUMA (Fix #50).
+    // staticTypeName() is safe for cross-DLL use (function call, not data).
+    const word savedHdrClass(headerClassName());
+    const_cast<IOField&>(*this).headerClassName() = staticTypeName();
+
+    bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+    const_cast<IOField&>(*this).headerClassName() = savedHdrClass;
+
+    return good;
+}
+
+
+template<class Type>
 bool Foam::IOField<Type>::writeData(Ostream& os) const
 {
     os << static_cast<const Field<Type>&>(*this);

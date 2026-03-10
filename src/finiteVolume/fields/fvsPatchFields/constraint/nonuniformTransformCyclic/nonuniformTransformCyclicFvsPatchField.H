@@ -57,7 +57,7 @@ class nonuniformTransformCyclicFvsPatchField
 public:
 
     //- Runtime type information
-    TypeName(nonuniformTransformCyclicFvPatch::typeName_());
+    TypeName(nonuniformTransformCyclicFvPatch::baseTypeName());
 
 
     // Constructors

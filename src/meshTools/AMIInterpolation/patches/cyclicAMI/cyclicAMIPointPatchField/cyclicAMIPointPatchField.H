@@ -109,7 +109,7 @@ class cyclicAMIPointPatchField
 public:
 
     //- Runtime type information
-    TypeName(cyclicAMIPointPatch::typeName_());
+    TypeName(cyclicAMIPointPatch::baseTypeName());
 
 
     // Constructors

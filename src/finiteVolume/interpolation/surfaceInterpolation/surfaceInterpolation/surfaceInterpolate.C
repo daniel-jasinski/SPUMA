@@ -101,7 +101,7 @@ Foam::fvc::interpolate
     Istream& schemeData
 )
 {
-    if (surfaceInterpolation::debug_())
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "interpolating GeometricField<Type, fvPatchField, volMesh> "
@@ -121,7 +121,7 @@ Foam::fvc::interpolate
     const word& name
 )
 {
-    if (surfaceInterpolation::debug_())
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "interpolating GeometricField<Type, fvPatchField, volMesh> "
@@ -192,7 +192,7 @@ Foam::fvc::interpolate
     Istream& schemeData
 )
 {
-    if (surfaceInterpolation::debug_())
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "interpolating GeometricField<Type, fvPatchField, volMesh> "
@@ -210,7 +210,7 @@ Foam::fvc::interpolate
     const word& name
 )
 {
-    if (surfaceInterpolation::debug_())
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "interpolating GeometricField<Type, fvPatchField, volMesh> "
@@ -245,7 +245,7 @@ Foam::fvc::interpolate
     const GeometricField<Type, fvPatchField, volMesh>& vf
 )
 {
-    if (surfaceInterpolation::debug_())
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "interpolating GeometricField<Type, fvPatchField, volMesh> "
@@ -324,7 +324,7 @@ Foam::fvc::dotInterpolate
     const GeometricField<Type, fvPatchField, volMesh>& vf
 )
 {
-    if (surfaceInterpolation::debug_())
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "interpolating GeometricField<Type, fvPatchField, volMesh> "

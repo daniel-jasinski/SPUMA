@@ -62,14 +62,11 @@ Description
 // Declarations (for use in header files)
 
 //- Declare a ClassNameNoDebug() with extra virtual type info
-//  NOTE: On Windows DLLs, type() must NOT reference static data `typeName`
-//  directly because the inline virtual function may be compiled into a
-//  different DLL than the one that defines `typeName`. Without dllimport,
-//  the linker creates a JMP thunk that gets read as data, causing crashes.
-//  Using typeName_() (returns const char* literal) avoids the cross-DLL
-//  data access entirely.  (Fix #29)
+//  type() uses typeName_() (returns const char* literal) to avoid cross-DLL
+//  data access through DEF thunks which crash on Windows (Fix #8/#29).
 #define TypeNameNoDebug(TypeNameString)                                        \
     ClassNameNoDebug(TypeNameString);                                          \
+    FOAM_HOST_ONLY                                                            \
     virtual const word& type() const                                           \
     {                                                                          \
         static const word tn(typeName_());                                     \
@@ -79,6 +76,7 @@ Description
 //- Declare a ClassName() with extra virtual type info
 #define TypeName(TypeNameString)                                               \
     ClassName(TypeNameString);                                                 \
+    FOAM_HOST_ONLY                                                            \
     virtual const word& type() const                                           \
     {                                                                          \
         static const word tn(typeName_());                                     \

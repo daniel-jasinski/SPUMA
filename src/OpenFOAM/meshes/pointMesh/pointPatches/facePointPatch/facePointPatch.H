@@ -104,7 +104,7 @@ public:
 
 
     //- Runtime type information
-    TypeName(polyPatch::typeName_());
+    TypeName(polyPatch::baseTypeName());
 
 
     // Declare run-time constructor selection tables

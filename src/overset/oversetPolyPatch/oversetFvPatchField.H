@@ -100,7 +100,7 @@ protected:
 public:
 
     //- Runtime type information
-    TypeName(oversetFvPatch::typeName_());
+    TypeName(oversetFvPatch::baseTypeName());
 
 
     // Constructors

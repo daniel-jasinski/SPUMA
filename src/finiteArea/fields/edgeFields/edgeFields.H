@@ -49,6 +49,14 @@ SourceFiles
 #include "faePatchFields.H"
 #include "edgeFieldsFwd.H"
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::edgeScalarField);
+declareStaticTypeName(Foam::edgeVectorField);
+declareStaticTypeName(Foam::edgeSphericalTensorField);
+declareStaticTypeName(Foam::edgeSymmTensorField);
+declareStaticTypeName(Foam::edgeTensorField);
+#endif
+
 #endif
 
 // ************************************************************************* //

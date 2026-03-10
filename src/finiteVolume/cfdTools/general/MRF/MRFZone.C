@@ -195,7 +195,7 @@ void Foam::MRFZone::setMRFFaces()
     }
 
 
-    if (debug_())
+    if (debugLevel())
     {
         faceSet internalFaces(mesh_, "internalFaces", internalFaces_);
         Pout<< "Writing " << internalFaces.size()

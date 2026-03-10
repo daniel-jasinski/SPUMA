@@ -2737,7 +2737,7 @@ void Foam::dynamicIndexedOctree<Type>::writeTreeInfo() const
     }
 
     Pout<< "indexedOctree::indexedOctree"
-        << " : finished construction of tree of:" << shapes().typeName_()
+        << " : finished construction of tree of:" << shapes().baseTypeName()
         << nl
         << "    bounding box:     " << this->bb() << nl
         << "    shapes:           " << shapes().size() << nl

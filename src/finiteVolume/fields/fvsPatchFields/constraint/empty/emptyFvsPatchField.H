@@ -69,7 +69,7 @@ class emptyFvsPatchField
 public:
 
     //- Runtime type information
-    TypeName(emptyFvPatch::typeName_());  // fieldTypes::emptyTypeName_()
+    TypeName(emptyFvPatch::baseTypeName());  // fieldTypes::emptyTypeName_()
 
 
     // Constructors

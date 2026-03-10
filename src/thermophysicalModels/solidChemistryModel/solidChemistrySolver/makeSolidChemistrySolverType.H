@@ -53,19 +53,19 @@ namespace Foam
     defineTemplateTypeNameAndDebugWithName                                     \
     (                                                                          \
         SS##Schem##Comp##SThermo##GThermo,                                     \
-        (#SS"<" + word(Schem<Comp, SThermo, GThermo>::typeName_())             \
+        (#SS"<" + word(Schem<Comp, SThermo, GThermo>::baseTypeName())             \
       + "<"#Comp"," + SThermo::typeName()                                      \
       + ","  + GThermo::typeName() + ">>").c_str(),                            \
         0                                                                      \
     );                                                                         \
                                                                                \
-    /* Fix #48: Compute key directly from typeName_() / typeName() funcs. */   \
+    /* Fix #48: Compute key directly from baseTypeName() / typeName() funcs. */   \
     addToRunTimeSelectionTableKey                                              \
     (                                                                          \
         Comp,                                                                  \
         SS##Schem##Comp##SThermo##GThermo,                                     \
         thermo,                                                                \
-        (#SS"<" + word(Schem<Comp, SThermo, GThermo>::typeName_())             \
+        (#SS"<" + word(Schem<Comp, SThermo, GThermo>::baseTypeName())             \
        + "<"#Comp"," + SThermo::typeName()                                     \
        + ","  + GThermo::typeName() + ">>").c_str()                            \
     );

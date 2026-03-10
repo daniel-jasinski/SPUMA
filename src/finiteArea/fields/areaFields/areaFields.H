@@ -87,6 +87,19 @@ bool GeometricBoundaryField<tensor, faPatchField, areaMesh>::check() const;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::areaScalarField);
+declareStaticTypeName(Foam::areaVectorField);
+declareStaticTypeName(Foam::areaSphericalTensorField);
+declareStaticTypeName(Foam::areaSymmTensorField);
+declareStaticTypeName(Foam::areaTensorField);
+declareStaticTypeName(Foam::DimensionedField<Foam::scalar, Foam::areaMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::vector, Foam::areaMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::sphericalTensor, Foam::areaMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::symmTensor, Foam::areaMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::tensor, Foam::areaMesh>);
+#endif
+
 #endif
 
 // ************************************************************************* //

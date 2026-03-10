@@ -62,7 +62,7 @@ class symmetryFaePatchField
 public:
 
     //- Runtime type information
-    TypeName(symmetryFaPatch::typeName_());
+    TypeName(symmetryFaPatch::baseTypeName());
 
 
     // Constructors

@@ -83,7 +83,7 @@ Description
                                                                                \
     /* Fix #48: Compute key directly from typeName() functions. */             \
     /* Do not reference typeName data member (empty during static init */      \
-    /* on Windows DLLs). The typeName() chain calls typeName_() at each */     \
+    /* on Windows DLLs). The typeName() chain calls baseTypeName() at each */     \
     /* level, returning string literals — safe during static init. */          \
     addToRunTimeSelectionTableKey                                              \
     (                                                                          \

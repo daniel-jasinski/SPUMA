@@ -213,7 +213,7 @@ void Foam::mappedMixedFvPatchField<Type>::updateCoeffs()
 
     mixedFvPatchField<Type>::updateCoeffs();
 
-    if (debug_())
+    if (debugLevel())
     {
         Info<< this->patch().boundaryMesh().mesh().name() << ':'
             << this->patch().name() << ':'

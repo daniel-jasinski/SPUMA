@@ -105,6 +105,17 @@ Description
 # define FOAM_DEFINE_STATIC_EXPORT
 #endif
 
+// FOAM_HOST_ONLY: Prevent SYCL/CUDA device pass from tracing through
+// host-only functions (e.g. those with complex constructors like Foam::word).
+// On SYCL with CUDA backend, the device pass traces all reachable code paths;
+// functions with local statics of non-trivial types cause compiler stack overflow.
+// __host__ tells the CUDA device pass to skip the function body entirely.
+#if defined(__CUDACC__) || (defined(have_sycl) && defined(__clang__) && defined(__CUDA__))
+# define FOAM_HOST_ONLY __host__
+#else
+# define FOAM_HOST_ONLY
+#endif
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

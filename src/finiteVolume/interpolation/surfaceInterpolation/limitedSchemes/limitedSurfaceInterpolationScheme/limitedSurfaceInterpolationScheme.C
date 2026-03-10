@@ -42,7 +42,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (surfaceInterpolation::debug_())
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "Constructing limitedSurfaceInterpolationScheme<Type>" << endl;
@@ -86,7 +86,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (surfaceInterpolation::debug_())
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "Constructing limitedSurfaceInterpolationScheme<Type>"

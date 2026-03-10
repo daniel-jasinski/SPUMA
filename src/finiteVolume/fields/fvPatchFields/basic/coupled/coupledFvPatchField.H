@@ -65,7 +65,7 @@ class coupledFvPatchField
 public:
 
     //- Runtime type information
-    TypeName(coupledFvPatch::typeName_());
+    TypeName(coupledFvPatch::baseTypeName());
 
 
     // Constructors

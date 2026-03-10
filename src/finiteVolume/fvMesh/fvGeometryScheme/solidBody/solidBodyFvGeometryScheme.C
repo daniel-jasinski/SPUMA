@@ -387,7 +387,7 @@ void Foam::solidBodyFvGeometryScheme::movePoints()
                 std::move(cellVolumes)
             );
 
-            if (debug_())
+            if (debugLevel())
             {
                 for (const auto& p : mesh_.boundaryMesh())
                 {

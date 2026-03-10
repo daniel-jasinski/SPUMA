@@ -161,7 +161,7 @@ You should also regularly update the `Current Build Status` section with the lat
 - ❌ CGAL-dependent utilities (viewFactorsGen, surfaceBooleanFeatures) — require CGAL (not installed)
 - ❌ FFTW3-dependent utilities (noise, boxTurb) — require FFTW3 + randomProcesses lib (not installed)
 
-### Fixes Applied (48 total)
+### Fixes Applied (49 total)
 
 All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
 - Fix #41: `MemoryPool::New()` replaces auto-created dummyMemoryPool with requested fixedSizeMemoryPool. Previously CUDA kernels accessed non-USM memory → `CUDA:700`.
@@ -172,16 +172,19 @@ All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key re
 - Fix #46: Compound<T> duplicate RTS entries. Deleted 11 stale `.o` files compiled before `(#Type)` was added to `addCompoundToRunTimeSelectionTable`. Compound<T> duplicates: 12 → 0. Remaining 459 Reaction duplicates are by-design OpenFOAM behavior (harmless).
 - Fix #47: Failed DLL load destroys RTS tables. `LoadLibrary` failure triggers DLL unload → static destructors delete shared RTS tables → SIGSEGV. Fix: `Foam::RTS_TABLE_CLEANUP = false` on Windows (no-op in `construct(false)`). Safe since solvers use `_exit(0)`.
 - Fix #48: Remaining 4 RTS duplicates. liquidThermo.C → `addToRunTimeSelectionTableKey` with explicit names. Stale `libcompressibleTurbulenceModels.dll` (Feb 8) rebuilt with current headers. **0 duplicate warnings in simpleFoam.**
+- Fix #49: IO class names for stock OpenFOAM interop. CompactIOList/CompactIOField wrote generic class names (`List`, `Field`) instead of per-specialization names (`faceList`, `faceCompactList`). Fix: set `headerClassName()` before `regIOobject::writeObject` (bypasses SPUMA's `type()` which returns `typeName_()`). Reverted `typeName_()` → `typeName` in read paths. Meshes now interoperable with stock OpenFOAM v2506.
+- Fix #50: IOField/IOList/GlobalIOField writeObject override for correct per-specialization class names. After rebuilding libOpenFOAM.dll, MUST rebuild downstream DLLs (COMDAT folding changes). All debug traces removed from simpleFoam.C and UEqn.H.
 
 ### Current State
 
-- **blockMesh works!** Exit 0.
-- **simpleFoam works!** Clean output, no debug spam, **0 RTS duplicate warnings**. CUDA backend: solver completes correctly (converges, writes results), exit-time crash (exit 139) during CUDA cleanup — cosmetic only.
+- **blockMesh works!** Exit 0. Correct mesh class names (`vectorField`, `faceList`, `labelList`).
+- **simpleFoam works!** Exit 0. Converges in 281 iterations (pitzDaily). Clean output, **0 RTS duplicate warnings**.
 - **Restart works!** Exit 0.
 - **105 DLLs, 144 EXEs built.** Full SPUMA library suite + utilities compiled.
 - **CUDA backend tested**: RTX 3060 Laptop (sm_86), 1GB pool, pitzDaily case — solver converges, all GPU kernels pass.
-- **Diagnostic traces removed**: All debug fprintf removed from source files.
+- **Diagnostic traces removed**: All debug fprintf removed from source files, simpleFoam.C, and UEqn.H.
 - **RTS duplicate warnings eliminated**: Fix #48 resolved all remaining duplicate warnings (was 1237, now 0).
+- **Known issue**: `phi` (surfaceScalarField) writes `class GeometricField;` instead of `class surfaceScalarField;`. GeometricField needs `writeObject()` override (separate from Fix #50).
 
 ### What's Next
 
@@ -204,6 +207,7 @@ All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key re
 9. **dllimport ignored for template class statics**: Use explicit specialization declarations (FOAM_VECTORSPACE_EXTERN_DATA macro) - see Fix #27.
 10. **FOAM_TYPENAME_EXPORT is always dllexport**: `debug` and `typeName` static members never get dllimport. NoRepository templates accessing them crash. Use `#ifdef _WIN32` / `if (false)` guards - see Fix #33.
 11. **Failed LoadLibrary destroys RTS tables**: Windows unloads partially-loaded transitive deps on failure → static destructors call `construct(false)` → shared tables deleted. Fix #47 disables table cleanup on Windows (`RTS_TABLE_CLEANUP = false`).
+12. **Partial libOpenFOAM rebuild requires full downstream rebuild**: COMDAT folding selects one template function body from multiple .o files. Recompiling ANY .o file can change which body wins. Downstream DLLs crash if they depend on the old function body. wmake does NOT detect this — must manually delete .o files and rebuild.
 
 ### Build Scripts
 

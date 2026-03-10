@@ -47,7 +47,7 @@ tmp<laplacianScheme<Type, GType>> laplacianScheme<Type, GType>::New
     Istream& schemeData
 )
 {
-    if (fv::debug_())
+    if (fv::debugLevel())
     {
         InfoInFunction << "Constructing laplacianScheme<Type, GType>" << endl;
     }

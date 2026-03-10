@@ -137,7 +137,7 @@ bool Foam::expressions::fvExprDriver::foundField
     const word& name
 ) const
 {
-    if (debug_())
+    if (debugLevel())
     {
         Info<< "fvExprDriver::foundField. Name: " << name
             << " Type: " << Type::typeName
@@ -166,7 +166,7 @@ bool Foam::expressions::fvExprDriver::foundField
 
         if (fldPtr)
         {
-            if (debug_())
+            if (debugLevel())
             {
                 if (checki)
                 {
@@ -182,7 +182,7 @@ bool Foam::expressions::fvExprDriver::foundField
         }
         else if (ioptr)
         {
-            if (debug_())
+            if (debugLevel())
             {
                 if (checki)
                 {
@@ -202,14 +202,14 @@ bool Foam::expressions::fvExprDriver::foundField
 
     if (searchFiles() && getTypeOfField(name) == Type::typeName)
     {
-        if (debug_())
+        if (debugLevel())
         {
             Info<< "Found file: " << name << nl;
         }
         return true;
     }
 
-    if (debug_())
+    if (debugLevel())
     {
         Info<< name << " not found" << endl;
     }
@@ -225,7 +225,7 @@ bool Foam::expressions::fvExprDriver::isField
     label
 ) const
 {
-    if (debug_())
+    if (debugLevel())
     {
         Info<< "fvExprDriver::isField <" << name << '>' << endl;
     }
@@ -256,7 +256,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
 
     tmp<GeomField> tfield;
 
-    if (debug_())
+    if (debugLevel())
     {
         Info<< "fvExprDriver::getOrReadField <" << name
             << "> Type: " << GeomField::typeName << endl;
@@ -282,13 +282,13 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
         const auto& var = tvar.cref();
         const Type deflt(var.getValue<Type>());
 
-        if (debug_())
+        if (debugLevel())
         {
             Info<< "Getting " << name << " from variables. Default: "
                 << deflt << endl;
         }
 
-        if (debug_())
+        if (debugLevel())
         {
             Info<< "Creating field " << name << " of type "
                 << GeomField::typeName << nl;
@@ -304,7 +304,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
         );
         auto& fld = tfield.ref();
 
-        if (debug_())
+        if (debugLevel())
         {
             Info<< "New field: " << name << " ownedByRegistry"
                 << fld.ownedByRegistry() << endl;
@@ -312,7 +312,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
 
         const Field<Type>& vals = var.cref<Type>();
 
-        if (debug_())
+        if (debugLevel())
         {
             Pout<< "sizes: " << vals.size() << ' ' << fld.size() << endl;
         }
@@ -373,7 +373,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
     {
         // Found from context or registry
 
-        if (debug_())
+        if (debugLevel())
         {
             Info<< "Retrieve context/registered:" << name << nl;
         }
@@ -391,7 +391,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
 
         if (getOldTime)
         {
-            if (debug_())
+            if (debugLevel())
             {
                 Info<< "Getting oldTime of " << name << " has "
                     << origFld.nOldTimes() << endl;
@@ -399,7 +399,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
 
             if (!origFld.nOldTimes() && this->prevIterIsOldTime())
             {
-                if (debug_())
+                if (debugLevel())
                 {
                     Info<< "No oldTime, using previous iteration" << endl;
                 }
@@ -409,7 +409,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
     }
     else if (searchFiles() && getTypeOfField(name) == GeomField::typeName)
     {
-        if (debug_())
+        if (debugLevel())
         {
             Info<< "Reading " << name << " from disc" << endl;
         }
@@ -422,7 +422,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
     }
 
 
-    if (debug_())
+    if (debugLevel())
     {
         Info<< "field: valid()=" << Switch::name(tfield.valid()) << endl;
     }
@@ -431,7 +431,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
     {
         GeomField& fld = tfield.ref();
 
-        if (debug_())
+        if (debugLevel())
         {
             Info<< "Valid " << name << " found. Removing dimensions" << nl;
         }
@@ -440,7 +440,7 @@ Foam::tmp<GeomField> Foam::expressions::fvExprDriver::getOrReadFieldImpl
 
         if (fld.nOldTimes())
         {
-            if (debug_())
+            if (debugLevel())
             {
                 Info<< "Removing dimensions of oldTime of " << name
                     << " has " << fld.nOldTimes() << nl;
@@ -485,7 +485,7 @@ Foam::autoPtr<T> Foam::expressions::fvExprDriver::getTopoSet
     // Avoid possible name clashes
     const word regName = name + "RegisteredNameFor" + T::typeName;
 
-    if (debug_())
+    if (debugLevel())
     {
         Info<< "Looking for " << T::typeName << " named " << name
             << " or registered as " << regName << " with mesh "
@@ -509,7 +509,7 @@ Foam::autoPtr<T> Foam::expressions::fvExprDriver::getTopoSet
         )
     )
     {
-        if (debug_())
+        if (debugLevel())
         {
             Info<< "Constructing new " << T::typeName << ' ' << name << nl;
 
@@ -524,7 +524,7 @@ Foam::autoPtr<T> Foam::expressions::fvExprDriver::getTopoSet
 
         if (cacheSets())
         {
-            if (debug_())
+            if (debugLevel())
             {
                 Info<< "Registering a copy of " << name << " with mesh" << nl;
             }
@@ -539,7 +539,7 @@ Foam::autoPtr<T> Foam::expressions::fvExprDriver::getTopoSet
 
         if (ptr)
         {
-            if (debug_())
+            if (debugLevel())
             {
                 Info<< "Getting existing " << name << endl;
             }
@@ -549,7 +549,7 @@ Foam::autoPtr<T> Foam::expressions::fvExprDriver::getTopoSet
         }
         else
         {
-            if (debug_())
+            if (debugLevel())
             {
                 Info<< "Getting existing " << regName << endl;
             }
@@ -577,7 +577,7 @@ bool Foam::expressions::fvExprDriver::updateSet
     bool updated = false;
     const auto& mesh = refCast<const polyMesh>(setPtr->db());
 
-    if (debug_())
+    if (debugLevel())
     {
         Info<< "UpdateSet: " << setPtr->name() << " Id: " << name
             << " Origin: " << int(origin) << endl;
@@ -599,7 +599,7 @@ bool Foam::expressions::fvExprDriver::updateSet
 
             if (header.typeHeaderOk<T>())
             {
-                if (debug_())
+                if (debugLevel())
                 {
                     Pout<< "Rereading from "
                         << header.localFilePath(T::typeName) << endl;
@@ -627,7 +627,7 @@ bool Foam::expressions::fvExprDriver::updateSet
 
             if (ptr)
             {
-                if (debug_())
+                if (debugLevel())
                 {
                     Info<< "Found " << name
                         << " and rereading it" << endl;
@@ -656,7 +656,7 @@ bool Foam::expressions::fvExprDriver::updateSet
 
         default:
         {
-            if (debug_())
+            if (debugLevel())
             {
                 Info<< "Origin " << int(origin) << " not implemented" << endl;
             }
@@ -664,7 +664,7 @@ bool Foam::expressions::fvExprDriver::updateSet
         }
     }
 
-    if (debug_())
+    if (debugLevel())
     {
         Pout<< name << " old size " << oldSize << " new: "
             << setPtr->size() << endl;

@@ -173,7 +173,7 @@ void Foam::mappedFieldFvPatchField<Type>::updateCoeffs()
 
     this->operator==(this->mappedField());
 
-    if (debug_())
+    if (debugLevel())
     {
         Info<< "operating on field:" << this->internalField().name()
             << " patch:" << this->patch().name()

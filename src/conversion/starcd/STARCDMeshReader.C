@@ -909,31 +909,31 @@ void Foam::fileFormats::STARCDMeshReader::readBoundary
 
         if (origType == "symplane")
         {
-            patchTypes_[patchi] = symmetryPolyPatch::typeName_();
+            patchTypes_[patchi] = symmetryPolyPatch::baseTypeName();
             patchPhysicalTypes_[patchi] = patchTypes_[patchi];
         }
         else if (origType == "wall")
         {
-            patchTypes_[patchi] = wallPolyPatch::typeName_();
+            patchTypes_[patchi] = wallPolyPatch::baseTypeName();
             patchPhysicalTypes_[patchi] = patchTypes_[patchi];
         }
         else if (origType == "cyclic")
         {
             // incorrect. should be cyclicPatch but this
             // requires info on connected faces.
-            patchTypes_[patchi] = oldCyclicPolyPatch::typeName_();
+            patchTypes_[patchi] = oldCyclicPolyPatch::baseTypeName();
             patchPhysicalTypes_[patchi] = patchTypes_[patchi];
         }
         else if (origType == "baffle")
         {
             // incorrect. tag the patch until we get proper support.
             // set physical type to a canonical "baffle"
-            patchTypes_[patchi] = emptyPolyPatch::typeName_();
+            patchTypes_[patchi] = emptyPolyPatch::baseTypeName();
             patchPhysicalTypes_[patchi] = "baffle";
         }
         else
         {
-            patchTypes_[patchi] = polyPatch::typeName_();
+            patchTypes_[patchi] = polyPatch::baseTypeName();
         }
 
         Info<< "patch " << patchi

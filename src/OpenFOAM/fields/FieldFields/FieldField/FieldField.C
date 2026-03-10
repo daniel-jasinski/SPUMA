@@ -46,9 +46,9 @@ void checkFields
     if (f1.size() != f2.size())
     {
         FatalErrorInFunction
-            << " FieldField<" << pTraits<Type1>::typeName_()
+            << " FieldField<" << pTraits<Type1>::baseTypeName()
             << "> f1(" << f1.size() << ')'
-            << " and FieldField<" << pTraits<Type2>::typeName_()
+            << " and FieldField<" << pTraits<Type2>::baseTypeName()
             << "> f2(" << f2.size() << ')'
             << endl << " for operation " << op
             << abort(FatalError);
@@ -67,11 +67,11 @@ void checkFields
     if (f1.size() != f2.size() || f1.size() != f3.size())
     {
         FatalErrorInFunction
-            << " FieldField<" << pTraits<Type1>::typeName_()
+            << " FieldField<" << pTraits<Type1>::baseTypeName()
             << "> f1(" << f1.size() << ')'
-            << ", FieldField<" <<pTraits<Type2>::typeName_()
+            << ", FieldField<" <<pTraits<Type2>::baseTypeName()
             << "> f2(" << f2.size() << ')'
-            << " and FieldField<"<<pTraits<Type3>::typeName_()
+            << " and FieldField<"<<pTraits<Type3>::baseTypeName()
             << "> f3("<<f3.size() << ')'
             << endl << "    for operation " << op
             << abort(FatalError);

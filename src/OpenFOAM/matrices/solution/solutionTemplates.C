@@ -37,7 +37,7 @@ void Foam::solution::cachePrintMessage
     const FieldType& fld  // == regIOobject
 )
 {
-    if (Foam::solution::debug_())
+    if (Foam::solution::debugLevel())
     {
         Info<< "Cache: " << message << ' ' << name
             << ", originating from " << fld.name()

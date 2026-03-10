@@ -85,7 +85,7 @@ public:
     // Static Member Functions
 
         //- Cross-DLL safe type name access (returns Base::typeName)
-        static const char* typeName_() { return Base::typeName; }
+        static const char* baseTypeName() { return Base::typeName; }
 
 
     // Constructors

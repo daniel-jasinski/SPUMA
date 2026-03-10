@@ -67,7 +67,7 @@ class oversetFvPatch
 public:
 
     //- Runtime type information
-    TypeName(oversetPolyPatch::typeName_());
+    TypeName(oversetPolyPatch::baseTypeName());
 
 
     // Constructors

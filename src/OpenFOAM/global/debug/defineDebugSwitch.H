@@ -124,19 +124,19 @@ public:
 #define defineDebugSwitchWithName(Type, Name, Value)                           \
     int Type::debug(::Foam::debug::debugSwitch(Name, Value))
 
-//- Define the debug_() accessor function (cross-DLL safe alternative to
+//- Define the debugLevel() accessor function (cross-DLL safe alternative to
 //  reading the debug static member directly through DEF thunks)
-#define defineDebugFunction(Type)                                              \
-    int Type::debug_() { return Type::debug; }
+#define defineDebugLevelFunction(Type)                                         \
+    int Type::debugLevel() { return Type::debug; }
 
-//- Define the debug_() accessor for template specializations
-#define defineTemplateDebugFunction(Type)                                      \
-    template<> int Type::debug_() { return Type::debug; }
+//- Define the debugLevel() accessor for template specializations
+#define defineTemplateDebugLevelFunction(Type)                                 \
+    template<> int Type::debugLevel() { return Type::debug; }
 
 //- Define the debug information
 #define defineDebugSwitch(Type, Value)                                         \
-    defineDebugSwitchWithName(Type, Type::typeName_(), Value);                 \
-    registerDebugSwitchWithName(Type, Type, Type::typeName_())
+    defineDebugSwitchWithName(Type, Type::baseTypeName(), Value);              \
+    registerDebugSwitchWithName(Type, Type, Type::baseTypeName())
 
 //- Define the debug information for templates, lookup as \a Name
 #define defineTemplateDebugSwitchWithName(Type, Name, Value)                   \
@@ -150,7 +150,7 @@ public:
 
 //- Define the debug information directly for templates
 #define defineNamedTemplateDebugSwitch(Type, Value)                            \
-    defineTemplateDebugSwitchWithName(Type, Type::typeName_(), Value)
+    defineTemplateDebugSwitchWithName(Type, Type::baseTypeName(), Value)
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

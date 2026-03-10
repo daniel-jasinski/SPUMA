@@ -116,7 +116,7 @@ bool Foam::solutionControl::read(const bool absTolOnly)
 
     residualControl_.transfer(data);
 
-    if (debug_())
+    if (debugLevel())
     {
         forAll(residualControl_, i)
         {

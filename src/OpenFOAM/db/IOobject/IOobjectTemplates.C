@@ -42,14 +42,14 @@ bool Foam::IOobject::typeHeaderOk
     const bool verbose
 )
 {
-    // Use typeName_() instead of typeName to avoid cross-DLL data access
+    // Use baseTypeName() instead of typeName to avoid cross-DLL data access
     // issues on Windows. typeName is a static word (data), which gets a
     // local uninitialized copy via FOAM_TYPENAME_EXPORT dllexport.
-    // typeName_() returns const char* via a function call (thunk works).
+    // baseTypeName() returns const char* via a function call (thunk works).
     return readAndCheckHeader
     (
         is_globalIOobject<Type>::value,
-        Foam::word(Type::typeName_()),
+        Foam::word(Type::baseTypeName()),
         checkType,
         search,
         verbose
@@ -60,8 +60,8 @@ bool Foam::IOobject::typeHeaderOk
 template<class Type>
 Foam::fileName Foam::IOobject::typeFilePath(const bool search) const
 {
-    // Use typeName_() to avoid cross-DLL data access issues on Windows
-    const Foam::word tName(Type::typeName_());
+    // Use baseTypeName() to avoid cross-DLL data access issues on Windows
+    const Foam::word tName(Type::baseTypeName());
     return
     (
         is_globalIOobject<Type>::value
@@ -77,9 +77,9 @@ void Foam::IOobject::warnNoRereading() const
     if (readOpt() == IOobjectOption::READ_MODIFIED)
     {
         WarningInFunction
-            << Type::typeName_() << ' ' << name()
+            << Type::baseTypeName() << ' ' << name()
             << " constructed with READ_MODIFIED but "
-            << Type::typeName_() << " does not support automatic rereading."
+            << Type::baseTypeName() << " does not support automatic rereading."
             << endl;
     }
 }

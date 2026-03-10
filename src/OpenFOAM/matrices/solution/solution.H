@@ -155,7 +155,7 @@ public:
 
     //- Debug switch (registered name: "solution")
     static int debug;
-    static int debug_();
+    static int debugLevel();
 
 
     // Constructors

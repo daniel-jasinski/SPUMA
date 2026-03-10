@@ -61,7 +61,7 @@ class wedgeFvPatch
 public:
 
     //- Runtime type information
-    TypeName(wedgePolyPatch::typeName_());
+    TypeName(wedgePolyPatch::baseTypeName());
 
 
     // Constructors

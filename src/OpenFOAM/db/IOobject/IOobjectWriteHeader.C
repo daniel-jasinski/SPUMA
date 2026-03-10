@@ -30,10 +30,6 @@ License
 #include "dictionary.H"
 #include "objectRegistry.H"
 #include "foamVersion.H"
-#ifdef _WIN32
-#include <typeinfo>
-#include <cstring>
-#endif
 
 // * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
 
@@ -291,40 +287,6 @@ bool Foam::IOobject::writeHeader(Ostream& os) const
     {
         return IOobject::writeHeader(os, hdrClass);
     }
-
-    #ifdef _WIN32
-    // On Windows DLLs, type() accesses the static typeName member which may
-    // be in a different DLL. For certain template types, COMDAT folding of
-    // the virtual type() function can cause the call to land in a different
-    // DLL's copy, which accesses typeName cross-DLL via DEF-file JMP thunks
-    // instead of proper __declspec(dllimport) - reading instruction bytes
-    // as string data -> crash.
-    //
-    // Use MSVC RTTI to identify the class and return its OpenFOAM typeName.
-    // We return the typeName (e.g., "GeometricField") not the typedef name
-    // (e.g., "volScalarField") because readStream() checks against typeName.
-    {
-        const char* rtti = typeid(*this).name();
-
-        if (std::strstr(rtti, "GeometricField"))
-        {
-            return IOobject::writeHeader(os, word("GeometricField"));
-        }
-
-        if (std::strstr(rtti, "UniformDimensionedField"))
-        {
-            return IOobject::writeHeader
-            (
-                os, word("UniformDimensionedField")
-            );
-        }
-
-        if (std::strstr(rtti, "DimensionedField"))
-        {
-            return IOobject::writeHeader(os, word("DimensionedField"));
-        }
-    }
-    #endif
 
     return IOobject::writeHeader(os, this->type());
 }

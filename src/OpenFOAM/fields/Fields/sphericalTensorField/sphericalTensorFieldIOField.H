@@ -45,6 +45,11 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::IOField<Foam::sphericalTensorField>);
+declareStaticTypeName(Foam::CompactIOField<Foam::sphericalTensorField, Foam::sphericalTensor>);
+#endif
+
 #endif
 
 // ************************************************************************* //

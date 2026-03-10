@@ -46,8 +46,8 @@ License
     defineTemplateTypeNameAndDebugWithName                                     \
     (                                                                          \
         SS##Comp##Thermo,                                                      \
-        (#SS"<" + word(StandardChemistryModel<Comp, Thermo>::typeName_()) + "<"\
-        + word(Comp::typeName_()) + "," + Thermo::typeName() + ">>").c_str(),  \
+        (#SS"<" + word(StandardChemistryModel<Comp, Thermo>::baseTypeName()) + "<"\
+        + word(Comp::baseTypeName()) + "," + Thermo::typeName() + ">>").c_str(),  \
         0                                                                      \
     );                                                                         \
                                                                                \
@@ -61,8 +61,8 @@ License
     defineTemplateTypeNameAndDebugWithName                                     \
     (                                                                          \
         TDAC##SS##Comp##Thermo,                                                \
-        (#SS"<" + word(TDACChemistryModel<Comp, Thermo>::typeName_()) + "<"    \
-        + word(Comp::typeName_()) + "," + Thermo::typeName() + ">>").c_str(),  \
+        (#SS"<" + word(TDACChemistryModel<Comp, Thermo>::baseTypeName()) + "<"    \
+        + word(Comp::baseTypeName()) + "," + Thermo::typeName() + ">>").c_str(),  \
         0                                                                      \
     );                                                                         \
                                                                                \

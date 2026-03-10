@@ -153,7 +153,7 @@ Foam::surfaceInterpolation::nonOrthCorrectionVectors() const
 
 bool Foam::surfaceInterpolation::movePoints()
 {
-    if (debug_())
+    if (debugLevel())
     {
         Pout<< "surfaceInterpolation::movePoints() : "
             << "Updating geometric properties using the fvGeometryScheme"
@@ -171,7 +171,7 @@ bool Foam::surfaceInterpolation::movePoints()
 
 void Foam::surfaceInterpolation::updateGeom()
 {
-    if (debug_())
+    if (debugLevel())
     {
         Pout<< "surfaceInterpolation::updateGeom() : "
             << "Updating geometric properties" << endl;
@@ -185,7 +185,7 @@ void Foam::surfaceInterpolation::updateGeom()
 
 void Foam::surfaceInterpolation::updateMesh(const mapPolyMesh& mpm)
 {
-    if (debug_())
+    if (debugLevel())
     {
         Pout<< "surfaceInterpolation::updateMesh() : "
             << "Updating geometric properties" << endl;

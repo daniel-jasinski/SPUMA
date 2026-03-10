@@ -69,12 +69,12 @@ namespace Foam
     template<>                                                                 \
     const word ReactionType##Thermo##ReactionRate::typeName                    \
     (                                                                          \
-        ReactionType::typeName_()                                              \
+        ReactionType::baseTypeName()                                              \
       + ReactionRate::type()                                                   \
-      + Reaction##Thermo::typeName_()                                          \
+      + Reaction##Thermo::baseTypeName()                                          \
     );                                                                         \
                                                                                \
-    /* Fix #48: Compute key directly from typeName_() / type() functions. */   \
+    /* Fix #48: Compute key directly from baseTypeName() / type() functions. */   \
     /* Use the fully-typed typedef (not bare ReactionType which is a class */  \
     /* template and requires template args outside template<> context). */     \
     addToRunTimeSelectionTableKey                                              \
@@ -82,9 +82,9 @@ namespace Foam
         Reaction##Thermo,                                                      \
         ReactionType##Thermo##ReactionRate,                                    \
         dictionary,                                                            \
-        (word(ReactionType##Thermo##ReactionRate::typeName_())                 \
+        (word(ReactionType##Thermo##ReactionRate::baseTypeName())                 \
        + ReactionRate::type()                                                  \
-       + Reaction##Thermo::typeName_()).c_str()                                \
+       + Reaction##Thermo::baseTypeName()).c_str()                                \
     );
 
 

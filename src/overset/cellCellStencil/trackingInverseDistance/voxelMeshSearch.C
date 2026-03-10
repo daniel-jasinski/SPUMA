@@ -542,7 +542,7 @@ Foam::autoPtr<Foam::fvMesh> Foam::voxelMeshSearch::makeMesh
     {
         boundaryDicts.set(patchi, new dictionary());
         dictionary& patchDict = boundaryDicts[patchi];
-        patchDict.add("type", emptyPolyPatch::typeName_());
+        patchDict.add("type", emptyPolyPatch::baseTypeName());
     }
 
     //Info<< "Creating polyMesh" << endl;
@@ -564,7 +564,7 @@ Foam::autoPtr<Foam::fvMesh> Foam::voxelMeshSearch::makeMesh
         patchNames,
         boundaryDicts,
         "defaultFaces",
-        emptyPolyPatch::typeName_(),
+        emptyPolyPatch::baseTypeName(),
         false
     );
 

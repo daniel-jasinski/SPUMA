@@ -58,7 +58,7 @@ class coupledPointPatchField
 public:
 
     //- Runtime type information
-    TypeName(coupledPointPatch::typeName_());
+    TypeName(coupledPointPatch::baseTypeName());
 
 
     // Constructors

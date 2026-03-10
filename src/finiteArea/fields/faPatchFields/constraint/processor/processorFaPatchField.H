@@ -97,7 +97,7 @@ class processorFaPatchField
 public:
 
     //- Runtime type information
-    TypeName(processorFaPatch::typeName_());
+    TypeName(processorFaPatch::baseTypeName());
 
 
     // Constructors

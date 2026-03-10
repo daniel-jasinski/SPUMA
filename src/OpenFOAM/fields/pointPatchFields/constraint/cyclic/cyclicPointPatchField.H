@@ -63,7 +63,7 @@ class cyclicPointPatchField
 public:
 
     //- Runtime type information
-    TypeName(cyclicPointPatch::typeName_());
+    TypeName(cyclicPointPatch::baseTypeName());
 
 
     // Constructors
@@ -122,7 +122,7 @@ public:
             //- Return the constraint type this pointPatchField implements
             virtual const word& constraintType() const
             {
-                static const word tn(cyclicPointPatch::typeName_());
+                static const word tn(cyclicPointPatch::baseTypeName());
                 return tn;
             }
 

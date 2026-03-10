@@ -62,6 +62,11 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::IOList<Foam::word>);
+declareStaticTypeName(Foam::IOList<Foam::wordList>);
+#endif
+
 #endif
 
 // ************************************************************************* //

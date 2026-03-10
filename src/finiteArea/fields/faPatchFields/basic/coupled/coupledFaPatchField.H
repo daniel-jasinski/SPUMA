@@ -63,7 +63,7 @@ class coupledFaPatchField
 public:
 
     //- Runtime type information
-    TypeName(coupledFaPatch::typeName_());
+    TypeName(coupledFaPatch::baseTypeName());
 
 
     // Constructors

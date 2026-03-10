@@ -58,7 +58,7 @@ Note
 
 //- Add to construction table with explicit key expression
 //  Use when the key is a runtime expression (e.g., thisType::typeName)
-//  rather than a string literal. Fix #48: needed when typeName_() returns
+//  rather than a string literal. Fix #48: needed when baseTypeName() returns
 //  a generic name but the RTS lookup expects the full specialization name.
 #define addToRunTimeSelectionTableKey\
 (baseType,thisType,argNames,keyExpr)                                          \
