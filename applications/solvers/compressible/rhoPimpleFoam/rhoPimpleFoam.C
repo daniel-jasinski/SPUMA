@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -48,6 +48,7 @@ Note
 #include "dynamicFvMesh.H"
 #include "fluidThermo.H"
 #include "turbulentFluidThermoModel.H"
+#include "thermalTurbulentFluidThermoModel.H"
 #include "bound.H"
 #include "pimpleControl.H"
 #include "pressureControl.H"
@@ -81,6 +82,7 @@ int main(int argc, char *argv[])
     #include "createRhoUfIfPresent.H"
 
     turbulence->validate();
+    thermalTurbulence->validate();
 
     if (!LTS)
     {
@@ -188,6 +190,7 @@ int main(int argc, char *argv[])
             if (pimple.turbCorr())
             {
                 turbulence->correct();
+                thermalTurbulence->correct();
             }
         }
 
