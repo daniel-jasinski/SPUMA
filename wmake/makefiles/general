@@ -36,8 +36,9 @@ ifeq (,$(strip $(WM_OSTYPE)))
 endif
 
 # Windows: MSVC link.exe needs a writable temp directory in Windows format.
-# MSYS2 sets TMP=/tmp which doesn't propagate properly through acpp->link.exe.
-# Compute a Windows-native temp path and export it for link recipes.
+# POSIX shells (MSYS2/Cygwin/WSL) set TMP=/tmp which doesn't propagate
+# properly through acpp->link.exe. Compute a Windows-native temp path and
+# export it for link recipes.
 # Also compute CUDA/ACPP library paths for MSVC's LIB search variable
 # (handles paths with spaces that -L flags can't handle properly).
 ifneq (,$(findstring windows,$(WM_OSTYPE)))
@@ -49,6 +50,20 @@ ifneq (,$(findstring windows,$(WM_OSTYPE)))
     endif
     WIN_EXTRA_LIB = $(WIN_CUDA_LIB);$(WIN_ACPP_LIB);$(WIN_MSVC_LIB);$(WIN_SDK_LIB);$(WIN_UCRT_LIB)
     WIN_LINK_ENV = TMP="$(WIN_TMP)" TEMP="$(WIN_TMP)" LIB="$$LIB;$(WIN_EXTRA_LIB)"
+
+    # Shell-agnostic POSIX-to-Windows path conversion for response files.
+    # Handles MSYS2 (/c/), Cygwin (/cygdrive/c/), WSL (/mnt/c/).
+    WIN_PATH_SED = sed -e 's|^/\([a-zA-Z]\)/|\1:/|' -e 's|^/cygdrive/\([a-zA-Z]\)/|\1:/|' -e 's|^/mnt/\([a-zA-Z]\)/|\1:/|'
+    # Convert a single path to Windows mixed format (for -Wl,/DEF:).
+    # Usage in recipe: $$($(call WIN_TOWINPATH,/posix/path))
+    # Prefer cygpath/wslpath if available, fall back to echo+sed.
+    ifneq (,$(shell command -v cygpath 2>/dev/null))
+        WIN_TOWINPATH = cygpath -m $(1)
+    else ifneq (,$(shell command -v wslpath 2>/dev/null))
+        WIN_TOWINPATH = wslpath -m $(1)
+    else
+        WIN_TOWINPATH = echo $(1) | $(WIN_PATH_SED)
+    endif
 endif
 
 #------------------------------------------------------------------------------
@@ -192,7 +207,7 @@ ifneq (,$(findstring windows,$(WM_OSTYPE)))
 $(EXE)$(EXT_EXE): $(OBJECTS)
 	@$(WM_SCRIPTS)/makeTargetDir $(EXE)
 	$(call QUIET_MESSAGE,link,$(EXE)$(EXT_EXE))
-	@printf '%s\n' $(OBJECTS) | sed 's|^/\([a-zA-Z]\)/|\1:/|' > $(OBJECTS_DIR)/link_objects.rsp
+	@printf '%s\n' $(OBJECTS) | $(WIN_PATH_SED) > $(OBJECTS_DIR)/link_objects.rsp
 	$E export $(WIN_LINK_ENV) && $(LINKEXE) $(FOAM_EXTRA_LDFLAGS) \
 	    @$(OBJECTS_DIR)/link_objects.rsp -L$(LIB_PLATFORMS) \
 	    $(EXE_LIBS) $(PROJECT_LIBS) $(SYS_LIBS) \
@@ -213,7 +228,7 @@ ifneq (,$(findstring windows,$(WM_OSTYPE)))
 $(SEXE)$(EXT_EXE): $(OBJECTS)
 	@$(WM_SCRIPTS)/makeTargetDir $(SEXE)
 	$(call QUIET_MESSAGE,link,$(SEXE)$(EXT_EXE))
-	@printf '%s\n' $(OBJECTS) | sed 's|^/\([a-zA-Z]\)/|\1:/|' > $(OBJECTS_DIR)/link_objects.rsp
+	@printf '%s\n' $(OBJECTS) | $(WIN_PATH_SED) > $(OBJECTS_DIR)/link_objects.rsp
 	$E export $(WIN_LINK_ENV) && $(LINKEXE) $(FOAM_EXTRA_LDFLAGS) \
 	    @$(OBJECTS_DIR)/link_objects.rsp $(EXE_LIBS) \
 	    $(SYS_LIBS) $(LINK_LIBS) $(GLIBS) -o $(SEXE)$(EXT_EXE)
@@ -242,12 +257,12 @@ ifneq (,$(findstring windows,$(WM_OSTYPE)))
 $(LIB)$(EXT_SO): $(OBJECTS)
 	@$(WM_SCRIPTS)/makeTargetDir $(LIB)
 	$(call QUIET_MESSAGE,link,$(LIB)$(EXT_SO))
-	@printf '%s\n' $(OBJECTS) | sed 's|^/\([a-zA-Z]\)/|\1:/|' > $(OBJECTS_DIR)/link_objects.rsp
+	@printf '%s\n' $(OBJECTS) | $(WIN_PATH_SED) > $(OBJECTS_DIR)/link_objects.rsp
 	$(call QUIET_MESSAGE,def,$(notdir $(LIB)).def)
 	@$(WM_SCRIPTS)/generate-msvc-def $(LIB).def @$(OBJECTS_DIR)/link_objects.rsp $(filter %.lib,$(PROJECT_LIBS) $(LIB_LIBS))
 	$E export $(WIN_LINK_ENV) && \
 	    $(LINKLIBSO) $(FOAM_EXTRA_LDFLAGS) \
-	    -Wl,/DEF:$$(cygpath -m $(LIB).def) \
+	    -Wl,/DEF:$$($(call WIN_TOWINPATH,$(LIB).def)) \
 	    @$(OBJECTS_DIR)/link_objects.rsp -L$(LIB_PLATFORMS) \
 	    $(PROJECT_LIBS) $(LIB_LIBS) $(GLIB_LIBS) -o $(LIB)$(EXT_SO)
 	@if [ -f $(LIB).lib ]; then \
@@ -283,7 +298,7 @@ $(LIB).lib: $(OBJECTS)
 	@$(WM_SCRIPTS)/makeTargetDir $(LIB)
 	@rm -f $(LIB).lib
 	$(call QUIET_MESSAGE,lib,$(LIB).lib)
-	@printf '%s\n' $(OBJECTS) | sed 's|^/\([a-zA-Z]\)/|\1:/|' > $(OBJECTS_DIR)/libo_objects.rsp
+	@printf '%s\n' $(OBJECTS) | $(WIN_PATH_SED) > $(OBJECTS_DIR)/libo_objects.rsp
 	$E llvm-lib -out:$(LIB).lib @$(OBJECTS_DIR)/libo_objects.rsp
 else
 libo: $(LIB).o | silent

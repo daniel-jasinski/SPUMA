@@ -24,7 +24,7 @@ cctoo       = $(Ctoo)
 cpptoo      = $(Ctoo)
 cxxtoo      = $(Ctoo)
 
-# MSVC ABI linker settings (NOT using General/Sycl/link-c++ to avoid MinGW flags)
+# MSVC ABI linker settings
 LINK_LIBS   = $(c++DBUG)
 LINKLIBSO   = $(CC) $(c++FLAGS) -shared -Wl,/FORCE:UNRESOLVED
 LINKEXE     = $(CC) $(c++FLAGS) -Wl,/FORCE:UNRESOLVED

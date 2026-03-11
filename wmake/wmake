@@ -867,34 +867,87 @@ fi
 
 # Windows: compute temp dir and library paths for MSVC linker
 # Uses 8.3 short names to avoid spaces in paths (e.g. PROGRA~1)
+#
+# Shell-environment-agnostic path helpers:
+#   _toWinPath  - convert POSIX path to Windows mixed format (C:/foo)
+#   _toWinShort - convert POSIX path to 8.3 short Windows format
+#   _toPosix    - convert Windows path to POSIX format for the current shell
+#   _progFiles  - POSIX path to "Program Files (x86)" (varies by environment)
+#
+# Supports MSYS2 (/c/), Cygwin (/cygdrive/c/), WSL (/mnt/c/), and
+# Git Bash. Falls back to sed-based conversion if no helper tool is found.
 winLinkVars=""
 case "$WM_OSTYPE" in
 (*windows*)
-    _winTmp="$(cygpath -m "${LOCALAPPDATA:-$USERPROFILE/AppData/Local}/Temp" 2>/dev/null || echo C:/Temp)"
-    winLinkVars="WIN_TMP=$_winTmp"
+    # Detect path conversion tool
+    if command -v cygpath >/dev/null 2>&1; then
+        # MSYS2, Cygwin, Git Bash
+        _toWinPath()  { cygpath -m "$1" 2>/dev/null; }
+        _toWinShort() { cygpath -w -s "$1" 2>/dev/null; }
+        _toPosix()    { cygpath "$1" 2>/dev/null; }
+    elif command -v wslpath >/dev/null 2>&1; then
+        # WSL
+        _toWinPath()  { wslpath -m "$1" 2>/dev/null; }
+        _toWinShort() { wslpath -w "$1" 2>/dev/null; }  # WSL has no 8.3 support
+        _toPosix()    { wslpath "$1" 2>/dev/null; }
+    else
+        # Fallback: sed-based conversion (assumes /X/ mount convention)
+        _toWinPath() {
+            echo "$1" | sed 's|^/\([a-zA-Z]\)/|\1:/|'
+        }
+        _toWinShort() { _toWinPath "$1"; }  # No 8.3 without cygpath
+        _toPosix() { echo "$1"; }  # Already POSIX or can't convert
+    fi
+
+    # Locate "Program Files (x86)" in POSIX path format
+    _progFiles="$(_toPosix "C:/Program Files (x86)" 2>/dev/null)"
+    if [ -z "$_progFiles" ] || [ ! -d "$_progFiles" ]; then
+        # Common defaults by environment
+        for _pf in \
+            "/c/Program Files (x86)" \
+            "/cygdrive/c/Program Files (x86)" \
+            "/mnt/c/Program Files (x86)"; do
+            [ -d "$_pf" ] && _progFiles="$_pf" && break
+        done
+    fi
+
+    _winTmp="$(_toWinPath "${LOCALAPPDATA:-$USERPROFILE/AppData/Local}/Temp" 2>/dev/null)"
+    winLinkVars="WIN_TMP=${_winTmp:-C:/Temp}"
     if [ -n "$CUDA_PATH" ]; then
-        _cudaLib="$(cygpath -w -s "$CUDA_PATH/lib/x64" 2>/dev/null)"
+        _cudaLib="$(_toWinShort "$CUDA_PATH/lib/x64")"
         [ -n "$_cudaLib" ] && winLinkVars="$winLinkVars WIN_CUDA_LIB=$_cudaLib"
     fi
     if [ -n "$ACPP_PATH" ]; then
-        _acppLib="$(cygpath -w -s "$ACPP_PATH/lib" 2>/dev/null)"
+        _acppLib="$(_toWinShort "$ACPP_PATH/lib")"
         [ -n "$_acppLib" ] && winLinkVars="$winLinkVars WIN_ACPP_LIB=$_acppLib"
     fi
-    # MSVC runtime libraries (libomp.lib, etc.) are in VS BuildTools path
-    if [ -d "/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC" ]; then
-        _msvcVer="$(ls "/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC" | head -1)"
+    # MSVC runtime libraries (libomp.lib, etc.)
+    # Use vswhere.exe to discover VS installation (handles all editions + custom paths)
+    # Override: set MSVC_INSTALL_DIR to skip discovery
+    _vswhere="$_progFiles/Microsoft Visual Studio/Installer/vswhere.exe"
+    if [ -n "$MSVC_INSTALL_DIR" ]; then
+        _vsInstall="$(_toPosix "$MSVC_INSTALL_DIR")"
+    elif [ -x "$_vswhere" ]; then
+        _vsInstall="$("$_vswhere" -products '*' -latest \
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 \
+            -property installationPath 2>/dev/null)"
+        [ -n "$_vsInstall" ] && _vsInstall="$(_toPosix "$_vsInstall")"
+    fi
+    if [ -n "$_vsInstall" ] && [ -d "$_vsInstall/VC/Tools/MSVC" ]; then
+        _msvcVer="${MSVC_TOOLSET_VERSION:-$(ls "$_vsInstall/VC/Tools/MSVC" | sort -V | tail -1)}"
         if [ -n "$_msvcVer" ]; then
-            _msvcLib="$(cygpath -w -s "/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/$_msvcVer/lib/x64" 2>/dev/null)"
+            _msvcLib="$(_toWinShort "$_vsInstall/VC/Tools/MSVC/$_msvcVer/lib/x64")"
             [ -n "$_msvcLib" ] && winLinkVars="$winLinkVars WIN_MSVC_LIB=$_msvcLib"
         fi
     fi
     # Windows SDK libraries (kernel32.lib, etc.) and UCRT
-    if [ -d "/c/Program Files (x86)/Windows Kits/10/Lib" ]; then
-        _sdkVer="$(ls "/c/Program Files (x86)/Windows Kits/10/Lib" | sort -V | tail -1)"
+    _winKitsDir="$_progFiles/Windows Kits/10/Lib"
+    if [ -d "$_winKitsDir" ]; then
+        _sdkVer="${WINDOWS_SDK_VERSION:-$(ls "$_winKitsDir" | sort -V | tail -1)}"
         if [ -n "$_sdkVer" ]; then
-            _umLib="$(cygpath -w -s "/c/Program Files (x86)/Windows Kits/10/Lib/$_sdkVer/um/x64" 2>/dev/null)"
+            _umLib="$(_toWinShort "$_winKitsDir/$_sdkVer/um/x64")"
             [ -n "$_umLib" ] && winLinkVars="$winLinkVars WIN_SDK_LIB=$_umLib"
-            _ucrtLib="$(cygpath -w -s "/c/Program Files (x86)/Windows Kits/10/Lib/$_sdkVer/ucrt/x64" 2>/dev/null)"
+            _ucrtLib="$(_toWinShort "$_winKitsDir/$_sdkVer/ucrt/x64")"
             [ -n "$_ucrtLib" ] && winLinkVars="$winLinkVars WIN_UCRT_LIB=$_ucrtLib"
         fi
     fi

@@ -24,6 +24,9 @@ fi
 DEF_FILE="$1"
 shift
 
+# Debug: log arguments when DEBUG is set
+[ -n "$DEBUG" ] && echo "generate-msvc-def: DEF_FILE=$DEF_FILE, args=$@" >&2
+
 # Extract library name from DEF filename (remove path and .def extension)
 LIB_NAME=$(basename "$DEF_FILE" .def)
 
@@ -117,6 +120,11 @@ done
         grep -v '^_CT' | \
         grep -v '^_CTA' | \
         grep -v '^_TI' | \
+        grep -v '^fprintf$' | \
+        grep -v '^snprintf$' | \
+        grep -v '^sprintf_s$' | \
+        grep -v '^_scprintf$' | \
+        grep -v '^__local_stdio_printf_options$' | \
         sort -u
 } > "$DEF_FILE"
 
