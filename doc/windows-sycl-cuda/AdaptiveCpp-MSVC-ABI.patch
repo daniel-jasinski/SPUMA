@@ -1,0 +1,1992 @@
+diff --git a/include/hipSYCL/algorithms/reduction/reduction_engine.hpp b/include/hipSYCL/algorithms/reduction/reduction_engine.hpp
+index f05d03ee..98d564a3 100644
+--- a/include/hipSYCL/algorithms/reduction/reduction_engine.hpp
++++ b/include/hipSYCL/algorithms/reduction/reduction_engine.hpp
+@@ -36,9 +36,88 @@
+ 
+ namespace hipsycl::algorithms::reduction {
+ 
++// ============================================================================
++// Named functors for MSVC ABI compatibility
++// MSVC mangles lambdas with TU-specific identifiers, causing ODR violations
++// when templates are instantiated across multiple translation units.
++// Named functors have stable, predictable mangling across all TUs.
++// ============================================================================
++
++// Helper functions to invoke kernel with tupled args + extra args (avoids lambda)
++// This allows combining parameter packs without using lambdas that MSVC would mangle
++namespace invoke_helpers {
++
++// Invoke kernel with tuple args expanded + extra reducer args
++template<class Kernel, class Tuple, std::size_t... Is, class... Reducers>
++void invoke_kernel_with_tupled_args_impl(
++    const Kernel& k, const Tuple& t, std::index_sequence<Is...>, Reducers... reducers) {
++  k(std::get<Is>(t)..., reducers...);
++}
++
++template<class Kernel, class... TupleArgs, class... Reducers>
++void invoke_kernel_with_tupled_args(
++    const Kernel& k, const std::tuple<TupleArgs...>& t, Reducers... reducers) {
++  invoke_kernel_with_tupled_args_impl(k, t, std::make_index_sequence<sizeof...(TupleArgs)>{}, reducers...);
++}
+ 
++// Functor for std::apply that invokes kernel with pre-captured direct args
++template<class Kernel, class DirectArgsTuple>
++struct kernel_reducer_combiner {
++  const Kernel& k;
++  DirectArgsTuple direct_args;
++
++  kernel_reducer_combiner(const Kernel& kernel, DirectArgsTuple args)
++    : k(kernel), direct_args(args) {}
++
++  template<class... Reducers>
++  void operator()(Reducers... reducers) const {
++    invoke_kernel_with_tupled_args(k, direct_args, reducers...);
++  }
++};
++
++// Invoke group_reducer.finalize with fold expression for each reducer
++template<class GroupHorizontalReducer, class WiIndex, class Tuple, std::size_t... Is, class... Descriptors>
++void invoke_finalize_with_reducers_impl(
++    const GroupHorizontalReducer& group_reducer, WiIndex wi_index,
++    const Tuple& reducers_tuple, std::index_sequence<Is...>,
++    const Descriptors&... descs) {
++  (group_reducer.finalize(wi_index, descs, std::get<Is>(reducers_tuple)), ...);
++}
++
++template<class GroupHorizontalReducer, class WiIndex, class... WiReducers, class... Descriptors>
++void invoke_finalize_with_reducers(
++    const GroupHorizontalReducer& group_reducer, WiIndex wi_index,
++    const std::tuple<WiReducers...>& reducers_tuple,
++    const Descriptors&... descs) {
++  invoke_finalize_with_reducers_impl(
++      group_reducer, wi_index, reducers_tuple,
++      std::make_index_sequence<sizeof...(WiReducers)>{}, descs...);
++}
+ 
++// Functor for std::apply that invokes finalize with pre-captured descriptors
++template<class GroupHorizontalReducer, class WiIndex, class DescriptorsTuple>
++struct finalize_reducer_combiner {
++  const GroupHorizontalReducer& group_reducer;
++  WiIndex wi_index;
++  DescriptorsTuple descs_tuple;
+ 
++  finalize_reducer_combiner(const GroupHorizontalReducer& gr, WiIndex idx, DescriptorsTuple descs)
++    : group_reducer(gr), wi_index(idx), descs_tuple(descs) {}
++
++  template<class... Reducers>
++  void operator()(Reducers... reducers) const {
++    // Expand descriptors tuple and call finalize for each reducer
++    invoke_finalize_expanded(std::make_index_sequence<std::tuple_size_v<DescriptorsTuple>>{}, reducers...);
++  }
++
++private:
++  template<std::size_t... Is, class... Reducers>
++  void invoke_finalize_expanded(std::index_sequence<Is...>, Reducers... reducers) const {
++    (group_reducer.finalize(wi_index, std::get<Is>(descs_tuple), reducers), ...);
++  }
++};
++
++} // namespace invoke_helpers
+ 
+ namespace detail {
+ 
+@@ -68,14 +147,26 @@ auto configure_descriptor(
+       global_size};
+ }
+ 
++// Named functor for enumerate_pack iteration
++template<class F>
++struct enumerate_pack_invoker {
++  F& handler;
++  std::size_t& i;
++
++  enumerate_pack_invoker(F& h, std::size_t& idx) : handler(h), i(idx) {}
++
++  template<class Arg>
++  void invoke(Arg& arg) {
++    handler(i, arg);
++    ++i;
++  }
++};
+ 
+ template<class F, typename... Args>
+ static void enumerate_pack(F&& handler, Args&&... args) {
+   std::size_t i = 0;
+-  ([&]() {
+-    handler(i, args);
+-    ++i;
+-  }(), ...);
++  enumerate_pack_invoker<std::decay_t<F>> invoker{handler, i};
++  (invoker.invoke(args), ...);
+ }
+ 
+ template <class F, class ReductionStageType, std::size_t... Is,
+@@ -94,7 +185,308 @@ auto with_configured_descriptors(F &&f, const ReductionStageType &stage_plan,
+       f, std::make_index_sequence<sizeof...(descriptors)>{}, stage_plan,
+       descriptors...);
+ }
+-}
++} // namespace detail
++
++// Named functor for unpacking parameter packs by value
++struct unpack_by_value_caller {
++  template<class F, class... Args>
++  void operator()(F f, Args... args) const {
++    f(args...);
++  }
++};
++
++// Helper to invoke kernel with variadic args
++template<class Kernel, class... WiReducers>
++struct kernel_invoker_with_reducers {
++  const Kernel& k;
++  std::tuple<WiReducers...> wi_reducers;
++
++  kernel_invoker_with_reducers(const Kernel& kernel, WiReducers... reducers)
++    : k(kernel), wi_reducers(reducers...) {}
++
++  template<class... DirectArgs>
++  void operator()(DirectArgs... args) const {
++    // Use named functor instead of lambda for MSVC ABI compatibility
++    invoke_helpers::kernel_reducer_combiner<Kernel, std::tuple<DirectArgs...>> combiner{
++        k, std::make_tuple(args...)};
++    std::apply(combiner, wi_reducers);
++  }
++};
++
++// Helper to finalize reductions
++template<class GroupHorizontalReducer, class WiIndex, class... WiReducers>
++struct reduction_finalizer {
++  const GroupHorizontalReducer& group_reducer;
++  WiIndex wi_index;
++  std::tuple<WiReducers...> wi_reducers;
++
++  reduction_finalizer(const GroupHorizontalReducer& gr, WiIndex idx, WiReducers... reducers)
++    : group_reducer(gr), wi_index(idx), wi_reducers(reducers...) {}
++
++  template<class... Descriptors>
++  void operator()(const Descriptors&... descs) const {
++    // Use direct invocation with index_sequence instead of lambda for MSVC ABI compatibility
++    invoke_helpers::invoke_finalize_with_reducers(group_reducer, wi_index, wi_reducers, descs...);
++  }
++};
++
++// Helper to generate wi_reducers and call implementation
++template<class Wrapper, class DirectArgsTuple>
++struct wi_reducer_generator {
++  const Wrapper* wrapper;
++  DirectArgsTuple direct_args;
++
++  wi_reducer_generator(const Wrapper* w, DirectArgsTuple args)
++    : wrapper(w), direct_args(args) {}
++
++  template<class... Descriptors>
++  void operator()(const Descriptors&... descs) const {
++    wrapper->call_impl_internal(direct_args, wrapper->group_reducer.generate_wi_reducer(descs)...);
++  }
++};
++
++// Named functor for inner kernel wrapper - calls user kernel and finalizes reductions
++template<class Kernel, class GroupHorizontalReducer, class... ConfiguredReductionDescriptors>
++struct reduction_kernel_inner_wrapper {
++  Kernel k;
++  GroupHorizontalReducer group_reducer;
++  std::tuple<ConfiguredReductionDescriptors...> descriptors;
++
++  reduction_kernel_inner_wrapper(
++      const Kernel& kernel,
++      const GroupHorizontalReducer& reducer,
++      const ConfiguredReductionDescriptors&... descs)
++    : k(kernel), group_reducer(reducer), descriptors(descs...) {}
++
++  template<class DirectArgsTuple, class... WiReducers>
++  void call_impl_internal(DirectArgsTuple direct_args, WiReducers... wi_reducers) const {
++    // Call the kernel with direct args + reducers
++    std::apply(kernel_invoker_with_reducers<Kernel, WiReducers...>{k, wi_reducers...}, direct_args);
++
++    // Finalize reductions
++    auto wi_index = std::get<0>(direct_args);
++    reduction_finalizer<GroupHorizontalReducer, decltype(wi_index), WiReducers...>
++        finalizer{group_reducer, wi_index, wi_reducers...};
++    std::apply(finalizer, descriptors);
++  }
++
++  template<class... DirectKernelArgs>
++  void operator()(DirectKernelArgs... direct_kernel_args) const {
++    auto direct_args_tuple = std::make_tuple(direct_kernel_args...);
++    wi_reducer_generator<reduction_kernel_inner_wrapper, decltype(direct_args_tuple)>
++        generator{this, direct_args_tuple};
++    std::apply(generator, descriptors);
++  }
++};
++
++// Helper functor to execute dedicated reductions from tuple
++template<class GroupHorizontalReducer, class WiIndex>
++struct dedicated_reduction_executor {
++  const GroupHorizontalReducer& group_reducer;
++  WiIndex first_arg;
++
++  dedicated_reduction_executor(const GroupHorizontalReducer& gr, WiIndex fa)
++    : group_reducer(gr), first_arg(fa) {}
++
++  template<class ConfiguredDescriptor>
++  static void execute_single(
++      WiIndex wi_index, const GroupHorizontalReducer &reducer,
++      const ConfiguredDescriptor &descriptor) {
++
++    auto wi_reducer = reducer.generate_wi_reducer(descriptor);
++    std::size_t my_id = wg_model::get_global_linear_id(wi_index);
++
++    if(my_id < descriptor.get_problem_size()) {
++      if (descriptor.has_known_identity() ||
++          descriptor.get_input_initialization_state()[my_id]) {
++        wi_reducer.combine(descriptor.get_stage_input()[my_id]);
++      }
++    }
++    reducer.finalize(wi_index, descriptor, wi_reducer);
++  }
++
++  template<class... Descriptors>
++  void operator()(const Descriptors&... input_refs) const {
++    (execute_single(first_arg, group_reducer, input_refs), ...);
++  }
++};
++
++// Named functor for dedicated reduction kernel
++template<class GroupHorizontalReducer, class... ConfiguredReductionDescriptors>
++struct dedicated_reduction_kernel_functor {
++  GroupHorizontalReducer group_reducer;
++  std::tuple<ConfiguredReductionDescriptors...> inputs;
++
++  dedicated_reduction_kernel_functor(
++      const GroupHorizontalReducer& gr,
++      const ConfiguredReductionDescriptors&... ins)
++    : group_reducer(gr), inputs(ins...) {}
++
++  template<class FirstArg, class... DirectKernelArgs>
++  void operator()(FirstArg first_arg, DirectKernelArgs&&...) const {
++    dedicated_reduction_executor<GroupHorizontalReducer, FirstArg> executor{group_reducer, first_arg};
++    std::apply(executor, inputs);
++  }
++};
++
++// Named functor for main kernel wrapper creation
++template<class GroupHorizontalReducer, class... ReductionDescriptors>
++struct main_kernel_wrapper_creator {
++  const GroupHorizontalReducer& group_reducer;
++  const std::tuple<ReductionDescriptors...>& descriptors_tuple;
++
++  main_kernel_wrapper_creator(
++      const GroupHorizontalReducer& reducer,
++      const std::tuple<ReductionDescriptors...>& descs)
++    : group_reducer(reducer), descriptors_tuple(descs) {}
++
++  template<class Kernel, class... ConfiguredDescriptors>
++  auto operator()(const Kernel& main_kernel, const ConfiguredDescriptors&... configured_descs) const {
++    return reduction_kernel_inner_wrapper<Kernel, GroupHorizontalReducer, ConfiguredDescriptors...>{
++        main_kernel, group_reducer, configured_descs...};
++  }
++};
++
++// Named functor for dedicated kernel creation in additional reduction stages
++template<class GroupHorizontalReducer>
++struct dedicated_kernel_creator {
++  GroupHorizontalReducer horizontal_reducer;
++
++  dedicated_kernel_creator(const GroupHorizontalReducer& reducer)
++    : horizontal_reducer(reducer) {}
++
++  template<class... ConfiguredDescriptors>
++  auto operator()(const ConfiguredDescriptors&... configured_descs) const {
++    return dedicated_reduction_kernel_functor<GroupHorizontalReducer, ConfiguredDescriptors...>{
++        horizontal_reducer, configured_descs...};
++  }
++};
++
++// Named functor for create_plan scratch allocation handler
++template<class PlanType>
++struct plan_scratch_allocator {
++  PlanType& result_plan;
++  util::allocation_group* scratch_allocations;
++
++  plan_scratch_allocator(PlanType& plan, util::allocation_group* allocs)
++    : result_plan(plan), scratch_allocations(allocs) {}
++
++  template<class Descriptor>
++  void operator()(std::size_t reduction_index, const Descriptor& descriptor) {
++    bool has_known_identity = descriptor.has_known_identity();
++
++    using value_type = typename std::decay_t<Descriptor>::value_type;
++
++    value_type *stage_scratch_a = nullptr;
++    value_type *stage_scratch_b = nullptr;
++    initialization_flag_t *is_initialized_a = nullptr;
++    initialization_flag_t *is_initialized_b = nullptr;
++
++    stage_scratch_a = scratch_allocations->template obtain<value_type>(
++        result_plan[1].global_size);
++    if (result_plan.size() > 1)
++      stage_scratch_b = scratch_allocations->template obtain<value_type>(
++          result_plan[1].global_size);
++
++    if (!has_known_identity) {
++      is_initialized_a =
++          scratch_allocations->template obtain<initialization_flag_t>(
++              result_plan[1].global_size);
++      if (result_plan.size() > 1)
++        is_initialized_b =
++            scratch_allocations->template obtain<initialization_flag_t>(
++                result_plan[1].global_size);
++    }
++
++    for (std::size_t i = 0; i < result_plan.size(); ++i) {
++      auto &stage = result_plan[i];
++      // inputs should remain nullptr for first stage
++      if (i > 0) {
++        // Use B scratch, because B is only allocated if we have
++        // intermediate stages, while A is available always.
++        stage.data_plan[reduction_index].stage_input = stage_scratch_b;
++        stage.data_plan[reduction_index].is_input_initialized =
++            is_initialized_b;
++      }
++      // outputs should be set to nullptr for last stage
++      if (i != result_plan.size() - 1) {
++        stage.data_plan[reduction_index].stage_output = stage_scratch_a;
++        stage.data_plan[reduction_index].is_output_initialized =
++            is_initialized_a;
++      } else {
++        stage.data_plan[reduction_index].stage_output =
++            nullptr;
++        stage.data_plan[reduction_index].is_output_initialized =
++            nullptr;
++      }
++      std::swap(stage_scratch_a, stage_scratch_b);
++      std::swap(is_initialized_a, is_initialized_b);
++    }
++  }
++};
++
++// Named functor for make_main_reducing_kernel descriptor unpacker
++template<class Engine, class Kernel, class PlanType>
++struct main_reducing_kernel_unpacker {
++  Engine* engine;
++  const Kernel& main_kernel;
++  const PlanType& reduction_plan;
++
++  main_reducing_kernel_unpacker(Engine* e, const Kernel& k, const PlanType& plan)
++    : engine(e), main_kernel(k), reduction_plan(plan) {}
++
++  template<class... Descriptors>
++  auto operator()(const Descriptors&... descriptors) const {
++    return engine->make_main_reducing_kernel_impl(main_kernel, reduction_plan, descriptors...);
++  }
++};
++
++// Named functor for run_additional_kernels descriptor unpacker
++template<class Engine, class KernelLauncher, class PlanType>
++struct additional_kernels_unpacker {
++  Engine* engine;
++  KernelLauncher& kernel_launcher;
++  const PlanType& reduction_plan;
++
++  additional_kernels_unpacker(Engine* e, KernelLauncher& kl, const PlanType& plan)
++    : engine(e), kernel_launcher(kl), reduction_plan(plan) {}
++
++  template<class... Descriptors>
++  void operator()(const Descriptors&... descriptors) const {
++    engine->run_additional_kernels_impl(kernel_launcher, reduction_plan, descriptors...);
++  }
++};
++
++// Named functor for configured descriptors wrapper in make_main_reducing_kernel
++template<class Kernel, class GroupHorizontalReducer>
++struct configured_descriptor_wrapper {
++  const Kernel& main_kernel;
++  const GroupHorizontalReducer& horizontal_reducer;
++
++  configured_descriptor_wrapper(const Kernel& k, const GroupHorizontalReducer& hr)
++    : main_kernel(k), horizontal_reducer(hr) {}
++
++  template<class... ConfiguredDescriptors>
++  auto operator()(const ConfiguredDescriptors&... configured_descriptors) const {
++    return reduction_kernel_inner_wrapper<Kernel, GroupHorizontalReducer, ConfiguredDescriptors...>{
++        main_kernel, horizontal_reducer, configured_descriptors...};
++  }
++};
++
++// Named functor for additional kernel stage configuration
++template<class GroupHorizontalReducer>
++struct additional_kernel_stage_configurator {
++  const GroupHorizontalReducer& horizontal_reducer;
++
++  additional_kernel_stage_configurator(const GroupHorizontalReducer& hr)
++    : horizontal_reducer(hr) {}
++
++  template<class... ConfiguredDescriptors>
++  auto operator()(const ConfiguredDescriptors&... configured_descriptors) const {
++    return dedicated_reduction_kernel_functor<GroupHorizontalReducer, ConfiguredDescriptors...>{
++        horizontal_reducer, configured_descriptors...};
++  }
++};
+ 
+ 
+ template<class GroupHorizontalReducer>
+@@ -125,34 +517,14 @@ class wg_hierarchical_reduction_engine {
+     }
+   }
+ 
+-  template <class Kernel, typename... ConfiguredReductionDescriptors>
+-  static auto
+-  wrap_main_kernel(const Kernel &k, const GroupHorizontalReducer &group_reducer,
+-                   const ConfiguredReductionDescriptors &...descriptors) {
+-
+-    auto with_unpacked_pack_by_value = [](auto f, auto... args) { f(args...); };
+-
+-    auto wrapped_k = [=](auto... direct_kernel_args) {
+-      with_unpacked_pack_by_value(
+-          [=](auto... wi_reducers) {
+-            k(direct_kernel_args..., wi_reducers...);
+-            auto wi_index = detail::get_first(direct_kernel_args...);
+-            (group_reducer.finalize(wi_index, descriptors, wi_reducers), ...);
+-          },
+-          group_reducer.generate_wi_reducer(descriptors)...);
+-    };
+-
+-    return wrapped_k;
+-  }
+-
+   template <class WiIndex, class ConfiguredReductionDescriptor>
+   static void execute_dedicated_reduction(
+       WiIndex wi_index, const GroupHorizontalReducer &group_reducer,
+       const ConfiguredReductionDescriptor &descriptor) {
+-    
++
+     auto wi_reducer = group_reducer.generate_wi_reducer(descriptor);
+     std::size_t my_id = wg_model::get_global_linear_id(wi_index);
+-    
++
+     if(my_id < descriptor.get_problem_size()) {
+       if (descriptor.has_known_identity() ||
+           descriptor.get_input_initialization_state()[my_id]) {
+@@ -167,53 +539,10 @@ class wg_hierarchical_reduction_engine {
+       const GroupHorizontalReducer &group_reducer,
+       const ConfiguredReductionDescriptors &...inputs) {
+ 
+-    auto kernel = [=](auto first_arg, auto &&...direct_kernel_args) {
+-      (execute_dedicated_reduction(first_arg, group_reducer, inputs), ...);
+-    };
+-
+-    return kernel;
++    return dedicated_reduction_kernel_functor<GroupHorizontalReducer, ConfiguredReductionDescriptors...>{
++        group_reducer, inputs...};
+   }
+ 
+-  
+-  template <class Kernel, class PlanType, typename... ReductionDescriptors>
+-  auto make_main_reducing_kernel(Kernel main_kernel,
+-                                 const PlanType &reduction_plan,
+-                                 ReductionDescriptors... descriptors) {
+-    assert(reduction_plan.size() > 0);
+-
+-    return detail::with_configured_descriptors(
+-        [=, &reduction_plan](auto... configured_descriptors) {
+-          
+-          auto horizontal_reducer = reduction_plan[0].reducer;
+-
+-          return wrap_main_kernel(main_kernel, horizontal_reducer,
+-                                          configured_descriptors...);
+-        },
+-        reduction_plan[0], descriptors...);
+-  }
+-
+-  template <class KernelLauncher, class PlanType,
+-            typename... ReductionDescriptors>
+-  void run_additional_kernels(KernelLauncher kernel_launcher,
+-                              const PlanType &reduction_plan,
+-                              ReductionDescriptors... descriptors) {
+-
+-    // start from 1 to skip the primary kernel
+-    for(int i = 1; i < reduction_plan.size(); ++i) {
+-      auto kernel = detail::with_configured_descriptors(
+-        [=, &reduction_plan](auto... configured_descriptors) {
+-          
+-          auto horizontal_reducer = reduction_plan[i].reducer;
+-
+-          return create_dedicated_reduction_kernel(
+-              horizontal_reducer, configured_descriptors...);
+-        }, reduction_plan[i], descriptors...);
+-
+-      kernel_launcher(reduction_plan[i].num_groups, reduction_plan[i].wg_size,
+-                      reduction_plan[i].global_size,
+-                      reduction_plan[i].local_mem, kernel);
+-    }
+-  }
+ public:
+   wg_hierarchical_reduction_engine(
+       const GroupHorizontalReducer &horizontal_reducer,
+@@ -246,25 +575,25 @@ public:
+     // Add Primary stage
+     if(wg_size == 0)
+       wg_size = 1;
+-    
++
+     result_plan.push_back(reduction_stage_type{
+         wg_size, detail::ceil_division(global_size, wg_size), global_size});
+-    
++
+     // Give reducer the chance to perform its own stage calculation
+     common::auto_small_vector<reduction_stage_type> additional_plan;
+-    
++
+     std::size_t num_groups = detail::ceil_division(global_size, wg_size);
+     // if we only have a single group, we are already done.
+     if(num_groups > 1)
+       determine_stages(num_groups, reduction_wg_size, additional_plan);
+-  
++
+ 
+     for(const auto& stage : additional_plan) {
+       result_plan.push_back(stage);
+     }
+-    
++
+     // Then, allocate required scratch and plan scratch data usage.
+-    const std::size_t num_reductions = sizeof...(ReductionDescriptors); 
++    const std::size_t num_reductions = sizeof...(ReductionDescriptors);
+     // Initialize all to nullptr
+     for(auto& stage : result_plan) {
+       stage.data_plan.resize(num_reductions);
+@@ -275,63 +604,12 @@ public:
+         stage.data_plan[reduction].stage_output = nullptr;
+       }
+     }
+-    
++
+     // If we only need the main kernel for the reduction, no scratch is needed.
+     if(result_plan.size() > 1) {
+-      detail::enumerate_pack(
+-          [&](std::size_t reduction_index, const auto &descriptor) {
+-            bool has_known_identity = descriptor.has_known_identity();
+-
+-            using value_type =
+-                typename std::decay_t<decltype(descriptor)>::value_type;
+-
+-            value_type *stage_scratch_a = nullptr;
+-            value_type *stage_scratch_b = nullptr;
+-            initialization_flag_t *is_initialized_a = nullptr;
+-            initialization_flag_t *is_initialized_b = nullptr;
+-
+-            stage_scratch_a = _scratch_allocations->obtain<value_type>(
+-                result_plan[1].global_size);
+-            if (result_plan.size() > 1)
+-              stage_scratch_b = _scratch_allocations->obtain<value_type>(
+-                  result_plan[1].global_size);
+-
+-            if (!has_known_identity) {
+-              is_initialized_a =
+-                  _scratch_allocations->obtain<initialization_flag_t>(
+-                      result_plan[1].global_size);
+-              if (result_plan.size() > 1)
+-                is_initialized_b =
+-                    _scratch_allocations->obtain<initialization_flag_t>(
+-                        result_plan[1].global_size);
+-            }
+-
+-            for (std::size_t i = 0; i < result_plan.size(); ++i) {
+-              auto &stage = result_plan[i];
+-              // inputs should remain nullptr for first stage
+-              if (i > 0) {
+-                // Use B scratch, because B is only allocated if we have
+-                // intermediate stages, while A is available always.
+-                stage.data_plan[reduction_index].stage_input = stage_scratch_b;
+-                stage.data_plan[reduction_index].is_input_initialized =
+-                    is_initialized_b;
+-              }
+-              // outputs should be set to nullptr for last stage
+-              if (i != result_plan.size() - 1) {
+-                stage.data_plan[reduction_index].stage_output = stage_scratch_a;
+-                stage.data_plan[reduction_index].is_output_initialized =
+-                    is_initialized_a;
+-              } else {
+-                stage.data_plan[reduction_index].stage_output =
+-                    nullptr;
+-                stage.data_plan[reduction_index].is_output_initialized =
+-                    nullptr;
+-              }
+-              std::swap(stage_scratch_a, stage_scratch_b);
+-              std::swap(is_initialized_a, is_initialized_b);
+-            }
+-          },
+-          descriptors...);
++      plan_scratch_allocator<reduction_plan<reduction_stage_type, ReductionDescriptors...>>
++          allocator{result_plan, _scratch_allocations};
++      detail::enumerate_pack(allocator, descriptors...);
+     }
+ 
+     // Lastly, configure reducers in each stage based on the
+@@ -347,29 +625,57 @@ public:
+   }
+ 
+   template <class Kernel, class PlanType, typename... ReductionDescriptors>
++  auto make_main_reducing_kernel_impl(Kernel main_kernel,
++                                 const PlanType &reduction_plan,
++                                 ReductionDescriptors... descriptors) {
++    assert(reduction_plan.size() > 0);
++
++    auto horizontal_reducer = reduction_plan[0].reducer;
++    configured_descriptor_wrapper<Kernel, decltype(horizontal_reducer)> wrapper{
++        main_kernel, horizontal_reducer};
++
++    return detail::with_configured_descriptors(
++        wrapper, reduction_plan[0], descriptors...);
++  }
++
++  template <class Kernel, class PlanType>
+   auto make_main_reducing_kernel(Kernel main_kernel,
+                                  const PlanType &reduction_plan) {
+     assert(reduction_plan.size() > 0);
+ 
+-    return std::apply(
+-        [&](const auto&... descriptors) {
+-          return this->make_main_reducing_kernel(main_kernel, reduction_plan,
+-                                                 descriptors...);
+-        },
+-        reduction_plan.get_descriptors());
++    main_reducing_kernel_unpacker<wg_hierarchical_reduction_engine, Kernel, PlanType>
++        unpacker{this, main_kernel, reduction_plan};
++    return std::apply(unpacker, reduction_plan.get_descriptors());
+   }
+ 
+   template <class KernelLauncher, class PlanType,
+             typename... ReductionDescriptors>
++  void run_additional_kernels_impl(KernelLauncher kernel_launcher,
++                              const PlanType &reduction_plan,
++                              ReductionDescriptors... descriptors) {
++
++    // start from 1 to skip the primary kernel
++    for(int i = 1; i < reduction_plan.size(); ++i) {
++      auto horizontal_reducer = reduction_plan[i].reducer;
++      additional_kernel_stage_configurator<decltype(horizontal_reducer)> configurator{
++          horizontal_reducer};
++
++      auto kernel = detail::with_configured_descriptors(
++          configurator, reduction_plan[i], descriptors...);
++
++      kernel_launcher(reduction_plan[i].num_groups, reduction_plan[i].wg_size,
++                      reduction_plan[i].global_size,
++                      reduction_plan[i].local_mem, kernel);
++    }
++  }
++
++  template <class KernelLauncher, class PlanType>
+   void run_additional_kernels(KernelLauncher kernel_launcher,
+                               const PlanType &reduction_plan) {
+ 
+-    std::apply(
+-        [&](const auto&... descriptors) {
+-          this->run_additional_kernels(kernel_launcher, reduction_plan,
+-                                       descriptors...);
+-        },
+-        reduction_plan.get_descriptors());
++    additional_kernels_unpacker<wg_hierarchical_reduction_engine, KernelLauncher, PlanType>
++        unpacker{this, kernel_launcher, reduction_plan};
++    std::apply(unpacker, reduction_plan.get_descriptors());
+   }
+ };
+ 
+diff --git a/include/hipSYCL/compiler/GlobalsPruningPass.hpp b/include/hipSYCL/compiler/GlobalsPruningPass.hpp
+index fb4ba9da..aa3889a3 100644
+--- a/include/hipSYCL/compiler/GlobalsPruningPass.hpp
++++ b/include/hipSYCL/compiler/GlobalsPruningPass.hpp
+@@ -28,7 +28,7 @@ struct GlobalsPruningPassLegacy : public llvm::ModulePass {
+   bool runOnModule(llvm::Module &M) override;
+ };
+ 
+-#if !defined(_WIN32) || defined(ACPP_LLVM_COMPONENT)
++#if 1 // Patched for Windows MinGW support
+ class GlobalsPruningPass : public llvm::PassInfoMixin<GlobalsPruningPass> {
+ public:
+   explicit GlobalsPruningPass() {}
+diff --git a/include/hipSYCL/compiler/cbs/MathUtils.hpp b/include/hipSYCL/compiler/cbs/MathUtils.hpp
+index 0b4e86f5..1c6ef964 100644
+--- a/include/hipSYCL/compiler/cbs/MathUtils.hpp
++++ b/include/hipSYCL/compiler/cbs/MathUtils.hpp
+@@ -78,8 +78,10 @@ template <> inline int lowest_bit(unsigned int n) {
+     return index - 1;
+ 
+ #else
+-  // default to POSIX
+-  return ffs(n) - 1;
++  // default to GCC
++  if (n == 0)
++    return -1;
++  return __builtin_ffs(n) - 1;
+ #endif
+ }
+ 
+diff --git a/include/hipSYCL/compiler/llvm-to-backend/NameHandling.hpp b/include/hipSYCL/compiler/llvm-to-backend/NameHandling.hpp
+index c3c46833..b7b40d77 100644
+--- a/include/hipSYCL/compiler/llvm-to-backend/NameHandling.hpp
++++ b/include/hipSYCL/compiler/llvm-to-backend/NameHandling.hpp
+@@ -12,6 +12,13 @@
+ #define HIPSYCL_NAME_HANDLING_HPP
+ 
+ #include <string>
++#include <cctype>
++#include <cstdint>
++
++// For MSVC ABI stable kernel naming
++#if defined(_MSC_VER) || (defined(_WIN32) && !defined(__MINGW32__) && !defined(__MINGW64__))
++#define ACPP_MSVC_ABI_TARGET 1
++#endif
+ 
+ namespace hipsycl::compiler {
+ 
+@@ -27,5 +34,92 @@ inline void replaceInvalidMSABICharsInSymbolName(std::string &Name) {
+   }
+ }
+ 
++#ifdef ACPP_MSVC_ABI_TARGET
++// Simple FNV-1a hash for stable kernel naming on MSVC ABI
++// Using 64-bit hash for good collision resistance
++inline uint64_t fnv1aHash(const std::string& str) {
++  const uint64_t FNV_PRIME = 0x100000001b3ULL;
++  const uint64_t FNV_OFFSET = 0xcbf29ce484222325ULL;
++
++  uint64_t hash = FNV_OFFSET;
++  for (char c : str) {
++    hash ^= static_cast<uint64_t>(static_cast<unsigned char>(c));
++    hash *= FNV_PRIME;
++  }
++  return hash;
++}
++
++// Canonicalize a kernel name by removing TU-specific MSVC mangling components
++// This extracts a stable representation from the mangled name
++inline std::string canonicalizeMSVCKernelName(const std::string& MangledName) {
++  std::string Result;
++  Result.reserve(MangledName.size());
++
++  size_t i = 0;
++  while (i < MangledName.size()) {
++    // Skip MSVC anonymous namespace markers: ?A0x followed by 8 hex chars
++    // These are TU-specific hashes
++    if (i + 11 < MangledName.size() &&
++        MangledName[i] == '?' && MangledName[i+1] == 'A' &&
++        MangledName[i+2] == '0' && MangledName[i+3] == 'x') {
++      // Skip ?A0x and the 8 hex digits
++      i += 4;
++      while (i < MangledName.size() && std::isxdigit(MangledName[i])) {
++        ++i;
++      }
++      // Skip trailing @ if present
++      if (i < MangledName.size() && MangledName[i] == '@') {
++        ++i;
++      }
++      continue;
++    }
++
++    // Normalize lambda numbering: <lambda_N> -> <lambda>
++    // MSVC numbers lambdas per TU, so we strip the number
++    if (i + 8 < MangledName.size() &&
++        MangledName.substr(i, 8) == "<lambda_") {
++      Result += "<lambda>";
++      i += 8;
++      // Skip digits
++      while (i < MangledName.size() && std::isdigit(MangledName[i])) {
++        ++i;
++      }
++      // Skip closing >
++      if (i < MangledName.size() && MangledName[i] == '>') {
++        ++i;
++      }
++      continue;
++    }
++
++    // Keep other characters
++    Result += MangledName[i];
++    ++i;
++  }
++
++  return Result;
++}
++
++// Generate a stable kernel name for MSVC ABI targets
++// Uses hash of canonicalized name to ensure consistency across TUs
++inline std::string generateStableMSVCKernelName(const std::string& OriginalName,
++                                                 const std::string& FunctionSignature) {
++  // Canonicalize the name to remove TU-specific components
++  std::string Canonical = canonicalizeMSVCKernelName(OriginalName);
++
++  // Combine with function signature for additional uniqueness
++  std::string Combined = Canonical + "|" + FunctionSignature;
++
++  // Compute hash
++  uint64_t Hash = fnv1aHash(Combined);
++
++  // Format as hex string: __acpp_kernel_XXXXXXXXXXXXXXXX
++  char HashStr[32];
++  snprintf(HashStr, sizeof(HashStr), "__acpp_kernel_%016llx",
++           static_cast<unsigned long long>(Hash));
++
++  return std::string(HashStr);
++}
++#endif // ACPP_MSVC_ABI_TARGET
++
+ } // namespace hipsycl::compiler
+ #endif
+diff --git a/include/hipSYCL/glue/llvm-sscp/hcf_registration.hpp b/include/hipSYCL/glue/llvm-sscp/hcf_registration.hpp
+index bbd28a4f..03100af2 100644
+--- a/include/hipSYCL/glue/llvm-sscp/hcf_registration.hpp
++++ b/include/hipSYCL/glue/llvm-sscp/hcf_registration.hpp
+@@ -11,6 +11,7 @@
+ 
+ #include "s1_ir_constants.hpp"
+ #include <cstdlib>
++#include "hipSYCL/common/init_priority.hpp"
+ 
+ 
+ #ifndef ACPP_SSCP_HCF_REGISTRATION_HPP
+@@ -45,7 +46,7 @@ public:
+   }
+ };
+ 
+-static static_hcf_registration __acpp_register_sscp_hcf_object;
++static ACPP_INIT_PRIORITY_USER static_hcf_registration __acpp_register_sscp_hcf_object;
+ }
+ 
+ 
+diff --git a/include/hipSYCL/glue/persistent_runtime.hpp b/include/hipSYCL/glue/persistent_runtime.hpp
+index cbd6a0e8..fb8e0cda 100644
+--- a/include/hipSYCL/glue/persistent_runtime.hpp
++++ b/include/hipSYCL/glue/persistent_runtime.hpp
+@@ -13,6 +13,7 @@
+ 
+ #include <memory>
+ #include "hipSYCL/runtime/application.hpp"
++#include "hipSYCL/common/init_priority.hpp"
+ 
+ namespace hipsycl {
+ namespace glue {
+@@ -28,7 +29,7 @@ private:
+   std::shared_ptr<rt::runtime> _rt;
+ };
+ 
+-static persistent_runtime persistent_runtime_object;
++static ACPP_INIT_PRIORITY_USER persistent_runtime persistent_runtime_object;
+ 
+ }
+ }
+diff --git a/include/hipSYCL/glue/reflection.hpp b/include/hipSYCL/glue/reflection.hpp
+index 711a10d1..e961282c 100644
+--- a/include/hipSYCL/glue/reflection.hpp
++++ b/include/hipSYCL/glue/reflection.hpp
+@@ -12,6 +12,7 @@
+ #define HIPSYCL_REFLECTION_HPP
+ 
+ #include "hipSYCL/runtime/support/reflection.hpp"
++#include "hipSYCL/common/init_priority.hpp"
+ 
+ template <class StructT>
+ void __acpp_introspect_flattened_struct(void *s, int **num_flattened_members,
+@@ -80,7 +81,7 @@ struct __acpp_reflection_tu_init_trigger {
+   }
+ };
+ 
+-static __acpp_reflection_tu_init_trigger __reflection_init;
++static ACPP_INIT_PRIORITY_USER __acpp_reflection_tu_init_trigger __reflection_init;
+ 
+ 
+ namespace hipsycl::glue::reflection {
+diff --git a/include/hipSYCL/runtime/data.hpp b/include/hipSYCL/runtime/data.hpp
+index 6879e501..dcdbc439 100644
+--- a/include/hipSYCL/runtime/data.hpp
++++ b/include/hipSYCL/runtime/data.hpp
+@@ -263,7 +263,7 @@ struct data_allocation {
+ 
+   using allocation_function = std::function<Memory_descriptor(
+       range<3> num_elements, std::size_t element_size)>;
+-  
++
+   device_id dev;
+   Memory_descriptor memory;
+   range_store invalid_pages;
+@@ -271,6 +271,170 @@ struct data_allocation {
+   backend_allocator* managing_allocator;
+ };
+ 
++// Named functors for MSVC ABI compatibility.
++// MSVC mangles lambdas with unique per-TU identifiers, causing ODR violations
++// when templates are instantiated across multiple translation units.
++// Named functors have stable, predictable mangling across all TUs.
++
++template<class Memory_descriptor>
++struct data_region_cleanup_functor {
++  bool operator()(data_allocation<Memory_descriptor>& alloc) const {
++    if(alloc.memory && alloc.is_owned) {
++      device_id dev = alloc.dev;
++      HIPSYCL_DEBUG_INFO << "data_region::~data_region: Freeing allocation "
++                         << alloc.memory << std::endl;
++      if(!alloc.managing_allocator) {
++        HIPSYCL_DEBUG_WARNING
++            << "data_region::~data_region: Cannot free owned allocation "
++            << alloc.memory
++            << " because no managing allocator was provided. This is likely "
++               "a memory leak."
++            << std::endl;
++      } else {
++        rt::deallocate(alloc.managing_allocator, alloc.memory);
++      }
++    }
++    return true;
++  }
++};
++
++// No-op handler for has_match() - returns true to continue iteration
++template<class Memory_descriptor>
++struct noop_allocation_handler {
++  void operator()(const data_allocation<Memory_descriptor>&) const {}
++};
++
++// Handler to remove pages from invalid_pages
++template<class Memory_descriptor>
++struct remove_invalid_pages_handler {
++  using page_range = std::pair<id<3>, range<3>>;
++  const page_range& pr;
++
++  explicit remove_invalid_pages_handler(const page_range& p) : pr(p) {}
++
++  void operator()(data_allocation<Memory_descriptor>& alloc) const {
++    alloc.invalid_pages.remove(pr);
++  }
++};
++
++// Handler for mark_range_current - updates invalid pages based on selector match
++template<class Memory_descriptor, class Selector>
++struct update_invalid_pages_handler {
++  using page_range = std::pair<id<3>, range<3>>;
++  const page_range& pr;
++  const Selector& selector;
++
++  update_invalid_pages_handler(const page_range& p, const Selector& s)
++    : pr(p), selector(s) {}
++
++  bool operator()(data_allocation<Memory_descriptor>& alloc) const {
++    if (selector(alloc)) {
++      alloc.invalid_pages.remove(pr);
++    } else {
++      alloc.invalid_pages.add(pr);
++    }
++    return true;
++  }
++};
++
++// Handler to get intersections with outdated regions
++template<class Memory_descriptor>
++struct get_intersections_handler {
++  using page_range = std::pair<id<3>, range<3>>;
++  const id<3>& first_page;
++  const range<3>& num_pages;
++  std::vector<range_store::rect>& out;
++
++  get_intersections_handler(const id<3>& fp, const range<3>& np,
++                            std::vector<range_store::rect>& o)
++    : first_page(fp), num_pages(np), out(o) {}
++
++  void operator()(const data_allocation<Memory_descriptor>& alloc) const {
++    alloc.invalid_pages.intersections_with(
++        std::make_pair(first_page, num_pages), out);
++  }
++};
++
++// Handler to find update source candidates
++template<class Memory_descriptor, class Selector>
++struct find_update_sources_handler {
++  using page_range = std::pair<id<3>, range<3>>;
++  const page_range& pr;
++  const range_store::rect& data_range;
++  const Selector& selector;
++  std::vector<std::pair<device_id, range_store::rect>>& update_sources;
++
++  find_update_sources_handler(const page_range& p, const range_store::rect& dr,
++                              const Selector& s,
++                              std::vector<std::pair<device_id, range_store::rect>>& us)
++    : pr(p), data_range(dr), selector(s), update_sources(us) {}
++
++  bool operator()(const data_allocation<Memory_descriptor>& alloc) const {
++    if (!selector(alloc)) {
++      if(alloc.invalid_pages.entire_range_empty(pr)) {
++        update_sources.push_back(std::make_pair(alloc.dev, data_range));
++      }
++    }
++    return true;
++  }
++};
++
++// Handler to get memory from allocation
++template<class Memory_descriptor>
++struct get_memory_handler {
++  Memory_descriptor& mem;
++
++  explicit get_memory_handler(Memory_descriptor& m) : mem(m) {}
++
++  void operator()(const data_allocation<Memory_descriptor>& alloc) const {
++    mem = alloc.memory;
++  }
++};
++
++// Handler to copy entire allocation
++template<class Memory_descriptor>
++struct copy_allocation_handler {
++  data_allocation<Memory_descriptor>& found_alloc;
++
++  explicit copy_allocation_handler(data_allocation<Memory_descriptor>& fa)
++    : found_alloc(fa) {}
++
++  void operator()(const data_allocation<Memory_descriptor>& alloc) const {
++    found_alloc = alloc;
++  }
++};
++
++// Selector to match allocation by memory descriptor
++template<class Memory_descriptor>
++struct memory_selector {
++  Memory_descriptor mem;
++
++  explicit memory_selector(Memory_descriptor m) : mem(m) {}
++
++  bool operator()(const data_allocation<Memory_descriptor>& alloc) const {
++    return alloc.memory == mem;
++  }
++};
++
++// Handler to check for valid pages (has_initialized_content)
++template<class Memory_descriptor>
++struct check_valid_pages_handler {
++  using page_range = std::pair<id<3>, range<3>>;
++  const page_range& pr;
++  bool& found_valid_pages;
++
++  check_valid_pages_handler(const page_range& p, bool& fvp)
++    : pr(p), found_valid_pages(fvp) {}
++
++  bool operator()(const data_allocation<Memory_descriptor>& alloc) const {
++    if (!alloc.invalid_pages.entire_range_filled(pr)) {
++      found_valid_pages = true;
++      return false;
++    }
++    return true;
++  }
++};
++
+ template <class Memory_descriptor> class allocation_list {
+ public:
+   template<class BinaryPredicate>
+@@ -330,7 +494,7 @@ public:
+ 
+   template <class UnaryPredicate>
+   bool has_match(UnaryPredicate &&selector) const {
+-    return select_and_handle(selector, [](const auto&){});
++    return select_and_handle(selector, noop_allocation_handler<Memory_descriptor>{});
+   }
+ private:
+   std::vector<data_allocation<Memory_descriptor>> _allocations;
+@@ -404,24 +568,9 @@ public:
+   }
+ 
+   ~data_region() {
+-    _allocations.for_each_allocation_while([](auto& alloc) {
+-      if(alloc.memory && alloc.is_owned) {
+-        device_id dev = alloc.dev;
+-        HIPSYCL_DEBUG_INFO << "data_region::~data_region: Freeing allocation "
+-                           << alloc.memory << std::endl;
+-        if(!alloc.managing_allocator) {
+-          HIPSYCL_DEBUG_WARNING
+-              << "data_region::~data_region: Cannot free owned allocation "
+-              << alloc.memory
+-              << " because no managing allocator was provided. This is likely "
+-                 "a memory leak."
+-              << std::endl;
+-        } else {
+-          rt::deallocate(alloc.managing_allocator, alloc.memory);
+-        }
+-      }
+-      return true;
+-    });
++    // Use named functor instead of lambda for MSVC ABI stability
++    data_region_cleanup_functor<Memory_descriptor> cleanup;
++    _allocations.for_each_allocation_while(cleanup);
+   }
+ 
+   /// Iterate over all allocations, abort as soon as \c h() returns false.
+@@ -502,11 +651,9 @@ public:
+     assert(has_allocation(d));
+ 
+     _allocations.select_and_handle(default_allocation_selector{d},
+-                                   [&](auto &alloc) {
+-      alloc.invalid_pages.remove(pr);              
+-    });
++                                   remove_invalid_pages_handler<Memory_descriptor>{pr});
+   }
+-  
++
+   /// Marks an allocation range on a given device most recent
+   void mark_range_current(const device_id& d,
+       id<3> data_offset,
+@@ -516,14 +663,9 @@ public:
+ 
+     default_allocation_selector argument_match{d};
+ 
+-    _allocations.for_each_allocation_while([&](auto &alloc) {
+-      if (argument_match(alloc)) {
+-        alloc.invalid_pages.remove(pr);
+-      } else {
+-        alloc.invalid_pages.add(pr);
+-      }
+-      return true;
+-    });
++    update_invalid_pages_handler<Memory_descriptor, default_allocation_selector>
++        handler{pr, argument_match};
++    _allocations.for_each_allocation_while(handler);
+   }
+ 
+   void get_outdated_regions(const device_id& d,
+@@ -539,14 +681,12 @@ public:
+     range<3> num_pages = pr.second;
+ 
+     // Find outdated regions among pages
++    get_intersections_handler<Memory_descriptor> handler{first_page, num_pages, out};
+     [[maybe_unused]] bool was_found = _allocations.select_and_handle(
+-        default_allocation_selector{d}, [&](auto &alloc) {
+-          alloc.invalid_pages.intersections_with(
+-              std::make_pair(first_page, num_pages), out);
+-        });
+-    
++        default_allocation_selector{d}, handler);
++
+     assert(was_found);
+-    
++
+     // Convert back to num elements
+     for(range_store::rect& r : out) {
+       for(int i = 0; i < 3; ++i) {
+@@ -577,15 +717,9 @@ public:
+     page_range pr = get_page_range(data_range.first, data_range.second);
+ 
+     default_allocation_selector selector{d};
+-    _allocations.for_each_allocation_while([&](const auto &alloc) {
+-      // Find all valid pages that are *not* accessible on the given device
+-      if (!selector(alloc)) {
+-        if(alloc.invalid_pages.entire_range_empty(pr)) {
+-          update_sources.push_back(std::make_pair(alloc.dev, data_range));
+-        }
+-      }
+-      return true;
+-    });
++    find_update_sources_handler<Memory_descriptor, default_allocation_selector>
++        handler{pr, data_range, selector, update_sources};
++    _allocations.for_each_allocation_while(handler);
+     if(update_sources.empty()){
+       assert(false && "Could not find valid data source for updating data buffer - "
+               "this can happen if several data transfers are required to update accessed range, "
+@@ -609,10 +743,9 @@ public:
+ 
+     Memory_descriptor mem{};
+ 
++    get_memory_handler<Memory_descriptor> handler{mem};
+     [[maybe_unused]] bool was_found = _allocations.select_and_handle(
+-        default_allocation_selector{dev}, [&](const auto &alloc) {
+-          mem = alloc.memory;
+-    });
++        default_allocation_selector{dev}, handler);
+ 
+     assert(was_found);
+ 
+@@ -624,10 +757,9 @@ public:
+ 
+     data_allocation<Memory_descriptor> found_alloc;
+ 
++    copy_allocation_handler<Memory_descriptor> handler{found_alloc};
+     [[maybe_unused]] bool was_found = _allocations.select_and_handle(
+-        default_allocation_selector{dev}, [&](const auto &alloc) {
+-          found_alloc = alloc;
+-    });
++        default_allocation_selector{dev}, handler);
+ 
+     assert(was_found);
+ 
+@@ -646,31 +778,22 @@ public:
+ 
+   template <class Handler>
+   bool find_and_handle_allocation(Memory_descriptor mem, Handler &&h) const {
+-    return _allocations.select_and_handle([mem](const auto &alloc) {
+-      return alloc.memory == mem;
+-    }, h);
++    return _allocations.select_and_handle(memory_selector<Memory_descriptor>{mem}, h);
+   }
+ 
+   template <class Handler>
+   bool find_and_handle_allocation(Memory_descriptor mem, Handler &&h) {
+-    return _allocations.select_and_handle([mem](const auto &alloc) {
+-      return alloc.memory == mem;
+-    }, h);
++    return _allocations.select_and_handle(memory_selector<Memory_descriptor>{mem}, h);
+   }
+-  
++
+   bool has_initialized_content(id<3> data_offset,
+                                range<3> data_range) const {
+     page_range pr = get_page_range(data_offset, data_range);
+ 
+     bool found_valid_pages = false;
+ 
+-    _allocations.for_each_allocation_while([&](const auto &alloc) {
+-      if (!alloc.invalid_pages.entire_range_filled(pr)) {
+-        found_valid_pages = true;
+-        return false;
+-      }
+-      return true;
+-    });
++    check_valid_pages_handler<Memory_descriptor> handler{pr, found_valid_pages};
++    _allocations.for_each_allocation_while(handler);
+ 
+     return found_valid_pages;
+   }
+diff --git a/include/hipSYCL/sycl/device_selector.hpp b/include/hipSYCL/sycl/device_selector.hpp
+index 19b993a8..4074481b 100644
+--- a/include/hipSYCL/sycl/device_selector.hpp
++++ b/include/hipSYCL/sycl/device_selector.hpp
+@@ -220,41 +220,62 @@ inline constexpr multi_device_selector<gpu_selector, selection_policy::best>
+ inline constexpr multi_device_selector<default_selector, selection_policy::all>
+     system_selector_v;
+ 
+-inline auto aspect_selector(const std::vector<aspect> &aspectList,
+-                            const std::vector<aspect> &denyList = {}) {
++// Named functor for aspect selection - MSVC ABI compatibility
++// MSVC mangles lambdas with TU-specific identifiers, causing ODR violations
++// when templates are instantiated across multiple translation units.
++// Named functors have stable, predictable mangling across all TUs.
++class aspect_list_selector {
++public:
++  aspect_list_selector(std::vector<aspect> allow, std::vector<aspect> deny = {})
++    : aspectList_(std::move(allow)), denyList_(std::move(deny)) {}
+ 
+-  return [=](const device& dev) {
+-    if(aspectList.empty() && denyList.empty())
++  int operator()(const device& dev) const {
++    if(aspectList_.empty() && denyList_.empty())
+       return detail::select_default(dev);
+ 
+-    for(aspect a : aspectList) {
++    for(aspect a : aspectList_) {
+       if(!dev.has(a))
+         return -1;
+     }
+-    for(aspect a : denyList) {
++    for(aspect a : denyList_) {
+       if(dev.has(a))
+         return -1;
+     }
+     return 1;
+-  };
++  }
++
++private:
++  std::vector<aspect> aspectList_;
++  std::vector<aspect> denyList_;
++};
++
++// Named functor for compile-time aspect selection
++template <aspect... Aspects>
++struct variadic_aspect_selector {
++  int operator()(const device& dev) const {
++    if constexpr (sizeof...(Aspects) == 0) {
++      return detail::select_default(dev);
++    } else {
++      bool satisfies_all = (dev.has(Aspects) && ...);
++      return satisfies_all ? 1 : -1;
++    }
++  }
++};
++
++inline auto aspect_selector(const std::vector<aspect> &aspectList,
++                            const std::vector<aspect> &denyList = {}) {
++  return aspect_list_selector{aspectList, denyList};
+ }
+ 
+ template <typename... aspectListTN>
+ auto aspect_selector(aspectListTN... aspectList) {
+-  return [=](const device& dev) {
+-    if(sizeof...(aspectList) == 0)
+-      return detail::select_default(dev);
+-
+-    bool satisfies_all = (dev.has(aspectList) && ...);
+-    if(satisfies_all)
+-      return 1;
+-    return -1;
+-  };
++  // Convert runtime aspects to vector-based selector
++  return aspect_list_selector{{aspectList...}, {}};
+ }
+ 
+ template <aspect... aspectList>
+ auto aspect_selector() {
+-  return aspect_selector(aspectList...);
++  return variadic_aspect_selector<aspectList...>{};
+ }
+ 
+ inline device::device()
+@@ -268,6 +289,36 @@ inline device::device(const DeviceSelector &deviceSelector) {
+   
+ namespace detail {
+ 
++// Named functors for MSVC ABI compatibility
++// MSVC mangles lambdas with unique per-TU identifiers, causing ODR violations
++// when templates are instantiated across multiple translation units.
++// Named functors have stable, predictable mangling across all TUs.
++template<class Selector>
++struct device_score_calculator {
++  const Selector& selector;
++  const std::vector<device>& devices;
++
++  device_score_calculator(const Selector& s, const std::vector<device>& d)
++    : selector(s), devices(d) {}
++
++  int operator()(int dev_index) const {
++    return selector(devices[dev_index]);
++  }
++};
++
++template<class Selector>
++struct device_score_comparator {
++  const Selector& selector;
++  const std::vector<device>& devices;
++
++  device_score_comparator(const Selector& s, const std::vector<device>& d)
++    : selector(s), devices(d) {}
++
++  bool operator()(int a, int b) const {
++    return selector(devices[a]) > selector(devices[b]);
++  }
++};
++
+ template <class Selector>
+ std::vector<device> select_devices(const Selector &s) {
+ 
+@@ -275,7 +326,7 @@ std::vector<device> select_devices(const Selector &s) {
+     rt::default_selector_behavior b =
+         rt::application::get_settings()
+             .get<rt::setting::default_selector_behavior>();
+-    
++
+     if(b == rt::default_selector_behavior::system)
+       return select_devices(system_selector_v);
+     else if(b == rt::default_selector_behavior::multigpu)
+@@ -289,11 +340,13 @@ std::vector<device> select_devices(const Selector &s) {
+   std::vector<int> dev_scores(devices.size());
+ 
+   std::iota(dev_indices.begin(), dev_indices.end(), 0);
+-  std::transform(dev_indices.begin(), dev_indices.end(), dev_scores.begin(),
+-                 [&](int dev_index){ return s(devices[dev_index]); });
+ 
+-  std::sort(dev_indices.begin(), dev_indices.end(),
+-            [&](int a, int b) { return s(devices[a]) > s(devices[b]); });
++  // Use named functors instead of lambdas for MSVC ABI stability
++  device_score_calculator<Selector> score_calc{s, devices};
++  std::transform(dev_indices.begin(), dev_indices.end(), dev_scores.begin(), score_calc);
++
++  device_score_comparator<Selector> score_cmp{s, devices};
++  std::sort(dev_indices.begin(), dev_indices.end(), score_cmp);
+ 
+   int max_devs = 1;
+ 
+diff --git a/include/hipSYCL/sycl/libkernel/host/builtins.hpp b/include/hipSYCL/sycl/libkernel/host/builtins.hpp
+index 9b4da520..96e846b1 100644
+--- a/include/hipSYCL/sycl/libkernel/host/builtins.hpp
++++ b/include/hipSYCL/sycl/libkernel/host/builtins.hpp
+@@ -303,7 +303,7 @@ HIPSYCL_BUILTIN T __acpp_rint(T x) noexcept {
+ 
+ template<class T>
+ HIPSYCL_BUILTIN T __acpp_rootn(T x, int y) noexcept {
+-  return std::pow(x, T{1}/T{y});
++  return std::pow(x, T(1)/static_cast<T>(y));
+ }
+ 
+ template<class T>
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 4a450cfc..9c094cfe 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1,6 +1,6 @@
+ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+ 
+-if(NOT APPLE AND NOT WIN32)
++if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+   # symbolic functions causes references in our libraries to be resolved
+   # to definitions within the libraries themselves, if possible.
+   # If both runtime library and SYCL headers define some of the same
+diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
+index b78cc56e..dcbe1ff8 100644
+--- a/src/common/CMakeLists.txt
++++ b/src/common/CMakeLists.txt
+@@ -29,12 +29,12 @@ endif()
+ 
+ # to get the search path we need to know the output name, so set it explicitly.
+ set(HIPSYCL_COMMON_LIBRARY_OUTPUT_NAME "acpp-common")
+-if(WIN32)
++if(WIN32 OR MINGW OR MSYS OR CMAKE_SYSTEM_NAME MATCHES "Windows")
+   set_target_properties(acpp-common PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS On)
+ 
+   # ensure actual output and expected are equivalent
+   set_target_properties(acpp-common PROPERTIES RUNTIME_OUTPUT_NAME ${HIPSYCL_COMMON_LIBRARY_OUTPUT_NAME})
+-  if(MinGW)
++  if(MinGW OR MSYS)
+     set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "lib${HIPSYCL_COMMON_LIBRARY_OUTPUT_NAME}.dll" PARENT_SCOPE)
+   else()
+     set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "${HIPSYCL_COMMON_LIBRARY_OUTPUT_NAME}.dll" PARENT_SCOPE)
+diff --git a/src/compiler/AdaptiveCppLlvmPasses.cpp b/src/compiler/AdaptiveCppLlvmPasses.cpp
+index 4368bf50..49811920 100644
+--- a/src/compiler/AdaptiveCppLlvmPasses.cpp
++++ b/src/compiler/AdaptiveCppLlvmPasses.cpp
+@@ -129,7 +129,7 @@ static llvm::RegisterStandardPasses
+ 
+ }}
+ 
+-#if !defined(_WIN32) || defined(ACPP_LLVM_COMPONENT)
++#if 1 // Patched for Windows MinGW support
+ #define HIPSYCL_RESOLVE_AND_QUOTE(V) #V
+ #define HIPSYCL_STRINGIFY(V) HIPSYCL_RESOLVE_AND_QUOTE(V)
+ #define HIPSYCL_PLUGIN_VERSION_STRING                                                              \
+diff --git a/src/compiler/CMakeLists.txt b/src/compiler/CMakeLists.txt
+index c906c54d..7aedd294 100644
+--- a/src/compiler/CMakeLists.txt
++++ b/src/compiler/CMakeLists.txt
+@@ -196,6 +196,9 @@ else()
+     NO_MODULE
+     SUBPROJECT AdaptiveCpp
+     ${COMPILER_LIBRARY_SOURCES}
++    LINK_COMPONENTS
++      Passes
++      IPO
+   )
+ endif()
+ 
+@@ -216,7 +219,11 @@ function(configure_target)
+     ${ACPP_SOURCE_ROOT}/include
+     ${CMAKE_CURRENT_SOURCE_DIR}
+     ${ACPP_BINARY_ROOT}/include)
+-  target_include_directories(${target} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  if(MINGW OR MSYS OR CYGWIN)
++    target_include_directories(${target} PRIVATE ${LLVM_INCLUDE_DIRS})
++  else()
++    target_include_directories(${target} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  endif()
+ 
+   separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+   target_compile_definitions(${target} PRIVATE
+@@ -241,10 +248,37 @@ function(configure_target)
+       ${LLVM_LIBS})
+   endif()
+ 
+-  if(WIN32 AND NOT ACPP_LLVM_COMPONENT)
++  if((WIN32 OR MSYS OR CYGWIN) AND NOT ACPP_LLVM_COMPONENT)
+     set(CLANG_LIBRARY_DIR ${LLVM_PREFIX_DIR}/lib/)
+     target_link_directories(${target} PRIVATE ${CLANG_LIBRARY_DIR})
+-    target_link_libraries(${target} PRIVATE clang LLVMSupport)
++    # On Windows/MinGW, link individual clang and LLVM component libraries
++    # Order matters for static linking - dependencies must come after dependents
++    target_link_libraries(${target} PRIVATE
++      clangFrontendTool
++      clangFrontend
++      clangDriver
++      clangSerialization
++      clangCodeGen
++      clangParse
++      clangSema
++      clangAPINotes
++      clangASTMatchers
++      clangAnalysis
++      clangEdit
++      clangAST
++      clangLex
++      clangBasic
++      clangSupport
++      LLVMWindowsDriver
++      LLVMOption
++      LLVMTargetParser
++      LLVMSupport
++      LLVMDemangle
++      version  # Windows version.dll for GetFileVersionInfo*
++    )
++    if(MINGW)
++      target_link_libraries(${target} PRIVATE pthread)
++    endif()
+   endif()
+ 
+   if(ACPP_LLVM_COMPONENT)
+@@ -277,8 +311,24 @@ endif()
+ 
+ if(APPLE)
+   target_link_libraries(${COMPILER_LIBRARY_NAME} PRIVATE -Wl,-undefined -Wl,dynamic_lookup)
+-elseif(WIN32)
+-  set_target_properties(${COMPILER_LIBRARY_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS On)
++elseif(WIN32 OR MSYS OR CYGWIN)
++  # Note: WINDOWS_EXPORT_ALL_SYMBOLS disabled to avoid PE export limit (65535)
++  # The plugin functionality uses clang's built-in plugin loading mechanism
++  set_target_properties(${COMPILER_LIBRARY_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS Off)
++
++  # Exclude all automatic symbol exports to avoid PE export ordinal limit (65535)
++  # The LLVM libraries contain 77000+ symbols which exceed this limit
++  target_link_options(${COMPILER_LIBRARY_NAME} PRIVATE "-Wl,--exclude-all-symbols")
++
++  # Use .def file for minimal symbol exports needed for plugin loading
++  set(_def_file "${CMAKE_CURRENT_SOURCE_DIR}/acpp-clang.def")
++  if(EXISTS "${_def_file}")
++    message(STATUS "Using minimal exports .def file: ${_def_file}")
++    target_sources(${COMPILER_LIBRARY_NAME} PRIVATE "${_def_file}")
++  else()
++    message(WARNING "Minimal exports .def file not found: ${_def_file}")
++    message(WARNING "Plugin loading may not work without exported symbols")
++  endif()
+ else()
+   target_link_libraries(${COMPILER_LIBRARY_NAME} PRIVATE -Wl,-znodelete)
+ endif()
+diff --git a/src/compiler/GlobalsPruningPass.cpp b/src/compiler/GlobalsPruningPass.cpp
+index 7ffac1c4..9a8fbab3 100644
+--- a/src/compiler/GlobalsPruningPass.cpp
++++ b/src/compiler/GlobalsPruningPass.cpp
+@@ -48,7 +48,7 @@ bool hipsycl::compiler::GlobalsPruningPassLegacy::runOnModule(llvm::Module &M) {
+   return true;
+ }
+ 
+-#if !defined(_WIN32) || defined(ACPP_LLVM_COMPONENT)
++#if 1 // Patched for Windows MinGW support
+ llvm::PreservedAnalyses
+ hipsycl::compiler::GlobalsPruningPass::run(llvm::Module &M,
+                                            llvm::ModuleAnalysisManager &AM) {
+diff --git a/src/compiler/llvm-to-backend/CMakeLists.txt b/src/compiler/llvm-to-backend/CMakeLists.txt
+index 3d17eaa9..b6451356 100644
+--- a/src/compiler/llvm-to-backend/CMakeLists.txt
++++ b/src/compiler/llvm-to-backend/CMakeLists.txt
+@@ -30,19 +30,24 @@ function(create_llvm_based_library)
+ 
+   target_include_directories(${target} PRIVATE
+     ${LLVM_TO_BACKEND_INCLUDE_DIRS})
+-  target_include_directories(${target} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  if(MINGW OR MSYS OR CYGWIN)
++    target_include_directories(${target} PRIVATE ${LLVM_INCLUDE_DIRS})
++  else()
++    target_include_directories(${target} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  endif()
+ 
+   separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+   target_compile_definitions(${target} PRIVATE
+     ${LLVM_DEFINITIONS_LIST})
+   target_compile_definitions(${target} PRIVATE -DHIPSYCL_COMPILER_COMPONENT)
+ 
+-  if(NOT ACPP_LLVM_COMPONENT)
++  # On Windows, we use static LLVM libraries, so no need to check for libLLVM
++  if(NOT ACPP_LLVM_COMPONENT AND NOT WIN32)
+     find_library(LLVM_LIBRARY NAMES LLVM LLVM-${LLVM_VERSION_MAJOR} HINTS ${LLVM_LIBRARY_DIRS} NO_DEFAULT_PATH)
+     if(NOT LLVM_LIBRARY)
+       message(FATAL_ERROR "LLVM at ${LLVM_DIR} does not have libLLVM.so. Disable advanced compiler-based functionality (-DACPP_COMPILER_FEATURE_PROFILE=minimal, not recommended for most use cases) or choose another LLVM installation")
+     endif()
+-  elseif(NOT LLVM_BUILD_LLVM_DYLIB AND NOT WIN32)
++  elseif(ACPP_LLVM_COMPONENT AND NOT LLVM_BUILD_LLVM_DYLIB AND NOT WIN32)
+     message(FATAL_ERROR "LLVM is not configured to build libLLVM.so. Please disable reconfigure with LLVM_BUILD_LLVM_DYLIB and LLVM_LINK_LLVM_DYLIB.")
+   endif()
+   if(WIN32)
+@@ -52,6 +57,20 @@ function(create_llvm_based_library)
+   endif()
+   # We need symbolic functions for stdpar
+   target_link_libraries(${target} PRIVATE ${HIPSYCL_STDPAR_RT_LINKER_FLAGS})
++
++  # SPUMA_MINIMAL_EXPORTS_PATCH: Add pthread for MinGW
++  if(MINGW)
++    target_link_libraries(${target} PRIVATE pthread)
++  endif()
++  # On MinGW, LLVM static libraries require pthread
++  if(MINGW)
++    target_link_libraries(${target} PRIVATE pthread)
++
++  # SPUMA_MINIMAL_EXPORTS_PATCH: Add pthread for MinGW
++  if(MINGW)
++    target_link_libraries(${target} PRIVATE pthread)
++  endif()
++  endif()
+   
+   if(NOT LLVM_ENABLE_EH)
+     target_compile_options(${target} PRIVATE -fno-exceptions)
+@@ -90,6 +109,11 @@ function(create_llvm_to_backend_library)
+   endif()
+   create_llvm_based_library(TARGET ${target} ${MODE} SOURCES ${sources})
+   target_link_libraries(${target} PUBLIC llvm-to-backend)
++
++  # SPUMA_MINIMAL_EXPORTS_PATCH: Add pthread for MinGW
++  if(MINGW)
++    target_link_libraries(${target} PRIVATE pthread)
++  endif()
+ endfunction()
+ 
+ function(create_llvm_to_backend_tool)
+@@ -110,7 +134,11 @@ function(create_llvm_to_backend_tool)
+ 
+   target_include_directories(${target}-tool PRIVATE
+     ${LLVM_TO_BACKEND_INCLUDE_DIRS})
+-  target_include_directories(${target}-tool SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  if(MINGW OR MSYS OR CYGWIN)
++    target_include_directories(${target}-tool PRIVATE ${LLVM_INCLUDE_DIRS})
++  else()
++    target_include_directories(${target}-tool SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  endif()
+ 
+   separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+   target_compile_definitions(${target}-tool PRIVATE
+@@ -118,6 +146,11 @@ function(create_llvm_to_backend_tool)
+   target_compile_definitions(${target}-tool PRIVATE -DHIPSYCL_TOOL_COMPONENT)
+   target_link_libraries(${target}-tool PRIVATE ${target})
+ 
++  # SPUMA_MINIMAL_EXPORTS_PATCH: Add pthread for MinGW
++  if(MINGW)
++    target_link_libraries(${target} PRIVATE pthread)
++  endif()
++
+   set(install_subdir hipSYCL/llvm-to-backend)
+   install(TARGETS ${target}-tool
+     RUNTIME DESTINATION bin/${install_subdir}
+diff --git a/src/compiler/llvm-to-backend/ptx/LLVMToPtx.cpp b/src/compiler/llvm-to-backend/ptx/LLVMToPtx.cpp
+index a168d206..bcda97e2 100644
+--- a/src/compiler/llvm-to-backend/ptx/LLVMToPtx.cpp
++++ b/src/compiler/llvm-to-backend/ptx/LLVMToPtx.cpp
+@@ -11,6 +11,7 @@
+ #include "hipSYCL/compiler/llvm-to-backend/ptx/LLVMToPtx.hpp"
+ #include "hipSYCL/compiler/llvm-to-backend/AddressSpaceMap.hpp"
+ #include "hipSYCL/compiler/llvm-to-backend/Utils.hpp"
++#include "hipSYCL/compiler/llvm-to-backend/NameHandling.hpp"
+ #include "hipSYCL/compiler/llvm-to-backend/AddressSpaceInferencePass.hpp"
+ #include "hipSYCL/compiler/sscp/IRConstantReplacer.hpp"
+ #include "hipSYCL/glue/llvm-sscp/jit-reflection/queries.hpp"
+@@ -132,6 +133,24 @@ void replaceBrokenLLVMIntrinsics(llvm::Module& M) {
+   }
+ }
+ 
++// Symbol name sanitization for MSVC ABI (Windows PE format restrictions)
++// Required for: native MSVC (_MSC_VER) and Clang targeting MSVC ABI
++// NOT required for: MinGW (uses Itanium ABI like Linux)
++// In explicit-multipass mode, the device module has original symbol names
++// but the HCF contains sanitized names from HostKernelNameExtractionPass.
++// This function ensures device symbols match what the host expects.
++#if defined(_MSC_VER) || (defined(_WIN32) && !defined(__MINGW32__) && !defined(__MINGW64__))
++void replaceInvalidMSABICharsInSymbolNames(llvm::Module &M) {
++  auto UpdateName = [](auto &S) {
++    std::string Name(S.getName());
++    replaceInvalidMSABICharsInSymbolName(Name);
++    S.setName(Name);
++  };
++  for(auto &F : M) { UpdateName(F); }
++  for(auto &G : M.globals()){ UpdateName(G); }
++}
++#endif
++
+ }
+ 
+ LLVMToPtxTranslator::LLVMToPtxTranslator(const std::vector<std::string> &KN)
+@@ -139,6 +158,11 @@ LLVMToPtxTranslator::LLVMToPtxTranslator(const std::vector<std::string> &KN)
+       KernelNames{KN} {}
+ 
+ bool LLVMToPtxTranslator::toBackendFlavor(llvm::Module &M, PassHandler& PH) {
++  // Symbol name sanitization for MSVC ABI (see comment at function definition)
++#if defined(_MSC_VER) || (defined(_WIN32) && !defined(__MINGW32__) && !defined(__MINGW64__))
++  replaceInvalidMSABICharsInSymbolNames(M);
++#endif
++
+   std::string Triple = "nvptx64-nvidia-cuda";
+   std::string DataLayout =
+       "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-i128:128:128-f32:32:32-"
+diff --git a/src/compiler/sscp/HostKernelNameExtractionPass.cpp b/src/compiler/sscp/HostKernelNameExtractionPass.cpp
+index ad56385e..233ce470 100644
+--- a/src/compiler/sscp/HostKernelNameExtractionPass.cpp
++++ b/src/compiler/sscp/HostKernelNameExtractionPass.cpp
+@@ -55,8 +55,26 @@ llvm::PreservedAnalyses HostKernelNameExtractionPass::run(llvm::Module &M,
+           // Arg 0 should be function pointer to the kernel entry point.
+           std::string KernelName;
+           if (llvm::Function *KernelFunc = llvm::dyn_cast<llvm::Function>(CI->getOperand(0))) {
+-            KernelName = KernelFunc->getName();
+-#ifdef _MSC_VER
++            KernelName = KernelFunc->getName().str();
++
++// MSVC ABI stable kernel naming:
++// On MSVC ABI, lambdas get TU-specific mangled names which causes ODR violations
++// when the same template is instantiated in multiple translation units.
++// We use a hash-based stable naming scheme to ensure consistent kernel names.
++#ifdef ACPP_MSVC_ABI_TARGET
++            // Get function signature for additional uniqueness
++            std::string FuncSig;
++            llvm::raw_string_ostream SigStream(FuncSig);
++            KernelFunc->getFunctionType()->print(SigStream);
++            SigStream.flush();
++
++            // Generate stable hash-based name
++            KernelName = generateStableMSVCKernelName(KernelName, FuncSig);
++
++            HIPSYCL_DEBUG_INFO << "HostKernelNameExtractionPass: Using stable MSVC kernel name: "
++                               << KernelName << "\n";
++#else
++            // On Itanium ABI (Linux, MinGW), just sanitize invalid characters
+             replaceInvalidMSABICharsInSymbolName(KernelName);
+ #endif
+           } else {
+diff --git a/src/compiler/sscp/TargetSeparationPass.cpp b/src/compiler/sscp/TargetSeparationPass.cpp
+index 6cd7f151..2306eadb 100644
+--- a/src/compiler/sscp/TargetSeparationPass.cpp
++++ b/src/compiler/sscp/TargetSeparationPass.cpp
+@@ -24,6 +24,7 @@
+ #include "hipSYCL/compiler/utils/ProcessFunctionAnnotationsPass.hpp"
+ #include "hipSYCL/compiler/utils/LLVMUtils.hpp"
+ #include "hipSYCL/common/hcf_container.hpp"
++#include "hipSYCL/common/debug.hpp"
+ 
+ #include <cctype>
+ #include <cstddef>
+@@ -199,7 +200,10 @@ struct KernelInfo {
+   }
+ };
+ 
+-#ifdef _MSC_VER
++// Symbol name sanitization for MSVC ABI (Windows PE format restrictions)
++// Required for: native MSVC (_MSC_VER) and Clang targeting MSVC ABI
++// NOT required for: MinGW (uses Itanium ABI like Linux)
++#if defined(_MSC_VER) || (defined(_WIN32) && !defined(__MINGW32__) && !defined(__MINGW64__))
+ void replaceInvalidMSABICharsInSymbolNames(llvm::Module &M) {
+   auto UpdateName = [](auto &S) {
+     std::string Name(S.getName());
+@@ -214,6 +218,46 @@ void replaceInvalidMSABICharsInSymbolNames(llvm::Module &M) {
+     UpdateName(G);
+   }
+ }
++
++// MSVC ABI stable kernel naming:
++// On MSVC ABI, lambdas get TU-specific mangled names (anonymous namespace hashes,
++// line numbers) which causes ODR violations when the same template is instantiated
++// in multiple translation units. We use a hash-based stable naming scheme to ensure
++// consistent kernel names between host and device code.
++//
++// This function must use the SAME algorithm as HostKernelNameExtractionPass to ensure
++// the host-side kernel name lookup matches the device-side kernel function name.
++void applyStableMSVCKernelNaming(llvm::Module &M) {
++  static constexpr const char* SSCPKernelMarker = "hipsycl_sscp_kernel";
++
++  llvm::SmallVector<llvm::Function*, 16> KernelFunctions;
++
++  // Find all functions marked as SSCP kernels
++  utils::findFunctionsWithStringAnnotations(M, [&](llvm::Function* F, llvm::StringRef Annotation) {
++    if (F && Annotation.compare(SSCPKernelMarker) == 0) {
++      KernelFunctions.push_back(F);
++    }
++  });
++
++  // Rename each kernel with stable hash-based name
++  for (llvm::Function* F : KernelFunctions) {
++    std::string OriginalName = F->getName().str();
++
++    // Get function signature for additional uniqueness (same as host side)
++    std::string FuncSig;
++    llvm::raw_string_ostream SigStream(FuncSig);
++    F->getFunctionType()->print(SigStream);
++    SigStream.flush();
++
++    // Generate stable hash-based name (must match HostKernelNameExtractionPass!)
++    std::string StableName = generateStableMSVCKernelName(OriginalName, FuncSig);
++
++    HIPSYCL_DEBUG_INFO << "TargetSeparationPass: Renaming kernel '" << OriginalName
++                       << "' to stable MSVC name: " << StableName << "\n";
++
++    F->setName(StableName);
++  }
++}
+ #endif
+ 
+ std::unique_ptr<llvm::Module> generateDeviceIR(llvm::Module &M,
+@@ -312,7 +356,12 @@ std::unique_ptr<llvm::Module> generateDeviceIR(llvm::Module &M,
+     }
+   }
+ 
+-#ifdef _MSC_VER
++// MSVC ABI handling: stable kernel naming and symbol sanitization
++// Must be done BEFORE EntrypointPreparationPass which collects kernel names
++#if defined(_MSC_VER) || (defined(_WIN32) && !defined(__MINGW32__) && !defined(__MINGW64__))
++  // First, apply stable hash-based naming to kernels (for ODR consistency across TUs)
++  applyStableMSVCKernelNaming(*DeviceModule);
++  // Then, sanitize remaining invalid characters in all symbol names
+   replaceInvalidMSABICharsInSymbolNames(*DeviceModule);
+ #endif
+ 
+diff --git a/src/libkernel/sscp/host/math.cpp b/src/libkernel/sscp/host/math.cpp
+index 60a25544..cd8e10c6 100644
+--- a/src/libkernel/sscp/host/math.cpp
++++ b/src/libkernel/sscp/host/math.cpp
+@@ -8,6 +8,7 @@
+  * See file LICENSE in the project root for full license details.
+  */
+ // SPDX-License-Identifier: BSD-2-Clause
++#define _USE_MATH_DEFINES
+ #include <cmath>
+ 
+ #include "hipSYCL/sycl/libkernel/sscp/builtins/builtin_config.hpp"
+diff --git a/src/runtime/CMakeLists.txt b/src/runtime/CMakeLists.txt
+index 9970a939..d94ccd17 100644
+--- a/src/runtime/CMakeLists.txt
++++ b/src/runtime/CMakeLists.txt
+@@ -4,6 +4,11 @@ find_package(Threads REQUIRED)
+ include(CheckIPOSupported)
+ check_ipo_supported(RESULT is_ipo_supported OUTPUT ipo_error)
+ 
++# Disable LTO on MinGW - causes DLL export issues (symbols not exported)
++if(MINGW OR (DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION AND NOT CMAKE_INTERPROCEDURAL_OPTIMIZATION))
++  set(is_ipo_supported FALSE)
++endif()
++
+ set(HIPSYCL_RT_EXTRA_CXX_FLAGS "")
+ set(HIPSYCL_RT_EXTRA_LINKER_FLAGS "")
+ 
+@@ -77,15 +82,19 @@ target_include_directories(acpp-rt
+ 
+ # to get the search path next to the rt lib, we need to know the output name, so set it explicitly.
+ set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "acpp-rt")
+-if(WIN32)
++if(WIN32 OR MINGW OR MSYS OR CMAKE_SYSTEM_NAME MATCHES "Windows")
+   set_target_properties(acpp-rt PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS On)
+   if(ACPP_LLVM_COMPONENT AND MSVC)
+     target_compile_options(acpp-rt PRIVATE /EHs)
+   endif()
++  # Force export all symbols on MinGW (WINDOWS_EXPORT_ALL_SYMBOLS may not work in LLVM component mode)
++  if(MINGW OR MSYS)
++    target_link_options(acpp-rt PRIVATE "-Wl,--export-all-symbols")
++  endif()
+ 
+   # ensure actual output and expected are equivalent
+   set_target_properties(acpp-rt PROPERTIES RUNTIME_OUTPUT_NAME ${HIPSYCL_RT_LIBRARY_OUTPUT_NAME})
+-  if(MinGW)
++  if(MinGW OR MSYS)
+     set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "lib${HIPSYCL_RT_LIBRARY_OUTPUT_NAME}.dll" PARENT_SCOPE)
+   else()
+     set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "${HIPSYCL_RT_LIBRARY_OUTPUT_NAME}.dll" PARENT_SCOPE)
+@@ -350,7 +359,14 @@ if(WITH_CPU_BACKEND)
+       target_link_libraries(rt-backend-omp PRIVATE ${hipSYCL_OpenMP_libomp_LIBRARY})
+     endif()
+ 
+-    set(OMP_TARGET OpenMP::OpenMP_CXX)
++    # MSYS/MinGW: OpenMP::OpenMP_CXX target doesn't link correctly, use flags directly
++    if(MSYS OR MINGW)
++      set(OMP_TARGET "")
++      set(OMP_COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
++      target_link_options(rt-backend-omp PRIVATE "${OpenMP_CXX_FLAGS}")
++    else()
++      set(OMP_TARGET OpenMP::OpenMP_CXX)
++    endif()
+   endif()
+   
+   find_path( NUMA_INCLUDE_DIR NAMES numa.h)
+diff --git a/src/runtime/omp/omp_queue.cpp b/src/runtime/omp/omp_queue.cpp
+index fc0271d5..14c50f19 100644
+--- a/src/runtime/omp/omp_queue.cpp
++++ b/src/runtime/omp/omp_queue.cpp
+@@ -34,16 +34,16 @@
+ #include "hipSYCL/runtime/adaptivity_engine.hpp"
+ #include "hipSYCL/runtime/omp/omp_code_object.hpp"
+ 
+-#ifndef WIN32 // MSVC might not have #warning?
++#if !defined(WIN32) && !defined(_WIN32) // MSVC might not have #warning?
+ #ifndef _OPENMP
+ #warning Building omp backend with JIT support, but OpenMP parallelization is not available - kernels will run sequentially! This points to an issue in the build system.
+ #endif
+ #endif
+ 
+-#ifndef WIN32
++#if !defined(WIN32) && !defined(_WIN32)
+ #include <unistd.h>
+ #else
+-#include <Windows.h>
++#include <windows.h>
+ #endif
+ #endif
+ 
+@@ -183,7 +183,7 @@ private:
+ #ifdef HIPSYCL_WITH_SSCP_COMPILER
+ 
+ std::size_t get_page_size() {
+-#ifndef WIN32
++#if !defined(WIN32) && !defined(_WIN32)
+   return static_cast<std::size_t>(sysconf(_SC_PAGESIZE));
+ #else
+   SYSTEM_INFO si;
+diff --git a/include/hipSYCL/common/init_priority.hpp b/include/hipSYCL/common/init_priority.hpp
+new file mode 100644
+--- /dev/null
++++ b/include/hipSYCL/common/init_priority.hpp
+@@ -0,0 +1,39 @@
++/*
++ * This file is part of AdaptiveCpp, an implementation of SYCL and C++ standard
++ * parallelism for CPUs and GPUs.
++ *
++ * Copyright The AdaptiveCpp Contributors
++ *
++ * AdaptiveCpp is released under the BSD 2-Clause "Simplified" License.
++ * See file LICENSE in the project root for full license details.
++ */
++// SPDX-License-Identifier: BSD-2-Clause
++#ifndef ACPP_COMMON_INIT_PRIORITY_HPP
++#define ACPP_COMMON_INIT_PRIORITY_HPP
++
++// Windows DLL Static Initialization Order Fix
++//
++// The LLVM linker on Windows doesn't preserve object file order for static
++// constructors like GCC's GNU ld does on Linux. This causes SIOF (Static
++// Initialization Order Fiasco) when user DLLs try to access runtime singletons
++// before they're initialized.
++//
++// Priority levels (lower = earlier initialization):
++//   101      - ACPP_INIT_PRIORITY_RUNTIME_CORE: Core runtime singletons
++//   102-200  - Reserved for runtime internals
++//   65534    - ACPP_INIT_PRIORITY_USER: User-side statics (header-injected)
++//   65535    - Default priority (unspecified)
++//
++// Header-injected static objects (persistent_runtime, hcf_registration,
++// reflection_init) use ACPP_INIT_PRIORITY_USER to ensure they run late,
++// after all runtime singletons are guaranteed to be initialized.
++
++#if defined(_WIN32) && (defined(__GNUC__) || defined(__clang__))
++  #define ACPP_INIT_PRIORITY_RUNTIME_CORE __attribute__((init_priority(101)))
++  #define ACPP_INIT_PRIORITY_USER __attribute__((init_priority(65534)))
++#else
++  #define ACPP_INIT_PRIORITY_RUNTIME_CORE
++  #define ACPP_INIT_PRIORITY_USER
++#endif
++
++#endif // ACPP_COMMON_INIT_PRIORITY_HPP
+diff --git a/src/compiler/acpp-clang.def b/src/compiler/acpp-clang.def
+new file mode 100644
+--- /dev/null
++++ b/src/compiler/acpp-clang.def
+@@ -0,0 +1,20 @@
++; Module definition file for acpp-clang.dll
++; Minimal exports for clang plugin registration
++;
++; This file lists only the exact symbols required for clang to load and
++; register the AdaptiveCpp compiler plugin. Using --exclude-all-symbols
++; plus this .def file overcomes the Windows PE export limit (65535 symbols).
++
++LIBRARY acpp-clang
++
++EXPORTS
++    ; Frontend plugin registration - clang looks for these
++    _ZN4llvm8RegistryIN5clang15PluginASTActionEE3AddIN7hipsycl8compiler17FrontendASTActionEE6CtorFnEv
++    _ZN4llvm8RegistryIN5clang15PluginASTActionEE4HeadE DATA
++    _ZN4llvm8RegistryIN5clang15PluginASTActionEE4TailE DATA
++    _ZN4llvm8RegistryIN5clang15PluginASTActionEE5beginEv
++    _ZN4llvm8RegistryIN5clang15PluginASTActionEE8add_nodeEPNS3_4nodeE
++
++    ; Pass plugin registration - required for -fpass-plugin
++    llvmGetPassPluginInfo
++    _Z24getAdaptiveCppPluginInfov

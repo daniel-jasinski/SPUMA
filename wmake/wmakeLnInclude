@@ -81,6 +81,17 @@ die()
 # Option for 'ln'
 link_option="-s"
 
+# Windows/MSYS2: use native NTFS symlinks instead of copies.
+# Requires SeCreateSymbolicLinkPrivilege (enable in registry or gpedit).
+# Set MSYS=winsymlinks:nativestrict in your shell profile for best results.
+case "$(uname -s 2>/dev/null)" in
+(MINGW*|MSYS*|CYGWIN*)
+    if [ -z "$MSYS" ] || [ "${MSYS##*winsymlinks*}" = "$MSYS" ]; then
+        export MSYS="${MSYS:+$MSYS }winsymlinks:nativestrict"
+    fi
+    ;;
+esac
+
 unset opt_extra opt_force opt_pwd opt_update
 
 while [ "$#" -gt 0 ]
