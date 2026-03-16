@@ -130,6 +130,7 @@ Foam::word Foam::basicThermo::makeThermoName
     {
         if (!thermoTypeStr.empty()) 
         {
+            Info << "Selecting device version of : "<< thermoTypeStr << nl;
             thermoTypeStr[0] = std::toupper(static_cast<unsigned char>(thermoTypeStr[0]));
             thermoTypeStr = "device" + thermoTypeStr;
         }
