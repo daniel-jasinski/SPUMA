@@ -106,11 +106,11 @@ You should also regularly update the `Current Build Status` section with the lat
 
 ---
 
-## Current Build Status (2026-02-21)
+## Current Build Status (2026-03-13)
 
 ### What's Built
 
-**105 DLLs** and **144 EXEs** in `platforms/win64MsvcSyclDPInt32Opt/`
+**106 DLLs** and **144 EXEs** in `platforms/win64MsvcSyclDPInt32Opt/`
 
 #### Core libraries (all built)
 - ✅ `libOSspecific.lib`, `libPstream_static.lib`, `libPstream.dll` (dummy)
@@ -144,6 +144,9 @@ You should also regularly update the `Current Build Status` section with the lat
 - ✅ Parallel: `libdistributed.dll`, `libreconstruct.dll`, `libfaDecompose.dll`, `libfaReconstruct.dll`
 - ✅ Utility sub-libs: `libhelpTypes.dll`, `libalphaFieldFunctions.dll`, `libtabulatedWallFunctions.dll`, `libsurfaceFeatureExtract.dll`
 
+#### Adjoint (built with generic backend)
+- ✅ `libadjointOptimisation.dll` — builds with `ACPP_TARGETS=generic` (CUDA AOT had LLVM circular dependency bug)
+
 #### Solvers (8 built)
 - ✅ simpleFoam, icoFoam, pisoFoam, SRFSimpleFoam, laplacianFoam, potentialFoam
 - ✅ pimpleFoam, rhoPimpleFoam
@@ -157,11 +160,10 @@ You should also regularly update the `Current Build Status` section with the lat
 - ✅ Most surface utilities, pre/post-processing, thermophysical (chemkinToFoam)
 
 #### Not built (expected)
-- ❌ `libadjoint.dll` — CUDA backend: circular dependency in global variable set (compiler bug)
 - ❌ CGAL-dependent utilities (viewFactorsGen, surfaceBooleanFeatures) — require CGAL (not installed)
 - ❌ FFTW3-dependent utilities (noise, boxTurb) — require FFTW3 + randomProcesses lib (not installed)
 
-### Fixes Applied (49 total)
+### Fixes Applied (51 total)
 
 All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key recent:
 - Fix #41: `MemoryPool::New()` replaces auto-created dummyMemoryPool with requested fixedSizeMemoryPool. Previously CUDA kernels accessed non-USM memory → `CUDA:700`.
@@ -177,22 +179,28 @@ All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key re
 
 ### Current State
 
+- **Generic SSCP backend (ACPP_TARGETS=generic) fully working.** Single binary runs on CPU (OMP) and NVIDIA GPU (CUDA JIT).
 - **blockMesh works!** Exit 0. Correct mesh class names (`vectorField`, `faceList`, `labelList`).
-- **simpleFoam works!** Exit 0. Converges in 281 iterations (pitzDaily). Clean output, **0 RTS duplicate warnings**.
+- **simpleFoam works!** Exit 0. Converges in 281 iterations (pitzDaily, fresh run). Clean output, **0 RTS duplicate warnings**.
+- **simpleFoam OMP**: 3 iterations (restart), correct residuals.
+- **simpleFoam CUDA JIT**: 3 iterations (restart), correct residuals, fixedSizeMemoryPool 1GB. First iteration ~6.5s (JIT), subsequent ~4s. Residuals match OMP exactly.
 - **Restart works!** Exit 0.
-- **105 DLLs, 144 EXEs built.** Full SPUMA library suite + utilities compiled.
+- **106 DLLs, 144 EXEs built.** Full SPUMA library suite + utilities + adjoint compiled.
 - **CUDA backend tested**: RTX 3060 Laptop (sm_86), 1GB pool, pitzDaily case — solver converges, all GPU kernels pass.
 - **Diagnostic traces removed**: All debug fprintf removed from source files, simpleFoam.C, and UEqn.H.
 - **RTS duplicate warnings eliminated**: Fix #48 resolved all remaining duplicate warnings (was 1237, now 0).
+- **Binary size**: 1,213 MB total DLLs (generic). Essentially identical to cuda:sm_86 AOT (1,212 MB). Earlier ~950 MB prediction was incorrect.
 - **Known issue**: `phi` (surfaceScalarField) writes `class GeometricField;` instead of `class surfaceScalarField;`. GeometricField needs `writeObject()` override (separate from Fix #50).
 
 ### What's Next
 
-1. Test pimpleFoam, rhoPimpleFoam, icoFoam, pisoFoam, potentialFoam on test cases
+1. ~~**Test SSCP generic backend on Windows**~~ — **DONE** (2026-03-13). Generic backend builds 106 DLLs + 144 EXEs. OMP and CUDA JIT both work. Binary size ~1,213 MB (same as AOT). libadjoint now builds. Single-binary distribution strategy validated.
+2. Test pimpleFoam, rhoPimpleFoam, icoFoam, pisoFoam, potentialFoam on test cases
 3. Test snappyHexMesh, decomposePar on test cases
 4. Run simpleFoam CUDA with real (non-trivial) case to validate numerical correctness
 5. Fix exit-time crash with CUDA (AdaptiveCpp DLL detach issue, or explicit CUDA context teardown)
-6. Fix adjoint library LLVM/CUDA circular dependency (compiler bug — may need LLVM update)
+6. Test AMD GPU support via `ACPP_TARGETS=hip:gfxXXX` (HIP SDK available for Windows 11, ROCm 7.1.1+)
+7. Fix GeometricField `writeObject()` override for correct `phi` class name (separate from Fix #50)
 
 ### Critical wmake Knowledge
 

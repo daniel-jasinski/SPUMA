@@ -200,6 +200,18 @@ inline Scalar func(const Scalar s)                              \
     {                                                           \
         return _##func(n, s);                                   \
     }
+#elif defined(_MSC_VER)
+    // MSVC ABI (incl. Clang targeting MSVC): '_' prefix
+    #define besselFunc(func)                                    \
+    inline Scalar func(const Scalar s)                          \
+    {                                                           \
+        return _##func(s);                                      \
+    }
+    #define besselFunc2(func)                                   \
+    inline Scalar func(const int n, const Scalar s)             \
+    {                                                           \
+        return _##func(n, s);                                   \
+    }
 #else
     #define besselFunc(func)                                    \
     inline Scalar func(const Scalar s)                          \

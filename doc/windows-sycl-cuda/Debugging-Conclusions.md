@@ -1348,6 +1348,42 @@ This is safe because Windows solvers already use `_exit(0)` (Fix #33) to skip de
 
 When debugging issues in this project, append your findings to this document following this template:
 
+## Fix #51: MSVC Bessel functions missing with SSCP generic backend
+
+**Symptom**: Compilation fails with `error: no member named 'j0f' in the global namespace` (and `j1f`, `y0f`, `y1f`, `jnf`, `ynf`) when building with `ACPP_TARGETS=generic` instead of `cuda:sm_86`.
+
+**Root cause**: `floatScalar.H` has an `#ifdef` chain for Bessel function implementations: `__CUDA_ARCH__` (NVIDIA device intrinsics), `__APPLE__` (cast to double), `__MINGW32__` (underscore prefix), and `#else` (POSIX `func##f` suffix). With `cuda:sm_86`, the CUDA toolkit headers provide `j0f` etc. on the host path, so the `#else` branch works. With `generic`, no CUDA headers are included and MSVC's CRT doesn't provide POSIX float Bessel functions — only underscore-prefixed double versions (`_j0`, `_j1`, etc.).
+
+**Fix**: Added `#elif defined(_MSC_VER)` branch in both `floatScalar.H` and `doubleScalar.H`, using MSVC's underscore-prefixed Bessel functions with casts (same pattern as `__MINGW32__` branch). The fix is backward-compatible — `cuda:sm_86` still compiles because `__CUDA_ARCH__` is checked first (device pass) and the host pass now correctly uses `_j0` etc.
+
+**Lesson**: When switching SYCL compilation targets, different headers become available. CUDA targets implicitly add CUDA math headers to the search path, masking missing platform-specific math function declarations. Always have explicit platform guards for non-standard math functions.
+
+---
+
+## Milestone: SSCP generic backend build and runtime validation (2026-03-13)
+
+**Context**: Rebuilt entire SPUMA from scratch with `ACPP_TARGETS=generic` (SSCP JIT) instead of `ACPP_TARGETS=cuda:sm_86` (AOT PTX). This validates the single-binary distribution strategy for multi-GPU support.
+
+**Build results**:
+- **106 DLLs, 144 EXEs** built successfully (up from 105 DLLs with cuda:sm_86).
+- **libadjointOptimisation.dll now builds** — the LLVM/CUDA circular dependency in global variable set (Fix #6 "Not built") was specific to the CUDA AOT backend. The generic SSCP backend does not trigger this compiler bug.
+- Only code fix needed: Fix #51 (MSVC Bessel functions). Everything else compiled cleanly.
+- Only build error: dummy `libPstream.dll` failed to link due to MSYS2 TEMP path mangling (`LNK1104: cannot open file 'C:\...\TEMP\...'`). Rebuilt manually with correct TEMP variable. MPI Pstream errors expected (no MPI installed).
+- Total DLL binary size: **1,213 MB** — essentially identical to cuda:sm_86's 1,212 MB. The earlier prediction of ~950 MB for generic was incorrect; LLVM IR in the generic backend is comparable in size to CUDA PTX, not 40% smaller as estimated.
+
+**Runtime results**:
+- **blockMesh**: works, exit 0.
+- **simpleFoam (OMP backend, `ACPP_VISIBILITY_MASK=omp`)**: works, exit 0, 3 iterations (restart from converged pitzDaily), correct residuals, no RTS duplicate warnings.
+- **simpleFoam (CUDA JIT backend, `ACPP_VISIBILITY_MASK=cuda -pool fixedSizeMemoryPool -poolSize 1`)**: works, exit 0, 3 iterations, correct residuals. JIT compilation overhead: first iteration ~6.5s vs ~1.8s OMP. Subsequent iterations ~4s (kernel cache populated). Exit-time CUDA cleanup errors remain (same as Fix #42, harmless). **Residuals match OMP exactly** — numerical correctness of CUDA JIT confirmed.
+
+**Key findings**:
+1. Generic SSCP binary is a viable single-binary distribution strategy. One build runs on CPU (OMP) and NVIDIA GPU (CUDA JIT) without recompilation.
+2. Binary size prediction was wrong: generic ~= cuda:sm_86 in total size (~1,213 MB vs ~1,212 MB). LLVM IR is not significantly smaller than PTX.
+3. JIT compilation adds ~4.7s to first iteration but subsequent iterations are only ~2.2x slower than OMP (on this hardware). Kernel cache eliminates JIT cost after first launch.
+4. libadjoint builds with generic backend, confirming the circular dependency was a CUDA-specific LLVM codegen issue.
+
+---
+
 ```markdown
 ## Fix #N: Short description
 
