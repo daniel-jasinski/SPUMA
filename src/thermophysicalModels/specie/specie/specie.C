@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2020 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -43,7 +44,8 @@ Foam::specie::specie(const dictionary& dict)
 :
     name_(dict.dictName()),
     Y_(dict.subDict("specie").getOrDefault<scalar>("massFraction", 1)),
-    molWeight_(dict.subDict("specie").get<scalar>("molWeight"))
+    molWeight_(dict.subDict("specie").get<scalar>("molWeight")),
+    RR_(Foam::constant::thermodynamic::RR)
 {}
 
 

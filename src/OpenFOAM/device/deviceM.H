@@ -45,6 +45,7 @@ SourceFiles
 #if defined(have_cuda) || defined(have_hip)
     #define FOAM_DEVICE __host__ __device__
     #define FOAM_DEVICE_I __host__ __device__ __forceinline__
+    #define FOAM_DEVICE_V __device__
 #else
     #define FOAM_DEVICE
     #define FOAM_DEVICE_I inline

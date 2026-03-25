@@ -47,7 +47,7 @@ void Foam::List<T>::resize_copy(label count, const label len)
         // With sign-check to avoid spurious -Walloc-size-larger-than
 
         T* old = this->v_;
-        const label oldLen = this->size_;
+        // const label oldLen = this->size_;
 
         // The count truncated by the new length?
         count = std::min(count, len);

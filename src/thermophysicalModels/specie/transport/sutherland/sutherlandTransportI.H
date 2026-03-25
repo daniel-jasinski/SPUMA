@@ -111,7 +111,7 @@ Foam::sutherlandTransport<Thermo>::New
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Thermo>
-inline Foam::scalar Foam::sutherlandTransport<Thermo>::mu
+FOAM_DEVICE inline Foam::scalar Foam::sutherlandTransport<Thermo>::mu
 (
     const scalar p,
     const scalar T
@@ -122,7 +122,7 @@ inline Foam::scalar Foam::sutherlandTransport<Thermo>::mu
 
 
 template<class Thermo>
-inline Foam::scalar Foam::sutherlandTransport<Thermo>::kappa
+FOAM_DEVICE inline Foam::scalar Foam::sutherlandTransport<Thermo>::kappa
 (
     const scalar p, const scalar T
 ) const
@@ -133,7 +133,7 @@ inline Foam::scalar Foam::sutherlandTransport<Thermo>::kappa
 
 
 template<class Thermo>
-inline Foam::scalar Foam::sutherlandTransport<Thermo>::alphah
+FOAM_DEVICE inline Foam::scalar Foam::sutherlandTransport<Thermo>::alphah
 (
     const scalar p,
     const scalar T

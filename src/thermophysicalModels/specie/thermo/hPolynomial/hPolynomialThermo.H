@@ -213,13 +213,13 @@ public:
             inline scalar Cp(const scalar p, const scalar T) const;
 
             //- Absolute Enthalpy [J/kg]
-            inline scalar Ha(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar Ha(const scalar p, const scalar T) const;
 
             //- Sensible enthalpy [J/kg]
-            inline scalar Hs(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar Hs(const scalar p, const scalar T) const;
 
             //- Chemical enthalpy [J/kg]
-            inline scalar Hc() const;
+            FOAM_DEVICE inline scalar Hc() const;
 
             //- Entropy [J/(kg K)]
             inline scalar S(const scalar p, const scalar T) const;

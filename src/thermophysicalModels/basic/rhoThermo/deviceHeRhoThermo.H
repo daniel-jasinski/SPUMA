@@ -5,7 +5,9 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2015-2017 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,20 +26,24 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::pureMixture
+    Foam::deviceHeRhoThermo
 
 Description
-    Foam::pureMixture
+    Energy for a mixture based on density (on GPU).
+    Temporary class to run compressible cases on GPU. Mixtures different
+    from pureMixture are not supported.
+
 
 SourceFiles
-    pureMixture.C
+    deviceHeRhoThermo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef pureMixture_H
-#define pureMixture_H
+#ifndef deviceHeRhoThermo_H
+#define deviceHeRhoThermo_H
 
-#include "basicMixture.H"
+#include "rhoThermo.H"
+#include "deviceHeThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -45,84 +51,69 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                         Class pureMixture Declaration
+                         Class deviceHeRhoThermo Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class ThermoType>
-class pureMixture
+template<class BasicPsiThermo, class MixtureType>
+class deviceHeRhoThermo
 :
-    public basicMixture
+    public deviceHeThermo<BasicPsiThermo, MixtureType>
 {
-    // Private data
+    // Private Member Functions
 
-        ThermoType mixture_;
+        //- Calculate the thermo variables
+        void calculate
+        (
+            const volScalarField& p,
+            volScalarField& T,
+            volScalarField& he,
+            volScalarField& psi,
+            volScalarField& rho,
+            volScalarField& mu,
+            volScalarField& alpha,
+            const bool doOldTimes
+        );
 
         //- Construct as copy (not implemented)
-        // pureMixture(const pureMixture<ThermoType>&);
+        deviceHeRhoThermo(const deviceHeRhoThermo<BasicPsiThermo, MixtureType>&);
 
 
 public:
 
-    //- The type of thermodynamics this mixture is instantiated for
-    typedef ThermoType thermoType;
+    //- Runtime type information
+    TypeName("deviceHeRhoThermo");
 
 
     // Constructors
 
-        //- Construct from dictionary, mesh and phase name
-        pureMixture(const dictionary&, const fvMesh&, const word&);
+        //- Construct from mesh and phase name
+        deviceHeRhoThermo
+        (
+            const fvMesh&,
+            const word& phaseName
+        );
+
+
+        //- Construct from mesh,dictionary,phase name with a single temperature
+        deviceHeRhoThermo
+        (
+            const fvMesh&,
+            const word& phaseName,
+            const word& dictName
+        );
+
+
+    //- Destructor
+    virtual ~deviceHeRhoThermo();
 
 
     // Member functions
 
-        //- Return the instantiated type name
-        static word typeName()
-        {
-            return "pureMixture<" + ThermoType::typeName() + '>';
-        }
+        //- Update properties
+        virtual void correct();
 
-        const ThermoType& mixture() const
-        {
-            return mixture_;
-        }
-
-        FOAM_DEVICE const ThermoType& cellMixture(const label) const
-        {
-            return mixture_;
-        }
-
-        FOAM_DEVICE const ThermoType& patchFaceMixture
-        (
-            const label,
-            const label
-        ) const
-        {
-            return mixture_;
-        }
-
-        const ThermoType& cellVolMixture
-        (
-            const scalar,
-            const scalar,
-            const label
-        ) const
-        {
-            return mixture_;
-        }
-
-        const ThermoType& patchFaceVolMixture
-        (
-            const scalar,
-            const scalar,
-            const label,
-            const label
-        ) const
-        {
-            return mixture_;
-        }
-
-        //- Read dictionary
-        void read(const dictionary&);
+        //- Update properties from T
+        //virtual void correctT();
 };
 
 
@@ -130,10 +121,10 @@ public:
 
 } // End namespace Foam
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "pureMixture.C"
+    #include "deviceHeRhoThermo.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

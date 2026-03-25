@@ -91,7 +91,7 @@ inline Foam::scalar Foam::hPolynomialThermo<EquationOfState, PolySize>::Cp
 
 
 template<class EquationOfState, int PolySize>
-inline Foam::scalar Foam::hPolynomialThermo<EquationOfState, PolySize>::Ha
+FOAM_DEVICE inline Foam::scalar Foam::hPolynomialThermo<EquationOfState, PolySize>::Ha
 (
     const scalar p, const scalar T
 ) const
@@ -101,7 +101,7 @@ inline Foam::scalar Foam::hPolynomialThermo<EquationOfState, PolySize>::Ha
 
 
 template<class EquationOfState, int PolySize>
-inline Foam::scalar Foam::hPolynomialThermo<EquationOfState, PolySize>::Hs
+FOAM_DEVICE inline Foam::scalar Foam::hPolynomialThermo<EquationOfState, PolySize>::Hs
 (
     const scalar p, const scalar T
 ) const
@@ -111,7 +111,7 @@ inline Foam::scalar Foam::hPolynomialThermo<EquationOfState, PolySize>::Hs
 
 
 template<class EquationOfState, int PolySize>
-inline Foam::scalar Foam::hPolynomialThermo<EquationOfState, PolySize>::Hc()
+FOAM_DEVICE inline Foam::scalar Foam::hPolynomialThermo<EquationOfState, PolySize>::Hc()
 const
 {
     return Hf_;

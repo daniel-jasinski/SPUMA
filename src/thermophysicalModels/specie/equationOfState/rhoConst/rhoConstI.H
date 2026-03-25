@@ -66,63 +66,63 @@ Foam::rhoConst<Specie>::clone() const
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Specie>
-inline Foam::scalar Foam::rhoConst<Specie>::rho(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::rhoConst<Specie>::rho(scalar p, scalar T) const
 {
     return rho_;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::rhoConst<Specie>::H(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::rhoConst<Specie>::H(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::rhoConst<Specie>::Cp(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::rhoConst<Specie>::Cp(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::rhoConst<Specie>::E(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::rhoConst<Specie>::E(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::rhoConst<Specie>::Cv(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::rhoConst<Specie>::Cv(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::rhoConst<Specie>::S(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::rhoConst<Specie>::S(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::rhoConst<Specie>::psi(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::rhoConst<Specie>::psi(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::rhoConst<Specie>::Z(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::rhoConst<Specie>::Z(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::rhoConst<Specie>::CpMCv(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::rhoConst<Specie>::CpMCv(scalar p, scalar T) const
 {
     return 0;
 }

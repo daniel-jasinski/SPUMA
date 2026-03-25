@@ -75,7 +75,7 @@ Foam::incompressiblePerfectGas<Specie>::New
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Specie>
-inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::rho
+FOAM_DEVICE inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::rho
 (
     scalar p,
     scalar T
@@ -86,7 +86,7 @@ inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::rho
 
 
 template<class Specie>
-inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::H
+FOAM_DEVICE inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::H
 (
     scalar p,
     scalar T
@@ -97,7 +97,7 @@ inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::H
 
 
 template<class Specie>
-inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::Cp
+FOAM_DEVICE inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::Cp
 (
     scalar p,
     scalar T
@@ -108,7 +108,7 @@ inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::Cp
 
 
 template<class Specie>
-inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::E
+FOAM_DEVICE inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::E
 (
     scalar p,
     scalar T
@@ -119,7 +119,7 @@ inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::E
 
 
 template<class Specie>
-inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::Cv
+FOAM_DEVICE inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::Cv
 (
     scalar p,
     scalar T
@@ -130,7 +130,7 @@ inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::Cv
 
 
 template<class Specie>
-inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::S
+FOAM_DEVICE inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::S
 (
     scalar p,
     scalar T
@@ -141,7 +141,7 @@ inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::S
 
 
 template<class Specie>
-inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::psi
+FOAM_DEVICE inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::psi
 (
     scalar p,
     scalar T
@@ -152,7 +152,7 @@ inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::psi
 
 
 template<class Specie>
-inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::Z
+FOAM_DEVICE inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::Z
 (
     scalar p,
     scalar T
@@ -163,7 +163,7 @@ inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::Z
 
 
 template<class Specie>
-inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::CpMCv
+FOAM_DEVICE inline Foam::scalar Foam::incompressiblePerfectGas<Specie>::CpMCv
 (
     scalar p,
     scalar T

@@ -148,22 +148,22 @@ public:
         }
 
         //- Limit temperature to be within the range
-        inline scalar limit(const scalar T) const;
+        FOAM_DEVICE inline scalar limit(const scalar T) const;
 
 
         // Fundamental properties
 
             //- Heat capacity at constant volume [J/(kg K)]
-            inline scalar Cv(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar Cv(const scalar p, const scalar T) const;
 
             //- Sensible internal energy [J/kg]
-            inline scalar Es(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar Es(const scalar p, const scalar T) const;
 
             //- Absolute internal energy [J/kg]
             inline scalar Ea(const scalar p, const scalar T) const;
 
             //- Chemical enthalpy [J/kg]
-            inline scalar Hc() const;
+            FOAM_DEVICE inline scalar Hc() const;
 
             //- Entropy [J/(kg K)]
             inline scalar S(const scalar p, const scalar T) const;

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2020 OpenCFD Ltd.
+    Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -78,6 +79,8 @@ class specie
         //- Molecular weight of specie [kg/kmol]
         scalar molWeight_;
 
+        //- Global variable RR wrapper
+        scalar RR_;
 
 public:
 
@@ -119,13 +122,13 @@ public:
             inline const word& name() const;
 
             //- Molecular weight [kg/kmol]
-            inline scalar W() const;
+            FOAM_DEVICE inline scalar W() const;
 
             //- No of moles of this species in mixture
             inline scalar Y() const;
 
             //- Gas constant [J/(kg K)]
-            inline scalar R() const;
+            FOAM_DEVICE inline scalar R() const;
 
 
         // IO
