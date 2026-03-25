@@ -387,26 +387,26 @@ namespace Foam
 // (std::complex functions call MSVC internal _Exp etc. which don't exist on device)
 #if defined(__CUDA_ARCH__)
 
-extern "C" double __nv_exp(double);
-extern "C" double __nv_log(double);
-extern "C" double __nv_log10(double);
-extern "C" double __nv_sin(double);
-extern "C" double __nv_cos(double);
-extern "C" double __nv_sinh(double);
-extern "C" double __nv_cosh(double);
-extern "C" double __nv_sqrt(double);
-extern "C" double __nv_atan2(double, double);
-extern "C" double __nv_hypot(double, double);
-extern "C" double __nv_fabs(double);
-extern "C" double __nv_pow(double, double);
-extern "C" double __nv_asin(double);
-extern "C" double __nv_acos(double);
-extern "C" double __nv_atan(double);
-extern "C" double __nv_asinh(double);
-extern "C" double __nv_acosh(double);
-extern "C" double __nv_atanh(double);
+extern "C" __device__ double __nv_exp(double);
+extern "C" __device__ double __nv_log(double);
+extern "C" __device__ double __nv_log10(double);
+extern "C" __device__ double __nv_sin(double);
+extern "C" __device__ double __nv_cos(double);
+extern "C" __device__ double __nv_sinh(double);
+extern "C" __device__ double __nv_cosh(double);
+extern "C" __device__ double __nv_sqrt(double);
+extern "C" __device__ double __nv_atan2(double, double);
+extern "C" __device__ double __nv_hypot(double, double);
+extern "C" __device__ double __nv_fabs(double);
+extern "C" __device__ double __nv_pow(double, double);
+extern "C" __device__ double __nv_asin(double);
+extern "C" __device__ double __nv_acos(double);
+extern "C" __device__ double __nv_atan(double);
+extern "C" __device__ double __nv_asinh(double);
+extern "C" __device__ double __nv_acosh(double);
+extern "C" __device__ double __nv_atanh(double);
 
-inline complex sqrt(const complex& c)
+FOAM_DEVICE inline complex sqrt(const complex& c)
 {
     const scalar a = c.real();
     const scalar b = c.imag();
@@ -418,13 +418,13 @@ inline complex sqrt(const complex& c)
     );
 }
 
-inline complex exp(const complex& c)
+FOAM_DEVICE inline complex exp(const complex& c)
 {
     const scalar er = __nv_exp(c.real());
     return complex(er * __nv_cos(c.imag()), er * __nv_sin(c.imag()));
 }
 
-inline complex log(const complex& c)
+FOAM_DEVICE inline complex log(const complex& c)
 {
     return complex
     (
@@ -433,7 +433,7 @@ inline complex log(const complex& c)
     );
 }
 
-inline complex log10(const complex& c)
+FOAM_DEVICE inline complex log10(const complex& c)
 {
     // log10(z) = log(z) / log(10)
     const scalar ln10 = 2.302585092994046;
@@ -444,7 +444,7 @@ inline complex log10(const complex& c)
     );
 }
 
-inline complex sin(const complex& c)
+FOAM_DEVICE inline complex sin(const complex& c)
 {
     return complex
     (
@@ -453,7 +453,7 @@ inline complex sin(const complex& c)
     );
 }
 
-inline complex cos(const complex& c)
+FOAM_DEVICE inline complex cos(const complex& c)
 {
     return complex
     (
@@ -462,7 +462,7 @@ inline complex cos(const complex& c)
     );
 }
 
-inline complex tan(const complex& c)
+FOAM_DEVICE inline complex tan(const complex& c)
 {
     // tan(z) = sin(z)/cos(z)
     const complex s = sin(c);
@@ -470,7 +470,7 @@ inline complex tan(const complex& c)
     return s / cs;
 }
 
-inline complex asin(const complex& c)
+FOAM_DEVICE inline complex asin(const complex& c)
 {
     // asin(z) = -i * log(iz + sqrt(1 - z^2))
     const scalar a = c.real();
@@ -481,7 +481,7 @@ inline complex asin(const complex& c)
     return complex(l.imag(), -l.real());
 }
 
-inline complex acos(const complex& c)
+FOAM_DEVICE inline complex acos(const complex& c)
 {
     // acos(z) = -i * log(z + sqrt(z^2 - 1))
     const scalar a = c.real();
@@ -491,7 +491,7 @@ inline complex acos(const complex& c)
     return complex(l.imag(), -l.real());
 }
 
-inline complex atan(const complex& c)
+FOAM_DEVICE inline complex atan(const complex& c)
 {
     // atan(z) = i/2 * log((1-iz)/(1+iz))
     const scalar a = c.real();
@@ -503,7 +503,7 @@ inline complex atan(const complex& c)
     return complex(-0.5*l.imag(), 0.5*l.real());
 }
 
-inline complex sinh(const complex& c)
+FOAM_DEVICE inline complex sinh(const complex& c)
 {
     return complex
     (
@@ -512,7 +512,7 @@ inline complex sinh(const complex& c)
     );
 }
 
-inline complex cosh(const complex& c)
+FOAM_DEVICE inline complex cosh(const complex& c)
 {
     return complex
     (
@@ -521,14 +521,14 @@ inline complex cosh(const complex& c)
     );
 }
 
-inline complex tanh(const complex& c)
+FOAM_DEVICE inline complex tanh(const complex& c)
 {
     const complex s = sinh(c);
     const complex cs = cosh(c);
     return s / cs;
 }
 
-inline complex asinh(const complex& c)
+FOAM_DEVICE inline complex asinh(const complex& c)
 {
     // asinh(z) = log(z + sqrt(z^2 + 1))
     const scalar a = c.real();
@@ -537,7 +537,7 @@ inline complex asinh(const complex& c)
     return log(c + s);
 }
 
-inline complex acosh(const complex& c)
+FOAM_DEVICE inline complex acosh(const complex& c)
 {
     // acosh(z) = log(z + sqrt(z^2 - 1))
     const scalar a = c.real();
@@ -546,7 +546,7 @@ inline complex acosh(const complex& c)
     return log(c + s);
 }
 
-inline complex atanh(const complex& c)
+FOAM_DEVICE inline complex atanh(const complex& c)
 {
     // atanh(z) = 0.5 * log((1+z)/(1-z))
     const complex num(1 + c.real(), c.imag());
@@ -555,7 +555,7 @@ inline complex atanh(const complex& c)
 }
 
 // pow for complex on CUDA device
-inline complex pow(const complex& x, const complex& y)
+FOAM_DEVICE inline complex pow(const complex& x, const complex& y)
 {
     // z^w = exp(w * log(z))
     const complex lx = log(x);
@@ -567,12 +567,12 @@ inline complex pow(const complex& x, const complex& y)
 }
 
 #define powFuncs(type2)                                                       \
-    inline complex pow(const complex& x, const type2 y)                       \
+    FOAM_DEVICE inline complex pow(const complex& x, const type2 y)           \
     {                                                                         \
         return pow(x, complex(scalar(y), 0));                                 \
     }                                                                         \
                                                                               \
-    inline complex pow(const type2 x, const complex& y)                       \
+    FOAM_DEVICE inline complex pow(const type2 x, const complex& y)           \
     {                                                                         \
         return pow(complex(scalar(x), 0), y);                                 \
     }
@@ -603,7 +603,7 @@ transFunc(acosh)
 transFunc(atanh)
 
 // Special treatment for pow()
-inline complex pow(const complex& x, const complex& y)
+FOAM_DEVICE inline complex pow(const complex& x, const complex& y)
 {
     return std::pow
     (

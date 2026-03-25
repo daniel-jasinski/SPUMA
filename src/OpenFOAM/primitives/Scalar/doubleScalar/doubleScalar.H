@@ -81,30 +81,30 @@ constexpr doubleScalar doubleScalarROOTVSMALL = 1.0e-150;
 #if defined(__CUDA_ARCH__)
 
 // NVIDIA device math library declarations (defined in libdevice bitcode)
-extern "C" double __nv_fabs(double);
-extern "C" double __nv_hypot(double, double);
-extern "C" double __nv_atan2(double, double);
-extern "C" double __nv_sqrt(double);
-extern "C" double __nv_cbrt(double);
-extern "C" double __nv_exp(double);
-extern "C" double __nv_log(double);
-extern "C" double __nv_log10(double);
-extern "C" double __nv_sin(double);
-extern "C" double __nv_cos(double);
-extern "C" double __nv_tan(double);
-extern "C" double __nv_asin(double);
-extern "C" double __nv_acos(double);
-extern "C" double __nv_atan(double);
-extern "C" double __nv_sinh(double);
-extern "C" double __nv_cosh(double);
-extern "C" double __nv_tanh(double);
-extern "C" double __nv_asinh(double);
-extern "C" double __nv_acosh(double);
-extern "C" double __nv_atanh(double);
-extern "C" double __nv_erf(double);
-extern "C" double __nv_erfc(double);
-extern "C" double __nv_lgamma(double);
-extern "C" double __nv_tgamma(double);
+extern "C" __device__ double __nv_fabs(double);
+extern "C" __device__ double __nv_hypot(double, double);
+extern "C" __device__ double __nv_atan2(double, double);
+extern "C" __device__ double __nv_sqrt(double);
+extern "C" __device__ double __nv_cbrt(double);
+extern "C" __device__ double __nv_exp(double);
+extern "C" __device__ double __nv_log(double);
+extern "C" __device__ double __nv_log10(double);
+extern "C" __device__ double __nv_sin(double);
+extern "C" __device__ double __nv_cos(double);
+extern "C" __device__ double __nv_tan(double);
+extern "C" __device__ double __nv_asin(double);
+extern "C" __device__ double __nv_acos(double);
+extern "C" __device__ double __nv_atan(double);
+extern "C" __device__ double __nv_sinh(double);
+extern "C" __device__ double __nv_cosh(double);
+extern "C" __device__ double __nv_tanh(double);
+extern "C" __device__ double __nv_asinh(double);
+extern "C" __device__ double __nv_acosh(double);
+extern "C" __device__ double __nv_atanh(double);
+extern "C" __device__ double __nv_erf(double);
+extern "C" __device__ double __nv_erfc(double);
+extern "C" __device__ double __nv_lgamma(double);
+extern "C" __device__ double __nv_tgamma(double);
 
 FOAM_DEVICE inline Scalar mag(const Scalar s)
 {
@@ -123,7 +123,7 @@ FOAM_DEVICE inline Scalar atan2(const Scalar y, const Scalar x)
 
 // Double-precision transcendental functions via NVIDIA device math
 #define transFunc(func)                                         \
-inline Scalar func(const Scalar s)                              \
+FOAM_DEVICE inline Scalar func(const Scalar s)                  \
 {                                                               \
     return __nv_##func(s);                                      \
 }
@@ -158,12 +158,12 @@ inline Scalar func(const Scalar s)                              \
 // May not be available on all systems
 #if defined(__CUDA_ARCH__)
     // CUDA device: use NVIDIA device math library for Bessel functions
-    extern "C" double __nv_j0(double);
-    extern "C" double __nv_j1(double);
-    extern "C" double __nv_y0(double);
-    extern "C" double __nv_y1(double);
-    extern "C" double __nv_jn(int, double);
-    extern "C" double __nv_yn(int, double);
+    extern "C" __device__ double __nv_j0(double);
+    extern "C" __device__ double __nv_j1(double);
+    extern "C" __device__ double __nv_y0(double);
+    extern "C" __device__ double __nv_y1(double);
+    extern "C" __device__ double __nv_jn(int, double);
+    extern "C" __device__ double __nv_yn(int, double);
     #define besselFunc(func)                                    \
     inline Scalar func(const Scalar s)                          \
     {                                                           \

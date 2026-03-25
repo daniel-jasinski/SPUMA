@@ -43,8 +43,8 @@ namespace Foam
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #if defined(__CUDA_ARCH__)
-extern "C" double __nv_pow(double, double);
-extern "C" float __nv_powf(float, float);
+extern "C" __device__ double __nv_pow(double, double);
+extern "C" __device__ float __nv_powf(float, float);
 #define MAXMINPOW(RetType, Type1, Type2)                \
                                                         \
 MAXMIN(RetType, Type1, Type2)                           \
