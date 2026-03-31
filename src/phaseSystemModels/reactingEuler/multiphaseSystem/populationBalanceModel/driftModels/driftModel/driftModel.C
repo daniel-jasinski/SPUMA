@@ -60,7 +60,7 @@ Foam::diameterModels::driftModel::New
             dict,
             "driftModel",
             type,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

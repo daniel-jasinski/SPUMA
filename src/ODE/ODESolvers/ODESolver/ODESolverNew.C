@@ -48,7 +48,7 @@ Foam::autoPtr<Foam::ODESolver> Foam::ODESolver::New
             dict,
             "ODESolver",
             solverType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

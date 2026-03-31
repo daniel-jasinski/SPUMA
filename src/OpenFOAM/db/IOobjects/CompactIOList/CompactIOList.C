@@ -42,12 +42,12 @@ bool Foam::CompactIOList<T, BaseType>::readIOcontents()
     {
         Istream& is = readStream(word::null);
 
-        if (headerClassName() == IOList<T>::typeName)
+        if (headerClassName() == IOList<T>::typeName_())
         {
             is >> static_cast<List<T>&>(*this);
             close();
         }
-        else if (headerClassName() == typeName)
+        else if (headerClassName() == typeName_())
         {
             is >> *this;
             close();
@@ -56,8 +56,8 @@ bool Foam::CompactIOList<T, BaseType>::readIOcontents()
         {
             FatalIOErrorInFunction(is)
                 << "Unexpected class name " << headerClassName()
-                << " expected " << typeName
-                << " or " << IOList<T>::typeName << endl
+                << " expected " << typeName_()
+                << " or " << IOList<T>::typeName_() << endl
                 << "    while reading object " << name()
                 << exit(FatalIOError);
         }
@@ -185,9 +185,9 @@ bool Foam::CompactIOList<T, BaseType>::writeObject
     if (streamOpt.format() == IOstreamOption::ASCII)
     {
         // Change type to be non-compact format type
-        const word oldTypeName(typeName);
+        const word oldTypeName(typeName_());
 
-        const_cast<word&>(typeName) = IOList<T>::typeName;
+        const_cast<word&>(typeName) = IOList<T>::typeName_();
 
         bool good = regIOobject::writeObject(streamOpt, writeOnProc);
 

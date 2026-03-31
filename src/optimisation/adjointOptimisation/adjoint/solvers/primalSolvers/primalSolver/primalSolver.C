@@ -75,7 +75,7 @@ Foam::autoPtr<Foam::primalSolver> Foam::primalSolver::New
             dict,
             "primalSolver",
             solverType,
-            *primalSolverConstructorTablePtr_
+            *primalSolverConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

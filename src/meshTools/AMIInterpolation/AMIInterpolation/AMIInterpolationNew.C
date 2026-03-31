@@ -46,7 +46,7 @@ Foam::autoPtr<Foam::AMIInterpolation> Foam::AMIInterpolation::New
         (
             typeName,
             modelName,
-            *dictConstructorTablePtr_
+            *dictConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -72,7 +72,7 @@ Foam::autoPtr<Foam::AMIInterpolation> Foam::AMIInterpolation::New
         (
             typeName,
             modelName,
-            *componentConstructorTablePtr_
+            *componentConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

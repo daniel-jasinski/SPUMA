@@ -525,6 +525,9 @@ bool Foam::Time::writeTimeDict() const
         )
     );
 
+    // Set headerClassName for writeHeader (Fix #30: avoid type() on Windows)
+    timeDict.headerClassName() = IOdictionary::typeName_();
+
     timeDict.add("value", timeName(timeToUserTime(value()), maxPrecision_));
     timeDict.add("name", string(tmName));
     timeDict.add("index", timeIndex_);

@@ -105,7 +105,7 @@ void MapGeometricFields
             if (polyMesh::debug)
             {
                 Info<< "Mapping "
-                    << FieldType::typeName << ' ' << field.name() << endl;
+                    << FieldType::typeName_() << ' ' << field.name() << endl;
             }
 
             // Map the internal field
@@ -133,7 +133,7 @@ void MapGeometricFields
         else if (polyMesh::debug)
         {
             Info<< "Not mapping "
-                << FieldType::typeName << ' ' << field.name()
+                << FieldType::typeName_() << ' ' << field.name()
                 << " since originating mesh differs from that of mapper."
                 << endl;
         }

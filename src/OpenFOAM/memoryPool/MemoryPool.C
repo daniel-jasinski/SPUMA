@@ -34,6 +34,7 @@ License
 #endif
 #include "fixedSizeMemoryPool.H"
 #include "dummyMemoryPool.H"
+#include <iostream>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -58,7 +59,7 @@ Foam::MemoryPool::MemoryPool(const dictionary& dict):
 
 Foam::MemoryPool::~MemoryPool()
 {
-    delete instance;
+    instance = nullptr;
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -101,11 +102,15 @@ Foam::MemoryPool* Foam::MemoryPool::getInstance()
 {
     if (!instance)
     {
-       FatalErrorInFunction
-        << "no instance of memory pool initialized" << nl
-        << abort(FatalError);
+        std::cerr << "getInstance: creating dummyMemoryPool" << std::endl;
+        std::cerr.flush();
+        // Auto-create a dummyMemoryPool when getInstance() is called
+        // before explicit New(). This happens during DLL static init
+        // on Windows when some List operations need pool access.
+        instance = new dummyMemoryPool(0);
+        std::cerr << "getInstance: dummyMemoryPool created OK" << std::endl;
+        std::cerr.flush();
     }
-
     return instance;
 }
 

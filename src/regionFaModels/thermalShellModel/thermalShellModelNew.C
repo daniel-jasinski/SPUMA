@@ -54,7 +54,7 @@ autoPtr<thermalShellModel> thermalShellModel::New
             dict,
             "thermalShellModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

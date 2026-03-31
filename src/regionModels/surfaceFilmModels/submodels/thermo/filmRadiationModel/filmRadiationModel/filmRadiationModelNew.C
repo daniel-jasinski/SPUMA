@@ -58,7 +58,7 @@ autoPtr<filmRadiationModel> filmRadiationModel::New
             dict,
             "radiationModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

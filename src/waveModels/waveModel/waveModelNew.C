@@ -74,7 +74,7 @@ Foam::autoPtr<Foam::waveModel> Foam::waveModel::New
             waveDict,
             "waveModel",
             modelType,
-            *patchConstructorTablePtr_
+            *patchConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

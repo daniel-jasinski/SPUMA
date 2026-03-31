@@ -78,7 +78,7 @@ Foam::multiphaseEuler::diameterModel::New
             dict,
             "diameterModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

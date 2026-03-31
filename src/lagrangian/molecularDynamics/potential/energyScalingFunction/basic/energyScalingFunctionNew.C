@@ -53,7 +53,7 @@ Foam::autoPtr<Foam::energyScalingFunction> Foam::energyScalingFunction::New
             dict,
             "energyScalingFunction",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

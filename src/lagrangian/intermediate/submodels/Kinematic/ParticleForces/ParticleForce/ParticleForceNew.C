@@ -51,7 +51,7 @@ Foam::ParticleForce<CloudType>::New
             dict,
             "particle force",
             forceType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

@@ -41,6 +41,7 @@ SourceFiles
 #ifndef Foam_Time_H
 #define Foam_Time_H
 
+#include "stdFoam.H"
 #include "TimePaths.H"
 #include "objectRegistry.H"
 #include "unwatchedIOdictionary.H"
@@ -217,7 +218,7 @@ public:
     // Static Data Members
 
         //- The default control dictionary name (normally "controlDict")
-        static word controlDictName;
+        FOAM_EXPORT_DATA static word controlDictName;
 
 
     //- Runtime type information

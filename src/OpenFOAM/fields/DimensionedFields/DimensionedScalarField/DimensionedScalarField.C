@@ -129,7 +129,7 @@ tmp<DimensionedField<scalar, GeoMesh>> pow
         (
             "pow(" + f1.name() + ',' + f2.name() + ')',
             f1.mesh(),
-            dimless
+            dimensionSet()
         );
 
     pow(tresult.ref().field(), f1.field(), f2.field());
@@ -173,7 +173,7 @@ tmp<DimensionedField<scalar, GeoMesh>> pow
     (
         tf1,
         "pow(" + f1.name() + ',' + f2.name() + ')',
-        dimless
+        dimensionSet()
     );
 
     pow(tresult.ref().field(), f1.field(), f2.field());
@@ -219,7 +219,7 @@ tmp<DimensionedField<scalar, GeoMesh>> pow
     (
         tf2,
         "pow(" + f1.name() + ',' + f2.name() + ')',
-        dimless
+        dimensionSet()
     );
 
     pow(tresult.ref().field(), f1.field(), f2.field());
@@ -269,7 +269,7 @@ tmp<DimensionedField<scalar, GeoMesh>> pow
             tf1,
             tf2,
             "pow(" + f1.name() + ',' + f2.name() + ')',
-            dimless
+            dimensionSet()
         );
 
     pow(tresult.ref().field(), f1.field(), f2.field());
@@ -406,7 +406,7 @@ tmp<DimensionedField<scalar, GeoMesh>> pow
         (
             "pow(" + ds.name() + ',' + f2.name() + ')',
             f2.mesh(),
-            dimless
+            dimensionSet()
         );
 
     pow(tresult.ref().field(), ds.value(), f2.field());
@@ -451,7 +451,7 @@ tmp<DimensionedField<scalar, GeoMesh>> pow
     (
         tf2,
         "pow(" + ds.name() + ',' + f2.name() + ')',
-        dimless
+        dimensionSet()
     );
 
     pow(tresult.ref().field(), ds.value(), f2.field());
@@ -774,7 +774,7 @@ tmp<DimensionedField<scalar, GeoMesh>> func                                    \
         (                                                                      \
             #func "(" + name(n) + ',' + dsf.name() + ')',                      \
             dsf.mesh(),                                                        \
-            dimless                                                            \
+            dimensionSet()                                                            \
         );                                                                     \
                                                                                \
     func(tres.ref().field(), n, dsf.field());                                  \
@@ -805,7 +805,7 @@ tmp<DimensionedField<scalar, GeoMesh>> func                                    \
         (                                                                      \
             tdsf,                                                              \
             #func "(" + name(n) + ',' + dsf.name() + ')',                      \
-            dimless                                                            \
+            dimensionSet()                                                            \
         )                                                                      \
     );                                                                         \
                                                                                \

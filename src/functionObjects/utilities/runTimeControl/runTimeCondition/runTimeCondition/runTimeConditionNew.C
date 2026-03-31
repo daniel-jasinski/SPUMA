@@ -52,7 +52,7 @@ Foam::functionObjects::runTimeControls::runTimeCondition::New
             dict,
             "runTimeCondition",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

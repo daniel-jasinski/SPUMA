@@ -81,7 +81,7 @@ Foam::autoPtr<Foam::TimeScaleModel> Foam::TimeScaleModel::New
             dict,
             "time scale model",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

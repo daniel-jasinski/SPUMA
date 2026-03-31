@@ -68,7 +68,7 @@ Foam::autoPtr<Foam::token::compound> Foam::token::compound::New
         (
             "compound",
             compoundType,
-            *emptyConstructorTablePtr_
+            *emptyConstructorTablePtr_()
         ) << abort(FatalError);
     }
 
@@ -92,7 +92,7 @@ Foam::autoPtr<Foam::token::compound> Foam::token::compound::New
             is,
             "compound",
             compoundType,
-            *emptyConstructorTablePtr_
+            *emptyConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 
@@ -123,8 +123,8 @@ bool Foam::token::compound::isCompound(const word& compoundType)
 
     return
     (
-        emptyConstructorTablePtr_
-     && emptyConstructorTablePtr_->contains(compoundType)
+        emptyConstructorTablePtr_()
+     && emptyConstructorTablePtr_()->contains(compoundType)
     );
 }
 

@@ -79,7 +79,7 @@ void Foam::DimensionedField<Type, GeoMesh>::readField
                 IOobjectOption::NO_WRITE,
                 IOobjectOption::NO_REGISTER
             ),
-            typeName
+            typeName_()
         )
     );
 
@@ -119,7 +119,7 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     regIOobject(io),
     Field<Type>(),
     mesh_(mesh),
-    dimensions_(dimless),
+    dimensions_(),
     oriented_()
 {
     readField(fieldDictEntry);
@@ -138,7 +138,7 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     regIOobject(io),
     Field<Type>(),
     mesh_(mesh),
-    dimensions_(dimless),
+    dimensions_(),
     oriented_()
 {
     readField(fieldDict, fieldDictEntry);

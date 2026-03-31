@@ -61,7 +61,7 @@ Foam::autoPtr<Foam::SRF::SRFModel> Foam::SRF::SRFModel::New
             dict,
             "SRFModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

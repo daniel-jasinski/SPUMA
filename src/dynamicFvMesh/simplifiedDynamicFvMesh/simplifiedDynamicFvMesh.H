@@ -101,7 +101,7 @@ class SimplifiedDynamicFvMesh
 
 public:
 
-    ClassNameNoDebug(DynamicMeshType::typeName_.c_str());
+    ClassNameNoDebug(DynamicMeshType::typeName_());
 
     //- Constructor
     SimplifiedDynamicFvMesh(const Time& runTime, const word& regionName);

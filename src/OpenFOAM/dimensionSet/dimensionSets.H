@@ -49,36 +49,36 @@ namespace Foam
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 //- Dimensionless
-extern const dimensionSet dimless;
+FOAM_EXPORT_DATA extern const dimensionSet dimless;
 
-extern const dimensionSet dimMass;
-extern const dimensionSet dimLength;
-extern const dimensionSet dimTime;
-extern const dimensionSet dimTemperature;
-extern const dimensionSet dimMoles;
-extern const dimensionSet dimCurrent;
-extern const dimensionSet dimLuminousIntensity;
+FOAM_EXPORT_DATA extern const dimensionSet dimMass;
+FOAM_EXPORT_DATA extern const dimensionSet dimLength;
+FOAM_EXPORT_DATA extern const dimensionSet dimTime;
+FOAM_EXPORT_DATA extern const dimensionSet dimTemperature;
+FOAM_EXPORT_DATA extern const dimensionSet dimMoles;
+FOAM_EXPORT_DATA extern const dimensionSet dimCurrent;
+FOAM_EXPORT_DATA extern const dimensionSet dimLuminousIntensity;
 
-extern const dimensionSet dimArea;
-extern const dimensionSet dimVolume;
+FOAM_EXPORT_DATA extern const dimensionSet dimArea;
+FOAM_EXPORT_DATA extern const dimensionSet dimVolume;
 
 //- Older spelling for dimVolume
 //  \deprecated(2019-01) use dimVolume instead
-extern const dimensionSet dimVol;
+FOAM_EXPORT_DATA extern const dimensionSet dimVol;
 
-extern const dimensionSet dimDensity;
-extern const dimensionSet dimForce;
-extern const dimensionSet dimEnergy;
-extern const dimensionSet dimPower;
+FOAM_EXPORT_DATA extern const dimensionSet dimDensity;
+FOAM_EXPORT_DATA extern const dimensionSet dimForce;
+FOAM_EXPORT_DATA extern const dimensionSet dimEnergy;
+FOAM_EXPORT_DATA extern const dimensionSet dimPower;
 
-extern const dimensionSet dimVelocity;
-extern const dimensionSet dimAcceleration;
-extern const dimensionSet dimPressure;
-extern const dimensionSet dimCompressibility;
-extern const dimensionSet dimGasConstant;
-extern const dimensionSet dimSpecificHeatCapacity;
-extern const dimensionSet dimViscosity;
-extern const dimensionSet dimDynamicViscosity;
+FOAM_EXPORT_DATA extern const dimensionSet dimVelocity;
+FOAM_EXPORT_DATA extern const dimensionSet dimAcceleration;
+FOAM_EXPORT_DATA extern const dimensionSet dimPressure;
+FOAM_EXPORT_DATA extern const dimensionSet dimCompressibility;
+FOAM_EXPORT_DATA extern const dimensionSet dimGasConstant;
+FOAM_EXPORT_DATA extern const dimensionSet dimSpecificHeatCapacity;
+FOAM_EXPORT_DATA extern const dimensionSet dimViscosity;
+FOAM_EXPORT_DATA extern const dimensionSet dimDynamicViscosity;
 
 
 /*---------------------------------------------------------------------------*\

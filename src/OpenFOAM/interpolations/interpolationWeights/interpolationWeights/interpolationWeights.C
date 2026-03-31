@@ -65,7 +65,7 @@ Foam::autoPtr<Foam::interpolationWeights> Foam::interpolationWeights::New
         (
             "interpolationWeights",
             type,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

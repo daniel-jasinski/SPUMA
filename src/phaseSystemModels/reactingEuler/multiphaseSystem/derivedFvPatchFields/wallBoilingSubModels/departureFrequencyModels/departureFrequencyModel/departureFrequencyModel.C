@@ -61,7 +61,7 @@ Foam::wallBoilingModels::departureFrequencyModel::New
             dict,
             "departureFrequencyModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

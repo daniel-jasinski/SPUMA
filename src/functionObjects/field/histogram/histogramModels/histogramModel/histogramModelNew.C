@@ -51,7 +51,7 @@ Foam::autoPtr<Foam::histogramModel> Foam::histogramModel::New
             dict,
             "histogramModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

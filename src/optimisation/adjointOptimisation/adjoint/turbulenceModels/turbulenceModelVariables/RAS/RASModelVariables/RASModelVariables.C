@@ -286,7 +286,7 @@ autoPtr<RASModelVariables> RASModelVariables::New
             *dictptr,
             "RASModelVariables",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

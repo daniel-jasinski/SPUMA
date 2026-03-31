@@ -42,7 +42,7 @@ SourceFiles
 #include "fileNameList.H"
 #include "stringList.H"
 
-#include <sys/types.h>
+#include "foamWinCompat.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -59,7 +59,7 @@ Foam::diameterModels::coalescenceModel::New
             dict,
             "coalescenceModel",
             type,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

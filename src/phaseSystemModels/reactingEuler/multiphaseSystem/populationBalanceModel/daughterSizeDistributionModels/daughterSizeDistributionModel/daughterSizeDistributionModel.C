@@ -64,7 +64,7 @@ Foam::diameterModels::daughterSizeDistributionModel::New
             dict,
             "daughterSizeDistributionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

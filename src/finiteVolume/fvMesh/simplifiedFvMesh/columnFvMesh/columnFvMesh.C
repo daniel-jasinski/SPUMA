@@ -371,7 +371,7 @@ void Foam::simplifiedMeshes::columnFvMeshInfo::addLocalPatches
         nInternalFace + 4*nPatchWithFace_,  // start face
         nPatch - 1,                         // index in boundary list
         mesh.boundaryMesh(),                // polyBoundaryMesh
-        emptyPolyPatch::typeName            // patchType
+        emptyPolyPatch::typeName_()         // patchType
     );
 
     mesh.addFvPatches(patches);

@@ -30,7 +30,9 @@ License
 #include "IOstreams.H"
 #include "timer.H"
 
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 #undef major
 #undef minor

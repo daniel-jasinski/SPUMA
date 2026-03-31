@@ -34,8 +34,8 @@ bool Foam::coordSetWriter::supportedType(const word& writeType)
 {
     return
     (
-        wordConstructorTablePtr_->found(writeType)
-     || wordDictConstructorTablePtr_->found(writeType)
+        wordConstructorTablePtr_()->found(writeType)
+     || wordDictConstructorTablePtr_()->found(writeType)
     );
 }
 
@@ -53,7 +53,7 @@ Foam::autoPtr<Foam::coordSetWriter> Foam::coordSetWriter::New
         (
             "setWriter",
             writeType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -87,7 +87,7 @@ Foam::autoPtr<Foam::coordSetWriter> Foam::coordSetWriter::New
         (
             "setWriter",
             writeType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

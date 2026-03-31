@@ -60,7 +60,7 @@ Foam::wallBoilingModels::TDNBModel::New
             dict,
             "TDNBModelType",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

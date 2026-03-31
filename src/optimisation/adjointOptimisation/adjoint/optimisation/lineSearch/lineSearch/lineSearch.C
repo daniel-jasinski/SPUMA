@@ -123,7 +123,7 @@ Foam::autoPtr<Foam::lineSearch> Foam::lineSearch::New
                 dict,
                 "lineSearch",
                 modelType,
-                *dictionaryConstructorTablePtr_
+                *dictionaryConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

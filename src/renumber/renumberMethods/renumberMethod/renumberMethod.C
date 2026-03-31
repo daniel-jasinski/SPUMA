@@ -43,9 +43,9 @@ namespace Foam
 
 Foam::wordList Foam::renumberMethod::supportedMethods()
 {
-    if (dictionaryConstructorTablePtr_)
+    if (dictionaryConstructorTablePtr_())
     {
-        return dictionaryConstructorTablePtr_->sortedToc();
+        return dictionaryConstructorTablePtr_()->sortedToc();
     }
     return wordList();
 }
@@ -72,7 +72,7 @@ Foam::autoPtr<Foam::renumberMethod> Foam::renumberMethod::New
             dict,
             "renumberMethod",
             methodType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

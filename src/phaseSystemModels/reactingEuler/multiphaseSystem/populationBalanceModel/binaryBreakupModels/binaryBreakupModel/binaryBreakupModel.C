@@ -59,7 +59,7 @@ Foam::diameterModels::binaryBreakupModel::New
             dict,
             "binary breakup model",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

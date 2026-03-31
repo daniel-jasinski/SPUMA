@@ -50,7 +50,7 @@ Foam::autoPtr<Foam::radiation::scatterModel> Foam::radiation::scatterModel::New
             dict,
             "scatterModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

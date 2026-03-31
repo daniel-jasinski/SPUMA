@@ -58,7 +58,7 @@ autoPtr<phaseChangeModel> phaseChangeModel::New
             dict,
             "phaseChangeModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -126,7 +126,7 @@ Foam::incompressibleAdjointSolver::New
             dict,
             "incompressibleAdjointSolver",
             solverType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

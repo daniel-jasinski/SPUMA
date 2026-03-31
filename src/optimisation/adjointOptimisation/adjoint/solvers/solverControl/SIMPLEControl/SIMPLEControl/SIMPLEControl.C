@@ -75,7 +75,7 @@ Foam::autoPtr<Foam::SIMPLEControl> Foam::SIMPLEControl::New
         (
             "control",
             managerType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

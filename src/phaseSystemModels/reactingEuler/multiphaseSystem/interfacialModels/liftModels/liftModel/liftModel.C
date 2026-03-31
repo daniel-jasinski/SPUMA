@@ -80,7 +80,7 @@ Foam::liftModel::New
             dict,
             "liftModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

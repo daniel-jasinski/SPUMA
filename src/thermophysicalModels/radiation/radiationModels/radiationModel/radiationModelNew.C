@@ -76,7 +76,7 @@ Foam::radiation::radiationModel::New
             dict,
             "radiationModel",
             modelType,
-            *TConstructorTablePtr_
+            *TConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -104,7 +104,7 @@ Foam::radiation::radiationModel::New
             dict,
             "radiationModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

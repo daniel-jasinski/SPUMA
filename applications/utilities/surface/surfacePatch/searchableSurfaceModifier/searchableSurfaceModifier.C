@@ -76,7 +76,7 @@ Foam::searchableSurfaceModifier::New
             dict,
             "searchableSurfaceModifier",
             type,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -57,7 +57,7 @@ autoPtr<transferModel> transferModel::New
             dict,
             "transferModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

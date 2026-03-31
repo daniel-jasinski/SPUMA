@@ -83,7 +83,7 @@ Foam::interfaceCompositionModel::New
             dict,
             "interfaceCompositionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

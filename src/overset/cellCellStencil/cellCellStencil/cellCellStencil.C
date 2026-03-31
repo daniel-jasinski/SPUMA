@@ -83,7 +83,7 @@ Foam::autoPtr<Foam::cellCellStencil> Foam::cellCellStencil::New
             dict,
             "cellCellStencil",
             stencilType,
-            *meshConstructorTablePtr_
+            *meshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

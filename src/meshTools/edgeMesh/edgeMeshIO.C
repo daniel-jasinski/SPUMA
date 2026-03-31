@@ -100,7 +100,7 @@ void Foam::edgeMesh::write
         (
             "extension",
             fileType,
-            *writefileExtensionMemberFunctionTablePtr_
+            *writefileExtensionMemberFunctionTablePtr_()
         ) << exit(FatalError);
     }
 

@@ -39,6 +39,7 @@ SourceFiles
 #ifndef Foam_HashTableCore_H
 #define Foam_HashTableCore_H
 
+#include "stdFoam.H"
 #include "label.H"
 #include "uLabel.H"
 #include "className.H"
@@ -57,7 +58,7 @@ namespace Foam
 struct HashTableCore
 {
     //- Maximum allowable internal table size. Approximately labelMax/4
-    static const label maxTableSize;
+    FOAM_EXPORT_DATA static const label maxTableSize;
 
     //- Return a canonical (power-of-two) of the requested size.
     static label canonicalSize(const label requested_size);

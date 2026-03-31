@@ -73,7 +73,7 @@ Foam::kineticTheoryModels::frictionalStressModel::New
             dict,
             "frictionalStressModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

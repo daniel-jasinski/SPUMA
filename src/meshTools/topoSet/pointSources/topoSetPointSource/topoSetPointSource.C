@@ -74,7 +74,7 @@ Foam::topoSetPointSource::New
             dict,
             "pointSetSource",
             sourceType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -97,7 +97,7 @@ Foam::autoPtr<Foam::topoSetPointSource> Foam::topoSetPointSource::New
         (
             "pointSetSource",
             sourceType,
-            *istreamConstructorTablePtr_
+            *istreamConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

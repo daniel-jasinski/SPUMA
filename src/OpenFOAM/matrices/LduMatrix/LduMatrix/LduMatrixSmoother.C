@@ -52,7 +52,7 @@ Foam::LduMatrix<Type, DType, LUType>::smoother::New
                 smootherDict,
                 "symmetric matrix smoother",
                 smootherName,
-                *symMatrixConstructorTablePtr_
+                *symMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 
@@ -76,7 +76,7 @@ Foam::LduMatrix<Type, DType, LUType>::smoother::New
                 smootherDict,
                 "asymmetric matrix smoother",
                 smootherName,
-                *asymMatrixConstructorTablePtr_
+                *asymMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

@@ -219,7 +219,7 @@ Foam::autoPtr<Foam::shapeDesignVariables> Foam::shapeDesignVariables::New
         (
             "shapeType",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

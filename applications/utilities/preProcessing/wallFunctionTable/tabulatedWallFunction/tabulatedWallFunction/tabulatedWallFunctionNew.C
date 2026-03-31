@@ -50,7 +50,7 @@ Foam::tabulatedWallFunctions::tabulatedWallFunction::New
             dict,
             "tabulatedWallFunction",
             functionName,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

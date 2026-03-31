@@ -51,7 +51,7 @@ Foam::BreakupModel<CloudType>::New
             dict,
             "breakupModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

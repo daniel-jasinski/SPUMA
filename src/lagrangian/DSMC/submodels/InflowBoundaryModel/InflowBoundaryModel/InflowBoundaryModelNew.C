@@ -51,7 +51,7 @@ Foam::InflowBoundaryModel<CloudType>::New
             dict,
             "InflowBoundaryModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

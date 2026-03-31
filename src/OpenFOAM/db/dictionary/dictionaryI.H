@@ -29,18 +29,7 @@ License
 
 // * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
 
-inline int Foam::dictionary::reportOptional() noexcept
-{
-    return writeOptionalEntries;
-}
-
-
-inline int Foam::dictionary::reportOptional(const int level) noexcept
-{
-    int old(writeOptionalEntries);
-    writeOptionalEntries = level;
-    return old;
-}
+// reportOptional() moved to dictionary.C to avoid cross-DLL data access
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

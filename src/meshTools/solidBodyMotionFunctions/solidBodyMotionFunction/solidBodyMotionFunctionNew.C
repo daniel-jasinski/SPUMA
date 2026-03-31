@@ -52,7 +52,7 @@ Foam::solidBodyMotionFunction::New
             dict,
             "solidBodyMotionFunction",
             motionType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

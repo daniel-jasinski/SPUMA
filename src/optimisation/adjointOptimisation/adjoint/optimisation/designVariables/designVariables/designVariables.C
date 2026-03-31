@@ -172,7 +172,7 @@ Foam::autoPtr<Foam::designVariables> Foam::designVariables::New
         (
             "designVariables",
             modelType,
-            *designVariablesConstructorTablePtr_
+            *designVariablesConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

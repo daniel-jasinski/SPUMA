@@ -92,7 +92,7 @@ Foam::coordinateRotation::New
             dict,
             "rotation",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -62,7 +62,7 @@ Foam::diameterModels::IATEsource::New
             dict,
             "IATEsource",
             type,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

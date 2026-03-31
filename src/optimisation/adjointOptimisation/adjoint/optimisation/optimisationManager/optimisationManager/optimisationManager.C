@@ -384,7 +384,7 @@ Foam::autoPtr<Foam::optimisationManager> Foam::optimisationManager::New
             dict,
             "optimisationManager",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

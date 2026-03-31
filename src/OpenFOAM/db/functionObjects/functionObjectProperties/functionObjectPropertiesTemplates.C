@@ -101,7 +101,7 @@ void Foam::functionObjects::properties::setObjectResult
 
     dictionary& objectDict = resultsDict.subDict(objectName);
 
-    const word& dictTypeName = pTraits<Type>::typeName;
+    const word& dictTypeName = pTraits<Type>::typeName_();
 
     if (!objectDict.found(dictTypeName))
     {
@@ -144,7 +144,7 @@ bool Foam::functionObjects::properties::getObjectResult
         {
             const dictionary& objectDict = resultsDict.subDict(objectName);
 
-            const word& dictTypeName = pTraits<Type>::typeName;
+            const word& dictTypeName = pTraits<Type>::typeName_();
 
             if (objectDict.found(dictTypeName))
             {

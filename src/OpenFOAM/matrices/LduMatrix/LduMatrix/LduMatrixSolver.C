@@ -65,7 +65,7 @@ Foam::LduMatrix<Type, DType, LUType>::solver::New
                 solverDict,
                 "symmetric matrix solver",
                 solverName,
-                *symMatrixConstructorTablePtr_
+                *symMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 
@@ -90,7 +90,7 @@ Foam::LduMatrix<Type, DType, LUType>::solver::New
                 solverDict,
                 "asymmetric matrix solver",
                 solverName,
-                *asymMatrixConstructorTablePtr_
+                *asymMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

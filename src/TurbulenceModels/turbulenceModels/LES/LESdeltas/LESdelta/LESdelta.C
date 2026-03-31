@@ -85,7 +85,7 @@ Foam::autoPtr<Foam::LESdelta> Foam::LESdelta::New
             dict,
             "LESdelta",
             deltaType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -125,7 +125,7 @@ Foam::autoPtr<Foam::LESdelta> Foam::LESdelta::New
             dict,
             "LESdelta",
             deltaType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         );
 
         if (!additionalConstructors.empty())

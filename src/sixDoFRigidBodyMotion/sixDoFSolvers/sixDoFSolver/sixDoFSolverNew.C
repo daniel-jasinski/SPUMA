@@ -49,7 +49,7 @@ Foam::autoPtr<Foam::sixDoFSolver> Foam::sixDoFSolver::New
             dict,
             "sixDoFSolver",
             solverType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

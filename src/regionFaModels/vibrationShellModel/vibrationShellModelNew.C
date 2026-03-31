@@ -53,7 +53,7 @@ autoPtr<vibrationShellModel> vibrationShellModel::New
             dict,
             "vibrationShellModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

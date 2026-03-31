@@ -111,14 +111,15 @@ public:
 
     // Static Data Members
 
-        static const char* const typeName;
-        static const char* const componentNames[];
-        static const int8_t zero;
-        static const int8_t one;
-        static const int8_t min;
-        static const int8_t max;
-        static const int8_t rootMax;
-        static const int8_t rootMin;
+        FOAM_EXPORT_DATA static const char* const typeName;
+        static const char* typeName_() { return "int8"; }
+        FOAM_EXPORT_DATA static const char* const componentNames[];
+        FOAM_EXPORT_DATA static const int8_t zero;
+        FOAM_EXPORT_DATA static const int8_t one;
+        FOAM_EXPORT_DATA static const int8_t min;
+        FOAM_EXPORT_DATA static const int8_t max;
+        FOAM_EXPORT_DATA static const int8_t rootMax;
+        FOAM_EXPORT_DATA static const int8_t rootMin;
 
 
     // Constructors

@@ -40,14 +40,14 @@ License
 template<class Face>
 Foam::wordHashSet Foam::UnsortedMeshedSurface<Face>::readTypes()
 {
-    return wordHashSet(*fileExtensionConstructorTablePtr_);
+    return wordHashSet(*fileExtensionConstructorTablePtr_());
 }
 
 
 template<class Face>
 Foam::wordHashSet Foam::UnsortedMeshedSurface<Face>::writeTypes()
 {
-    return wordHashSet(*writefileExtensionMemberFunctionTablePtr_);
+    return wordHashSet(*writefileExtensionMemberFunctionTablePtr_());
 }
 
 

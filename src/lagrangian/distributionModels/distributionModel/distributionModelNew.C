@@ -49,7 +49,7 @@ Foam::autoPtr<Foam::distributionModel> Foam::distributionModel::New
             dict,
             "distribution model",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

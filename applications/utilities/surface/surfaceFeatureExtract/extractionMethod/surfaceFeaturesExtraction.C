@@ -85,7 +85,7 @@ Foam::surfaceFeaturesExtraction::method::New
             dict,
             "extractionMethod",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

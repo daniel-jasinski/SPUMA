@@ -41,12 +41,12 @@ bool Foam::CompactIOField<T, BaseType>::readIOcontents(bool readOnProc)
 
         if (readOnProc)
         {
-            if (headerClassName() == IOField<T>::typeName)
+            if (headerClassName() == IOField<T>::typeName_())
             {
                 is >> static_cast<Field<T>&>(*this);
                 close();
             }
-            else if (headerClassName() == typeName)
+            else if (headerClassName() == typeName_())
             {
                 is >> *this;
                 close();
@@ -55,8 +55,8 @@ bool Foam::CompactIOField<T, BaseType>::readIOcontents(bool readOnProc)
             {
                 FatalIOErrorInFunction(is)
                     << "Unexpected class name " << headerClassName()
-                    << " expected " << typeName
-                    << " or " << IOField<T>::typeName << nl
+                    << " expected " << typeName_()
+                    << " or " << IOField<T>::typeName_() << nl
                     << "    while reading object " << name()
                     << exit(FatalIOError);
             }
@@ -165,14 +165,14 @@ bool Foam::CompactIOField<T, BaseType>::writeObject
     if (streamOpt.format() == IOstreamOption::ASCII)
     {
         // Change type to be non-compact format type
-        const word oldTypeName(typeName);
+        const word oldTypeName(typeName_());
 
-        const_cast<word&>(typeName) = IOField<T>::typeName;
+        const_cast<word&>(typeName) = IOField<T>::typeName_();
 
         bool good = regIOobject::writeObject(streamOpt, writeOnProc);
 
         // Restore type
-        const_cast<word&>(typeName) = oldTypeName;
+        const_cast<word&>(typeName) = oldTypeName;  // NOTE: typeName write via JMP thunk may crash on Windows
 
         return good;
     }

@@ -854,7 +854,7 @@ Foam::autoPtr<Foam::NURBS3DVolume> Foam::NURBS3DVolume::New
             dict,
             "type",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

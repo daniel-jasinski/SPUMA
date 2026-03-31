@@ -117,7 +117,7 @@ autoPtr<objectiveIncompressible> objectiveIncompressible::New
             dict,
             "objectiveIncompressible",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

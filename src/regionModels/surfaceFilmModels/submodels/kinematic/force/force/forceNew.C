@@ -57,7 +57,7 @@ autoPtr<force> force::New
             dict,
             "force",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

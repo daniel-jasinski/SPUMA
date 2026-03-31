@@ -73,7 +73,7 @@ Foam::autoPtr<Foam::regularisationRadius> Foam::regularisationRadius::New
             dict,
             "regularisationRadius",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

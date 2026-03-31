@@ -52,7 +52,7 @@ Foam::autoPtr<Foam::pairPotential> Foam::pairPotential::New
             dict,
             "pairPotential",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -94,7 +94,7 @@ Foam::autoPtr<Foam::fv::option> Foam::fv::option::New
     (
         coeffs,
         "libs",
-        dictionaryConstructorTablePtr_
+        dictionaryConstructorTablePtr_()
     );
 
     auto* ctorPtr = dictionaryConstructorTable(modelType);
@@ -106,7 +106,7 @@ Foam::autoPtr<Foam::fv::option> Foam::fv::option::New
             coeffs,
             "fvOption",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

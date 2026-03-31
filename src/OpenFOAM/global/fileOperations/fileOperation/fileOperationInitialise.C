@@ -120,7 +120,7 @@ Foam::fileOperations::fileOperationInitialise::New
         (
             "fileOperationInitialise",
             type,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << abort(FatalError);
     }
 

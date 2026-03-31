@@ -99,7 +99,7 @@ Foam::autoPtr<Foam::functionObject> Foam::functionObject::New
             (
                 dict,
                 finder.ref().keyword(),
-                dictionaryConstructorTablePtr_
+                dictionaryConstructorTablePtr_()
             );
         }
     }
@@ -109,10 +109,10 @@ Foam::autoPtr<Foam::functionObject> Foam::functionObject::New
     // (
     //     dict,
     //     "libs",
-    //     dictionaryConstructorTablePtr_
+    //     dictionaryConstructorTablePtr_()
     // );
 
-    if (!dictionaryConstructorTablePtr_)
+    if (!dictionaryConstructorTablePtr_())
     {
         FatalErrorInFunction
             << "Cannot load function type " << functionType << nl << nl
@@ -130,7 +130,7 @@ Foam::autoPtr<Foam::functionObject> Foam::functionObject::New
         (
             "function",
             functionType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

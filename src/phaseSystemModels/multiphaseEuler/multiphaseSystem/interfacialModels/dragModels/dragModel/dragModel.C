@@ -83,7 +83,7 @@ Foam::multiphaseEuler::dragModel::New
             dict,
             "dragModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -51,7 +51,7 @@ Foam::autoPtr<Foam::polyPatch> Foam::polyPatch::New
         (
             "polyPatch",
             patchType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -114,7 +114,7 @@ Foam::autoPtr<Foam::polyPatch> Foam::polyPatch::New
                 dict,
                 "polyPatch",
                 patchType,
-                *dictionaryConstructorTablePtr_
+                *dictionaryConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
     }

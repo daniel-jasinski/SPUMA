@@ -85,7 +85,7 @@ Foam::patchDistMethod::New
             dict,
             "patchDistMethod",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

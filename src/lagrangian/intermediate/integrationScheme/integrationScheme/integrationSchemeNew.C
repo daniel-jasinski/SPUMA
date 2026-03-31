@@ -51,7 +51,7 @@ Foam::autoPtr<Foam::integrationScheme> Foam::integrationScheme::New
             dict,
             "integration scheme",
             modelType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

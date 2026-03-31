@@ -50,7 +50,7 @@ Foam::autoPtr<Foam::pointPatchField<Type>> Foam::pointPatchField<Type>::New
         (
             "patchField",
             patchFieldType,
-            *patchConstructorTablePtr_
+            *patchConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -79,7 +79,7 @@ Foam::autoPtr<Foam::pointPatchField<Type>> Foam::pointPatchField<Type>::New
     }
     else
     {
-        if (patchConstructorTablePtr_->found(p.type()))
+        if (patchConstructorTablePtr_()->found(p.type()))
         {
             tpfld.ref().patchType() = actualPatchType;
         }
@@ -134,7 +134,7 @@ Foam::autoPtr<Foam::pointPatchField<Type>> Foam::pointPatchField<Type>::New
                 << "Unknown patchField type " << patchFieldType
                 << " for patch type " << p.type() << nl << nl
                 << "Valid patchField types :" << endl
-                << dictionaryConstructorTablePtr_->sortedToc()
+                << dictionaryConstructorTablePtr_()->sortedToc()
                 << exit(FatalIOError);
         }
     }
@@ -189,7 +189,7 @@ Foam::autoPtr<Foam::pointPatchField<Type>> Foam::pointPatchField<Type>::New
         (
             "patchField",
             ptf.type(),
-            *patchMapperConstructorTablePtr_
+            *patchMapperConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

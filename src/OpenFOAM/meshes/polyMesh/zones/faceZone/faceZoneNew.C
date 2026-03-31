@@ -52,7 +52,7 @@ Foam::autoPtr<Foam::faceZone> Foam::faceZone::New
             dict,
             "faceZone",
             zoneType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

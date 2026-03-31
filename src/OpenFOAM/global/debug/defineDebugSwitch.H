@@ -32,6 +32,7 @@ Description
 #ifndef Foam_defineDebugSwitch_H
 #define Foam_defineDebugSwitch_H
 
+#include "stdFoam.H"
 #include "simpleRegIOobject.H"
 #include "debug.H"
 #include "label.H"  // Also for defining Foam::word etc.
@@ -122,6 +123,15 @@ public:
 //- Define the debug information, lookup as \a Name
 #define defineDebugSwitchWithName(Type, Name, Value)                           \
     int Type::debug(::Foam::debug::debugSwitch(Name, Value))
+
+//- Define the debug_() accessor function (cross-DLL safe alternative to
+//  reading the debug static member directly through DEF thunks)
+#define defineDebugFunction(Type)                                              \
+    int Type::debug_() { return Type::debug; }
+
+//- Define the debug_() accessor for template specializations
+#define defineTemplateDebugFunction(Type)                                      \
+    template<> int Type::debug_() { return Type::debug; }
 
 //- Define the debug information
 #define defineDebugSwitch(Type, Value)                                         \

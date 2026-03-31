@@ -51,7 +51,7 @@ Foam::PairModel<CloudType>::New
             dict,
             "pairModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

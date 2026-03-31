@@ -241,7 +241,7 @@ Foam::autoPtr<Foam::betaMax> Foam::betaMax::New
             dict,
             "betaMaxType",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

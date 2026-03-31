@@ -55,7 +55,7 @@ Foam::autoPtr<Foam::implicitFunction> Foam::implicitFunction::New
             dict,
             "implicitFunction",
             implicitFunctionType,
-            *dictConstructorTablePtr_
+            *dictConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

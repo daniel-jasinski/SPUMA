@@ -198,7 +198,7 @@ void Foam::blockMesh::readPatches
 
         // Split old style cyclics
 
-        if (patchTypes[nPatches-1] == cyclicPolyPatch::typeName)
+        if (patchTypes[nPatches-1] == cyclicPolyPatch::typeName_())
         {
             word halfA = patchNames[nPatches-1] + "_half0";
             word halfB = patchNames[nPatches-1] + "_half1";
@@ -345,7 +345,7 @@ Foam::blockMesh::createTopology
 )
 {
     word defaultPatchName = "defaultFaces";
-    word defaultPatchType = emptyPolyPatch::typeName;
+    word defaultPatchType = emptyPolyPatch::typeName_();
 
     // Read the names/types for the unassigned patch faces
     // this is a bit heavy handed (and ugly), but there is currently

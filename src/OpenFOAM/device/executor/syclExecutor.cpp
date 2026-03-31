@@ -77,8 +77,8 @@ void Foam::syclExecutor::_backendSerialFor(F& lambda, const label& size)
 }
 
 // Generic reduction: works for any binary op (plus, min, max, custom).
-// GPU uses USM-based sycl::reduction. CPU uses sequential fallback (Fix #28)
-// because AdaptiveCpp OMP backend may lack OpenMP support at build time.
+// On GPU, maps to sycl::reduction which uses hardware-optimized primitives.
+// On CPU, falls back to sequential loop (OMP backend broken, Fix #28).
 template <typename F, typename Op, typename resultT>
 void Foam::syclExecutor::_backendReduce
 (
@@ -95,27 +95,37 @@ void Foam::syclExecutor::_backendReduce
 
     if (q.get_device().is_gpu())
     {
-        // GPU: USM-based sycl::reduction (no buffers, no accessor overhead).
-        resultT* reduced = sycl::malloc_shared<resultT>(1, q);
-        *reduced = identity;
+        // GPU: sycl::reduction with identity and binary op.
+        // AdaptiveCpp maps known ops (plus, min, max) to hardware-optimized
+        // primitives (warp shuffles + shared memory on CUDA).
+        // Custom ops get a generic tree reduction.
+        resultT reduced = identity;
 
-        q.parallel_for
-        (
-            sycl::range<1>(size),
-            sycl::reduction(reduced, identity, op),
-            [=](sycl::id<1> idx, auto& reducer)
+        {
+            sycl::buffer<resultT, 1> buf(&reduced, sycl::range<1>(1));
+
+            q.submit([&](sycl::handler& h)
             {
-                reducer.combine(lambda(idx[0]));
-            }
-        ).wait();
+                auto red = sycl::reduction(buf, h, identity, op);
 
-        *result = op(*result, *reduced);
-        sycl::free(reduced, q);
+                h.parallel_for
+                (
+                    sycl::range<1>(size),
+                    red,
+                    [=](sycl::id<1> idx, auto& reducer)
+                    {
+                        reducer.combine(lambda(idx[0]));
+                    }
+                );
+            }).wait();
+        }
+
+        *result = op(*result, reduced);
     }
     else
     {
-        // CPU fallback: sequential loop for correctness when AdaptiveCpp is
-        // built without OpenMP support (Fix #28).
+        // CPU fallback: sycl::reduction returns 0 on AdaptiveCpp OMP
+        // backend (Fix #28). Use sequential loop for correctness.
         resultT local = identity;
 
         for (label i = 0; i < size; ++i)

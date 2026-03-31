@@ -69,7 +69,7 @@ Foam::thermophysicalProperties::New
         (
             "thermophysicalProperties",
             name,
-            *ConstructorTablePtr_
+            *ConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -96,7 +96,7 @@ Foam::thermophysicalProperties::New
             dict,
             "thermophysicalProperties",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

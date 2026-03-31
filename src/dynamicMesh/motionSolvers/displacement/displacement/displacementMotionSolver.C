@@ -98,10 +98,10 @@ Foam::displacementMotionSolver::New
     (
         solverDict,
         "motionSolverLibs",
-        displacementConstructorTablePtr_
+        displacementConstructorTablePtr_()
     );
 
-    if (!displacementConstructorTablePtr_)
+    if (!displacementConstructorTablePtr_())
     {
         FatalErrorInFunction
             << "solver table is empty"
@@ -117,7 +117,7 @@ Foam::displacementMotionSolver::New
             solverDict,
             "solver",
             solverTypeName,
-            *displacementConstructorTablePtr_
+            *displacementConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

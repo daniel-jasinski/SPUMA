@@ -73,7 +73,7 @@ Foam::kineticTheoryModels::granularPressureModel::New
             dict,
             "granularPressureModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

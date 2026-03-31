@@ -114,14 +114,15 @@ public:
 
     // Static Data Members
 
-        static const char* const typeName;
-        static const char* const componentNames[];
-        static const Form zero;
-        static const Form one;
-        static const Form max;
-        static const Form min;
-        static const Form rootMax;
-        static const Form rootMin;
+        FOAM_EXPORT_DATA static const char* const typeName;
+        static const char* typeName_() { return typeName; }
+        FOAM_EXPORT_DATA static const char* const componentNames[];
+        FOAM_EXPORT_DATA static const Form zero;
+        FOAM_EXPORT_DATA static const Form one;
+        FOAM_EXPORT_DATA static const Form max;
+        FOAM_EXPORT_DATA static const Form min;
+        FOAM_EXPORT_DATA static const Form rootMax;
+        FOAM_EXPORT_DATA static const Form rootMin;
 
 
     // Sub-Block Classes

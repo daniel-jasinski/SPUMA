@@ -49,7 +49,7 @@ Foam::RBD::restraint::New
             dict,
             "restraint",
             restraintType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

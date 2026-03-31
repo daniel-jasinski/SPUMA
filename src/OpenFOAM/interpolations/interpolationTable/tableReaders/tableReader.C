@@ -51,7 +51,7 @@ Foam::autoPtr<Foam::tableReader<Type>> Foam::tableReader<Type>::New
             spec,
             "reader",
             readerType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

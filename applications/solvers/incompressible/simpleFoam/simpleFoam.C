@@ -89,12 +89,11 @@ int main(int argc, char *argv[])
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
     #include "createControl.H"
+
     #include "createFields.H"
     #include "initContinuityErrs.H"
 
     turbulence->validate();
-
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     Info<< "\nStarting time loop\n" << endl;
 
@@ -102,7 +101,6 @@ int main(int argc, char *argv[])
     {
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-        // Do any mesh changes
         mesh.controlledUpdate();
 
         if (mesh.changing())
@@ -110,7 +108,6 @@ int main(int argc, char *argv[])
             MRF.update();
         }
 
-        // --- Pressure-velocity SIMPLE corrector
         {
             #include "UEqn.H"
             #include "pEqn.H"
@@ -128,6 +125,19 @@ int main(int argc, char *argv[])
     #include "poolMaxOccupancy.H"
 
     Info<< "End\n" << endl;
+
+#ifdef _WIN32
+    // Fix #33: Skip mesh destructor to avoid crash in meshObject::clearUpto
+    // template code (compiled into libfiniteVolume.dll via NoRepository).
+    // The template accesses meshObject::debug (cross-DLL static data via DEF
+    // thunk, reads garbage) and Pout (cross-DLL Ostream with corrupt vtable),
+    // causing segfault in operator<<(Ostream&, const char*).
+    // Root cause: FOAM_TYPENAME_EXPORT uses __declspec(dllexport) always,
+    // so downstream DLLs never get proper __declspec(dllimport) for data.
+    // Proper fix: rebuild libfiniteVolume.dll with MESHOBJECT_DEBUG guard
+    // in MeshObject.C (already applied to source).
+    meshPtr.release();
+#endif
 
     return 0;
 }

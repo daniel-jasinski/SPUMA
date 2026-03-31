@@ -102,7 +102,7 @@ Foam::IsotropyModel<CloudType>::New
             dict,
             "isotropy model",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

@@ -49,7 +49,7 @@ Foam::laminarModels::generalizedNewtonianViscosityModel::New
             dict,
             "generalizedNewtonianViscosityModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

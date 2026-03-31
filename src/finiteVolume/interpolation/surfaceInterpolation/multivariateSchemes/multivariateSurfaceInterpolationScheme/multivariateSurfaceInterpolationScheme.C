@@ -77,7 +77,7 @@ Foam::multivariateSurfaceInterpolationScheme<Type>::New
             schemeData,
             "discretisation",
             schemeName,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

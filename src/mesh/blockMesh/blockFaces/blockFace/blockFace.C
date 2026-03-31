@@ -93,7 +93,7 @@ Foam::autoPtr<Foam::blockFace> Foam::blockFace::New
             dict,
             "blockFace",
             faceType,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

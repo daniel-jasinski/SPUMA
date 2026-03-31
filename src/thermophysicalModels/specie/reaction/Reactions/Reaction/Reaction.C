@@ -372,7 +372,7 @@ Foam::Reaction<ReactionThermo>::New
             dict,
             "reaction",
             reactionTypeName,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -56,6 +56,7 @@ SeeAlso
 #ifndef Foam_error_H
 #define Foam_error_H
 
+#include "stdFoam.H"
 #include "messageStream.H"
 #include <memory>
 
@@ -452,11 +453,11 @@ Ostream& operator<<(Ostream& os, const IOerror& err);
 
 //- Error stream (stdout output on all processes),
 //- with additional 'FOAM FATAL ERROR' header text and stack trace.
-extern error   FatalError;
+FOAM_EXPORT_DATA extern error   FatalError;
 
 //- Error stream (stdout output on all processes),
 //- with additional 'FOAM FATAL IO ERROR' header text and stack trace.
-extern IOerror FatalIOError;
+FOAM_EXPORT_DATA extern IOerror FatalIOError;
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

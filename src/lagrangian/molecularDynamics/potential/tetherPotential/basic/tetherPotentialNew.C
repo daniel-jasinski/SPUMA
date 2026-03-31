@@ -50,7 +50,7 @@ Foam::autoPtr<Foam::tetherPotential> Foam::tetherPotential::New
             dict,
             "tetherPotential",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

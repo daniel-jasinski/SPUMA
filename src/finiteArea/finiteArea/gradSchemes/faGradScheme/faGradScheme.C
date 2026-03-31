@@ -61,7 +61,7 @@ tmp<gradScheme<Type>> gradScheme<Type>::New
         FatalIOErrorInFunction(schemeData)
             << "Grad scheme not specified" << nl << nl
             << "Valid grad schemes are :" << nl
-            << IstreamConstructorTablePtr_->sortedToc()
+            << IstreamConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -76,7 +76,7 @@ tmp<gradScheme<Type>> gradScheme<Type>::New
             schemeData,
             "grad",
             schemeName,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

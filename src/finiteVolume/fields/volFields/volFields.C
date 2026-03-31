@@ -291,6 +291,19 @@ bool GeometricBoundaryField<tensor, fvPatchField, volMesh>::check
 } // End namespace Foam
 
 
+// * * * * * * * * * Explicit Instantiation of readFields() * * * * * * * * //
+
+// Force explicit instantiation to create strong (non-COMDAT) symbols.
+// This ensures the linker uses THIS translation unit's readFields() which
+// contains the headerClassName propagation fix (Fix #31), rather than
+// an arbitrary COMDAT copy from another TU with old code.
+template void Foam::GeometricField<Foam::scalar, Foam::fvPatchField, Foam::volMesh>::readFields();
+template void Foam::GeometricField<Foam::vector, Foam::fvPatchField, Foam::volMesh>::readFields();
+template void Foam::GeometricField<Foam::sphericalTensor, Foam::fvPatchField, Foam::volMesh>::readFields();
+template void Foam::GeometricField<Foam::symmTensor, Foam::fvPatchField, Foam::volMesh>::readFields();
+template void Foam::GeometricField<Foam::tensor, Foam::fvPatchField, Foam::volMesh>::readFields();
+
+
 // * * * * * * * * * * * * * * * * Global Data * * * * * * * * * * * * * * * //
 
 // Note hard-coded values are more reliable than other alternatives

@@ -43,6 +43,7 @@ SourceFiles
 #ifndef Foam_word_H
 #define Foam_word_H
 
+#include "stdFoam.H"
 #include "string.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -72,13 +73,13 @@ public:
     // Static Data Members
 
         //- The typeName
-        static const char* const typeName;
+        FOAM_TYPENAME_EXPORT static const char* const typeName;
 
         //- Debugging
-        static int debug;
+        FOAM_TYPENAME_EXPORT static int debug;
 
         //- An empty word
-        static const word null;
+        FOAM_EXPORT_DATA static const word null;
 
 
     // Constructors

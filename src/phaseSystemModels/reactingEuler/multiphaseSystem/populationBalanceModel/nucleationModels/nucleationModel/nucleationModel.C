@@ -60,7 +60,7 @@ Foam::diameterModels::nucleationModel::New
             dict,
             "nucleationModel",
             type,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

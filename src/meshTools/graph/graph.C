@@ -211,7 +211,7 @@ Foam::autoPtr<Foam::graph::writer> Foam::graph::writer::New
     const word& graphFormat
 )
 {
-    if (!wordConstructorTablePtr_)
+    if (!wordConstructorTablePtr_())
     {
         FatalErrorInFunction
             << "Graph writer table is empty"
@@ -226,7 +226,7 @@ Foam::autoPtr<Foam::graph::writer> Foam::graph::writer::New
         (
             "graph",
             graphFormat,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

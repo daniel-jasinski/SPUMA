@@ -72,7 +72,7 @@ autoPtr<boundaryAdjointContribution> boundaryAdjointContribution::New
         (
             "boundaryAdjointContribution",
             simulationType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

@@ -53,6 +53,7 @@ SourceFiles
 #ifndef Foam_messageStream_H
 #define Foam_messageStream_H
 
+#include "stdFoam.H"
 #include "label.H"
 #include "word.H"
 #include <string>
@@ -296,21 +297,21 @@ public:
 //
 //  The values are normally 0 or a positive value.
 //  \note This flag is initialized to 1 by default.
-extern int infoDetailLevel;
+FOAM_EXPORT_DATA extern int infoDetailLevel;
 
 //- Information stream (stdout output on master, null elsewhere)
-extern messageStream Info;
+FOAM_EXPORT_DATA extern messageStream Info;
 
 //- Information stream (stderr output on master, null elsewhere)
-extern messageStream InfoErr;
+FOAM_EXPORT_DATA extern messageStream InfoErr;
 
 //- Warning stream (stdout output on master, null elsewhere),
 //- with additional 'FOAM Warning' header text.
-extern messageStream Warning;
+FOAM_EXPORT_DATA extern messageStream Warning;
 
 //- Error stream (stdout output on all processes),
 //- with additional 'FOAM Serious Error' header text.
-extern messageStream SeriousError;
+FOAM_EXPORT_DATA extern messageStream SeriousError;
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -426,28 +427,56 @@ extern messageStream SeriousError;
 
 //- Report an information message using Foam::Info
 //  if the local debug switch is true
+//  NOTE: On Windows DLLs, 'debug' is a static member that may live in a
+//  different DLL from the template code accessing it. Without __declspec(dllimport),
+//  the access goes through a JMP thunk, reading instruction bytes as data (garbage).
+//  This causes 'if (debug)' to evaluate as true, crashing in the stream output.
+//  Disable Debug* macros on Windows to avoid this cross-DLL data access issue.
+#ifdef _WIN32
+#define DebugInfo                                                              \
+    if (false) Info
+#else
 #define DebugInfo                                                              \
     if (debug) Info
+#endif
 
 //- Report an information message using Foam::Info
 //  for FUNCTION_NAME in file __FILE__ at line __LINE__
 //  if the local debug switch is true
+#ifdef _WIN32
+#define DebugInFunction                                                        \
+    if (false) InfoInFunction
+#else
 #define DebugInFunction                                                        \
     if (debug) InfoInFunction
+#endif
 
 //- Report an information message using Foam::Pout
 //  if the local debug switch is true
+#ifdef _WIN32
+#define DebugPout                                                              \
+    if (false) Pout
+#else
 #define DebugPout                                                              \
     if (debug) Pout
+#endif
 
 //- Report an information message using Foam::Pout
 //  for FUNCTION_NAME in file __FILE__ at line __LINE__
 //  if the local debug switch is true
+#ifdef _WIN32
+#define DebugPoutInFunction                                                    \
+    if (false) PoutInFunction
+#else
 #define DebugPoutInFunction                                                    \
     if (debug) PoutInFunction
+#endif
 
 //- Report a variable name and value
 //  using Foam::Pout in file __FILE__ at line __LINE__
+#ifdef _WIN32
+#define DebugVar(var) ((void)0)
+#else
 #define DebugVar(var)                                                          \
 {                                                                              \
     ::Foam::string oldPrefix(::Foam::Pout.prefix());                           \
@@ -456,6 +485,7 @@ extern messageStream SeriousError;
     ::Foam::Pout<< var << ::Foam::endl;                                        \
     ::Foam::Pout.prefix() = oldPrefix;                                         \
 }
+#endif
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

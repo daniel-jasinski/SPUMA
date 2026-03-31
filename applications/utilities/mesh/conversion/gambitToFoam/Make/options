@@ -1,2 +1,3 @@
-/* EXE_INC = */
+EXE_INC = \
+    -I$(WM_DIR)/include
 /* EXE_LIBS = */
