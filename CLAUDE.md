@@ -34,13 +34,27 @@ SPUMA (Simulation Processing in Unified Memory Accelerators) is a GPU-accelerate
 - `Agent-Handoff-Spec.md` - Handoff specification for continuing DLL init debugging
 
 ### Quick Start Configuration
+
+**SYCL backend (AdaptiveCpp SSCP — generic LLVM IR, JIT to CUDA/CPU):**
 ```bash
-WM_COMPILER=MsvcSycl
-WM_LABEL_SIZE=32
+WM_COMPILER=Sycl WM_LABEL_SIZE=32
 export have_sycl=true
 export ACPP_PATH="/c/dev/llvm-acpp-msvc-21"
-export ACPP_TARGETS=cuda:sm_86
-export CUDA_PATH_WIN="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5"
+export ACPP_TARGETS=generic
+```
+
+**Native CUDA backend (Clang -x cuda — AOT PTX for NVIDIA):**
+```bash
+WM_COMPILER=Cuda WM_LABEL_SIZE=32 NVARCH=86
+export CUDA_PATH_SHORT="$(cygpath -m -s 'C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5')"
+export FOAM_LINK_DUMMY_PSTREAM=libo
+```
+
+**Native HIP backend (AMD ROCm Clang -x hip — AOT for AMD GPUs):**
+```bash
+WM_COMPILER=Hip WM_LABEL_SIZE=32 AMDARCH=gfx1030
+export HIP_PATH_SHORT="$(cygpath -m -s 'C:/Program Files/AMD/ROCm/7.1')"
+export FOAM_LINK_DUMMY_PSTREAM=libo
 ```
 
 **CUDA 12.5 required** - CUDA 13.0+ is NOT supported (Clang compatibility).
@@ -194,14 +208,12 @@ All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key re
 
 ### What's Next
 
-1. ~~**Test SSCP generic backend on Windows**~~ — **DONE** (2026-03-13). Generic backend builds 106 DLLs + 144 EXEs. OMP and CUDA JIT both work. Binary size ~1,213 MB (same as AOT). libadjoint now builds. Single-binary distribution strategy validated.
-2. **Add native CUDA backend for Windows** (`WM_COMPILER=Cuda`) — **IN PROGRESS** (2026-03-24). See `doc/windows-sycl-cuda/Windows-Native-CUDA-Backend-Plan.md`. Uses `clang++ -x cuda -fgpu-rdc --cuda-gpu-arch=sm_XX` for ALL files + `lld-link` linker. Renamed `win64MsvcSycl` → `win64Sycl`. Created `wmake/rules/win64Cuda/`. Build produces 22+ DLLs so far, runtime testing pending.
-3. Test pimpleFoam, rhoPimpleFoam, icoFoam, pisoFoam, potentialFoam on test cases
-4. Test snappyHexMesh, decomposePar on test cases
-5. Run simpleFoam CUDA with real (non-trivial) case to validate numerical correctness
-6. Fix exit-time crash with CUDA (AdaptiveCpp DLL detach issue, or explicit CUDA context teardown)
-7. Test AMD GPU support via `ACPP_TARGETS=hip:gfxXXX` (HIP SDK available for Windows 11, ROCm 7.1.1+)
-8. Fix GeometricField `writeObject()` override for correct `phi` class name (separate from Fix #50)
+1. ~~**Test SSCP generic backend on Windows**~~ — **DONE** (2026-03-13). Generic backend builds 106 DLLs + 144 EXEs. OMP and CUDA JIT both work.
+2. ~~**Add native CUDA backend for Windows**~~ — **BUILD DONE** (2026-03-26). 113 DLLs + 168 EXEs with `WM_COMPILER=Cuda`. blockMesh works. **Runtime issue**: simpleFoam segfaults during mesh creation when CUDA `lambdaKernel` executes. See below.
+3. **Debug simpleFoam CUDA kernel crash** — segfault in `_backendFor` (cudaExecutor.cu:255) during "Create mesh for time = 0". The SYCL backend works at this point. The native CUDA backend (Clang `-x cuda`) crashes. This needs `compute-sanitizer` investigation.
+4. Test other solvers once simpleFoam works
+5. Fix GeometricField `writeObject()` override for correct `phi` class name (separate from Fix #50)
+6. ~~Test AMD GPU support via `ACPP_TARGETS=hip:gfxXXX`~~ — **Replaced by native HIP backend** (`WM_COMPILER=Hip`). Compiles with AMD ROCm 7.1 Clang on Windows. Build in progress.
 
 ### Critical wmake Knowledge
 
@@ -217,7 +229,7 @@ All fixes documented in `doc/windows-sycl-cuda/Debugging-Conclusions.md`. Key re
 10. **FOAM_TYPENAME_EXPORT is always dllexport**: `debug` and `typeName` static members never get dllimport. NoRepository templates accessing them crash. Use `#ifdef _WIN32` / `if (false)` guards - see Fix #33.
 11. **Failed LoadLibrary destroys RTS tables**: Windows unloads partially-loaded transitive deps on failure → static destructors call `construct(false)` → shared tables deleted. Fix #47 disables table cleanup on Windows (`RTS_TABLE_CLEANUP = false`).
 12. **Partial libOpenFOAM rebuild requires full downstream rebuild**: COMDAT folding selects one template function body from multiple .o files. Recompiling ANY .o file can change which body wins. Downstream DLLs crash if they depend on the old function body. wmake does NOT detect this — must manually delete .o files and rebuild.
-13. **Clang CUDA `-x cuda` + `-fgpu-rdc`**: ALL `.C` files need `-x cuda` (kernel code in headers via NoRepository). `-fgpu-rdc` defers fatbin registration to link time (without it: `0xC0000142` DLL init crash). Must use `lld-link` (MSVC `link.exe` fails on weak `.offloading.entry` symbols). Suppress all warnings (`-w`) — device-pass `__declspec` warnings cause silent `.o` output failure.
+13. **Clang CUDA `-x cuda`**: ALL `.C` files need `-x cuda` (kernel code in headers via NoRepository). No `-fgpu-rdc` needed — per-TU fatbin registration works, BUT `cudart.lib` must be in `LINKLIBSO` (not `LIB_LIBS`) with `/INCLUDE:__cudaRegisterFatBinary` to force the import (Fix #52). Must use `lld-link` (`-fuse-ld=lld`). Suppress all warnings (`-w`) — device-pass `__declspec` warnings cause silent `.o` output failure.
 14. **NVIDIA device math `__nv_*` declarations need `__device__`**: On nvc++ (Linux), `extern "C"` functions in `__CUDA_ARCH__` blocks are implicitly device. On Clang, they need explicit `__device__` annotation or you get `reference to __host__ function in __host__ __device__ function`.
 15. **CUDA atomics need `#ifdef __CUDA_ARCH__` guards**: `atomicAdd`/`atomicCAS` etc. are device-only builtins. Wrap calls in `#ifdef __CUDA_ARCH__` and annotate functions with `FOAM_DEVICE`.
 

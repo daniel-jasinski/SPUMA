@@ -1384,6 +1384,101 @@ When debugging issues in this project, append your findings to this document fol
 
 ---
 
+## Fix #52: CUDA fatbin registration calls null on Windows — `/INCLUDE:__cudaRegisterFatBinary`
+
+**Symptom:** `0xC0000142` (STATUS_DLL_INIT_FAILED) / access violation at address 0x8 when loading CUDA-backend DLLs (e.g., `libfileFormats.dll`). `libOpenFOAM.dll` loads fine.
+
+**Root Cause:** With `-x cuda` compilation (no `-fgpu-rdc`), each `.o` containing CUDA kernels has `.CRT$XCU` entries that call `__cudaRegisterFatBinary` to register the per-TU fatbin at DLL load time. Although `cudart.lib` is on the link line, lld-link optimizes away the `cudart64_12.dll` import if no "active" code references CUDA symbols — it doesn't count `.CRT$XCU` static initializer entries as references. With `/force:unresolved`, the unresolved `__cudaRegisterFatBinary` becomes a null pointer. At DLL load, the MSVC CRT (`_DllMainCRTStartup` from `libcmt.lib`) processes `.CRT$XCU` entries, calling `__cudaRegisterFatBinary(fatbin_wrapper_ptr)` at address 0 → ACCESS_VIOLATION.
+
+Not all DLLs are affected: `libOpenFOAM.dll` survived because lld-link's COMDAT folding discarded its CUDA `.CRT$XCU` entries entirely. `libfileFormats.dll` crashed because its CUDA `.CRT$XCU` entries (from `foamGltfScene.o`) were kept.
+
+**Fix:** Add `/INCLUDE:__cudaRegisterFatBinary` to link flags. This forces lld-link to resolve the symbol from `cudart.lib`, pulling in the `cudart64_12.dll` import. In `wmake/rules/win64Cuda/c++`:
+```makefile
+LIB_LIBS += $(CUDA_PATH_SHORT)/lib/x64/cudart.lib -Wl,/INCLUDE:__cudaRegisterFatBinary
+LINKEXE  += $(CUDA_PATH_SHORT)/lib/x64/cudart.lib -Wl,/INCLUDE:__cudaRegisterFatBinary
+```
+
+**Diagnostic steps:**
+1. `test_load.exe` (LoadLibrary test) → error 1114 / segfault in `libfileFormats.dll_unloaded`
+2. WER: exception 0xc0000005 at fault address 0x8 (null + 8 = vtable/struct member offset)
+3. `llvm-objdump -p DLL | grep "DLL Name"` → `cudart64_12.dll` NOT in imports
+4. Excluding the CUDA .o file (foamGltfScene.o) from the link → DLL loads fine
+5. Adding `/INCLUDE:__cudaRegisterFatBinary` to link → `cudart64_12.dll` appears in imports → DLL loads fine
+
+**Lesson:** On Windows with MSVC CRT, `.CRT$XCU` static initializer entries ALWAYS execute during DLL load. If they reference functions that are unresolved (even with `/force:unresolved`), the null call crashes. Always use `/INCLUDE:<symbol>` to force import of libraries whose functions are only referenced from static initializers, not from regular code.
+
+**Per-TU fatbin registration is NOT the problem:** A standalone test DLL with one CUDA kernel loads and executes correctly. 85 fatbin registrations in `libOpenFOAM.dll` would also work if `cudart64_12.dll` were imported.
+
+---
+
+## Fix #53: Hardcoded MAX_SMEM (A100) fails on RTX 3060 — runtime device query
+
+**Symptom:** `invalid argument cudaFuncSetAttribute(reductionLambdaSumKernel, cudaFuncAttributeMaxDynamicSharedMemorySize, 135168)` — simpleFoam crashes immediately on first reduction kernel call.
+
+**Root Cause:** `deviceM.H` hardcodes `MAX_SMEM=135168` (132 KB) for the CUDA backend, matching A100 (sm_80, 163 KB max). RTX 3060 Laptop (sm_86) only supports 101376 bytes (99 KB) of opt-in shared memory per block. `cudaFuncSetAttribute` returns `cudaErrorInvalidValue`.
+
+**Fix:** Replaced hardcoded `MAX_SMEM` in `cudaExecutor.cu`'s two reduction functions with runtime query:
+```cpp
+int maxbytes = 0;
+int dev = 0;
+cudaGetDevice(&dev);
+cudaDeviceGetAttribute(&maxbytes, cudaDevAttrMaxSharedMemoryPerBlockOptin, dev);
+```
+Also lowered the fallback `MAX_SMEM` in `deviceM.H` from 135168 to 99328 for sm_86 compatibility. The runtime query is preferred as it works on any GPU.
+
+**Lesson:** Never hardcode GPU hardware limits. Always query at runtime via `cudaDeviceGetAttribute`. The same code runs on A100 (163 KB), RTX 3060 (99 KB), H100 (228 KB) — all different limits.
+
+## Fix #54: simpleFoam segfaults at "Create mesh" — Pstream symbols missing from CUDA backend DEF
+
+**Symptom**: simpleFoam with native CUDA backend (WM_COMPILER=Cuda) segfaults during "Create mesh for time = 0" with fixedSizeMemoryPool. 0xC0000005 ACCESS_VIOLATION, no CUDA error printed. blockMesh works (no GPU kernels during mesh generation).
+
+**Root cause**: `FOAM_LINK_DUMMY_PSTREAM=libo` was not set when building the CUDA backend's `libOpenFOAM.dll`. Without this env var, `src/OpenFOAM/Make/options` does NOT include `libPstream_static.lib` in `LIB_LIBS`. As a result:
+1. `generate-msvc-def` doesn't scan the Pstream static library → 185 Pstream symbols missing from `libOpenFOAM.def`
+2. The linker doesn't link the Pstream code into `libOpenFOAM.dll`
+3. Downstream DLLs (libfiniteVolume, etc.) reference Pstream functions (`UPstream::reduceAnd`, `Foam::reduce<double,sumOp>`, `UPstream::nRequests`, `UPstream::waitRequests`) which are left unresolved by `/force:unresolved`
+4. At runtime, calls to these functions jump to garbage addresses → EXEC access violation
+
+Confirmed by VEH crash handler: `RIP=0x00007ffa2a8a0000, Access: EXEC` — the call at `fvMesh::init()+0x3c679` (`callq 0x200000000`) targets a non-executable address. Disassembly shows this CALL corresponds to `UPstream::reduceAnd(bool&, int)`.
+
+The SYCL backend didn't have this issue because it was always built with `FOAM_LINK_DUMMY_PSTREAM=libo` (documented in Fix #46). The CUDA backend build missed this requirement.
+
+**Fix**: Set `export FOAM_LINK_DUMMY_PSTREAM=libo` before building libOpenFOAM.dll with `WM_COMPILER=Cuda`. Then relink ALL downstream DLLs and EXEs so they resolve the now-exported Pstream symbols from the new import library.
+
+```bash
+export FOAM_LINK_DUMMY_PSTREAM=libo
+cd src/OpenFOAM && wmake   # Regenerates DEF with 185 Pstream symbols, relinks DLL
+# Then relink all downstream DLLs
+```
+
+After fix: DEF grows from 19,455 → 19,603 symbols. Exports from 16,685 → 16,833. simpleFoam passes mesh creation, reads fields, starts solver loop, completes Ux/Uy equations.
+
+**Secondary finding (not the crash cause)**: On Windows WDDM, GPU kernels cannot access non-managed (`new`/`malloc`) memory (no HMM). `Field::map()` with non-pool `labelList` addressing WILL crash if triggered. Most mesh topology IS pool-allocated (`owner_`, `neighbour_`, `faceCells()`, lduAddressing — all `poolSwitch(1)`), so the standard solver loop works. But `Field::map()` and similar unchecked `parallelFor` sites remain a latent risk.
+
+**Lesson**: `FOAM_LINK_DUMMY_PSTREAM=libo` is REQUIRED for ALL Windows backends (SYCL and CUDA). Add it to the build scripts and document prominently. Without it, ~185 Pstream symbols are invisible to downstream DLLs, causing silent crashes via `/force:unresolved`.
+
+## Fix #55: CUDA reduction kernel `cudaFuncSetAttribute` fails — shared memory sized to device max
+
+**Symptom**: After Fix #54, simpleFoam starts and completes Ux/Uy equations, but crashes during GAMG pressure solve: `invalid argument cudaFuncSetAttribute(reductionLambdaCompareKernel, cudaFuncAttributeMaxDynamicSharedMemorySize, maxbytes)`.
+
+**Root cause**: The reduction kernels (`reductionLambdaSumKernel`, `reductionLambdaCompareKernel`) called `cudaFuncSetAttribute` with `maxbytes` = the full device opt-in shared memory limit (101376 bytes for RTX 3060). This same value was passed as the launch-time shared memory size. However, the kernel only needs `NUM_THREADS_PER_BLOCK * sizeof(resultT)` bytes (128 × 8 = 1024 for doubles). Requesting 101376 bytes of shared memory per block can fail if the kernel's register usage leaves insufficient space for that amount on the specific GPU architecture.
+
+On Linux with A100 (where Cineca develops), the device limit is 163840 and the GPU has more resources — the same approach works. On RTX 3060 (sm_86, consumer GPU), the smaller SM resources cause `cudaFuncSetAttribute` to reject the request.
+
+**Fix**: Calculate actual shared memory needed: `smemBytes = NUM_THREADS_PER_BLOCK * sizeof(resultT)`. Only call `cudaFuncSetAttribute` for opt-in if `smemBytes > 49152` (48KB default limit). For standard OpenFOAM types with 128 threads, shared memory is always under 48KB, so opt-in is never needed.
+
+```cpp
+const int smemBytes = NUM_THREADS_PER_BLOCK * sizeof(resultT);
+if (smemBytes > 49152) {
+    // opt-in only if needed
+    cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, smemBytes);
+}
+kernel<<<blocks, threads, smemBytes>>>(...);
+```
+
+**Lesson**: Never pass the device's maximum shared memory as the actual launch-time shared memory size. Calculate the actual need per kernel. The `cudaFuncSetAttribute` opt-in is only required when a kernel genuinely needs more than 48KB of dynamic shared memory.
+
+---
+
 ```markdown
 ## Fix #N: Short description
 

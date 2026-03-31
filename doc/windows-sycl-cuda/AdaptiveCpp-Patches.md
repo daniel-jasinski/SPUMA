@@ -183,10 +183,11 @@ Small fixes for MSVC/Windows platform compatibility.
 - The original guard disabled the new pass manager code on Windows unless built as an LLVM component. With our MinGW build, both paths are needed.
 - Still necessary: **YES** (but `#if 1` is ugly — could use a proper condition)
 
-**`src/compiler/llvm-to-backend/ptx/LLVMToPtx.cpp`** (+24)
+**`src/compiler/llvm-to-backend/ptx/LLVMToPtx.cpp`** (+24, +1)
 - `replaceInvalidMSABICharsInSymbolNames()` — sanitizes MSVC-mangled symbol names in PTX module (replaces chars invalid in PTX/CUDA symbol names)
 - Guarded by `#if defined(_MSC_VER) || (defined(_WIN32) && !defined(__MINGW32__))` — only for MSVC ABI
-- Still necessary: **YES** (MSVC-mangled names contain characters invalid in PTX)
+- Updated hardcoded NVPTX `DataLayout` string to LLVM 21 canonical format (`e-p6:32:32-i64:64-i128:128-v16:16-v32:32-n16:32:64`). The old verbose layout lacked `p6:32:32` (Tensor Memory, added in LLVM 21), causing data layout mismatch warnings when linking `libkernel-sscp-ptx-full.bc` (compiled by Clang 21 with the new layout). Not MSVC-specific — affects all platforms using LLVM 21.
+- Still necessary: **YES**
 
 ---
 
