@@ -1,0 +1,100 @@
+#------------------------------------------------------------------------------
+# Windows 64-bit HIP (AMD ROCm Clang) C++ compiler settings - MSVC ABI implicit
+#
+# ALL files compiled with -x hip: kernel code propagates through headers
+# via NoRepository pattern. Each .o gets its own hipfb (device code for gfxXXXX).
+# No -fgpu-rdc: per-TU __hipRegisterFatBinary at DLL load time.
+#------------------------------------------------------------------------------
+
+SUFFIXES   += .C .cc .cpp .cxx .hip
+
+# Use AMD ROCm's Clang (not system clang — it may lack the AMDGPU backend)
+ifneq (,$(HIP_PATH_SHORT))
+    CC     := $(HIP_PATH_SHORT)/bin/clang++ --target=x86_64-pc-windows-msvc -std=c++17
+else
+    CC     := clang++ --target=x86_64-pc-windows-msvc -std=c++17
+endif
+
+c++ARCH    := -m64
+c++DBUG    :=
+c++OPT     := -O2
+ptFLAGS    := -DNoRepository -Dhave_hip
+
+# -w: suppress all warnings. Clang HIP device pass generates hundreds of
+# __declspec warnings that cause silent .o output failure (same Clang bug as CUDA).
+c++WARN     = -w
+
+c++LESSWARN = \
+    -Wno-old-style-cast -Wno-unused-local-typedefs \
+    -Wno-deprecated-declarations \
+    -fpermissive
+
+# AMD GPU architecture (default gfx1030 for RDNA2, override with AMDARCH=gfx1100 etc.)
+# NOTE: No :xnack+ appended — RDNA GPUs (consumer Windows) don't support xnack.
+# For MI-series GPUs, set AMDARCH=gfx90a:xnack+
+ifeq (,$(strip $(AMDARCH)))
+    AMDARCH := gfx1030
+endif
+
+# HIP flags for ALL files:
+#   -x hip: treat all source as HIP (kernel code in headers via NoRepository)
+#   Each .o gets its own hipfb with compiled device code — no RDC needed
+#   -munsafe-fp-atomics: needed for efficient fp64 atomics on AMD GPUs
+# -fgpu-defer-diag: defer host-function-in-device errors to launch time.
+#   MSVC STL headers (e.g. <complex>) have host-only functions that get
+#   pulled into __host__ __device__ context. Without this flag, HIP Clang
+#   treats them as hard errors. CUDA Clang defers them by default.
+HIP_FLAGS := -x hip --offload-arch=$(AMDARCH) -munsafe-fp-atomics -fgpu-defer-diag
+
+# ROCm toolkit path (8.3 format, no spaces, forward slashes)
+ifneq (,$(HIP_PATH_SHORT))
+    HIP_FLAGS += --rocm-path=$(HIP_PATH_SHORT)
+endif
+
+ifneq (,$(strip $(WM_COMPILE_OPTION)))
+    sinclude $(DEFAULT_RULES)/c++$(WM_COMPILE_OPTION)
+endif
+
+# _USE_MATH_DEFINES: MSVC requires this for M_PI, M_E etc. in <cmath>
+# _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH: Clang + MSVC STL version check
+c++FLAGS    = \
+    $(c++ARCH) $(GFLAGS) $(c++WARN) $(c++OPT) $(c++DBUG) $(ptFLAGS) \
+    $(HIP_FLAGS) \
+    -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH \
+    -D_USE_MATH_DEFINES -DYY_NO_UNISTD_H $(FOAM_EXTRA_CXXFLAGS) $(LIB_HEADER_DIRS)
+
+Ctoo        = $(WM_SCHEDULER) $(CC) $(c++FLAGS) -c $< -o $@
+cctoo       = $(Ctoo)
+cpptoo      = $(Ctoo)
+cxxtoo      = $(Ctoo)
+hiptoo      = $(Ctoo)
+
+# MSVC ABI linker settings
+# -fuse-ld=lld: LLVM linker (handles /force:multiple for duplicate symbols)
+c++LINKFLAGS = $(c++ARCH) $(c++DBUG) -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH \
+    -fuse-ld=lld
+ifneq (,$(HIP_PATH_SHORT))
+    c++LINKFLAGS += --rocm-path=$(HIP_PATH_SHORT) -Wl,/LIBPATH:$(HIP_PATH_SHORT)/lib
+endif
+LINK_LIBS   = $(c++DBUG)
+# /force:multiple: keep for safety (COMDAT duplicates possible)
+# /force:unresolved: ~30 dummy Pstream symbols (same as SYCL/CUDA build)
+#
+# HIP runtime library: amdhip64.lib MUST be in LINKLIBSO/LINKEXE, not LIB_LIBS.
+# Make/options uses LIB_LIBS = (assignment) which overwrites any += from here.
+# /INCLUDE:__hipRegisterFatBinary forces the import even if no code directly
+# references it — without this, lld-link drops amdhip64_7.dll from the import
+# table, and the .CRT$XCU hipfb registration entries call address 0 -> crash.
+ifneq (,$(HIP_PATH_SHORT))
+    LINKLIBSO = $(CC) $(c++LINKFLAGS) -shared -Wl,/force:multiple,/force:unresolved \
+        -Wl,/INCLUDE:__hipRegisterFatBinary $(HIP_PATH_SHORT)/lib/amdhip64.lib
+    LINKEXE   = $(CC) $(c++LINKFLAGS) -Wl,/force:multiple,/force:unresolved \
+        -Wl,/INCLUDE:__hipRegisterFatBinary $(HIP_PATH_SHORT)/lib/amdhip64.lib
+else
+    LINKLIBSO = $(CC) $(c++LINKFLAGS) -shared -Wl,/force:multiple,/force:unresolved \
+        -Wl,/INCLUDE:__hipRegisterFatBinary -Wl,/DEFAULTLIB:amdhip64
+    LINKEXE   = $(CC) $(c++LINKFLAGS) -Wl,/force:multiple,/force:unresolved \
+        -Wl,/INCLUDE:__hipRegisterFatBinary -Wl,/DEFAULTLIB:amdhip64
+endif
+
+#------------------------------------------------------------------------------

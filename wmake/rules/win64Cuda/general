@@ -1,0 +1,19 @@
+#------------------------------------------------------------------------------
+# Windows 64-bit CUDA (Clang) - MSVC ABI implicit
+#------------------------------------------------------------------------------
+
+CPP        = cpp -traditional-cpp $(GFLAGS)
+
+include $(GENERAL_RULES)/standard
+
+include $(DEFAULT_RULES)/c
+include $(DEFAULT_RULES)/c++
+
+# Windows shared library and executable extensions
+EXT_SO  = .dll
+EXT_EXE = .exe
+
+# No -lm or -ldl on Windows MSVC
+GLIBS   =
+
+#------------------------------------------------------------------------------
