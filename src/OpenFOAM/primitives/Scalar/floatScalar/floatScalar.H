@@ -102,17 +102,17 @@ extern "C" __device__ float __nv_erfcf(float);
 extern "C" __device__ float __nv_lgammaf(float);
 extern "C" __device__ float __nv_tgammaf(float);
 
-inline Scalar mag(const Scalar s)
+FOAM_DEVICE inline Scalar mag(const Scalar s)
 {
     return __nv_fabsf(s);
 }
 
-inline Scalar hypot(const Scalar x, const Scalar y)
+FOAM_DEVICE inline Scalar hypot(const Scalar x, const Scalar y)
 {
     return __nv_hypotf(x, y);
 }
 
-inline Scalar atan2(const Scalar y, const Scalar x)
+FOAM_DEVICE inline Scalar atan2(const Scalar y, const Scalar x)
 {
     return __nv_atan2f(y, x);
 }
@@ -155,12 +155,12 @@ inline Scalar func(const Scalar s)                              \
 // May not be available on all systems
 #if defined(__CUDA_ARCH__)
     // CUDA device: use NVIDIA device math library for Bessel functions
-    extern "C" float __nv_j0f(float);
-    extern "C" float __nv_j1f(float);
-    extern "C" float __nv_y0f(float);
-    extern "C" float __nv_y1f(float);
-    extern "C" float __nv_jnf(int, float);
-    extern "C" float __nv_ynf(int, float);
+    extern "C" __device__ float __nv_j0f(float);
+    extern "C" __device__ float __nv_j1f(float);
+    extern "C" __device__ float __nv_y0f(float);
+    extern "C" __device__ float __nv_y1f(float);
+    extern "C" __device__ float __nv_jnf(int, float);
+    extern "C" __device__ float __nv_ynf(int, float);
     #define besselFunc(func)                                    \
     inline Scalar func(const Scalar s)                          \
     {                                                           \

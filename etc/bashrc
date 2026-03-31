@@ -203,6 +203,19 @@ fi
 # Cleanup variables (done as final statement for a clean exit code)
 unset foamOldDirs projectDir
 
+# Auto-set device backend flags from compiler name
+case "$WM_COMPILER" in
+Sycl*)
+    export have_sycl=true
+    ;;
+Cuda*)
+    export have_cuda=true
+    ;;
+Hip*)
+    export have_hip=true
+    ;;
+esac
+
 # Ignore headers for unused device backend source files
 source "$WM_PROJECT_DIR/src/IgnoreHeaders"
 
