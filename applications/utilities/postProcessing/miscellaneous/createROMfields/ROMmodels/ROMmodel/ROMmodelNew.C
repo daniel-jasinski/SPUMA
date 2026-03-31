@@ -49,7 +49,7 @@ Foam::autoPtr<Foam::ROMmodel> Foam::ROMmodel::New
             dict,
             "ROMmodel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

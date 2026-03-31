@@ -34,9 +34,23 @@ Description
 #ifdef have_sycl
 
 #include <sycl/sycl.hpp>
+#include "syclDeviceInit.H"
 
 namespace Foam
 {
+
+// Static member definitions
+int syclDeviceInit::nThreadsPerBlock_ = 256;
+
+void syclDeviceInit::_setNumberOfThreadsPerBlock(const int n)
+{
+    nThreadsPerBlock_ = n;
+}
+
+int syclDeviceInit::_getNumberOfThreadsPerBlock()
+{
+    return nThreadsPerBlock_;
+}
 
 // Global SYCL queue - selects GPU if available, falls back to CPU
 sycl::queue& getSyclQueue()

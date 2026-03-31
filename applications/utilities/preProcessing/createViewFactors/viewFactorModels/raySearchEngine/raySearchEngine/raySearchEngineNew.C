@@ -48,7 +48,7 @@ Foam::autoPtr<Foam::VF::raySearchEngine> Foam::VF::raySearchEngine::New
             dict,
             typeName,
             modelType,
-            *meshConstructorTablePtr_
+            *meshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

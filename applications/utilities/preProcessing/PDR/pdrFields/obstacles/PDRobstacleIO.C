@@ -50,7 +50,7 @@ bool Foam::PDRobstacle::read(Istream& is)
             is,
             "obstacle",
             obsType,
-            *readdictionaryMemberFunctionTablePtr_
+            *readdictionaryMemberFunctionTablePtr_()
         ) << exit(FatalIOError);
     }
 

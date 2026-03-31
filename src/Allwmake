@@ -40,11 +40,14 @@ case "$WM_OSTYPE" in
         cp "${_plib}.lib" "${_plib}_static.lib"
     FOAM_LINK_DUMMY_PSTREAM=libo wmake $targetType OpenFOAM
 
-    # 2nd pass: link Pstream.{dll,so} against libOpenFOAM.{dll,so}
-    Pstream/Allwmake $targetType $*
+    # 2nd pass: link Pstream DLL against libOpenFOAM DLL
+    # Only build dummy Pstream on Windows (MPI requires mpi.h which is not available)
+    wmake -no-openmp $targetType Pstream/dummy
 
-    # Force relink libOpenFOAM.{dll,so} against libPstream.{dll,so}
-    OpenFOAM/Alltouch 2>/dev/null
+    # On Windows, libOpenFOAM always statically links Pstream so that
+    # Pstream symbols appear in libOpenFOAM.def and are available to
+    # all downstream DLLs. The Pstream DLL is a thin wrapper.
+    export FOAM_LINK_DUMMY_PSTREAM=libo
     ;;
 (*)
     Pstream/Allwmake $targetType $*

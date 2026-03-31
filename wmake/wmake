@@ -914,7 +914,10 @@ case "$WM_OSTYPE" in
         done
     fi
 
-    _winTmp="$(_toWinPath "${LOCALAPPDATA:-$USERPROFILE/AppData/Local}/Temp" 2>/dev/null)"
+    _tmpBase="${LOCALAPPDATA:-${USERPROFILE:+$USERPROFILE/AppData/Local}}"
+    if [ -n "$_tmpBase" ] && [ -d "$_tmpBase/Temp" ]; then
+        _winTmp="$(_toWinPath "$_tmpBase/Temp" 2>/dev/null)"
+    fi
     winLinkVars="WIN_TMP=${_winTmp:-C:/Temp}"
     if [ -n "$CUDA_PATH" ]; then
         _cudaLib="$(_toWinShort "$CUDA_PATH/lib/x64")"

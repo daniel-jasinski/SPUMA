@@ -40,6 +40,8 @@ SourceFiles
 #ifndef Foam_deviceInit_H
 #define Foam_deviceInit_H
 
+#include "stdFoam.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -52,7 +54,7 @@ namespace Foam
 class deviceInitBase
 {
 protected:
-    static bool initDeviceFlag_;
+    FOAM_EXPORT_DATA static bool initDeviceFlag_;
 };
 
 /*---------------------------------------------------------------------------*\

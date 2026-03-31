@@ -42,8 +42,8 @@ SourceFiles
 
 #include "deviceInit.H"
 #include "label.H"
-#include "IPstream.H"
-#include "OPstream.H"
+#include "messageStream.H"
+#include "error.H"
 #include <sycl/sycl.hpp>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -61,7 +61,12 @@ sycl::queue& getSyclQueue();
 class syclDeviceInit
 : public deviceInit<syclDeviceInit>
 {
+    static int nThreadsPerBlock_;
+
 public:
+
+    static void _setNumberOfThreadsPerBlock(const int nThreadsPerBlock);
+    static int _getNumberOfThreadsPerBlock();
 
     static void _backendInit()
     {
