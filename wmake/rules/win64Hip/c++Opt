@@ -1,0 +1,1 @@
+c++OPT = -O2 -DNDEBUG

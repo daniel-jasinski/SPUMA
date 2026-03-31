@@ -67,11 +67,17 @@ SourceFiles
 // Number of threads per block
 #define NUM_THREADS_PER_BLOCK 128
 
-// Number of streaming multiprocessor per device (124 on A100)
+// Number of streaming multiprocessor per device
+// A100 (sm_80): 108 SMs. RTX 3060 (sm_86): 30 SMs. H100 (sm_90): 132 SMs.
+// TODO: query at runtime via cudaDeviceGetAttribute
 #define NUM_SM 124
 
-// Max shared memory addressable by a block on c.u 8.0, 132 kB
-#define MAX_SMEM 135168
+// Max dynamic shared memory per block (bytes).
+// Must not exceed the GPU's cudaDevAttrMaxSharedMemoryPerBlockOptin.
+// A100 (sm_80): 163840, RTX 3060 Laptop (sm_86): 101376, H100 (sm_90): 228K
+// Using 99328 (97 KB) — safe for sm_86+. A100 also supports this (just leaves headroom).
+// TODO: query at runtime via cudaDeviceGetAttribute for optimal value per GPU.
+#define MAX_SMEM 99328
 
 #elif have_hip
 

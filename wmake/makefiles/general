@@ -48,7 +48,7 @@ ifneq (,$(findstring windows,$(WM_OSTYPE)))
     ifeq (,$(strip $(WIN_TMP)))
         WIN_TMP := C:/Temp
     endif
-    WIN_EXTRA_LIB = $(WIN_CUDA_LIB);$(WIN_ACPP_LIB);$(WIN_MSVC_LIB);$(WIN_SDK_LIB);$(WIN_UCRT_LIB)
+    WIN_EXTRA_LIB = $(WIN_CUDA_LIB);$(WIN_ACPP_LIB);$(WIN_HIP_LIB);$(WIN_MSVC_LIB);$(WIN_SDK_LIB);$(WIN_UCRT_LIB)
     WIN_LINK_ENV = TMP="$(WIN_TMP)" TEMP="$(WIN_TMP)" LIB="$$LIB;$(WIN_EXTRA_LIB)"
 
     # Shell-agnostic POSIX-to-Windows path conversion for response files.

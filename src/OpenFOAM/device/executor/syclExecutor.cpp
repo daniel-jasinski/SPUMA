@@ -77,11 +77,8 @@ void Foam::syclExecutor::_backendSerialFor(F& lambda, const label& size)
 }
 
 // Generic reduction: works for any binary op (plus, min, max, custom).
-// Fix #43: Fixed value-copy semantics bug in AdaptiveCpp's reduction_engine.hpp.
-// The MSVC ABI refactoring (lambdas→named functors) introduced by-value copies
-// that broke the reference chain between combine() and finalize(). Fixed by
-// passing wi_reducers by reference through the kernel invocation chain.
-// GPU uses sycl::reduction (buffer-based). OMP uses CPU fallback (Fix #28).
+// GPU uses USM-based sycl::reduction. CPU uses sequential fallback (Fix #28)
+// because AdaptiveCpp OMP backend may lack OpenMP support at build time.
 template <typename F, typename Op, typename resultT>
 void Foam::syclExecutor::_backendReduce
 (
@@ -99,7 +96,6 @@ void Foam::syclExecutor::_backendReduce
     if (q.get_device().is_gpu())
     {
         // GPU: USM-based sycl::reduction (no buffers, no accessor overhead).
-        // Works correctly after fixing reduction_engine.hpp value-copy bug.
         resultT* reduced = sycl::malloc_shared<resultT>(1, q);
         *reduced = identity;
 
@@ -118,8 +114,8 @@ void Foam::syclExecutor::_backendReduce
     }
     else
     {
-        // CPU fallback: sycl::reduction still returns 0 on AdaptiveCpp OMP
-        // backend (Fix #28). Use sequential loop for correctness.
+        // CPU fallback: sequential loop for correctness when AdaptiveCpp is
+        // built without OpenMP support (Fix #28).
         resultT local = identity;
 
         for (label i = 0; i < size; ++i)

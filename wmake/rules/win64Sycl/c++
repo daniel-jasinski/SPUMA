@@ -1,0 +1,33 @@
+#------------------------------------------------------------------------------
+# Windows 64-bit SYCL (AdaptiveCpp) C++ compiler settings - MSVC ABI implicit
+#------------------------------------------------------------------------------
+
+include $(GENERAL_RULES)/Sycl/c++
+
+c++ARCH    := -m64
+
+# For MSVC ABI, use clang's MSVC target (implicit when acpp is built for MSVC)
+# Remove any generic-only flags if using CUDA backend
+
+ifneq (,$(strip $(WM_COMPILE_OPTION)))
+    sinclude $(DEFAULT_RULES)/c++$(WM_COMPILE_OPTION)
+endif
+
+# No -fPIC on Windows (position independent by default)
+# _USE_MATH_DEFINES: MSVC requires this for M_PI, M_E etc. in <cmath>
+c++FLAGS    = \
+    $(c++ARCH) $(GFLAGS) $(c++WARN) $(c++OPT) $(c++DBUG) $(ptFLAGS) \
+    $(ACPP_FLAGS) -D_USE_MATH_DEFINES -DYY_NO_UNISTD_H $(FOAM_EXTRA_CXXFLAGS) $(LIB_HEADER_DIRS)
+
+Ctoo        = $(WM_SCHEDULER) $(CC) $(c++FLAGS) -c $< -o $@
+cctoo       = $(Ctoo)
+cpptoo      = $(Ctoo)
+cxxtoo      = $(Ctoo)
+
+# MSVC ABI linker settings
+# -fuse-ld=lld: LLVM lld-link (required for DEF file imports on Windows)
+LINK_LIBS   = $(c++DBUG)
+LINKLIBSO   = $(CC) $(c++FLAGS) -shared -fuse-ld=lld
+LINKEXE     = $(CC) $(c++FLAGS) -fuse-ld=lld
+
+#------------------------------------------------------------------------------

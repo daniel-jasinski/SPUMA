@@ -796,6 +796,7 @@ fi
         WM_OSTYPE="$WM_OSTYPE" FOAM_LIBBIN="$FOAM_LIBBIN" \
         have_cuda="$have_cuda" have_hip="$have_hip" have_sycl="$have_sycl" \
         NVARCH="$NVARCH" CUDA_PATH_SHORT="$CUDA_PATH_SHORT" \
+        AMDARCH="$AMDARCH" HIP_PATH_SHORT="$HIP_PATH_SHORT" \
         FOAM_LINK_DUMMY_PSTREAM="$FOAM_LINK_DUMMY_PSTREAM" \
         MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" "$objectsDir"/options
 
@@ -806,6 +807,7 @@ fi
         WM_OSTYPE="$WM_OSTYPE" FOAM_LIBBIN="$FOAM_LIBBIN" \
         have_cuda="$have_cuda" have_hip="$have_hip" have_sycl="$have_sycl" \
         NVARCH="$NVARCH" CUDA_PATH_SHORT="$CUDA_PATH_SHORT" \
+        AMDARCH="$AMDARCH" HIP_PATH_SHORT="$HIP_PATH_SHORT" \
         FOAM_LINK_DUMMY_PSTREAM="$FOAM_LINK_DUMMY_PSTREAM" \
         MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir"
 )
@@ -857,6 +859,7 @@ then
         WM_OSTYPE="$WM_OSTYPE" WM_OPTIONS="$WM_OPTIONS" \
         have_cuda="$have_cuda" have_hip="$have_hip" have_sycl="$have_sycl" \
         NVARCH="$NVARCH" CUDA_PATH_SHORT="$CUDA_PATH_SHORT" \
+        AMDARCH="$AMDARCH" HIP_PATH_SHORT="$HIP_PATH_SHORT" \
         MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" updatedep
     exitCode="$?"
 
@@ -924,6 +927,10 @@ case "$WM_OSTYPE" in
         _acppLib="$(_toWinShort "$ACPP_PATH/lib")"
         [ -n "$_acppLib" ] && winLinkVars="$winLinkVars WIN_ACPP_LIB=$_acppLib"
     fi
+    if [ -n "$HIP_PATH" ]; then
+        _hipLib="$(_toWinShort "$HIP_PATH/lib")"
+        [ -n "$_hipLib" ] && winLinkVars="$winLinkVars WIN_HIP_LIB=$_hipLib"
+    fi
     # MSVC runtime libraries (libomp.lib, etc.)
     # Use vswhere.exe to discover VS installation (handles all editions + custom paths)
     # Override: set MSVC_INSTALL_DIR to skip discovery
@@ -966,6 +973,7 @@ exec $make -f "$WM_DIR"/makefiles/general \
      ACPP_TARGETS="$ACPP_TARGETS" \
      have_cuda="$have_cuda" have_hip="$have_hip" have_sycl="$have_sycl" \
      NVARCH="$NVARCH" CUDA_PATH_SHORT="$CUDA_PATH_SHORT" \
+     AMDARCH="$AMDARCH" HIP_PATH_SHORT="$HIP_PATH_SHORT" \
      FOAM_LIBBIN="$FOAM_LIBBIN" FOAM_APPBIN="$FOAM_APPBIN" \
      FOAM_LINK_DUMMY_PSTREAM="$FOAM_LINK_DUMMY_PSTREAM" \
      $winLinkVars \

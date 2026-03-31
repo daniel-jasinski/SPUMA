@@ -295,20 +295,29 @@ void Foam::cudaExecutor::_backendReductionSum
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM;
-    // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
-    CHECK_CUDA_ERROR
-    (
-        cudaFuncSetAttribute
+    // Shared memory = one element per thread
+    const int smemBytes = NUM_THREADS_PER_BLOCK * sizeof(resultT);
+
+    // Opt-in for extended shared memory only if needed (>48KB default)
+    if (smemBytes > 49152)
+    {
+        int maxSmem = 0;
+        int dev = 0;
+        cudaGetDevice(&dev);
+        cudaDeviceGetAttribute(&maxSmem, cudaDevAttrMaxSharedMemoryPerBlockOptin, dev);
+        CHECK_CUDA_ERROR
         (
-            Foam::cuda::reductionLambdaSumKernel<resultT, F>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize,
-            maxbytes
-        )
-    );
+            cudaFuncSetAttribute
+            (
+                Foam::cuda::reductionLambdaSumKernel<resultT, F>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize,
+                (smemBytes < maxSmem) ? smemBytes : maxSmem
+            )
+        );
+    }
 
     Foam::cuda::reductionLambdaSumKernel<resultT, F>
-    <<<(numBlocks + NUM_SM -1)/NUM_SM,NUM_THREADS_PER_BLOCK, maxbytes>>>
+    <<<(numBlocks + NUM_SM -1)/NUM_SM,NUM_THREADS_PER_BLOCK, smemBytes>>>
     (
         dPtrResult,
         lambda,
@@ -357,21 +366,29 @@ void Foam::cudaExecutor::_backendReductionCompare
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM;
+    // Shared memory = one element per thread
+    const int smemBytes = NUM_THREADS_PER_BLOCK * sizeof(resultT);
 
-    // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
-    CHECK_CUDA_ERROR
-    (
-        cudaFuncSetAttribute
+    // Opt-in for extended shared memory only if needed (>48KB default)
+    if (smemBytes > 49152)
+    {
+        int maxSmem = 0;
+        int dev = 0;
+        cudaGetDevice(&dev);
+        cudaDeviceGetAttribute(&maxSmem, cudaDevAttrMaxSharedMemoryPerBlockOptin, dev);
+        CHECK_CUDA_ERROR
         (
-            Foam::cuda::reductionLambdaCompareKernel<resultT, F, Op>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize,
-            maxbytes
-        )
-    );
+            cudaFuncSetAttribute
+            (
+                Foam::cuda::reductionLambdaCompareKernel<resultT, F, Op>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize,
+                (smemBytes < maxSmem) ? smemBytes : maxSmem
+            )
+        );
+    }
 
     Foam::cuda::reductionLambdaCompareKernel<resultT, F, Op>
-    <<<(numBlocks + NUM_SM -1)/NUM_SM,NUM_THREADS_PER_BLOCK, maxbytes>>>
+    <<<(numBlocks + NUM_SM -1)/NUM_SM,NUM_THREADS_PER_BLOCK, smemBytes>>>
     (
         dPtrResult,
         lambda,

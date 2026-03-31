@@ -1,0 +1,89 @@
+#------------------------------------------------------------------------------
+# Windows 64-bit CUDA (Clang) C++ compiler settings - MSVC ABI implicit
+#
+# ALL files compiled with -x cuda: kernel code propagates through headers
+# via NoRepository pattern. Each .o gets its own fatbin (PTX for sm_XX).
+# No -fgpu-rdc: per-TU __cudaRegisterFatBinary at DLL load time.
+#------------------------------------------------------------------------------
+
+SUFFIXES   += .C .cc .cpp .cxx .cu
+
+CC         := clang++ --target=x86_64-pc-windows-msvc -std=c++17
+
+c++ARCH    := -m64
+c++DBUG    :=
+c++OPT     := -O2
+ptFLAGS    := -DNoRepository -Dhave_cuda
+
+# -w: suppress all warnings. Clang CUDA device pass generates hundreds of
+# __declspec warnings that cause silent .o output failure (Clang bug).
+c++WARN     = -w
+
+c++LESSWARN = \
+    -Wno-old-style-cast -Wno-unused-local-typedefs \
+    -Wno-deprecated-declarations \
+    -fpermissive
+
+# CUDA GPU architecture (default sm_80, override with NVARCH=86 etc.)
+ifeq (,$(strip $(NVARCH)))
+    NVARCH := 80
+endif
+
+# CUDA flags for ALL files:
+#   -x cuda: treat all source as CUDA (kernel code in headers via NoRepository)
+#   Each .o gets its own fatbin with compiled PTX — no RDC needed
+CUDA_FLAGS := -x cuda --cuda-gpu-arch=sm_$(NVARCH)
+
+# CUDA toolkit path (8.3 format, no spaces, forward slashes)
+ifneq (,$(CUDA_PATH_SHORT))
+    CUDA_FLAGS += --cuda-path=$(CUDA_PATH_SHORT)
+endif
+
+ifneq (,$(strip $(WM_COMPILE_OPTION)))
+    sinclude $(DEFAULT_RULES)/c++$(WM_COMPILE_OPTION)
+endif
+
+# _USE_MATH_DEFINES: MSVC requires this for M_PI, M_E etc. in <cmath>
+# _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH: Clang + MSVC STL version check
+c++FLAGS    = \
+    $(c++ARCH) $(GFLAGS) $(c++WARN) $(c++OPT) $(c++DBUG) $(ptFLAGS) \
+    $(CUDA_FLAGS) \
+    -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH \
+    -D_USE_MATH_DEFINES -DYY_NO_UNISTD_H $(FOAM_EXTRA_CXXFLAGS) $(LIB_HEADER_DIRS)
+
+Ctoo        = $(WM_SCHEDULER) $(CC) $(c++FLAGS) -c $< -o $@
+cctoo       = $(Ctoo)
+cpptoo      = $(Ctoo)
+cxxtoo      = $(Ctoo)
+cutoo       = $(Ctoo)
+
+# MSVC ABI linker settings
+# -fuse-ld=lld: LLVM linker (handles /force:multiple for duplicate symbols)
+# /LIBPATH for CUDA: lld-link needs explicit search path for cudart.lib
+c++LINKFLAGS = $(c++ARCH) $(c++DBUG) -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH \
+    -fuse-ld=lld
+ifneq (,$(CUDA_PATH_SHORT))
+    c++LINKFLAGS += --cuda-path=$(CUDA_PATH_SHORT) -Wl,/LIBPATH:$(CUDA_PATH_SHORT)/lib/x64
+endif
+LINK_LIBS   = $(c++DBUG)
+# /force:multiple: keep for safety (COMDAT duplicates possible)
+# /force:unresolved: ~30 dummy Pstream symbols (same as SYCL build)
+#
+# CUDA runtime library: cudart.lib MUST be in LINKLIBSO/LINKEXE, not LIB_LIBS.
+# Make/options uses LIB_LIBS = (assignment) which overwrites any += from here.
+# /INCLUDE:__cudaRegisterFatBinary forces the import even if no code directly
+# references it — without this, lld-link drops cudart64_12.dll from the import
+# table, and the .CRT$XCU fatbin registration entries call address 0 → crash.
+ifneq (,$(CUDA_PATH_SHORT))
+    LINKLIBSO = $(CC) $(c++LINKFLAGS) -shared -Wl,/force:multiple,/force:unresolved \
+        -Wl,/INCLUDE:__cudaRegisterFatBinary $(CUDA_PATH_SHORT)/lib/x64/cudart.lib
+    LINKEXE   = $(CC) $(c++LINKFLAGS) -Wl,/force:multiple,/force:unresolved \
+        -Wl,/INCLUDE:__cudaRegisterFatBinary $(CUDA_PATH_SHORT)/lib/x64/cudart.lib
+else
+    LINKLIBSO = $(CC) $(c++LINKFLAGS) -shared -Wl,/force:multiple,/force:unresolved \
+        -Wl,/INCLUDE:__cudaRegisterFatBinary -Wl,/DEFAULTLIB:cudart
+    LINKEXE   = $(CC) $(c++LINKFLAGS) -Wl,/force:multiple,/force:unresolved \
+        -Wl,/INCLUDE:__cudaRegisterFatBinary -Wl,/DEFAULTLIB:cudart
+endif
+
+#------------------------------------------------------------------------------

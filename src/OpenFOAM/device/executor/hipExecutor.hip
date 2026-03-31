@@ -320,18 +320,26 @@ void Foam::hipExecutor::_backendReductionSum(
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM;
+    // Shared memory = one element per thread
+    const int smemBytes = NUM_THREADS_PER_BLOCK * sizeof(resultT);
 
-    // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
-    CHECK_HIP_ERROR
-    (
-        hipFuncSetAttribute
+    // Opt-in for extended shared memory only if needed (>48KB default)
+    if (smemBytes > 49152)
+    {
+        int maxSmem = 0;
+        int dev = 0;
+        hipGetDevice(&dev);
+        hipDeviceGetAttribute(&maxSmem, hipDeviceAttributeMaxSharedMemoryPerBlock, dev);
+        CHECK_HIP_ERROR
         (
-            reinterpret_cast<const void*>(Foam::hip::reductionLambdaSumKernel<resultT,F>),
-            hipFuncAttributeMaxDynamicSharedMemorySize,
-            maxbytes
-        )
-    );
+            hipFuncSetAttribute
+            (
+                reinterpret_cast<const void*>(Foam::hip::reductionLambdaSumKernel<resultT,F>),
+                hipFuncAttributeMaxDynamicSharedMemorySize,
+                (smemBytes < maxSmem) ? smemBytes : maxSmem
+            )
+        );
+    }
 
     // NOTE: for multiple template arguments in the kernel use parentheses or the
     //       preprocessor cannot parse the hipLaunchKernelGGL macro correctly
@@ -340,7 +348,7 @@ void Foam::hipExecutor::_backendReductionSum(
         (Foam::hip::reductionLambdaSumKernel<resultT,F>),
         (numBlocks + NUM_SM - 1)/NUM_SM,
         NUM_THREADS_PER_BLOCK,
-        maxbytes,
+        smemBytes,
         0,
         dPtrResult,
         lambda,
@@ -384,18 +392,26 @@ void Foam::hipExecutor::_backendReductionCompare
 
     const label numBlocks = SET_TREE_REDUCE_NUM_BLOCKS(size);
 
-    int maxbytes = MAX_SMEM;
+    // Shared memory = one element per thread
+    const int smemBytes = NUM_THREADS_PER_BLOCK * sizeof(resultT);
 
-    // declare that this kernel can use up to MAX_SMEM of dynamically allocated shared memory
-    CHECK_HIP_ERROR
-    (
-        hipFuncSetAttribute
+    // Opt-in for extended shared memory only if needed (>48KB default)
+    if (smemBytes > 49152)
+    {
+        int maxSmem = 0;
+        int dev = 0;
+        hipGetDevice(&dev);
+        hipDeviceGetAttribute(&maxSmem, hipDeviceAttributeMaxSharedMemoryPerBlock, dev);
+        CHECK_HIP_ERROR
         (
-            reinterpret_cast<const void*>(Foam::hip::reductionLambdaCompareKernel<resultT,F,Op>),
-            hipFuncAttributeMaxDynamicSharedMemorySize,
-            maxbytes
-        )
-    );
+            hipFuncSetAttribute
+            (
+                reinterpret_cast<const void*>(Foam::hip::reductionLambdaCompareKernel<resultT,F,Op>),
+                hipFuncAttributeMaxDynamicSharedMemorySize,
+                (smemBytes < maxSmem) ? smemBytes : maxSmem
+            )
+        );
+    }
 
     // NOTE: for multiple template arguments in the kernel use parentheses or the
     //       preprocessor cannot parse the hipLaunchKernelGGL macro correctly
@@ -404,7 +420,7 @@ void Foam::hipExecutor::_backendReductionCompare
         (Foam::hip::reductionLambdaCompareKernel<resultT,F,Op>),
         (numBlocks + NUM_SM - 1)/NUM_SM,
         NUM_THREADS_PER_BLOCK,
-        maxbytes,
+        smemBytes,
         0,
         dPtrResult,
         lambda,

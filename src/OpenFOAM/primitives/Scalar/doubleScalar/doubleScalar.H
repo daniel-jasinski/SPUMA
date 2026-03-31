@@ -174,6 +174,23 @@ inline Scalar func(const Scalar s)                              \
     {                                                           \
         return __nv_##func(n, s);                               \
     }
+#elif defined(__HIP_DEVICE_COMPILE__)
+    // HIP device: use AMD OCML math library for Bessel functions
+    extern "C" __device__ double __ocml_j0_f64(double);
+    extern "C" __device__ double __ocml_j1_f64(double);
+    extern "C" __device__ double __ocml_y0_f64(double);
+    extern "C" __device__ double __ocml_y1_f64(double);
+    #define besselFunc(func)                                    \
+    inline Scalar func(const Scalar s)                          \
+    {                                                           \
+        return __ocml_##func##_f64(s);                          \
+    }
+    #define besselFunc2(func)                                   \
+    inline Scalar func(const int n, const Scalar s)             \
+    {                                                           \
+        /* OCML has no jn/yn — use host fallback (not called from kernels) */ \
+        return 0;                                               \
+    }
 #elif defined(Foam_no_besselFunc)
     // Not available
     #define besselFunc(func)                                    \
