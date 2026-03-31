@@ -247,7 +247,7 @@ Foam::fv::cellLimitedGrad<Type, Limiter>::calcGrad
         exec.parallelFor(Lambda, pOwner.size());
     }
 
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         Info<< "gradient limiter for: " << vsf.name()
             << " max = " << gMax(limiter)

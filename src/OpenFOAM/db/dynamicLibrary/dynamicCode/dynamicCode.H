@@ -281,7 +281,7 @@ public:
         template<class Type>
         void setFieldTemplates()
         {
-            std::string val(pTraits<Type>::typeName_());
+            std::string val(pTraits<Type>::baseTypeName());
 
             // Template type
             setFilterVariable("TemplateType", val);

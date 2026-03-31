@@ -193,7 +193,7 @@ Type Foam::expressions::exprDriver::getFunctionValue
     if (!failed.empty())
     {
         FatalErrorInFunction
-            << "No mapping '" << name << " (" << pTraits<Type>::typeName_()
+            << "No mapping '" << name << " (" << pTraits<Type>::baseTypeName()
             << ") found." << nl
             << "Valid entries: "
             << flatOutput(failed) << nl
@@ -251,7 +251,7 @@ void Foam::expressions::exprDriver::fillFunctionValues
     if (!failed.empty())
     {
         FatalErrorInFunction
-            << "No mapping '" << name << " (" << pTraits<Type>::typeName_()
+            << "No mapping '" << name << " (" << pTraits<Type>::baseTypeName()
             << ") found." << nl
             << "Valid entries: "
             << flatOutput(failed) << nl
@@ -291,7 +291,7 @@ bool Foam::expressions::exprDriver::isLocalVariable
     DebugInfo
         << "Looking for local" << (wantPointData ? " point" : "")
         << " field name:" << name << " type:"
-        << pTraits<Type>::typeName_() << " size:" << expectedSize;
+        << pTraits<Type>::baseTypeName() << " size:" << expectedSize;
 
 
     bool good = hasVariable(name);

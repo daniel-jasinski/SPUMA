@@ -52,7 +52,7 @@ tmp<ddtScheme<Type>> ddtScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         InfoInFunction << "Constructing ddtScheme<Type>" << endl;
     }
@@ -132,7 +132,7 @@ tmp<surfaceScalarField> ddtScheme<Type>::fvcDdtPhiCoeff
     const fluxFieldType& phiCorr
 )
 {
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         InfoInFunction << "Using standard version" << endl;
     }
@@ -184,7 +184,7 @@ tmp<surfaceScalarField> ddtScheme<Type>::fvcDdtPhiCoeff
         }
     }
 
-    if (debug > 1)
+    if (debugLevel() > 1)
     {
         InfoInFunction
             << "ddtCouplingCoeff mean max min = "
@@ -206,7 +206,7 @@ tmp<surfaceScalarField> ddtScheme<Type>::fvcDdtPhiCoeffExperimental
     const fluxFieldType& phiCorr
 )
 {
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         InfoInFunction << "Using experimental version" << endl;
     }
@@ -265,7 +265,7 @@ tmp<surfaceScalarField> ddtScheme<Type>::fvcDdtPhiCoeffExperimental
         }
     }
 
-    if (debug > 1)
+    if (debugLevel() > 1)
     {
         InfoInFunction
             << "ddtCouplingCoeff mean max min = "

@@ -58,7 +58,7 @@ class wedgePointPatchField
 public:
 
     //- Runtime type information
-    TypeName(wedgePointPatch::typeName_());
+    TypeName(wedgePointPatch::baseTypeName());
 
 
     // Constructors

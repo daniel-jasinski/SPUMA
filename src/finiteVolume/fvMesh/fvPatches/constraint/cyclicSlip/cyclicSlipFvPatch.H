@@ -57,7 +57,7 @@ class cyclicSlipFvPatch
 public:
 
     //- Runtime type information
-    TypeName(cyclicSlipPolyPatch::typeName_());
+    TypeName(cyclicSlipPolyPatch::baseTypeName());
 
 
     // Constructors

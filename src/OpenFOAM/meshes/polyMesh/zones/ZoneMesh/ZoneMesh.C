@@ -1139,7 +1139,7 @@ ZoneType& Foam::ZoneMesh<ZoneType, MeshType>::operator()
 
     if (verbose)
     {
-        Info<< ZoneType::typeName_() << ' ' << zoneName
+        Info<< ZoneType::baseTypeName() << ' ' << zoneName
             << " (" << (existing ? "existing" : "new")
             << " at index " << ptr->index() << ')'
             << endl;

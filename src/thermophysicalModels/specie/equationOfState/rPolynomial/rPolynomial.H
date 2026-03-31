@@ -168,7 +168,7 @@ public:
         //- Return the instantiated type name
         static word typeName()
         {
-            return "rPolynomial<" + word(Specie::typeName_()) + '>';
+            return "rPolynomial<" + word(Specie::baseTypeName()) + '>';
         }
 
 

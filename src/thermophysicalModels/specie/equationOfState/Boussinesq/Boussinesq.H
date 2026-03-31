@@ -147,7 +147,7 @@ public:
         {
             return
                 "Boussinesq<"
-              + word(Specie::typeName_()) + '>';
+              + word(Specie::baseTypeName()) + '>';
         }
 
 

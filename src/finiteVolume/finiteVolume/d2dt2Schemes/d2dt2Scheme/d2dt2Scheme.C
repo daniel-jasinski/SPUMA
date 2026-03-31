@@ -48,7 +48,7 @@ tmp<d2dt2Scheme<Type>> d2dt2Scheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         InfoInFunction << "Constructing d2dt2Scheme<Type>" << endl;
     }

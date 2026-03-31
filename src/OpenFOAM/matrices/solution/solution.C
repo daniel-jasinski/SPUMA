@@ -37,6 +37,7 @@ namespace Foam
 {
     defineDebugSwitchWithName(solution, "solution", 0);
     registerDebugSwitchWithName(solution, solution, "solution");
+    int solution::debugLevel() { return solution::debug; }
 }
 
 // List of sub-dictionaries to rewrite

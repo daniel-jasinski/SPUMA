@@ -1352,7 +1352,7 @@ void Foam::snappyLayerDriver::determineSidePatches
             );
 
             dictionary patchDict;
-            patchDict.add("type", processorPolyPatch::typeName_());
+            patchDict.add("type", processorPolyPatch::baseTypeName());
             patchDict.add("myProcNo", Pstream::myProcNo());
             patchDict.add("neighbProcNo", nbrProci);
             patchDict.add("nFaces", 0);

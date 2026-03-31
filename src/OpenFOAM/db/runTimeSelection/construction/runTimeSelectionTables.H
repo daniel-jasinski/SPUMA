@@ -40,6 +40,7 @@ Description
 #ifndef Foam_runTimeSelectionTables_H
 #define Foam_runTimeSelectionTables_H
 
+
 #include <memory>   // For std::unique_ptr
 #include <utility>  // For std::pair
 
@@ -47,6 +48,19 @@ Description
 #include "HashTable.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+    // Fix #47: On Windows, skip RTS table cleanup in static destructors.
+    // DLL unload during failed LoadLibrary triggers these destructors,
+    // destroying shared tables in other DLLs. Safe to skip on Windows
+    // since solvers use _exit(0) at exit.
+    #ifdef _WIN32
+    inline constexpr bool RTS_TABLE_CLEANUP = false;
+    #else
+    inline constexpr bool RTS_TABLE_CLEANUP = true;
+    #endif
+}
 
 // Common infrastructure
 
@@ -130,6 +144,14 @@ Description
                 constructed = true;                                            \
             }                                                                  \
         }                                                                      \
+        /* Fix #47: On Windows, skip table deletion. DLL unload during a */   \
+        /* failed LoadLibrary triggers addXXXConstructorToTable destructors */ \
+        /* which call construct(false), destroying the shared RTS table in */ \
+        /* other DLLs. Safe to skip: Windows solvers use _exit(0). */         \
+        else if (!::Foam::RTS_TABLE_CLEANUP)                                  \
+        {                                                                      \
+            /* no-op on Windows */                                             \
+        }                                                                      \
         else if (prefix##TablePtr_())                                          \
         {                                                                      \
             delete prefix##TablePtr_();                                        \
@@ -212,7 +234,7 @@ Description
                                                                                \
         explicit add##argNames##ConstructorToTable                             \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName_()               \
+            const ::Foam::word& k = baseType##Type::baseTypeName()               \
         )                                                                      \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
@@ -220,7 +242,7 @@ Description
             {                                                                  \
                 std::cerr                                                      \
                     << "Duplicate entry " << k << " in runtime table "         \
-                    << #baseType << std::endl;                                 \
+                    << #baseType << std::endl;                                       \
             }                                                                  \
         }                                                                      \
                                                                                \
@@ -250,7 +272,7 @@ Description
                                                                                \
         explicit addRemovable##argNames##ConstructorToTable                    \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName_()               \
+            const ::Foam::word& k = baseType##Type::baseTypeName()               \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \
@@ -309,7 +331,7 @@ Description
                                                                                \
         explicit add##argNames##ConstructorToTable                             \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName_()               \
+            const ::Foam::word& k = baseType##Type::baseTypeName()               \
         )                                                                      \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
@@ -317,7 +339,7 @@ Description
             {                                                                  \
                 std::cerr                                                      \
                     << "Duplicate entry " << k << " in runtime table "         \
-                    << #baseType << std::endl;                                 \
+                    << #baseType << std::endl;                                       \
             }                                                                  \
         }                                                                      \
                                                                                \
@@ -346,7 +368,7 @@ Description
                                                                                \
         explicit addRemovable##argNames##ConstructorToTable                    \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName_()               \
+            const ::Foam::word& k = baseType##Type::baseTypeName()               \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \

@@ -163,7 +163,7 @@ public:
                                                                                \
             gradScheme<Foam::TYPE>::addIstreamConstructorToTable               \
                 <LeastSquaresGrad<Foam::TYPE, Foam::STENCIL>>                  \
-                add##SS##STENCIL##TYPE##IstreamConstructorToTable_;            \
+                add##SS##STENCIL##TYPE##IstreamConstructorToTable_(#SS);       \
         }                                                                      \
     }
 

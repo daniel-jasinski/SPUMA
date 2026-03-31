@@ -38,7 +38,7 @@ Foam::GlobalIOField<Type>::GlobalIOField(const IOobject& io)
     // Check for MUST_READ_IF_MODIFIED
     warnNoRereading<GlobalIOField<Type>>();
 
-    readHeaderOk(IOstreamOption::BINARY, typeName_());
+    readHeaderOk(IOstreamOption::BINARY, typeName);
 }
 
 
@@ -50,7 +50,7 @@ Foam::GlobalIOField<Type>::GlobalIOField(const IOobject& io, const label len)
     // Check for MUST_READ_IF_MODIFIED
     warnNoRereading<GlobalIOField<Type>>();
 
-    if (!readHeaderOk(IOstreamOption::BINARY, typeName_()))
+    if (!readHeaderOk(IOstreamOption::BINARY, typeName))
     {
         Field<Type>::resize(len);
     }
@@ -69,7 +69,7 @@ Foam::GlobalIOField<Type>::GlobalIOField
     // Check for MUST_READ_IF_MODIFIED
     warnNoRereading<GlobalIOField<Type>>();
 
-    if (!readHeaderOk(IOstreamOption::BINARY, typeName_()))
+    if (!readHeaderOk(IOstreamOption::BINARY, typeName))
     {
         Field<Type>::operator=(content);
     }
@@ -90,7 +90,7 @@ Foam::GlobalIOField<Type>::GlobalIOField
 
     Field<Type>::transfer(content);
 
-    readHeaderOk(IOstreamOption::BINARY, typeName_());
+    readHeaderOk(IOstreamOption::BINARY, typeName);
 }
 
 
@@ -113,7 +113,7 @@ Foam::GlobalIOField<Type>::GlobalIOField
         Field<Type>::transfer(tfld.ref());
     }
 
-    if (!readHeaderOk(IOstreamOption::BINARY, typeName_()) && !reuse)
+    if (!readHeaderOk(IOstreamOption::BINARY, typeName) && !reuse)
     {
         Field<Type>::operator=(tfld());
     }
@@ -149,6 +149,24 @@ bool Foam::GlobalIOField<Type>::readData(Istream& is)
 {
     is >> *this;
     return is.good();
+}
+
+
+template<class Type>
+bool Foam::GlobalIOField<Type>::writeObject
+(
+    IOstreamOption streamOpt,
+    const bool writeOnProc
+) const
+{
+    const word savedHdrClass(headerClassName());
+    const_cast<GlobalIOField&>(*this).headerClassName() = staticTypeName();
+
+    bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+    const_cast<GlobalIOField&>(*this).headerClassName() = savedHdrClass;
+
+    return good;
 }
 
 

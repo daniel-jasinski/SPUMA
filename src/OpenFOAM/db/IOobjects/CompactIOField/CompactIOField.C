@@ -41,12 +41,12 @@ bool Foam::CompactIOField<T, BaseType>::readIOcontents(bool readOnProc)
 
         if (readOnProc)
         {
-            if (headerClassName() == IOField<T>::typeName_())
+            if (headerClassName() == IOField<T>::typeName)
             {
                 is >> static_cast<Field<T>&>(*this);
                 close();
             }
-            else if (headerClassName() == typeName_())
+            else if (headerClassName() == typeName)
             {
                 is >> *this;
                 close();
@@ -55,8 +55,8 @@ bool Foam::CompactIOField<T, BaseType>::readIOcontents(bool readOnProc)
             {
                 FatalIOErrorInFunction(is)
                     << "Unexpected class name " << headerClassName()
-                    << " expected " << typeName_()
-                    << " or " << IOField<T>::typeName_() << nl
+                    << " expected " << typeName
+                    << " or " << IOField<T>::typeName << nl
                     << "    while reading object " << name()
                     << exit(FatalIOError);
             }
@@ -164,20 +164,31 @@ bool Foam::CompactIOField<T, BaseType>::writeObject
 {
     if (streamOpt.format() == IOstreamOption::ASCII)
     {
-        // Change type to be non-compact format type
-        const word oldTypeName(typeName_());
-
-        const_cast<word&>(typeName) = IOField<T>::typeName_();
+        // Write as non-compact (IOField) format.
+        // Set headerClassName so writeHeader uses the correct type name
+        // instead of type() which returns the generic baseTypeName() on Windows.
+        const word savedHdrClass(headerClassName());
+        const_cast<CompactIOField&>(*this).headerClassName() =
+            IOField<T>::typeName;
 
         bool good = regIOobject::writeObject(streamOpt, writeOnProc);
 
-        // Restore type
-        const_cast<word&>(typeName) = oldTypeName;  // NOTE: typeName write via JMP thunk may crash on Windows
+        const_cast<CompactIOField&>(*this).headerClassName() = savedHdrClass;
 
         return good;
     }
 
-    return regIOobject::writeObject(streamOpt, writeOnProc);
+    // Binary: write as compact format with per-specialization type name
+    {
+        const word savedHdrClass(headerClassName());
+        const_cast<CompactIOField&>(*this).headerClassName() = typeName;
+
+        bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+        const_cast<CompactIOField&>(*this).headerClassName() = savedHdrClass;
+
+        return good;
+    }
 }
 
 

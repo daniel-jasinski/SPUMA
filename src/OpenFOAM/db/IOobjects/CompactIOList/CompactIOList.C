@@ -42,12 +42,12 @@ bool Foam::CompactIOList<T, BaseType>::readIOcontents()
     {
         Istream& is = readStream(word::null);
 
-        if (headerClassName() == IOList<T>::typeName_())
+        if (headerClassName() == IOList<T>::typeName)
         {
             is >> static_cast<List<T>&>(*this);
             close();
         }
-        else if (headerClassName() == typeName_())
+        else if (headerClassName() == typeName)
         {
             is >> *this;
             close();
@@ -56,8 +56,8 @@ bool Foam::CompactIOList<T, BaseType>::readIOcontents()
         {
             FatalIOErrorInFunction(is)
                 << "Unexpected class name " << headerClassName()
-                << " expected " << typeName_()
-                << " or " << IOList<T>::typeName_() << endl
+                << " expected " << typeName
+                << " or " << IOList<T>::typeName << endl
                 << "    while reading object " << name()
                 << exit(FatalIOError);
         }
@@ -184,20 +184,31 @@ bool Foam::CompactIOList<T, BaseType>::writeObject
 
     if (streamOpt.format() == IOstreamOption::ASCII)
     {
-        // Change type to be non-compact format type
-        const word oldTypeName(typeName_());
-
-        const_cast<word&>(typeName) = IOList<T>::typeName_();
+        // Write as non-compact (IOList) format.
+        // Set headerClassName so writeHeader uses the correct type name
+        // instead of type() which returns the generic baseTypeName() on Windows.
+        const word savedHdrClass(headerClassName());
+        const_cast<CompactIOList&>(*this).headerClassName() =
+            IOList<T>::typeName;
 
         bool good = regIOobject::writeObject(streamOpt, writeOnProc);
 
-        // Change type back
-        const_cast<word&>(typeName) = oldTypeName;
+        const_cast<CompactIOList&>(*this).headerClassName() = savedHdrClass;
 
         return good;
     }
 
-    return regIOobject::writeObject(streamOpt, writeOnProc);
+    // Binary: write as compact format with per-specialization type name
+    {
+        const word savedHdrClass(headerClassName());
+        const_cast<CompactIOList&>(*this).headerClassName() = typeName;
+
+        bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+        const_cast<CompactIOList&>(*this).headerClassName() = savedHdrClass;
+
+        return good;
+    }
 }
 
 

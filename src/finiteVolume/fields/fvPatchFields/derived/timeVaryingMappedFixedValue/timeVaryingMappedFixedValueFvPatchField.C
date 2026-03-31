@@ -179,7 +179,7 @@ void Foam::timeVaryingMappedFixedValueFvPatchField<Type>::updateCoeffs()
     const scalar t = this->db().time().timeOutputValue();
     fvPatchField<Type>::operator==(uniformValue_->value(t));
 
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "updateCoeffs : set fixedValue to min:" << gMin(*this)
             << " max:" << gMax(*this)

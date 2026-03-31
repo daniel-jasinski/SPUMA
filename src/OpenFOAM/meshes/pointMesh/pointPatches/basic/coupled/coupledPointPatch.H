@@ -86,7 +86,7 @@ protected:
 public:
 
     //- Runtime type information
-    TypeName(coupledPolyPatch::typeName_());
+    TypeName(coupledPolyPatch::baseTypeName());
 
 
     // Constructors

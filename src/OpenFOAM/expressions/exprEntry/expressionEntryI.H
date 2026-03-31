@@ -43,7 +43,7 @@ Foam::exprTools::expressionEntry::toExprStr(const Type& data)
 {
     OStringStream buf;
 
-    buf << pTraits<Type>::typeName_() << '(';
+    buf << pTraits<Type>::baseTypeName() << '(';
     for (direction cmpt=0;  cmpt < pTraits<Type>::nComponents; ++cmpt)
     {
         if (cmpt) buf << ',';

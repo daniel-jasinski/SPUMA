@@ -632,8 +632,8 @@ Foam::fvMeshTools::newMesh
 
                 if
                 (
-                    type == processorPolyPatch::typeName_()
-                 || type == processorCyclicPolyPatch::typeName_()
+                    type == processorPolyPatch::baseTypeName()
+                 || type == processorCyclicPolyPatch::baseTypeName()
                 )
                 {
                     // Unlikely to work with inter-mixed proc-patches anyhow
@@ -848,8 +848,8 @@ Foam::fvMeshTools::loadOrCreateMeshImpl
 
             if
             (
-                type == processorPolyPatch::typeName_()
-             || type == processorCyclicPolyPatch::typeName_()
+                type == processorPolyPatch::baseTypeName()
+             || type == processorCyclicPolyPatch::baseTypeName()
             )
             {
                 // Stop at the first processor patch.
@@ -1018,8 +1018,8 @@ Foam::fvMeshTools::loadOrCreateMeshImpl
 
             if
             (
-                type == processorPolyPatch::typeName_()
-             || type == processorCyclicPolyPatch::typeName_()
+                type == processorPolyPatch::baseTypeName()
+             || type == processorCyclicPolyPatch::baseTypeName()
             )
             {
                 break;

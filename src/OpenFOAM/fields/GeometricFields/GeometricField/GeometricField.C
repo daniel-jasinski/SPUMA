@@ -76,7 +76,7 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields
 template<class Type, template<class> class PatchField, class GeoMesh>
 void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields()
 {
-    // NOTE: Cannot use readContents(io, typeName_()) because typeName_()
+    // NOTE: Cannot use readContents(io, baseTypeName()) because baseTypeName()
     // returns the base template name ("GeometricField"), not the specialized
     // name ("volScalarField"). And we can't use readContents(io, typeName)
     // because 'typeName' is a cross-DLL data access via JMP thunk on Windows.

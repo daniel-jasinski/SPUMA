@@ -120,7 +120,7 @@ void Foam::mappedFixedValueFvPatchField<Type>::updateCoeffs()
 
     this->operator==(this->mappedField());
 
-    if (debug)
+    if (debugLevel())
     {
         Info<< "mapped on field:"
             << this->internalField().name()

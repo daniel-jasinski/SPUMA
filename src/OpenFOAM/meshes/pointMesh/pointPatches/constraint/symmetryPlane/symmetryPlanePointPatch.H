@@ -62,7 +62,7 @@ class symmetryPlanePointPatch
 public:
 
     //- Runtime type information
-    TypeName(symmetryPlanePolyPatch::typeName_());
+    TypeName(symmetryPlanePolyPatch::baseTypeName());
 
 
     // Constructors

@@ -176,7 +176,7 @@ public:
         {                                                                      \
             snGradScheme<TYPE>::addMeshConstructorToTable                      \
                 <CentredFitSnGradScheme<TYPE, POLYNOMIAL, STENCIL>>            \
-                add##SS##STENCIL##TYPE##MeshConstructorToTable_;               \
+                add##SS##STENCIL##TYPE##MeshConstructorToTable_(#SS);          \
         }                                                                      \
     }
 

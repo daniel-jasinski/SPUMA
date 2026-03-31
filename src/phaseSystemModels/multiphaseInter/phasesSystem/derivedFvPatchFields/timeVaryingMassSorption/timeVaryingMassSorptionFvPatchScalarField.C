@@ -43,15 +43,15 @@ Foam::timeVaryingMassSorptionFvPatchScalarField::ddtSchemeTypeNames_
 ({
     {
         ddtSchemeType::tsEuler,
-        fv::EulerDdtScheme<scalar>::typeName_()
+        fv::EulerDdtScheme<scalar>::baseTypeName()
     },
     {
         ddtSchemeType::tsCrankNicolson,
-        fv::CrankNicolsonDdtScheme<scalar>::typeName_()
+        fv::CrankNicolsonDdtScheme<scalar>::baseTypeName()
     },
     {
         ddtSchemeType::tsBackward,
-        fv::backwardDdtScheme<scalar>::typeName_()
+        fv::backwardDdtScheme<scalar>::baseTypeName()
     },
 });
 

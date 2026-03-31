@@ -57,7 +57,7 @@ class mappedWallFvPatch
 public:
 
     //- Runtime type information
-    TypeName(mappedWallPolyPatch::typeName_());
+    TypeName(mappedWallPolyPatch::baseTypeName());
 
 
     // Constructors

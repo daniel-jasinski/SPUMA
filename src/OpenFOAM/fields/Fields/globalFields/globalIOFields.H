@@ -52,6 +52,15 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::GlobalIOField<Foam::label>);
+declareStaticTypeName(Foam::GlobalIOField<Foam::scalar>);
+declareStaticTypeName(Foam::GlobalIOField<Foam::vector>);
+declareStaticTypeName(Foam::GlobalIOField<Foam::sphericalTensor>);
+declareStaticTypeName(Foam::GlobalIOField<Foam::symmTensor>);
+declareStaticTypeName(Foam::GlobalIOField<Foam::tensor>);
+#endif
+
 #endif
 
 // ************************************************************************* //

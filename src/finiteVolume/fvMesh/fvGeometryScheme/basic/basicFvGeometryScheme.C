@@ -58,7 +58,7 @@ void Foam::basicFvGeometryScheme::movePoints()
 {
     fvGeometryScheme::movePoints();
 
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "basicFvGeometryScheme::movePoints() : "
             << "recalculating primitiveMesh centres" << endl;
@@ -71,7 +71,7 @@ void Foam::basicFvGeometryScheme::movePoints()
 
 Foam::tmp<Foam::surfaceScalarField> Foam::basicFvGeometryScheme::weights() const
 {
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "basicFvGeometryScheme::weights() : "
             << "Constructing weighting factors for face interpolation"
@@ -138,7 +138,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::basicFvGeometryScheme::weights() const
         mesh_.boundary()[patchi].makeWeights(wBf[patchi]);
     }
 
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "basicFvGeometryScheme::weights : "
             << "Finished constructing weighting factors for face interpolation"
@@ -151,7 +151,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::basicFvGeometryScheme::weights() const
 Foam::tmp<Foam::surfaceScalarField>
 Foam::basicFvGeometryScheme::deltaCoeffs() const
 {
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "basicFvGeometryScheme::deltaCoeffs() : "
             << "Constructing differencing factors array for face gradient"
@@ -210,7 +210,7 @@ Foam::basicFvGeometryScheme::deltaCoeffs() const
 Foam::tmp<Foam::surfaceScalarField>
 Foam::basicFvGeometryScheme::nonOrthDeltaCoeffs() const
 {
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "basicFvGeometryScheme::nonOrthDeltaCoeffs() : "
             << "Constructing differencing factors array for face gradient"
@@ -298,7 +298,7 @@ Foam::basicFvGeometryScheme::nonOrthDeltaCoeffs() const
 Foam::tmp<Foam::surfaceVectorField>
 Foam::basicFvGeometryScheme::nonOrthCorrectionVectors() const
 {
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "surfaceInterpolation::makeNonOrthCorrectionVectors() : "
             << "Constructing non-orthogonal correction vectors"
@@ -381,7 +381,7 @@ Foam::basicFvGeometryScheme::nonOrthCorrectionVectors() const
         p.makeNonOrthoCorrVectors(patchCorrVecs);
     }
 
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "surfaceInterpolation::makeNonOrthCorrectionVectors() : "
             << "Finished constructing non-orthogonal correction vectors"

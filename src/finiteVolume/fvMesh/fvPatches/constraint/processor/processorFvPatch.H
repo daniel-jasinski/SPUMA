@@ -72,7 +72,7 @@ protected:
 public:
 
     //- Runtime type information
-    TypeName(processorPolyPatch::typeName_());
+    TypeName(processorPolyPatch::baseTypeName());
 
 
     // Constructors

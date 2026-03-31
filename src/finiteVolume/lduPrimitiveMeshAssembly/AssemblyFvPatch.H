@@ -76,7 +76,7 @@ protected:
 public:
 
     //- Runtime type information
-    TypeName(CyclicType::typeName_());
+    TypeName(CyclicType::baseTypeName());
 
 
     // Constructors

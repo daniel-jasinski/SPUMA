@@ -46,7 +46,7 @@ License
     defineTemplateTypeNameAndDebugWithName                                     \
     (                                                                          \
         SS##Comp##Thermo,                                                      \
-        (#SS"<" + word(Comp::typeName_())                                      \
+        (#SS"<" + word(Comp::baseTypeName())                                      \
       + "," + Thermo::typeName() + ">").c_str(),                               \
         0                                                                      \
     );                                                                         \
@@ -64,8 +64,8 @@ License
     defineTemplateTypeNameAndDebugWithName                                     \
     (                                                                          \
         chemistryReductionMethod##CompChemModel##Thermo,                       \
-        (word(chemistryReductionMethod##CompChemModel##Thermo::typeName_()) +  \
-        '<' + word(CompChemModel::typeName_()) + "," + Thermo::typeName() + '>'\
+        (word(chemistryReductionMethod##CompChemModel##Thermo::baseTypeName()) +  \
+        '<' + word(CompChemModel::baseTypeName()) + "," + Thermo::typeName() + '>'\
         ).c_str(),                                                             \
         0                                                                      \
     );                                                                         \

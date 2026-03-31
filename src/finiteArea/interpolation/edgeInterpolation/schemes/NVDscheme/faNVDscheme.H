@@ -166,11 +166,11 @@ defineTemplateTypeNameAndDebugWithName(faNVDscheme##TYPE##WEIGHT_, NAME, 0);   \
                                                                                \
 edgeInterpolationScheme<TYPE>::addMeshConstructorToTable                       \
 <faNVDscheme<TYPE, WEIGHT>>                                                   \
-    add##SS##TYPE##MeshConstructorToTable_;                                    \
+    add##SS##TYPE##MeshConstructorToTable_(NAME);                              \
                                                                                \
 edgeInterpolationScheme<TYPE>::addMeshFluxConstructorToTable                   \
 <faNVDscheme<TYPE, WEIGHT>>                                                   \
-    add##SS##TYPE##MeshFluxConstructorToTable_;
+    add##SS##TYPE##MeshFluxConstructorToTable_(NAME);
 
 
 #define makeNVDedgeInterpolationScheme(SS, WEIGHT, NAME)                       \

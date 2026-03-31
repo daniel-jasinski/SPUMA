@@ -101,7 +101,7 @@ class SimplifiedDynamicFvMesh
 
 public:
 
-    ClassNameNoDebug(DynamicMeshType::typeName_());
+    ClassNameNoDebug(DynamicMeshType::baseTypeName());
 
     //- Constructor
     SimplifiedDynamicFvMesh(const Time& runTime, const word& regionName);
@@ -133,7 +133,7 @@ public:
 typedef simplifiedMeshes::SimplifiedDynamicFvMesh<Type> simplified##Type;     \
                                                                               \
 template<>                                                                    \
-const word simplified##Type::typeName(Type::typeName_());                     \
+const word simplified##Type::typeName(Type::baseTypeName());                     \
                                                                               \
 namespace simplifiedMeshes                                                    \
 {                                                                             \

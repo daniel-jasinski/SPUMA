@@ -77,8 +77,11 @@ void Foam::syclExecutor::_backendSerialFor(F& lambda, const label& size)
 }
 
 // Generic reduction: works for any binary op (plus, min, max, custom).
-// On GPU, maps to sycl::reduction which uses hardware-optimized primitives.
-// On CPU, falls back to sequential loop (OMP backend broken, Fix #28).
+// Fix #43: Fixed value-copy semantics bug in AdaptiveCpp's reduction_engine.hpp.
+// The MSVC ABI refactoring (lambdas→named functors) introduced by-value copies
+// that broke the reference chain between combine() and finalize(). Fixed by
+// passing wi_reducers by reference through the kernel invocation chain.
+// GPU uses sycl::reduction (buffer-based). OMP uses CPU fallback (Fix #28).
 template <typename F, typename Op, typename resultT>
 void Foam::syclExecutor::_backendReduce
 (
@@ -95,36 +98,27 @@ void Foam::syclExecutor::_backendReduce
 
     if (q.get_device().is_gpu())
     {
-        // GPU: sycl::reduction with identity and binary op.
-        // AdaptiveCpp maps known ops (plus, min, max) to hardware-optimized
-        // primitives (warp shuffles + shared memory on CUDA).
-        // Custom ops get a generic tree reduction.
-        resultT reduced = identity;
+        // GPU: USM-based sycl::reduction (no buffers, no accessor overhead).
+        // Works correctly after fixing reduction_engine.hpp value-copy bug.
+        resultT* reduced = sycl::malloc_shared<resultT>(1, q);
+        *reduced = identity;
 
-        {
-            sycl::buffer<resultT, 1> buf(&reduced, sycl::range<1>(1));
-
-            q.submit([&](sycl::handler& h)
+        q.parallel_for
+        (
+            sycl::range<1>(size),
+            sycl::reduction(reduced, identity, op),
+            [=](sycl::id<1> idx, auto& reducer)
             {
-                auto red = sycl::reduction(buf, h, identity, op);
+                reducer.combine(lambda(idx[0]));
+            }
+        ).wait();
 
-                h.parallel_for
-                (
-                    sycl::range<1>(size),
-                    red,
-                    [=](sycl::id<1> idx, auto& reducer)
-                    {
-                        reducer.combine(lambda(idx[0]));
-                    }
-                );
-            }).wait();
-        }
-
-        *result = op(*result, reduced);
+        *result = op(*result, *reduced);
+        sycl::free(reduced, q);
     }
     else
     {
-        // CPU fallback: sycl::reduction returns 0 on AdaptiveCpp OMP
+        // CPU fallback: sycl::reduction still returns 0 on AdaptiveCpp OMP
         // backend (Fix #28). Use sequential loop for correctness.
         resultT local = identity;
 

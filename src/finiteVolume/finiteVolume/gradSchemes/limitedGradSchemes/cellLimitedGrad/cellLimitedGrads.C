@@ -50,7 +50,7 @@ License
             gradScheme<Type>::addIstreamConstructorToTable                     \
             <                                                                  \
                 SS<Type, gradientLimiters::Limiter>                            \
-            > add##SS##Type##Limiter##IstreamConstructorToTable_;              \
+            > add##SS##Type##Limiter##IstreamConstructorToTable_(Name);        \
         }                                                                      \
     }
 

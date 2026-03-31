@@ -105,7 +105,7 @@ bool Foam::pimpleControl::criteriaSatisfied()
 
             achieved = achieved && (absCheck || relCheck);
 
-            if (debug)
+            if (debugLevel())
             {
                 Info<< algorithmName_ << " loop:" << endl;
 
@@ -203,7 +203,7 @@ bool Foam::pimpleControl::loop()
 
     ++corr_;
 
-    if (debug)
+    if (debugLevel())
     {
         Info<< algorithmName_ << " loop: corr = " << corr_ << endl;
     }

@@ -68,7 +68,7 @@ class cyclicFaePatchField
 public:
 
     //- Runtime type information
-    TypeName(cyclicFaPatch::typeName_());
+    TypeName(cyclicFaPatch::baseTypeName());
 
 
     // Constructors

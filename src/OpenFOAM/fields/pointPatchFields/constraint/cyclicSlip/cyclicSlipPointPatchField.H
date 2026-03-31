@@ -58,7 +58,7 @@ class cyclicSlipPointPatchField
 public:
 
     //- Runtime type information
-    TypeName(cyclicSlipPointPatch::typeName_());
+    TypeName(cyclicSlipPointPatch::baseTypeName());
 
 
     // Constructors

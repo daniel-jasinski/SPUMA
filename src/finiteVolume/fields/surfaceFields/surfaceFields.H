@@ -44,6 +44,14 @@ SourceFiles
 #include "surfaceFieldsFwd.H"
 #include "calculatedFvsPatchFields.H"
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::surfaceScalarField);
+declareStaticTypeName(Foam::surfaceVectorField);
+declareStaticTypeName(Foam::surfaceSphericalTensorField);
+declareStaticTypeName(Foam::surfaceSymmTensorField);
+declareStaticTypeName(Foam::surfaceTensorField);
+#endif
+
 #endif
 
 // ************************************************************************* //

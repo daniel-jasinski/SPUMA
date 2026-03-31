@@ -61,7 +61,7 @@ class emptyFaePatchField
 public:
 
     //- Runtime type information
-    TypeName(emptyFaPatch::typeName_());  // fieldTypes::emptyTypeName_()
+    TypeName(emptyFaPatch::baseTypeName());  // fieldTypes::emptyTypeName_()
 
 
     // Constructors

@@ -44,7 +44,7 @@ License
                                                                                \
     Foam::fv::option::adddictionaryConstructorToTable                          \
         <Foam::fv::Option<Foam::Type>>                                         \
-        add##Option##Type##dictionary##ConstructorTooptionTable_
+        add##Option##Type##dictionary##ConstructorTooptionTable_(#Type#Option)
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

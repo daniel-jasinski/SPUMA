@@ -421,7 +421,7 @@ Foam::meshReader::polyBoundaryPatches(const polyMesh& mesh)
     // All patch dictionaries
     PtrList<dictionary> patchDicts(patchNames_.size());
     // Default boundary patch types
-    word defaultFacesType(emptyPolyPatch::typeName_());
+    word defaultFacesType(emptyPolyPatch::baseTypeName());
 
     // we could consider dropping this entirely
     preservePatchTypes

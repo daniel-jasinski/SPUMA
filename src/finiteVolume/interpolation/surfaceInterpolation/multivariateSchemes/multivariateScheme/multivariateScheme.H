@@ -174,7 +174,7 @@ multivariateSurfaceInterpolationScheme<scalar>::addIstreamConstructorToTable   \
         LimitedScheme<scalar, LIMITER<NVDTVD>, limitFuncs::magSqr>             \
     >                                                                          \
 >                                                                              \
-    addMultivariate##SS##ConstructorToTable_;
+    addMultivariate##SS##ConstructorToTable_(#SS);
 
 
 #define makeLLimitedMultivariateSurfaceInterpolationScheme\
@@ -206,7 +206,7 @@ multivariateSurfaceInterpolationScheme<scalar>::addIstreamConstructorToTable   \
         LimitedScheme<scalar, LLIMITER<LIMITER<NVDTVD>>, limitFuncs::LIMFUNC>  \
     >                                                                          \
 >                                                                              \
-    addMultivariate##SS##ConstructorToTable_;
+    addMultivariate##SS##ConstructorToTable_(#SS);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

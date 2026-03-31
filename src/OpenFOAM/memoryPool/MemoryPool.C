@@ -34,7 +34,6 @@ License
 #endif
 #include "fixedSizeMemoryPool.H"
 #include "dummyMemoryPool.H"
-#include <iostream>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -70,6 +69,16 @@ Foam::MemoryPool* Foam::MemoryPool::New
     const uint64_t size
 )
 {
+    // If a dummyMemoryPool was auto-created during DLL static init
+    // (by getInstance()), replace it with the requested pool type.
+    // The auto-created pool has size 0 and is a dummyMemoryPool.
+    if (instance && type != "dummyMemoryPool"
+        && instance->size() == 0)
+    {
+        delete instance;
+        instance = nullptr;
+    }
+
     if (!instance)
     {
         if(type == "fixedSizeMemoryPool")
@@ -102,14 +111,10 @@ Foam::MemoryPool* Foam::MemoryPool::getInstance()
 {
     if (!instance)
     {
-        std::cerr << "getInstance: creating dummyMemoryPool" << std::endl;
-        std::cerr.flush();
         // Auto-create a dummyMemoryPool when getInstance() is called
         // before explicit New(). This happens during DLL static init
         // on Windows when some List operations need pool access.
         instance = new dummyMemoryPool(0);
-        std::cerr << "getInstance: dummyMemoryPool created OK" << std::endl;
-        std::cerr.flush();
     }
     return instance;
 }

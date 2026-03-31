@@ -473,7 +473,7 @@ void Foam::PDRblock::readBoundary(const dictionary& dict)
         boundaryEntry& bentry = patches_.emplace_back();
 
         bentry.name_ = "defaultFaces";
-        bentry.type_ = emptyPolyPatch::typeName_();
+        bentry.type_ = emptyPolyPatch::baseTypeName();
         bentry.size_ = 0;
         bentry.faces_ = missed.sortedToc();
 

@@ -84,7 +84,7 @@ void Foam::volPointInterpolation::addSeparated
     GeometricField<Type, pointPatchField, pointMesh>& pf
 ) const
 {
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "volPointInterpolation::addSeparated" << endl;
     }
@@ -132,7 +132,7 @@ void Foam::volPointInterpolation::interpolateInternalField
     GeometricField<Type, pointPatchField, pointMesh>& pf
 ) const
 {
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "volPointInterpolation::interpolateInternalField("
             << "const GeometricField<Type, fvPatchField, volMesh>&, "
@@ -169,7 +169,7 @@ void Foam::volPointInterpolation::interpolateDimensionedInternalField
     DimensionedField<Type, pointMesh>& pf
 ) const
 {
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "volPointInterpolation::interpolateDimensionedInternalField("
             << "const DimensionedField<Type, volMesh>&, "
@@ -349,7 +349,7 @@ void Foam::volPointInterpolation::interpolate
     GeometricField<Type, pointPatchField, pointMesh>& pf
 ) const
 {
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "volPointInterpolation::interpolate("
             << "const GeometricField<Type, fvPatchField, volMesh>&, "
