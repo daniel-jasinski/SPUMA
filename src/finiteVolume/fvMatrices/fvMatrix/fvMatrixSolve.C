@@ -134,7 +134,7 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveSegregated
         solverControls.getOrDefault<int>
         (
             "log",
-            SolverPerformance<Type>::debug
+            SolverPerformance<Type>::debugLevel()
         );
 
     auto& psi =
@@ -267,7 +267,7 @@ Foam::SolverPerformance<Type> Foam::fvMatrix<Type>::solveCoupled
         solverControls.getOrDefault<int>
         (
             "log",
-            SolverPerformance<Type>::debug
+            SolverPerformance<Type>::debugLevel()
         );
 
     auto& psi =

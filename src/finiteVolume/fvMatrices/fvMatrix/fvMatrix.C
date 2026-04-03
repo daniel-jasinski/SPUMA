@@ -530,7 +530,7 @@ Foam::fvMatrix<Type>::fvMatrix
     internalCoeffs_(psi.mesh().boundary().size()),
     boundaryCoeffs_(psi.mesh().boundary().size())
 {
-    DebugInFunction
+    if (debugLevel()) InfoInFunction
         << "Constructing fvMatrix<Type> for field " << psi_.name() << endl;
 
     checkImplicit();
@@ -570,7 +570,7 @@ Foam::fvMatrix<Type>::fvMatrix(const fvMatrix<Type>& fvm)
     internalCoeffs_(fvm.internalCoeffs_),
     boundaryCoeffs_(fvm.boundaryCoeffs_)
 {
-    DebugInFunction
+    if (debugLevel()) InfoInFunction
         << "Copying fvMatrix<Type> for field " << psi_.name() << endl;
 
     if (fvm.faceFluxCorrectionPtr_)
@@ -596,7 +596,7 @@ Foam::fvMatrix<Type>::fvMatrix(const tmp<fvMatrix<Type>>& tmat)
     internalCoeffs_(tmat.constCast().internalCoeffs_, tmat.movable()),
     boundaryCoeffs_(tmat.constCast().boundaryCoeffs_, tmat.movable())
 {
-    DebugInFunction
+    if (debugLevel()) InfoInFunction
         << "Copy/move fvMatrix<Type> for field " << psi_.name() << endl;
 
     if (tmat().faceFluxCorrectionPtr_)
@@ -624,7 +624,7 @@ Foam::fvMatrix<Type>::fvMatrix(const tmp<fvMatrix<Type>>& tmat)
 template<class Type>
 Foam::fvMatrix<Type>::~fvMatrix()
 {
-    DebugInFunction
+    if (debugLevel()) InfoInFunction
         << "Destroying fvMatrix<Type> for field " << psi_.name() << endl;
 
     subMatrices_.clear();
@@ -1265,7 +1265,7 @@ void Foam::fvMatrix<Type>::relax(const scalar alpha)
         return;
     }
 
-    DebugInFunction
+    if (debugLevel()) InfoInFunction
         << "Relaxing " << psi_.name() << " by " << alpha << endl;
 
     Field<Type>& S = source();

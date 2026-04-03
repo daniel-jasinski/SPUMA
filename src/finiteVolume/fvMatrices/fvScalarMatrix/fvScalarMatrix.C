@@ -122,7 +122,7 @@ Foam::solverPerformance Foam::fvMatrix<Foam::scalar>::fvSolver::solve
         solverControls.getOrDefault<int>
         (
             "log",
-            solverPerformance::debug
+            solverPerformance::debugLevel()
         );
 
     auto& psi =
@@ -180,7 +180,7 @@ Foam::solverPerformance Foam::fvMatrix<Foam::scalar>::solveSegregated
         solverControls.getOrDefault<int>
         (
             "log",
-            solverPerformance::debug
+            solverPerformance::debugLevel()
         );
 
     scalarField saveLower;
