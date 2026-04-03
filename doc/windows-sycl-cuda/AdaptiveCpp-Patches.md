@@ -2,7 +2,11 @@
 
 All changes applied to AdaptiveCpp (source: `C:\dev\AdaptiveCpp-dev`, install: `C:\dev\llvm-acpp-msvc-21`) to build and run SPUMA on Windows with MSVC ABI targeting CUDA via SYCL.
 
-**22 files changed, 1038 insertions, 266 deletions. No LLVM/Clang patches required.**
+**11 files changed, 360 lines. No LLVM/Clang patches required.**
+
+> **Note:** Category 2 (Stable Kernel Naming, 3 files) was removed — it caused a JIT cache
+> collision by stripping `<lambda_N>` ordinals, making different lambdas in the same function
+> hash-identical. Upstream's `replaceInvalidMSABICharsInSymbolName()` is sufficient.
 
 ---
 
@@ -52,41 +56,11 @@ Replace lambdas passed to template functions with named functors that have stabl
 
 ---
 
-## Category 2: MSVC ABI Stable Kernel Naming (3 files)
+## ~~Category 2: MSVC ABI Stable Kernel Naming (REMOVED)~~
 
-### Problem
+**REMOVED.** This patch stripped `<lambda_N>` ordinals and hashed kernel names to `__acpp_kernel_<hex>`. It caused a fatal JIT cache collision: different lambdas in the same function (e.g., `<lambda_0>` add vs `<lambda_1>` multiply) hashed to the same key, so the runtime always executed the first lambda's code for all dispatches.
 
-In SSCP (Single-Source Compile Pass) mode, the host compiler extracts kernel names from lambda function pointers. On MSVC ABI, these names contain TU-specific hashes (`?A0x` + 8 hex digits) and lambda numbers (`<lambda_N>`) that differ between the host and device compilation passes. The host looks up a kernel by name but the device module has a different mangled name → kernel not found.
-
-### Solution
-
-Canonicalize kernel names by:
-1. Stripping `?A0x` anonymous namespace hashes
-2. Normalizing `<lambda_N>` to `<lambda>`
-3. Hashing the canonicalized name + function signature with FNV-1a
-4. Generating a stable name: `__acpp_kernel_<16-hex-digits>`
-
-Applied identically in both the host extraction pass and the device separation pass so names match.
-
-### Files Changed
-
-**`include/hipSYCL/compiler/llvm-to-backend/NameHandling.hpp`** (+94 lines)
-- Added `ACPP_MSVC_ABI_TARGET` macro (detects MSVC ABI, excluding MinGW)
-- `fnv1aHash()` — FNV-1a 64-bit hash
-- `canonicalizeMSVCKernelName()` — strips `?A0x` hashes and `<lambda_N>` numbering
-- `generateStableMSVCKernelName()` — produces `__acpp_kernel_<hash>` names
-- Still necessary: **YES** (required for SSCP kernel name matching on MSVC ABI)
-
-**`src/compiler/sscp/HostKernelNameExtractionPass.cpp`** (+22/-2)
-- Uses `generateStableMSVCKernelName()` for host-side kernel name extraction
-- Guarded by `#ifdef ACPP_MSVC_ABI_TARGET`
-- Still necessary: **YES**
-
-**`src/compiler/sscp/TargetSeparationPass.cpp`** (+53/-1)
-- `applyStableMSVCKernelNaming()` — renames device-side kernel functions to match host-side names
-- Applied before `EntrypointPreparationPass` which collects kernel names
-- Broadened `#ifdef _MSC_VER` to `#if defined(_MSC_VER) || (defined(_WIN32) && !defined(__MINGW32__))` for Clang targeting MSVC ABI
-- Still necessary: **YES**
+Upstream's `#ifdef _MSC_VER` code in `HostKernelNameExtractionPass.cpp` and `TargetSeparationPass.cpp` uses `replaceInvalidMSABICharsInSymbolName()` which replaces `?@<>` with `_` while preserving lambda ordinals. This is sufficient for kernel name matching.
 
 ---
 
@@ -183,11 +157,8 @@ Small fixes for MSVC/Windows platform compatibility.
 - The original guard disabled the new pass manager code on Windows unless built as an LLVM component. With our MinGW build, both paths are needed.
 - Still necessary: **YES** (but `#if 1` is ugly — could use a proper condition)
 
-**`src/compiler/llvm-to-backend/ptx/LLVMToPtx.cpp`** (+24, +1)
-- `replaceInvalidMSABICharsInSymbolNames()` — sanitizes MSVC-mangled symbol names in PTX module (replaces chars invalid in PTX/CUDA symbol names)
-- Guarded by `#if defined(_MSC_VER) || (defined(_WIN32) && !defined(__MINGW32__))` — only for MSVC ABI
-- Updated hardcoded NVPTX `DataLayout` string to LLVM 21 canonical format (`e-p6:32:32-i64:64-i128:128-v16:16-v32:32-n16:32:64`). The old verbose layout lacked `p6:32:32` (Tensor Memory, added in LLVM 21), causing data layout mismatch warnings when linking `libkernel-sscp-ptx-full.bc` (compiled by Clang 21 with the new layout). Not MSVC-specific — affects all platforms using LLVM 21.
-- Still necessary: **YES**
+~~**`src/compiler/llvm-to-backend/ptx/LLVMToPtx.cpp`** (REMOVED)~~
+- Previously updated the hardcoded NVPTX `DataLayout` string for LLVM 21. Verified that LLVM 21 accepts the old upstream layout string and produces identical PTX — the patch was unnecessary.
 
 ---
 

@@ -1,0 +1,360 @@
+diff --git a/include/hipSYCL/compiler/cbs/MathUtils.hpp b/include/hipSYCL/compiler/cbs/MathUtils.hpp
+index 0b4e86f5..1c6ef964 100644
+--- a/include/hipSYCL/compiler/cbs/MathUtils.hpp
++++ b/include/hipSYCL/compiler/cbs/MathUtils.hpp
+@@ -78,8 +78,10 @@ template <> inline int lowest_bit(unsigned int n) {
+     return index - 1;
+ 
+ #else
+-  // default to POSIX
+-  return ffs(n) - 1;
++  // default to GCC
++  if (n == 0)
++    return -1;
++  return __builtin_ffs(n) - 1;
+ #endif
+ }
+ 
+diff --git a/include/hipSYCL/glue/llvm-sscp/hcf_registration.hpp b/include/hipSYCL/glue/llvm-sscp/hcf_registration.hpp
+index bbd28a4f..03100af2 100644
+--- a/include/hipSYCL/glue/llvm-sscp/hcf_registration.hpp
++++ b/include/hipSYCL/glue/llvm-sscp/hcf_registration.hpp
+@@ -11,6 +11,7 @@
+ 
+ #include "s1_ir_constants.hpp"
+ #include <cstdlib>
++#include "hipSYCL/common/init_priority.hpp"
+ 
+ 
+ #ifndef ACPP_SSCP_HCF_REGISTRATION_HPP
+@@ -45,7 +46,7 @@ public:
+   }
+ };
+ 
+-static static_hcf_registration __acpp_register_sscp_hcf_object;
++static ACPP_INIT_PRIORITY_USER static_hcf_registration __acpp_register_sscp_hcf_object;
+ }
+ 
+ 
+diff --git a/include/hipSYCL/glue/persistent_runtime.hpp b/include/hipSYCL/glue/persistent_runtime.hpp
+index cbd6a0e8..fb8e0cda 100644
+--- a/include/hipSYCL/glue/persistent_runtime.hpp
++++ b/include/hipSYCL/glue/persistent_runtime.hpp
+@@ -13,6 +13,7 @@
+ 
+ #include <memory>
+ #include "hipSYCL/runtime/application.hpp"
++#include "hipSYCL/common/init_priority.hpp"
+ 
+ namespace hipsycl {
+ namespace glue {
+@@ -28,7 +29,7 @@ private:
+   std::shared_ptr<rt::runtime> _rt;
+ };
+ 
+-static persistent_runtime persistent_runtime_object;
++static ACPP_INIT_PRIORITY_USER persistent_runtime persistent_runtime_object;
+ 
+ }
+ }
+diff --git a/include/hipSYCL/sycl/libkernel/host/builtins.hpp b/include/hipSYCL/sycl/libkernel/host/builtins.hpp
+index 9b4da520..96e846b1 100644
+--- a/include/hipSYCL/sycl/libkernel/host/builtins.hpp
++++ b/include/hipSYCL/sycl/libkernel/host/builtins.hpp
+@@ -303,7 +303,7 @@ HIPSYCL_BUILTIN T __acpp_rint(T x) noexcept {
+ 
+ template<class T>
+ HIPSYCL_BUILTIN T __acpp_rootn(T x, int y) noexcept {
+-  return std::pow(x, T{1}/T{y});
++  return std::pow(x, T(1)/static_cast<T>(y));
+ }
+ 
+ template<class T>
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 4a450cfc..9c094cfe 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1,6 +1,6 @@
+ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+ 
+-if(NOT APPLE AND NOT WIN32)
++if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+   # symbolic functions causes references in our libraries to be resolved
+   # to definitions within the libraries themselves, if possible.
+   # If both runtime library and SYCL headers define some of the same
+diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
+index b78cc56e..dcbe1ff8 100644
+--- a/src/common/CMakeLists.txt
++++ b/src/common/CMakeLists.txt
+@@ -29,12 +29,12 @@ endif()
+ 
+ # to get the search path we need to know the output name, so set it explicitly.
+ set(HIPSYCL_COMMON_LIBRARY_OUTPUT_NAME "acpp-common")
+-if(WIN32)
++if(WIN32 OR MINGW OR MSYS OR CMAKE_SYSTEM_NAME MATCHES "Windows")
+   set_target_properties(acpp-common PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS On)
+ 
+   # ensure actual output and expected are equivalent
+   set_target_properties(acpp-common PROPERTIES RUNTIME_OUTPUT_NAME ${HIPSYCL_COMMON_LIBRARY_OUTPUT_NAME})
+-  if(MinGW)
++  if(MinGW OR MSYS)
+     set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "lib${HIPSYCL_COMMON_LIBRARY_OUTPUT_NAME}.dll" PARENT_SCOPE)
+   else()
+     set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "${HIPSYCL_COMMON_LIBRARY_OUTPUT_NAME}.dll" PARENT_SCOPE)
+diff --git a/src/compiler/CMakeLists.txt b/src/compiler/CMakeLists.txt
+index c906c54d..7aedd294 100644
+--- a/src/compiler/CMakeLists.txt
++++ b/src/compiler/CMakeLists.txt
+@@ -196,6 +196,9 @@ else()
+     NO_MODULE
+     SUBPROJECT AdaptiveCpp
+     ${COMPILER_LIBRARY_SOURCES}
++    LINK_COMPONENTS
++      Passes
++      IPO
+   )
+ endif()
+ 
+@@ -216,7 +219,11 @@ function(configure_target)
+     ${ACPP_SOURCE_ROOT}/include
+     ${CMAKE_CURRENT_SOURCE_DIR}
+     ${ACPP_BINARY_ROOT}/include)
+-  target_include_directories(${target} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  if(MINGW OR MSYS OR CYGWIN)
++    target_include_directories(${target} PRIVATE ${LLVM_INCLUDE_DIRS})
++  else()
++    target_include_directories(${target} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  endif()
+ 
+   separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+   target_compile_definitions(${target} PRIVATE
+@@ -241,10 +248,37 @@ function(configure_target)
+       ${LLVM_LIBS})
+   endif()
+ 
+-  if(WIN32 AND NOT ACPP_LLVM_COMPONENT)
++  if((WIN32 OR MSYS OR CYGWIN) AND NOT ACPP_LLVM_COMPONENT)
+     set(CLANG_LIBRARY_DIR ${LLVM_PREFIX_DIR}/lib/)
+     target_link_directories(${target} PRIVATE ${CLANG_LIBRARY_DIR})
+-    target_link_libraries(${target} PRIVATE clang LLVMSupport)
++    # On Windows/MinGW, link individual clang and LLVM component libraries
++    # Order matters for static linking - dependencies must come after dependents
++    target_link_libraries(${target} PRIVATE
++      clangFrontendTool
++      clangFrontend
++      clangDriver
++      clangSerialization
++      clangCodeGen
++      clangParse
++      clangSema
++      clangAPINotes
++      clangASTMatchers
++      clangAnalysis
++      clangEdit
++      clangAST
++      clangLex
++      clangBasic
++      clangSupport
++      LLVMWindowsDriver
++      LLVMOption
++      LLVMTargetParser
++      LLVMSupport
++      LLVMDemangle
++      version  # Windows version.dll for GetFileVersionInfo*
++    )
++    if(MINGW)
++      target_link_libraries(${target} PRIVATE pthread)
++    endif()
+   endif()
+ 
+   if(ACPP_LLVM_COMPONENT)
+@@ -277,8 +311,24 @@ endif()
+ 
+ if(APPLE)
+   target_link_libraries(${COMPILER_LIBRARY_NAME} PRIVATE -Wl,-undefined -Wl,dynamic_lookup)
+-elseif(WIN32)
+-  set_target_properties(${COMPILER_LIBRARY_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS On)
++elseif(WIN32 OR MSYS OR CYGWIN)
++  # Note: WINDOWS_EXPORT_ALL_SYMBOLS disabled to avoid PE export limit (65535)
++  # The plugin functionality uses clang's built-in plugin loading mechanism
++  set_target_properties(${COMPILER_LIBRARY_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS Off)
++
++  # Exclude all automatic symbol exports to avoid PE export ordinal limit (65535)
++  # The LLVM libraries contain 77000+ symbols which exceed this limit
++  target_link_options(${COMPILER_LIBRARY_NAME} PRIVATE "-Wl,--exclude-all-symbols")
++
++  # Use .def file for minimal symbol exports needed for plugin loading
++  set(_def_file "${CMAKE_CURRENT_SOURCE_DIR}/acpp-clang.def")
++  if(EXISTS "${_def_file}")
++    message(STATUS "Using minimal exports .def file: ${_def_file}")
++    target_sources(${COMPILER_LIBRARY_NAME} PRIVATE "${_def_file}")
++  else()
++    message(WARNING "Minimal exports .def file not found: ${_def_file}")
++    message(WARNING "Plugin loading may not work without exported symbols")
++  endif()
+ else()
+   target_link_libraries(${COMPILER_LIBRARY_NAME} PRIVATE -Wl,-znodelete)
+ endif()
+diff --git a/src/compiler/llvm-to-backend/CMakeLists.txt b/src/compiler/llvm-to-backend/CMakeLists.txt
+index 3d17eaa9..b179d834 100644
+--- a/src/compiler/llvm-to-backend/CMakeLists.txt
++++ b/src/compiler/llvm-to-backend/CMakeLists.txt
+@@ -30,19 +30,24 @@ function(create_llvm_based_library)
+ 
+   target_include_directories(${target} PRIVATE
+     ${LLVM_TO_BACKEND_INCLUDE_DIRS})
+-  target_include_directories(${target} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  if(MINGW OR MSYS OR CYGWIN)
++    target_include_directories(${target} PRIVATE ${LLVM_INCLUDE_DIRS})
++  else()
++    target_include_directories(${target} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  endif()
+ 
+   separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+   target_compile_definitions(${target} PRIVATE
+     ${LLVM_DEFINITIONS_LIST})
+   target_compile_definitions(${target} PRIVATE -DHIPSYCL_COMPILER_COMPONENT)
+ 
+-  if(NOT ACPP_LLVM_COMPONENT)
++  # On Windows, we use static LLVM libraries, so no need to check for libLLVM
++  if(NOT ACPP_LLVM_COMPONENT AND NOT WIN32)
+     find_library(LLVM_LIBRARY NAMES LLVM LLVM-${LLVM_VERSION_MAJOR} HINTS ${LLVM_LIBRARY_DIRS} NO_DEFAULT_PATH)
+     if(NOT LLVM_LIBRARY)
+       message(FATAL_ERROR "LLVM at ${LLVM_DIR} does not have libLLVM.so. Disable advanced compiler-based functionality (-DACPP_COMPILER_FEATURE_PROFILE=minimal, not recommended for most use cases) or choose another LLVM installation")
+     endif()
+-  elseif(NOT LLVM_BUILD_LLVM_DYLIB AND NOT WIN32)
++  elseif(ACPP_LLVM_COMPONENT AND NOT LLVM_BUILD_LLVM_DYLIB AND NOT WIN32)
+     message(FATAL_ERROR "LLVM is not configured to build libLLVM.so. Please disable reconfigure with LLVM_BUILD_LLVM_DYLIB and LLVM_LINK_LLVM_DYLIB.")
+   endif()
+   if(WIN32)
+@@ -52,6 +57,10 @@ function(create_llvm_based_library)
+   endif()
+   # We need symbolic functions for stdpar
+   target_link_libraries(${target} PRIVATE ${HIPSYCL_STDPAR_RT_LINKER_FLAGS})
++
++  if(MINGW)
++    target_link_libraries(${target} PRIVATE pthread)
++  endif()
+   
+   if(NOT LLVM_ENABLE_EH)
+     target_compile_options(${target} PRIVATE -fno-exceptions)
+@@ -90,6 +99,7 @@ function(create_llvm_to_backend_library)
+   endif()
+   create_llvm_based_library(TARGET ${target} ${MODE} SOURCES ${sources})
+   target_link_libraries(${target} PUBLIC llvm-to-backend)
++
+ endfunction()
+ 
+ function(create_llvm_to_backend_tool)
+@@ -110,7 +120,11 @@ function(create_llvm_to_backend_tool)
+ 
+   target_include_directories(${target}-tool PRIVATE
+     ${LLVM_TO_BACKEND_INCLUDE_DIRS})
+-  target_include_directories(${target}-tool SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  if(MINGW OR MSYS OR CYGWIN)
++    target_include_directories(${target}-tool PRIVATE ${LLVM_INCLUDE_DIRS})
++  else()
++    target_include_directories(${target}-tool SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
++  endif()
+ 
+   separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+   target_compile_definitions(${target}-tool PRIVATE
+diff --git a/src/libkernel/sscp/host/math.cpp b/src/libkernel/sscp/host/math.cpp
+index 60a25544..cd8e10c6 100644
+--- a/src/libkernel/sscp/host/math.cpp
++++ b/src/libkernel/sscp/host/math.cpp
+@@ -8,6 +8,7 @@
+  * See file LICENSE in the project root for full license details.
+  */
+ // SPDX-License-Identifier: BSD-2-Clause
++#define _USE_MATH_DEFINES
+ #include <cmath>
+ 
+ #include "hipSYCL/sycl/libkernel/sscp/builtins/builtin_config.hpp"
+diff --git a/src/runtime/CMakeLists.txt b/src/runtime/CMakeLists.txt
+index 9970a939..d94ccd17 100644
+--- a/src/runtime/CMakeLists.txt
++++ b/src/runtime/CMakeLists.txt
+@@ -4,6 +4,11 @@ find_package(Threads REQUIRED)
+ include(CheckIPOSupported)
+ check_ipo_supported(RESULT is_ipo_supported OUTPUT ipo_error)
+ 
++# Disable LTO on MinGW - causes DLL export issues (symbols not exported)
++if(MINGW OR (DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION AND NOT CMAKE_INTERPROCEDURAL_OPTIMIZATION))
++  set(is_ipo_supported FALSE)
++endif()
++
+ set(HIPSYCL_RT_EXTRA_CXX_FLAGS "")
+ set(HIPSYCL_RT_EXTRA_LINKER_FLAGS "")
+ 
+@@ -77,15 +82,19 @@ target_include_directories(acpp-rt
+ 
+ # to get the search path next to the rt lib, we need to know the output name, so set it explicitly.
+ set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "acpp-rt")
+-if(WIN32)
++if(WIN32 OR MINGW OR MSYS OR CMAKE_SYSTEM_NAME MATCHES "Windows")
+   set_target_properties(acpp-rt PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS On)
+   if(ACPP_LLVM_COMPONENT AND MSVC)
+     target_compile_options(acpp-rt PRIVATE /EHs)
+   endif()
++  # Force export all symbols on MinGW (WINDOWS_EXPORT_ALL_SYMBOLS may not work in LLVM component mode)
++  if(MINGW OR MSYS)
++    target_link_options(acpp-rt PRIVATE "-Wl,--export-all-symbols")
++  endif()
+ 
+   # ensure actual output and expected are equivalent
+   set_target_properties(acpp-rt PROPERTIES RUNTIME_OUTPUT_NAME ${HIPSYCL_RT_LIBRARY_OUTPUT_NAME})
+-  if(MinGW)
++  if(MinGW OR MSYS)
+     set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "lib${HIPSYCL_RT_LIBRARY_OUTPUT_NAME}.dll" PARENT_SCOPE)
+   else()
+     set(HIPSYCL_RT_LIBRARY_OUTPUT_NAME "${HIPSYCL_RT_LIBRARY_OUTPUT_NAME}.dll" PARENT_SCOPE)
+@@ -350,7 +359,14 @@ if(WITH_CPU_BACKEND)
+       target_link_libraries(rt-backend-omp PRIVATE ${hipSYCL_OpenMP_libomp_LIBRARY})
+     endif()
+ 
+-    set(OMP_TARGET OpenMP::OpenMP_CXX)
++    # MSYS/MinGW: OpenMP::OpenMP_CXX target doesn't link correctly, use flags directly
++    if(MSYS OR MINGW)
++      set(OMP_TARGET "")
++      set(OMP_COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
++      target_link_options(rt-backend-omp PRIVATE "${OpenMP_CXX_FLAGS}")
++    else()
++      set(OMP_TARGET OpenMP::OpenMP_CXX)
++    endif()
+   endif()
+   
+   find_path( NUMA_INCLUDE_DIR NAMES numa.h)
+diff --git a/src/runtime/omp/omp_queue.cpp b/src/runtime/omp/omp_queue.cpp
+index fc0271d5..14c50f19 100644
+--- a/src/runtime/omp/omp_queue.cpp
++++ b/src/runtime/omp/omp_queue.cpp
+@@ -34,16 +34,16 @@
+ #include "hipSYCL/runtime/adaptivity_engine.hpp"
+ #include "hipSYCL/runtime/omp/omp_code_object.hpp"
+ 
+-#ifndef WIN32 // MSVC might not have #warning?
++#if !defined(WIN32) && !defined(_WIN32) // MSVC might not have #warning?
+ #ifndef _OPENMP
+ #warning Building omp backend with JIT support, but OpenMP parallelization is not available - kernels will run sequentially! This points to an issue in the build system.
+ #endif
+ #endif
+ 
+-#ifndef WIN32
++#if !defined(WIN32) && !defined(_WIN32)
+ #include <unistd.h>
+ #else
+-#include <Windows.h>
++#include <windows.h>
+ #endif
+ #endif
+ 
+@@ -183,7 +183,7 @@ private:
+ #ifdef HIPSYCL_WITH_SSCP_COMPILER
+ 
+ std::size_t get_page_size() {
+-#ifndef WIN32
++#if !defined(WIN32) && !defined(_WIN32)
+   return static_cast<std::size_t>(sysconf(_SC_PAGESIZE));
+ #else
+   SYSTEM_INFO si;
