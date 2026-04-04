@@ -126,13 +126,6 @@ int main(int argc, char *argv[])
 
     Info<< "End\n" << endl;
 
-#ifdef _WIN32
-    // Fix #33: Skip mesh destructor to avoid crash in meshObject::clearUpto
-    // template code (compiled into libfiniteVolume.dll via NoRepository).
-    meshPtr.release();
-    _exit(0);
-#endif
-
     return 0;
 }
 
