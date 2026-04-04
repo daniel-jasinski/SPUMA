@@ -66,7 +66,7 @@ class processorFaePatchField
 public:
 
     //- Runtime type information
-    TypeName(processorFaPatch::baseTypeName());
+    TypeName(processorFaPatch::typeName_());
 
 
     // Constructors

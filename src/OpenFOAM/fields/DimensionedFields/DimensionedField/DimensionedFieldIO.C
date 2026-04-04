@@ -79,7 +79,7 @@ void Foam::DimensionedField<Type, GeoMesh>::readField
                 IOobjectOption::NO_WRITE,
                 IOobjectOption::NO_REGISTER
             ),
-            baseTypeName()
+            typeName_()
         )
     );
 

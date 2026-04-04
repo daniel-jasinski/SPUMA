@@ -62,7 +62,7 @@ class wedgePointPatch
 public:
 
     //- Runtime type information
-    TypeName(wedgePolyPatch::baseTypeName());
+    TypeName(wedgePolyPatch::typeName_());
 
 
     // Constructors

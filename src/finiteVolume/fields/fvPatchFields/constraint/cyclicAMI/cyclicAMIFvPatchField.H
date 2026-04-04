@@ -168,7 +168,7 @@ class cyclicAMIFvPatchField
 public:
 
     //- Runtime type information
-    TypeName(cyclicAMIFvPatch::baseTypeName());
+    TypeName(cyclicAMIFvPatch::typeName_());
 
 
     // Constructors

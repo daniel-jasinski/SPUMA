@@ -57,7 +57,7 @@ class mappedFvPatch
 public:
 
     //- Runtime type information
-    TypeName(mappedPolyPatch::baseTypeName());
+    TypeName(mappedPolyPatch::typeName_());
 
 
     // Constructors

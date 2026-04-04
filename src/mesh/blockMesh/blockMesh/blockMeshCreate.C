@@ -370,7 +370,7 @@ Foam::blockMesh::mesh(const IOobject& io) const
         blkMesh.patchNames(),
         blkMesh.patchDicts(),
         "defaultFaces",                 // Default patch name
-        emptyPolyPatch::baseTypeName()     // Default patch type
+        emptyPolyPatch::typeName_()     // Default patch type
     );
 
 

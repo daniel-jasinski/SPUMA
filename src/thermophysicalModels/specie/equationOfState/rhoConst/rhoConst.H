@@ -118,7 +118,7 @@ public:
         //- Return the instantiated type name
         static word typeName()
         {
-            return "rhoConst<" + word(Specie::baseTypeName()) + '>';
+            return "rhoConst<" + word(Specie::typeName_()) + '>';
         }
 
 

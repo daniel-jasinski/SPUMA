@@ -79,7 +79,7 @@ class wedgeFvPatchField
 public:
 
     //- Runtime type information
-    TypeName(wedgeFvPatch::baseTypeName());
+    TypeName(wedgeFvPatch::typeName_());
 
 
     // Constructors

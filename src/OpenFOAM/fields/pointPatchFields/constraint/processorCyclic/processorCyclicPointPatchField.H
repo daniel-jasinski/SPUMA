@@ -70,7 +70,7 @@ class processorCyclicPointPatchField
 public:
 
     //- Runtime type information
-    TypeName(processorCyclicPointPatch::baseTypeName());
+    TypeName(processorCyclicPointPatch::typeName_());
 
 
     // Constructors

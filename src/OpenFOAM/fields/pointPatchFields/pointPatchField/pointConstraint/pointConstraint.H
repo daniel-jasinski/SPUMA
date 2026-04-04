@@ -111,7 +111,7 @@ template<>
 struct pTraits<pointConstraint>
 {
     static const char* const typeName;
-    static const char* baseTypeName() { return "pointConstraint"; }
+    static const char* typeName_() { return "pointConstraint"; }
 };
 
 //- Contiguous data for pointConstraint

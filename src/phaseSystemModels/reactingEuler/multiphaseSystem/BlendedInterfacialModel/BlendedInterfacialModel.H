@@ -208,8 +208,8 @@ public:
     (                                                                          \
         BlendedInterfacialModel<ModelType>,                                    \
         (                                                                      \
-            word(BlendedInterfacialModel<ModelType>::baseTypeName()) + "<"        \
-          + ModelType::baseTypeName() + ">"                                       \
+            word(BlendedInterfacialModel<ModelType>::typeName_()) + "<"        \
+          + ModelType::typeName_() + ">"                                       \
         ).c_str(),                                                             \
         DebugSwitch                                                            \
     );

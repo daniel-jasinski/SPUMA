@@ -84,7 +84,7 @@ Foam::simplifiedMeshes::hexCellFvMesh::hexCellFvMesh
             0,
             0,
             boundaryMesh(),
-            emptyPolyPatch::baseTypeName()
+            emptyPolyPatch::typeName_()
         )
     );
 

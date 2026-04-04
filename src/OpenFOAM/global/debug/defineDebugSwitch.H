@@ -135,8 +135,8 @@ public:
 
 //- Define the debug information
 #define defineDebugSwitch(Type, Value)                                         \
-    defineDebugSwitchWithName(Type, Type::baseTypeName(), Value);              \
-    registerDebugSwitchWithName(Type, Type, Type::baseTypeName())
+    defineDebugSwitchWithName(Type, Type::typeName_(), Value);              \
+    registerDebugSwitchWithName(Type, Type, Type::typeName_())
 
 //- Define the debug information for templates, lookup as \a Name
 #define defineTemplateDebugSwitchWithName(Type, Name, Value)                   \
@@ -150,7 +150,7 @@ public:
 
 //- Define the debug information directly for templates
 #define defineNamedTemplateDebugSwitch(Type, Value)                            \
-    defineTemplateDebugSwitchWithName(Type, Type::baseTypeName(), Value)
+    defineTemplateDebugSwitchWithName(Type, Type::typeName_(), Value)
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

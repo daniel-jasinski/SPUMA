@@ -95,7 +95,7 @@ protected:
 public:
 
     //- Runtime type information
-    TypeName(cyclicACMIPolyPatch::baseTypeName());
+    TypeName(cyclicACMIPolyPatch::typeName_());
 
 
     // Constructors

@@ -172,9 +172,9 @@ public:
 
         FOAM_EXPORT_DATA static const char* const typeName;
         #if WM_LABEL_SIZE == 32
-        static const char* baseTypeName() { return "label"; }
+        static const char* typeName_() { return "label"; }
         #else
-        static const char* baseTypeName() { return "int32"; }
+        static const char* typeName_() { return "int32"; }
         #endif
         FOAM_EXPORT_DATA static const char* const componentNames[];
         FOAM_EXPORT_DATA static const int32_t zero;

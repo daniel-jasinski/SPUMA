@@ -65,7 +65,7 @@ class cyclicACMIFvsPatchField
 public:
 
     //- Runtime type information
-    TypeName(cyclicACMIFvPatch::baseTypeName());
+    TypeName(cyclicACMIFvPatch::typeName_());
 
 
     // Constructors

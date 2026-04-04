@@ -75,7 +75,7 @@ public:
 
 
     //- Runtime type information
-    TypeNameNoDebug(coupledPolyPatch::baseTypeName());
+    TypeNameNoDebug(coupledPolyPatch::typeName_());
 
 
     // Constructors

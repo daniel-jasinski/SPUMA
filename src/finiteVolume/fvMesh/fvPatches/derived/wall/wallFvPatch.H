@@ -57,7 +57,7 @@ class wallFvPatch
 public:
 
     //- Runtime type information
-    TypeName(wallPolyPatch::baseTypeName());
+    TypeName(wallPolyPatch::typeName_());
 
 
     // Constructors

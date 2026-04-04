@@ -41,7 +41,7 @@ License
     defineTemplateTypeNameAndDebugWithName                                     \
     (                                                                          \
         SS##Comp##Thermo,                                                      \
-        (#SS"<" + word(Comp::baseTypeName())                                      \
+        (#SS"<" + word(Comp::typeName_())                                      \
       + "," + Thermo::typeName() + ">").c_str(),                               \
         0                                                                      \
     );                                                                         \
@@ -59,8 +59,8 @@ License
     defineTemplateTypeNameAndDebugWithName                                     \
     (                                                                          \
         chemistryTabulationMethod##CompChemModel##Thermo,                      \
-        (word(chemistryTabulationMethod##CompChemModel##Thermo::baseTypeName()) + \
-        '<' + word(CompChemModel::baseTypeName()) + "," + Thermo::typeName() + '>'\
+        (word(chemistryTabulationMethod##CompChemModel##Thermo::typeName_()) + \
+        '<' + word(CompChemModel::typeName_()) + "," + Thermo::typeName() + '>'\
         ).c_str(),                                                             \
         0                                                                      \
     );                                                                         \

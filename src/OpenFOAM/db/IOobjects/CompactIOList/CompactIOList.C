@@ -186,7 +186,7 @@ bool Foam::CompactIOList<T, BaseType>::writeObject
     {
         // Write as non-compact (IOList) format.
         // Set headerClassName so writeHeader uses the correct type name
-        // instead of type() which returns the generic baseTypeName() on Windows.
+        // instead of type() which returns the generic typeName_() on Windows.
         const word savedHdrClass(headerClassName());
         const_cast<CompactIOList&>(*this).headerClassName() =
             IOList<T>::typeName;

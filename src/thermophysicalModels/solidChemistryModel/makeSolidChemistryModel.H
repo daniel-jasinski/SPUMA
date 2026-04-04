@@ -44,7 +44,7 @@ Description
     defineTemplateTypeNameAndDebugWithName                                     \
     (                                                                          \
         sChemistry##Comp##SThermo,                                             \
-        (Foam::word(sChemistry##Comp##SThermo::baseTypeName()) + "<"#Comp","      \
+        (Foam::word(sChemistry##Comp##SThermo::typeName_()) + "<"#Comp","      \
         + SThermo::typeName() + ">").c_str(),                                  \
         0                                                                      \
     );
@@ -58,7 +58,7 @@ Description
     defineTemplateTypeNameAndDebugWithName                                     \
     (                                                                          \
         SS##Comp##SThermo##GThermo,                                            \
-        (Foam::word(SS##Comp##SThermo##GThermo::baseTypeName()) + "<"#Comp","     \
+        (Foam::word(SS##Comp##SThermo##GThermo::typeName_()) + "<"#Comp","     \
         + SThermo::typeName() + "," + GThermo::typeName() + ">").c_str(),      \
         0                                                                      \
     );

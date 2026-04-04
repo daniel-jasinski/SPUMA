@@ -72,7 +72,7 @@ class symmetryFvPatchField
 public:
 
     //- Runtime type information
-    TypeName(symmetryFvPatch::baseTypeName());
+    TypeName(symmetryFvPatch::typeName_());
 
 
     // Constructors

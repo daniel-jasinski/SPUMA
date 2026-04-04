@@ -57,7 +57,7 @@ class emptyPointPatch
 public:
 
     //- Runtime type information
-    TypeName(emptyPolyPatch::baseTypeName());
+    TypeName(emptyPolyPatch::typeName_());
 
 
     // Constructors

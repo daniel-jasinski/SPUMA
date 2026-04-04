@@ -1216,7 +1216,7 @@ void Foam::fvMeshSubset::reset
                     patchStart,
                     nNewPatches,
                     subMeshPtr_().boundaryMesh(),
-                    emptyPolyPatch::baseTypeName()
+                    emptyPolyPatch::typeName_()
                 )
             );
 

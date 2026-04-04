@@ -206,7 +206,7 @@ void Foam::Helmholtz::regularise
             {
                 allActiveCells.append(mesh_.cellZones()[zI]);
             }
-            fvMeshSubset::exposedPatchType = wallPolyPatch::baseTypeName();
+            fvMeshSubset::exposedPatchType = wallPolyPatch::typeName_();
             fvMeshSubset subSetMesh(mesh_, allActiveCells);
             fvMesh& subMesh = subSetMesh.subMesh();
 

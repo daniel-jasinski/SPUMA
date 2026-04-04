@@ -74,7 +74,7 @@ Foam::chemistryTabulationMethod<CompType, ThermoType>::New
         (
             wordList
             ({
-                baseTypeName(),
+                typeName_(),
                 "reactionThermo",
                 "transport",
                 "thermo",
@@ -101,7 +101,7 @@ Foam::chemistryTabulationMethod<CompType, ThermoType>::New
 
         FatalErrorInLookup
         (
-            baseTypeName(),
+            typeName_(),
             methodName,
             cnstrTable
         );

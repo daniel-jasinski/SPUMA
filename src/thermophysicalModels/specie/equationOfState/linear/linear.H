@@ -133,7 +133,7 @@ public:
         //- Return the instantiated type name
         static word typeName()
         {
-            return "linear<" + word(Specie::baseTypeName()) + '>';
+            return "linear<" + word(Specie::typeName_()) + '>';
         }
 
 

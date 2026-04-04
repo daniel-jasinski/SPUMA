@@ -93,7 +93,7 @@ class cyclicPointPatch
 public:
 
     //- Runtime type information
-    TypeName(cyclicPolyPatch::baseTypeName());
+    TypeName(cyclicPolyPatch::typeName_());
 
 
     // Constructors

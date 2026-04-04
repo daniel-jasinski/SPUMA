@@ -58,7 +58,7 @@ class symmetryPointPatchField
 public:
 
     //- Runtime type information
-    TypeName(symmetryPointPatch::baseTypeName());
+    TypeName(symmetryPointPatch::typeName_());
 
 
     // Constructors
@@ -115,7 +115,7 @@ public:
         //- Return the constraint type this pointPatchField implements
         virtual const word& constraintType() const
         {
-            static const word tn(symmetryPointPatch::baseTypeName());
+            static const word tn(symmetryPointPatch::typeName_());
             return tn;
         }
 

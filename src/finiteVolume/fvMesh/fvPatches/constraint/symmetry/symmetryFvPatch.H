@@ -57,7 +57,7 @@ class symmetryFvPatch
 public:
 
     //- Runtime type information
-    TypeName(symmetryPolyPatch::baseTypeName());
+    TypeName(symmetryPolyPatch::typeName_());
 
 
     // Constructors

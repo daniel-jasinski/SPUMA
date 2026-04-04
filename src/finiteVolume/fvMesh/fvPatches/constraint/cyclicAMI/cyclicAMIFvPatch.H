@@ -85,7 +85,7 @@ protected:
 public:
 
     //- Runtime type information
-    TypeName(cyclicAMIPolyPatch::baseTypeName());
+    TypeName(cyclicAMIPolyPatch::typeName_());
 
 
     // Constructors

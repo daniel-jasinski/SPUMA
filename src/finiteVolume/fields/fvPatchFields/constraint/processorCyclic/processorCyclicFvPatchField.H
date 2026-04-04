@@ -81,7 +81,7 @@ class processorCyclicFvPatchField
 public:
 
     //- Runtime type information
-    TypeName(processorCyclicFvPatch::baseTypeName());
+    TypeName(processorCyclicFvPatch::typeName_());
 
 
     // Constructors

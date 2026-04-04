@@ -76,7 +76,7 @@ Foam::chemistryReductionMethod<CompType, ThermoType>::New
             // Header
             wordList
             ({
-                baseTypeName(),
+                typeName_(),
                 "reactionThermo",
                 "transport",
                 "thermo",
@@ -102,7 +102,7 @@ Foam::chemistryReductionMethod<CompType, ThermoType>::New
 
         FatalErrorInLookup
         (
-            baseTypeName(),
+            typeName_(),
             methodName,
             cnstrTable
         );

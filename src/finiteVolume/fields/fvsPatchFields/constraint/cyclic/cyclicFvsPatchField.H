@@ -75,7 +75,7 @@ class cyclicFvsPatchField
 public:
 
     //- Runtime type information
-    TypeName(cyclicFvPatch::baseTypeName());
+    TypeName(cyclicFvPatch::typeName_());
 
 
     // Constructors

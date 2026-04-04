@@ -169,9 +169,9 @@ public:
 
         FOAM_EXPORT_DATA static const char* const typeName;
         #if WM_LABEL_SIZE == 64
-        static const char* baseTypeName() { return "label"; }
+        static const char* typeName_() { return "label"; }
         #else
-        static const char* baseTypeName() { return "int64"; }
+        static const char* typeName_() { return "int64"; }
         #endif
         FOAM_EXPORT_DATA static const char* const componentNames[];
         FOAM_EXPORT_DATA static const int64_t zero;

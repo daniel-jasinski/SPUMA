@@ -56,7 +56,7 @@ Note
     {                                                                          \
         explicit add##funcName##argNames##MemberFunctionToTable                \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::baseTypeName()                   \
+            const ::Foam::word& k = baseType##Type::typeName_()                   \
         )                                                                      \
         {                                                                      \
             funcName##argNames##MemberFunctionTablePtr_construct(true);        \
@@ -93,7 +93,7 @@ Note
                                                                                \
         explicit addRemovable##funcName##argNames##MemberFunctionToTable       \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::baseTypeName()                   \
+            const ::Foam::word& k = baseType##Type::typeName_()                   \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \

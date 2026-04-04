@@ -122,7 +122,7 @@ public:
     friend class surfaceInterpolation;
 
     //- Runtime type information
-    TypeName(polyPatch::baseTypeName());
+    TypeName(polyPatch::typeName_());
 
 
     // Declare run-time constructor selection tables

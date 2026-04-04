@@ -192,7 +192,7 @@ public:
     (                                                                          \
         Type##Thermo##OtherThermo,                                             \
         (                                                                      \
-            word(Type##Thermo##OtherThermo::baseTypeName()) + "<"                 \
+            word(Type##Thermo##OtherThermo::typeName_()) + "<"                 \
           + word(Thermo::typeName) + ","                                       \
           + word(OtherThermo::typeName) + ">"                                  \
         ).c_str(),                                                             \

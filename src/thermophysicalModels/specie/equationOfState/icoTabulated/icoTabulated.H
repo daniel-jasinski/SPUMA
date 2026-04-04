@@ -120,7 +120,7 @@ public:
         //- The instantiated type name
         static word typeName()
         {
-            return "icoTabulated<" + word(Specie::baseTypeName()) + '>';
+            return "icoTabulated<" + word(Specie::typeName_()) + '>';
         }
 
 

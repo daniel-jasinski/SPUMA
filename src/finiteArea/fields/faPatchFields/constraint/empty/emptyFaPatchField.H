@@ -62,7 +62,7 @@ class emptyFaPatchField
 public:
 
     //- Runtime type information
-    TypeName(emptyFaPatch::baseTypeName());
+    TypeName(emptyFaPatch::typeName_());
 
 
     // Constructors

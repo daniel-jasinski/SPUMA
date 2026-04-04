@@ -94,7 +94,7 @@ public:
     // Static Data Members
 
         FOAM_EXPORT_DATA static const char* const typeName;
-        static const char* baseTypeName() { return "bool"; }
+        static const char* typeName_() { return "bool"; }
         FOAM_EXPORT_DATA static const char* const componentNames[];
         FOAM_EXPORT_DATA static const bool zero;
         FOAM_EXPORT_DATA static const bool one;

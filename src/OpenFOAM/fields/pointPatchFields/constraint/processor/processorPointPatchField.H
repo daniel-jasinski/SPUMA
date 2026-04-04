@@ -62,7 +62,7 @@ class processorPointPatchField
 public:
 
     //- Runtime type information
-    TypeName(processorPointPatch::baseTypeName());
+    TypeName(processorPointPatch::typeName_());
 
 
     // Constructors

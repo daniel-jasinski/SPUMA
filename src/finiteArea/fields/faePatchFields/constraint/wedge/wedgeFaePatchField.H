@@ -60,7 +60,7 @@ class wedgeFaePatchField
 public:
 
     //- Runtime type information
-    TypeName(wedgeFaPatch::baseTypeName());
+    TypeName(wedgeFaPatch::typeName_());
 
 
     // Constructors

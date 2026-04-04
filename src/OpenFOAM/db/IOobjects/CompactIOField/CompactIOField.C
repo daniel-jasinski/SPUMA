@@ -166,7 +166,7 @@ bool Foam::CompactIOField<T, BaseType>::writeObject
     {
         // Write as non-compact (IOField) format.
         // Set headerClassName so writeHeader uses the correct type name
-        // instead of type() which returns the generic baseTypeName() on Windows.
+        // instead of type() which returns the generic typeName_() on Windows.
         const word savedHdrClass(headerClassName());
         const_cast<CompactIOField&>(*this).headerClassName() =
             IOField<T>::typeName;

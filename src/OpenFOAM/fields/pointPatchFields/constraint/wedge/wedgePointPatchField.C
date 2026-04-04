@@ -78,7 +78,7 @@ Foam::wedgePointPatchField<Type>::wedgePointPatchField
         FatalErrorInFunction
             << "Field type does not correspond to patch type for patch "
             << this->patch().index() << "." << endl
-            << "Field type: " << baseTypeName() << endl
+            << "Field type: " << typeName_() << endl
             << "Patch type: " << this->patch().type()
             << exit(FatalError);
     }

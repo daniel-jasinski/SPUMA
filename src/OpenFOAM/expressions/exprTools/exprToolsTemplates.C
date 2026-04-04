@@ -33,7 +33,7 @@ Foam::string Foam::exprTools::zeroValue()
 {
     OStringStream buf;
 
-    buf << pTraits<Type>::baseTypeName() << '(';
+    buf << pTraits<Type>::typeName_() << '(';
     for (direction cmpt=0;  cmpt < pTraits<Type>::nComponents; ++cmpt)
     {
         if (cmpt) buf << ',';
@@ -69,7 +69,7 @@ Foam::string Foam::exprTools::toString
 template<class Type>
 Foam::string Foam::exprTools::toString(const Type& data)
 {
-    return toString<Type>(data, pTraits<Type>::baseTypeName());
+    return toString<Type>(data, pTraits<Type>::typeName_());
 }
 
 
@@ -79,7 +79,7 @@ Foam::string Foam::exprTools::toString(ITstream& is)
     Type data(Zero);
     is >> data;
 
-    return toString<Type>(data, pTraits<Type>::baseTypeName());
+    return toString<Type>(data, pTraits<Type>::typeName_());
 }
 
 

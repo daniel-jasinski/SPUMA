@@ -136,7 +136,7 @@ public:
         {
             return
                 "incompressiblePerfectGas<"
-              + word(Specie::baseTypeName()) + '>';
+              + word(Specie::typeName_()) + '>';
         }
 
 

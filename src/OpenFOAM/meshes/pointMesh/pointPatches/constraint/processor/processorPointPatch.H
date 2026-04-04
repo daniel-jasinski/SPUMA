@@ -99,7 +99,7 @@ class processorPointPatch
 public:
 
     //- Runtime type information
-    TypeName(processorPolyPatch::baseTypeName());
+    TypeName(processorPolyPatch::typeName_());
 
 
     // Constructors

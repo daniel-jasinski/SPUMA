@@ -169,7 +169,7 @@ Foam::dictionary Foam::refinementParameters::getZoneInfo
 ) const
 {
     dictionary patchInfo;
-    patchInfo.add("type", wallPolyPatch::baseTypeName());
+    patchInfo.add("type", wallPolyPatch::typeName_());
     faceType = surfaceZonesInfo::INTERNAL;
 
     if (faceZoneControls_.found(fzName))

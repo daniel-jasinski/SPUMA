@@ -193,7 +193,7 @@ Foam::faPatchList Foam::faMesh::createPatchList
     {
         auto& patchDef = faPatchDefs.emplace_back();
         patchDef.name_ = emptyPatchName;
-        patchDef.type_ = emptyFaPatch::baseTypeName();
+        patchDef.type_ = emptyFaPatch::typeName_();
     }
 
     label nWarnUndefinedPatch(5);
@@ -225,7 +225,7 @@ Foam::faPatchList Foam::faMesh::createPatchList
     {
         auto& patchDef = faPatchDefs.emplace_back();
         patchDef.name_ = "_ignore_edges_";
-        patchDef.type_ = ignoreFaPatch::baseTypeName();
+        patchDef.type_ = ignoreFaPatch::typeName_();
     }
 
     // ----------------------------------------------------------------------

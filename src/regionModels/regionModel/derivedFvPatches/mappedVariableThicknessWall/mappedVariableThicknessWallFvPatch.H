@@ -70,7 +70,7 @@ protected:
 public:
 
     //- Runtime type information
-    TypeName(mappedVariableThicknessWallPolyPatch::baseTypeName());
+    TypeName(mappedVariableThicknessWallPolyPatch::typeName_());
 
 
     // Constructors

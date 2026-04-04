@@ -36,7 +36,7 @@ License
 template<class T, unsigned N>
 void Foam::FixedList<T, N>::writeEntry(Ostream& os) const
 {
-    const word tag("List<" + word(pTraits<T>::baseTypeName()) + '>');
+    const word tag("List<" + word(pTraits<T>::typeName_()) + '>');
     if (token::compound::isCompound(tag))
     {
         os  << tag << token::SPACE;

@@ -276,7 +276,7 @@ public:
     // Static Data Members
 
         FOAM_EXPORT_DATA static const char* const typeName;
-        static const char* baseTypeName() { return "complex"; }
+        static const char* typeName_() { return "complex"; }
         FOAM_EXPORT_DATA static const char* const componentNames[];
 
         FOAM_EXPORT_DATA static const complex zero;      //!< complex (0,0)

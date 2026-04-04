@@ -40,25 +40,24 @@ Description
 //- Add typeName information from argument \a TypeNameString to a class.
 //  Without debug information
 #define ClassNameNoDebug(TypeNameString)                                       \
-    static const char* baseTypeName() { return TypeNameString; }              \
     static const char* typeName_() { return TypeNameString; }                 \
     FOAM_TYPENAME_EXPORT static const ::Foam::word typeName;                  \
     FOAM_HOST_ONLY                                                            \
     static const ::Foam::word& staticTypeName()                               \
     {                                                                         \
-        static const ::Foam::word tn(baseTypeName());                         \
+        static const ::Foam::word tn(typeName_());                         \
         return tn;                                                            \
     }
 
 //- Add typeName information from argument \a TypeNameString to a namespace.
 //  Without debug information.
 #define NamespaceNameNoDebug(TypeNameString)                                   \
-    inline const char* baseTypeName() { return TypeNameString; }              \
+    inline const char* typeName_() { return TypeNameString; }              \
     extern const ::Foam::word typeName;                                       \
     FOAM_HOST_ONLY                                                            \
     inline const ::Foam::word& staticTypeName()                               \
     {                                                                         \
-        static const ::Foam::word tn(baseTypeName());                         \
+        static const ::Foam::word tn(typeName_());                         \
         return tn;                                                            \
     }
 
@@ -110,7 +109,7 @@ public:                                                                        \
 
 //- Define the typeName
 #define defineTypeName(Type)                                                   \
-    defineTypeNameWithName(Type, Type::baseTypeName())
+    defineTypeNameWithName(Type, Type::typeName_())
 
 //- Define the typeName as \a Name for template classes
 #define defineTemplateTypeNameWithName(Type, Name)                             \
@@ -123,7 +122,7 @@ public:                                                                        \
 
 //- Define the typeName directly for template classes
 #define defineNamedTemplateTypeName(Type)                                      \
-    defineTemplateTypeNameWithName(Type, Type::baseTypeName())
+    defineTemplateTypeNameWithName(Type, Type::typeName_())
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

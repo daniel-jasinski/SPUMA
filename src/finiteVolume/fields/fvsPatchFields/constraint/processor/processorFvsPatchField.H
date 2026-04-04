@@ -75,7 +75,7 @@ class processorFvsPatchField
 public:
 
     //- Runtime type information
-    TypeName(processorFvPatch::baseTypeName());
+    TypeName(processorFvPatch::typeName_());
 
 
     // Constructors

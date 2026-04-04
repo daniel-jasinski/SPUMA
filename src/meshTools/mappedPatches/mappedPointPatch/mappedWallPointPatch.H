@@ -57,7 +57,7 @@ class mappedWallPointPatch
 public:
 
     //- Runtime type information
-    TypeName(mappedWallPolyPatch::baseTypeName());
+    TypeName(mappedWallPolyPatch::typeName_());
 
 
     // Constructors

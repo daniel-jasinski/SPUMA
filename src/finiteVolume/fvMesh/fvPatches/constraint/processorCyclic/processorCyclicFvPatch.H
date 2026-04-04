@@ -60,7 +60,7 @@ class processorCyclicFvPatch
 public:
 
     //- Runtime type information
-    TypeName(processorCyclicPolyPatch::baseTypeName());
+    TypeName(processorCyclicPolyPatch::typeName_());
 
 
     // Constructors
