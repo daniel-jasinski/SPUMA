@@ -194,7 +194,7 @@ OptimisationSwitches
 
     // Trap floating point exception.
     // Can override with FOAM_SIGFPE env variable (true|false)
-    trapFpe         0;
+    trapFpe         1;
 
     // Initialization malloced memory to NaN.
     // Can override with FOAM_SETNAN env variable (true|false)
@@ -741,7 +741,7 @@ DebugSwitches
     layerAdditionRemoval 0;
     layered             0;
     lduInterfaceField   0;
-    lduMatrix           0;
+    lduMatrix           1;
     lduMesh             0;
     leastSquares        0;
     leastSquaresVectors 0;
@@ -1160,7 +1160,7 @@ DimensionSets
 
         // Set of units used for printing. Can be any basic or derived
         // but not scaled (only supported for dimensionedScalar, etc)
-        writeUnits (kg m s K mol A Cd);
+        //writeUnits (kg m s K mol A Cd);
     }
 
     USCSCoeffs
@@ -1176,7 +1176,7 @@ DimensionSets
 
         // Set of units used for printing. Can be any basic or derived
         // but not scaled (only supported for dimensionedScalar, etc)
-        writeUnits (lb ft s R mol A Cd);
+        //writeUnits (lb ft s R mol A Cd);
     }
 }
 
