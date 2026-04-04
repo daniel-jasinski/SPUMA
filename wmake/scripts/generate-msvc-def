@@ -8,7 +8,7 @@
 #------------------------------------------------------------------------------
 # Description
 #     Generate a Windows MSVC DEF file from object files for DLL export.
-#     Extracts all global symbols (T, D, B, C types) from COFF object files.
+#     Extracts all global symbols (T, D, B, C, R types) from COFF object files.
 #
 # Usage
 #     generate-msvc-def OUTPUT.def OBJECT_FILES...

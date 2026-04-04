@@ -4,12 +4,9 @@ EXE_INC = \
 /* Windows: define FOAM_BUILDING_LIB so FOAM_EXPORT_DATA becomes dllexport */
 ifneq (,$(findstring windows,$(WM_OSTYPE)))
     EXE_INC += -DFOAM_BUILDING_LIB
-endif
-
-ifneq (,$(findstring windows,$(WM_OSTYPE)))
-LIB_LIBS = \
-    $(FOAM_LIBBIN)/libOSspecific.lib \
-    -Wl,/DEFAULTLIB:advapi32
+    LIB_LIBS = \
+        $(FOAM_LIBBIN)/libOSspecific.lib \
+        -Wl,/DEFAULTLIB:advapi32
 else
 LIB_LIBS = \
     $(FOAM_LIBBIN)/libOSspecific.o
