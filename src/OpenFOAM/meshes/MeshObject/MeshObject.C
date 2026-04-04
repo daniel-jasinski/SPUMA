@@ -31,14 +31,6 @@ License
 #include "IOstreams.H"
 
 // Fix #33/#35: On Windows, meshObject::debug is a cross-DLL data access when
-// this template code is compiled into downstream DLLs (via NoRepository).
-// Use debugLevel() function accessor which goes through the DEF thunk correctly
-// (JMP thunks work for functions, only data reads return garbage).
-#ifdef _WIN32
-#define MESHOBJECT_DEBUG meshObject::debugLevel()
-#else
-#define MESHOBJECT_DEBUG meshObject::debug
-#endif
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -81,7 +73,7 @@ const Type& Foam::MeshObject<Mesh, MeshObjectType, Type>::New
         return *ptr;
     }
 
-    if (MESHOBJECT_DEBUG)
+    if (meshObject::debugLevel())
     {
         Pout<< "MeshObject::New(const " << Mesh::typeName
             << "&, ...) : constructing <" << Type::typeName
@@ -114,7 +106,7 @@ const Type& Foam::MeshObject<Mesh, MeshObjectType, Type>::New
         return *ptr;
     }
 
-    if (MESHOBJECT_DEBUG)
+    if (meshObject::debugLevel())
     {
         Pout<< "MeshObject::New('" << objName
             << "', const " << Mesh::typeName
@@ -145,7 +137,7 @@ bool Foam::MeshObject<Mesh, MeshObjectType, Type>::Delete
 
     if (ptr)
     {
-        if (MESHOBJECT_DEBUG)
+        if (meshObject::debugLevel())
         {
             Pout<< "MeshObject::Delete() : deleting <" << Type::typeName
                 << "> " << objName << endl;
@@ -195,7 +187,7 @@ std::unique_ptr<Type> Foam::MeshObject<Mesh, MeshObjectType, Type>::Release
             }
         }
 
-        if (MESHOBJECT_DEBUG)
+        if (meshObject::debugLevel())
         {
             Pout<< "MeshObject::Release() : release <" << Type::typeName
                 << "> " << objName << ", owned=" << bool(released) << endl;
@@ -228,7 +220,7 @@ bool Foam::MeshObject<Mesh, MeshObjectType, Type>::Store
             (void) ptr.release();
         }
 
-        if (MESHOBJECT_DEBUG)
+        if (meshObject::debugLevel())
         {
             Pout<< "MeshObject::Store() : store <" << Type::typeName
                 << ">, owned=" << ok << endl;
@@ -249,7 +241,7 @@ void Foam::meshObject::movePoints(objectRegistry& obr)
         obr.sorted<GeometricMeshObject<Mesh>>()
     );
 
-    if (MESHOBJECT_DEBUG)
+    if (meshObject::debugLevel())
     {
         Pout<< "meshObject::movePoints() : moving "
             << meshObjects.size() << " <" << Mesh::typeName
@@ -263,7 +255,7 @@ void Foam::meshObject::movePoints(objectRegistry& obr)
 
         if (objectPtr)
         {
-            if (MESHOBJECT_DEBUG)
+            if (meshObject::debugLevel())
             {
                 Pout<< "    Moving " << item.name() << endl;
             }
@@ -271,7 +263,7 @@ void Foam::meshObject::movePoints(objectRegistry& obr)
         }
         else
         {
-            if (MESHOBJECT_DEBUG)
+            if (meshObject::debugLevel())
             {
                 Pout<< "    Destroying " << item.name() << endl;
             }
@@ -289,7 +281,7 @@ void Foam::meshObject::updateMesh(objectRegistry& obr, const mapPolyMesh& mpm)
         obr.sorted<GeometricMeshObject<Mesh>>()
     );
 
-    if (MESHOBJECT_DEBUG)
+    if (meshObject::debugLevel())
     {
         Pout<< "meshObject::updateMesh() : updating "
             << meshObjects.size() << " <" << Mesh::typeName
@@ -303,7 +295,7 @@ void Foam::meshObject::updateMesh(objectRegistry& obr, const mapPolyMesh& mpm)
 
         if (objectPtr)
         {
-            if (MESHOBJECT_DEBUG)
+            if (meshObject::debugLevel())
             {
                 Pout<< "    Updating " << item.name() << endl;
             }
@@ -311,7 +303,7 @@ void Foam::meshObject::updateMesh(objectRegistry& obr, const mapPolyMesh& mpm)
         }
         else
         {
-            if (MESHOBJECT_DEBUG)
+            if (meshObject::debugLevel())
             {
                 Pout<< "    Destroying " << item.name() << endl;
             }
@@ -329,7 +321,7 @@ void Foam::meshObject::clear(objectRegistry& obr)
         obr.sorted<MeshObjectType<Mesh>>()
     );
 
-    if (MESHOBJECT_DEBUG)
+    if (meshObject::debugLevel())
     {
         Pout<< "meshObject::clear() : clearing "
             << meshObjects.size() << " <" << Mesh::typeName
@@ -338,7 +330,7 @@ void Foam::meshObject::clear(objectRegistry& obr)
 
     for (auto& item : meshObjects)
     {
-        if (MESHOBJECT_DEBUG)
+        if (meshObject::debugLevel())
         {
             Pout<< "    Destroying " << item.name() << endl;
         }
@@ -360,7 +352,7 @@ void Foam::meshObject::clearUpto(objectRegistry& obr)
         obr.sorted<FromType<Mesh>>()
     );
 
-    if (MESHOBJECT_DEBUG)
+    if (meshObject::debugLevel())
     {
         Pout<< "meshObject::clearUpto() : clearing "
             << meshObjects.size() << " <" << Mesh::typeName
@@ -374,7 +366,7 @@ void Foam::meshObject::clearUpto(objectRegistry& obr)
 
         if (!objectPtr)
         {
-            if (MESHOBJECT_DEBUG)
+            if (meshObject::debugLevel())
             {
                 Pout<< "    Destroying " << item.name() << endl;
             }
