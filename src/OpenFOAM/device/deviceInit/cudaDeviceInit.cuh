@@ -70,6 +70,8 @@ class cudaDeviceInit
 
 public:
 
+    static void _backendShutdown() {}
+
     static void _backendInit();
 
     static void setSharedMemoryPercentage

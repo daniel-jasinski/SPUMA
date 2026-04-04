@@ -52,24 +52,35 @@ int syclDeviceInit::_getNumberOfThreadsPerBlock()
     return nThreadsPerBlock_;
 }
 
-// Global SYCL queue - selects GPU if available, falls back to CPU
+// Global SYCL queue - heap-allocated for explicit lifetime control.
+// Destroyed by destroySyclQueue() before process exit to ensure
+// AdaptiveCpp cleanup runs while CUDA/HIP runtime is still alive.
+static sycl::queue* syclQueuePtr_ = nullptr;
+
 sycl::queue& getSyclQueue()
 {
-    static sycl::queue q = []()
+    if (!syclQueuePtr_)
     {
         try
         {
-            // Try to get a GPU device first
-            return sycl::queue(sycl::gpu_selector_v);
+            syclQueuePtr_ = new sycl::queue(sycl::gpu_selector_v);
         }
         catch (const sycl::exception&)
         {
-            // Fall back to default device (usually CPU)
-            return sycl::queue(sycl::default_selector_v);
+            syclQueuePtr_ = new sycl::queue(sycl::default_selector_v);
         }
-    }();
+    }
+    return *syclQueuePtr_;
+}
 
-    return q;
+void destroySyclQueue()
+{
+    if (syclQueuePtr_)
+    {
+        syclQueuePtr_->wait();
+        delete syclQueuePtr_;
+        syclQueuePtr_ = nullptr;
+    }
 }
 
 } // End namespace Foam

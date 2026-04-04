@@ -126,6 +126,8 @@ int main(int argc, char *argv[])
 
     Info<< "End\n" << endl;
 
+    #include "shutdownDevice.H"
+
     return 0;
 }
 

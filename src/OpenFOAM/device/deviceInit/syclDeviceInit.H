@@ -51,8 +51,9 @@ SourceFiles
 namespace Foam
 {
 
-// Global SYCL queue - defined in syclDeviceInit.cpp
+// Global SYCL queue - defined in syclGlobal.cpp
 sycl::queue& getSyclQueue();
+void destroySyclQueue();
 
 /*---------------------------------------------------------------------------*\
                        Class syclDeviceInit Declaration
@@ -67,6 +68,15 @@ public:
 
     static void _setNumberOfThreadsPerBlock(const int nThreadsPerBlock);
     static int _getNumberOfThreadsPerBlock();
+
+    static void _backendShutdown()
+    {
+        if (initDeviceFlag_)
+        {
+            destroySyclQueue();
+            initDeviceFlag_ = false;
+        }
+    }
 
     static void _backendInit()
     {
