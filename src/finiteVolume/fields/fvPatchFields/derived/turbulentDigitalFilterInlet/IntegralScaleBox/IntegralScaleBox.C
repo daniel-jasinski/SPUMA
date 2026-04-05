@@ -359,7 +359,7 @@ Foam::faceList Foam::turbulence::IntegralScaleBox<Type>::calcPatchFaces() const
 template<class Type>
 void Foam::turbulence::IntegralScaleBox<Type>::calcPatch()
 {
-    if (debug && Pstream::master())
+    if (debugLevel() && Pstream::master())
     {
         const auto& tm = p_.patch().boundaryMesh().mesh().time();
         OBJstream os(tm.path()/"patch.obj");
@@ -625,7 +625,7 @@ void Foam::turbulence::IntegralScaleBox<Type>::initialise()
         calcCoordinateSystem();
     }
 
-    if (debug && csysPtr_)
+    if (debugLevel() && csysPtr_)
     {
         Info<< "Local coordinate system:" << nl
             << "    - origin        = " << csysPtr_->origin() << nl

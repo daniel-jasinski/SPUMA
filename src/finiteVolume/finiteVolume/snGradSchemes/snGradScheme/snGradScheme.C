@@ -52,7 +52,7 @@ tmp<snGradScheme<Type>> snGradScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         InfoInFunction << "Constructing snGradScheme<Type>" << endl;
     }
@@ -78,7 +78,7 @@ tmp<snGradScheme<Type>> snGradScheme<Type>::New
             schemeData,
             "discretisation",
             schemeName,
-            *MeshConstructorTablePtr_
+            *MeshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

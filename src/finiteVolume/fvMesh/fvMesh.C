@@ -205,7 +205,7 @@ void Foam::fvMesh::storeOldVol(const scalarField& V)
 
         curTimeIndex_ = time().timeIndex();
 
-        if (debug)
+        if (debugLevel())
         {
             InfoInFunction
                 << " Stored old time volumes V0:" << V0Ptr_->size()

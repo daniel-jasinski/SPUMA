@@ -60,7 +60,7 @@ Foam::multivariateSurfaceInterpolationScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         InfoInFunction
             << "Constructing surfaceInterpolationScheme<Type>" << endl;
@@ -77,7 +77,7 @@ Foam::multivariateSurfaceInterpolationScheme<Type>::New
             schemeData,
             "discretisation",
             schemeName,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

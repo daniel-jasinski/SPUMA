@@ -57,7 +57,7 @@ Foam::tmp<Foam::fvMatrix<Type>> Foam::fv::optionList::source
 
             const bool ok = source.isActive();
 
-            if (debug)
+            if (debugLevel())
             {
                 if (ok)
                 {
@@ -144,7 +144,7 @@ Foam::tmp<Foam::fvMatrix<Type>> Foam::fv::optionList::operator()
 
             const bool ok = source.isActive();
 
-            if (debug)
+            if (debugLevel())
             {
                 if (ok)
                 {
@@ -213,7 +213,7 @@ Foam::tmp<Foam::fvMatrix<Type>> Foam::fv::optionList::operator()
 
             const bool ok = source.isActive();
 
-            if (debug)
+            if (debugLevel())
             {
                 if (ok)
                 {
@@ -327,7 +327,7 @@ void Foam::fv::optionList::constrain(fvMatrix<Type>& eqn)
 
             const bool ok = source.isActive();
 
-            if (debug)
+            if (debugLevel())
             {
                 if (ok)
                 {
@@ -370,7 +370,7 @@ void Foam::fv::optionList::correct
 
             const bool ok = source.isActive();
 
-            if (debug)
+            if (debugLevel())
             {
                 if (ok)
                 {

@@ -225,7 +225,7 @@ void Foam::prghPermeableAlphaTotalPressureFvPatchScalarField::updateSnGrad
         valueFraction() = 1 - alphaCut;
     }
 
-    if (debug)
+    if (debugLevel())
     {
         const scalar phi = gSum(-phip);
         Info<< valueFraction() << endl;

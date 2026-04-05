@@ -64,7 +64,7 @@ tmp<convectionScheme<Type>> convectionScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         InfoInFunction << "Constructing convectionScheme<Type>" << endl;
     }
@@ -80,7 +80,7 @@ tmp<convectionScheme<Type>> convectionScheme<Type>::New
 
     const word schemeName(schemeData);
 
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         InfoInFunction << "schemeName:" << schemeName << endl;
     }
@@ -94,7 +94,7 @@ tmp<convectionScheme<Type>> convectionScheme<Type>::New
             schemeData,
             "convection",
             schemeName,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -112,7 +112,7 @@ tmp<convectionScheme<Type>> convectionScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (fv::debug)
+    if (fv::debugLevel())
     {
         InfoInFunction << "Constructing convectionScheme<Type>" << endl;
     }
@@ -137,7 +137,7 @@ tmp<convectionScheme<Type>> convectionScheme<Type>::New
             schemeData,
             "convection",
             schemeName,
-            *MultivariateConstructorTablePtr_
+            *MultivariateConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

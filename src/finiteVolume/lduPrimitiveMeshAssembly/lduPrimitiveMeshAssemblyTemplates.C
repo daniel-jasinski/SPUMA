@@ -138,7 +138,7 @@ void Foam::lduPrimitiveMeshAssembly::update
         oldFaces += meshes_[i].lduAddr().upperAddr().size();
     }
 
-    if (debug)
+    if (debugLevel())
     {
         Info<< " old total faces : " << oldFaces
             << " new total faces (internal) : " << newFaces
@@ -475,7 +475,7 @@ void Foam::lduPrimitiveMeshAssembly::update
         }
     }
 
-    if (debug & 2)
+    if (debugLevel() & 2)
     {
         DebugVar(faceBoundMap_);
         DebugVar(cellBoundMap_);
@@ -485,7 +485,7 @@ void Foam::lduPrimitiveMeshAssembly::update
         DebugVar(cellOffsets_);
         DebugVar(faceMap_);
         (checkUpperTriangular(lduAddr().size(), lowerAddr(), upperAddr()));
-        DebugVar(lduAddr().size())
+        DebugVar(lduAddr().size());
     }
 }
 

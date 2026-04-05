@@ -197,7 +197,7 @@ void Foam::exprValuePointPatchField<Type>::updateCoeffs()
         return;
     }
 
-    if (debug)
+    if (debugLevel())
     {
         InfoInFunction
             << "Value: " << this->valueExpr_ << nl

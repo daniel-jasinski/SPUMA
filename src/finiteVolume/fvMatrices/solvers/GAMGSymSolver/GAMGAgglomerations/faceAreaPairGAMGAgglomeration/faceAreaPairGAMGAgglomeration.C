@@ -356,7 +356,7 @@ bool Foam::faceAreaPairGAMGAgglomeration::movePoints()
             }
         }
 
-        if (debug)
+        if (debugLevel())
         {
             printLevels();
         }

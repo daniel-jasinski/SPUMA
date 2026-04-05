@@ -118,7 +118,7 @@ Foam::processorFvPatchField<Type>::processorFvPatchField
             << " in file " << this->internalField().objectPath()
             << exit(FatalError);
     }
-    if (debug && !ptf.all_ready())
+    if (debugLevel() && !ptf.all_ready())
     {
         FatalErrorInFunction
             << "Outstanding request(s) on patch " << procPatch_.name()
@@ -143,7 +143,7 @@ Foam::processorFvPatchField<Type>::processorFvPatchField
     scalarSendBuf_(std::move(ptf.scalarSendBuf_)),
     scalarRecvBuf_(std::move(ptf.scalarRecvBuf_))
 {
-    if (debug && !ptf.all_ready())
+    if (debugLevel() && !ptf.all_ready())
     {
         FatalErrorInFunction
             << "Outstanding request(s) on patch " << procPatch_.name()
@@ -164,7 +164,7 @@ Foam::processorFvPatchField<Type>::processorFvPatchField
     sendRequest_(-1),
     recvRequest_(-1)
 {
-    if (debug && !ptf.all_ready())
+    if (debugLevel() && !ptf.all_ready())
     {
         FatalErrorInFunction
             << "Outstanding request(s) on patch " << procPatch_.name()
@@ -199,7 +199,7 @@ template<class Type>
 Foam::tmp<Foam::Field<Type>>
 Foam::processorFvPatchField<Type>::patchNeighbourField() const
 {
-    if (debug && !this->ready())
+    if (debugLevel() && !this->ready())
     {
         FatalErrorInFunction
             << "Outstanding request on patch " << procPatch_.name()
@@ -346,7 +346,7 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
     )
     {
         // Fast path.
-        if (debug && !this->all_ready())
+        if (debugLevel() && !this->all_ready())
         {
             FatalErrorInFunction
                 << "Outstanding request(s) on patch " << procPatch_.name()
@@ -472,7 +472,7 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
     )
     {
         // Fast path.
-        if (debug && !this->all_ready())
+        if (debugLevel() && !this->all_ready())
         {
             FatalErrorInFunction
                 << "Outstanding request(s) on patch " << procPatch_.name()

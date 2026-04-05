@@ -74,7 +74,7 @@ Foam::fvMatrix<Foam::scalar>::solver
     }
     addProfiling(solve, "fvMatrix::solve.", regionName, psi_.name());
 
-    if (debug)
+    if (debugLevel())
     {
         Info.masterStream(this->mesh().comm())
             << "fvMatrix<scalar>::solver(const dictionary& solverControls) : "
@@ -122,7 +122,7 @@ Foam::solverPerformance Foam::fvMatrix<Foam::scalar>::fvSolver::solve
         solverControls.getOrDefault<int>
         (
             "log",
-            solverPerformance::debug
+            solverPerformance::debugLevel()
         );
 
     auto& psi =
@@ -167,7 +167,7 @@ Foam::solverPerformance Foam::fvMatrix<Foam::scalar>::solveSegregated
     const dictionary& solverControls
 )
 {
-    if (debug)
+    if (debugLevel())
     {
         Info.masterStream(this->mesh().comm())
             << "fvMatrix<scalar>::solveSegregated"
@@ -180,7 +180,7 @@ Foam::solverPerformance Foam::fvMatrix<Foam::scalar>::solveSegregated
         solverControls.getOrDefault<int>
         (
             "log",
-            solverPerformance::debug
+            solverPerformance::debugLevel()
         );
 
     scalarField saveLower;

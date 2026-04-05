@@ -160,7 +160,7 @@ Foam::cyclicACMIFvPatchField<Type>::cyclicACMIFvPatchField
             << " in file " << this->internalField().objectPath()
             << exit(FatalError);
     }
-    if (debug && !ptf.all_ready())
+    if (debugLevel() && !ptf.all_ready())
     {
         FatalErrorInFunction
             << "Outstanding request(s) on patch " << cyclicACMIPatch_.name()
@@ -180,7 +180,7 @@ Foam::cyclicACMIFvPatchField<Type>::cyclicACMIFvPatchField
     cyclicACMIPatch_(ptf.cyclicACMIPatch_),
     patchNeighbourFieldPtr_(nullptr)
 {
-    if (debug && !ptf.all_ready())
+    if (debugLevel() && !ptf.all_ready())
     {
         FatalErrorInFunction
             << "Outstanding request(s) on patch " << cyclicACMIPatch_.name()
@@ -201,7 +201,7 @@ Foam::cyclicACMIFvPatchField<Type>::cyclicACMIFvPatchField
     cyclicACMIPatch_(ptf.cyclicACMIPatch_),
     patchNeighbourFieldPtr_(nullptr)
 {
-    if (debug && !ptf.all_ready())
+    if (debugLevel() && !ptf.all_ready())
     {
         FatalErrorInFunction
             << "Outstanding request(s) on patch " << cyclicACMIPatch_.name()

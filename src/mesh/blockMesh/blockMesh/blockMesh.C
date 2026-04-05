@@ -35,6 +35,7 @@ License
 namespace Foam
 {
     defineDebugSwitch(blockMesh, 0);
+    defineDebugLevelFunction(blockMesh);
 }
 
 bool Foam::blockMesh::verboseOutput = true;

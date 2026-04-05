@@ -42,7 +42,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (surfaceInterpolation::debug)
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "Constructing limitedSurfaceInterpolationScheme<Type>" << endl;
@@ -69,7 +69,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::New
             schemeData,
             "discretisation",
             schemeName,
-            *MeshConstructorTablePtr_
+            *MeshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -86,7 +86,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::New
     Istream& schemeData
 )
 {
-    if (surfaceInterpolation::debug)
+    if (surfaceInterpolation::debugLevel())
     {
         InfoInFunction
             << "Constructing limitedSurfaceInterpolationScheme<Type>"
@@ -114,7 +114,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::New
             schemeData,
             "discretisation",
             schemeName,
-            *MeshFluxConstructorTablePtr_
+            *MeshFluxConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

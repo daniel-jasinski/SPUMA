@@ -153,7 +153,7 @@ void Foam::mappedFlowRateFvPatchVectorField::updateCoeffs()
         // mass flow-rate
         operator==(n*U/rhop);
 
-        if (debug)
+        if (debugLevel())
         {
             scalar phi = gSum(rhop*(*this) & patch().Sf());
             Info<< patch().boundaryMesh().mesh().name() << ':'

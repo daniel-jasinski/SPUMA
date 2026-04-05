@@ -242,7 +242,7 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::initialiseEddyBox()
     // Eddy box volume
     v0_ = 2*gSum(magSf)*maxSigmaX_;
 
-    if (debug)
+    if (debugLevel())
     {
         Info<< "Patch: " << patch().patch().name() << " eddy box:" << nl
             << "    volume    : " << v0_ << nl
@@ -382,7 +382,7 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::initialiseEddies()
 
     nEddy_ = eddies_.size();
 
-    if (debug)
+    if (debugLevel())
     {
         Pout<< "Patch:" << patch().patch().name();
 
@@ -466,7 +466,7 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::convectEddies
         }
     }
 
-    if (debug)
+    if (debugLevel())
     {
         reduce(nRecycled, sumOp<label>());
 
@@ -961,7 +961,7 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::updateCoeffs()
             writeEddyOBJ();
         }
 
-        if (debug)
+        if (debugLevel())
         {
             Info<< "Magnitude of bulk velocity: " << UBulk << endl;
 
