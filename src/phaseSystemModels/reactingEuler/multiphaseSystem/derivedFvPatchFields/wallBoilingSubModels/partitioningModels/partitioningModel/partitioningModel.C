@@ -62,7 +62,7 @@ Foam::wallBoilingModels::partitioningModel::New
             dict,
             "partitioningModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

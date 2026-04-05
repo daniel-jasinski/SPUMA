@@ -51,7 +51,7 @@ Foam::PatchInteractionModel<CloudType>::New
             dict,
             "patchInteractionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

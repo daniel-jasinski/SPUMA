@@ -182,7 +182,7 @@ Foam::decompositionConstraint::New
             dict,
             "decompositionConstraint",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

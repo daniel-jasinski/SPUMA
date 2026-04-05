@@ -88,7 +88,7 @@ Foam::autoPtr<Foam::RBD::rigidBody> Foam::RBD::rigidBody::New
             dict,
             "rigidBody",
             bodyType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

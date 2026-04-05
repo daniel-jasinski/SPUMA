@@ -48,7 +48,7 @@ Foam::autoPtr<Foam::binModel> Foam::binModel::New
             dict,
             "binModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

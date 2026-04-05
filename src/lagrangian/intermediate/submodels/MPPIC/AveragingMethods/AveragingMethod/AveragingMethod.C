@@ -101,7 +101,7 @@ Foam::AveragingMethod<Type>::New
             dict,
             "averaging limiter",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

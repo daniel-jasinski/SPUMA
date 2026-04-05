@@ -46,7 +46,7 @@ Foam::autoPtr<Foam::facePointPatch> Foam::facePointPatch::New
         (
             "facePointPatch",
             patch.type(),
-            *polyPatchConstructorTablePtr_
+            *polyPatchConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

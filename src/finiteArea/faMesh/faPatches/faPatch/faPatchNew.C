@@ -66,7 +66,7 @@ Foam::autoPtr<Foam::faPatch> Foam::faPatch::New
             dict,
             "faPatch",
             patchType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

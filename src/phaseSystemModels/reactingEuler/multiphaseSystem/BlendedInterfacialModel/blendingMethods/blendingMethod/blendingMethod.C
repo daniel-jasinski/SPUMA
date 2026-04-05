@@ -70,7 +70,7 @@ Foam::blendingMethod::New
             dict,
             "blendingMethod",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

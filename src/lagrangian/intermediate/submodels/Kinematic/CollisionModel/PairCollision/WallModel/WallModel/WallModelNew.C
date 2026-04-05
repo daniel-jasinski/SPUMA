@@ -51,7 +51,7 @@ Foam::WallModel<CloudType>::New
             dict,
             "wallModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

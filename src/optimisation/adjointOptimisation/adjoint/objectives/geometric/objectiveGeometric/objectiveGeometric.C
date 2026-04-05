@@ -86,7 +86,7 @@ autoPtr<objectiveGeometric> objectiveGeometric::New
             dict,
             "objectiveGeometric",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

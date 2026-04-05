@@ -75,7 +75,7 @@ Foam::saturationModel::New
             dict,
             "saturationModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

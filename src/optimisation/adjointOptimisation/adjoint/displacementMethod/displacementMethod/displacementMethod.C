@@ -88,7 +88,7 @@ Foam::autoPtr<Foam::displacementMethod> Foam::displacementMethod::New
             dynamicMeshDict,
             "solver",
             solverType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
     return autoPtr<displacementMethod>(ctorPtr(mesh, patchIDs));

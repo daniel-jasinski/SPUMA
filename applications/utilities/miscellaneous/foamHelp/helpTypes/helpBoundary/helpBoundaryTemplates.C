@@ -45,7 +45,7 @@ Foam::wordList Foam::helpTypes::helpBoundary::fieldConditions
     {
         wordList types
         (
-            fvPatchField<Type>::dictionaryConstructorTablePtr_->sortedToc()
+            fvPatchField<Type>::dictionaryConstructorTablePtr_()->sortedToc()
         );
 
         if (write)

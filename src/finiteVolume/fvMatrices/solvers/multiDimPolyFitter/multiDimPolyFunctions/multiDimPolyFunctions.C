@@ -54,7 +54,7 @@ Foam::autoPtr<Foam::multiDimPolyFunctions> Foam::multiDimPolyFunctions::New
         (
             "multiDimPolyFunction",
             multiDimPolyFunctionsType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

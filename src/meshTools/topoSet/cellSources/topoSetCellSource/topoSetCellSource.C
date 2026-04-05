@@ -74,7 +74,7 @@ Foam::topoSetCellSource::New
             dict,
             "cellSetSource",
             sourceType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -98,7 +98,7 @@ Foam::topoSetCellSource::New
         (
             "cellSetSource",
             sourceType,
-            *istreamConstructorTablePtr_
+            *istreamConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

@@ -76,7 +76,7 @@ Foam::wallDampingModel::New
             dict,
             "wallDampingModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

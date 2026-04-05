@@ -296,7 +296,7 @@ Foam::expressions::exprResult::New
                 dict,
                 "resultType",
                 resultType,
-                *emptyConstructorTablePtr_
+                *emptyConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 
@@ -316,7 +316,7 @@ Foam::expressions::exprResult::New
             dict,
             "resultType",
             resultType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

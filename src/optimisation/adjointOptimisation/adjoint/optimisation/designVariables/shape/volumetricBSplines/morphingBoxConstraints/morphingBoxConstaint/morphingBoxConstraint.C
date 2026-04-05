@@ -129,7 +129,7 @@ Foam::autoPtr<Foam::morphingBoxConstraint> Foam::morphingBoxConstraint::New
         (
             "constraintType",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

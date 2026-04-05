@@ -60,7 +60,7 @@ Foam::wallBoilingModels::MHFModel::New
             dict,
             "MHFModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

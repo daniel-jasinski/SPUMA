@@ -147,7 +147,7 @@ autoPtr<ATCModel> ATCModel::New
             dict,
             "ATCModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

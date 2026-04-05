@@ -99,7 +99,7 @@ Foam::lduMatrix::preconditioner::New
                 controls,
                 "symmetric matrix preconditioner",
                 name,
-                *symMatrixConstructorTablePtr_
+                *symMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 
@@ -123,7 +123,7 @@ Foam::lduMatrix::preconditioner::New
                 controls,
                 "asymmetric matrix preconditioner",
                 name,
-                *asymMatrixConstructorTablePtr_
+                *asymMatrixConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

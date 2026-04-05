@@ -59,7 +59,7 @@ autoPtr<filmViscosityModel> filmViscosityModel::New
             dict,
             "filmViscosityModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -80,7 +80,7 @@ Foam::coordinateSystem::New
             dict,
             "coordinate system",
              modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

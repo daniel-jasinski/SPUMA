@@ -335,7 +335,7 @@ const Foam::GAMGAgglomeration& Foam::GAMGAgglomeration::New
         (
             controlDict,
             "geometricGAMGAgglomerationLibs",
-            lduMeshConstructorTablePtr_
+            lduMeshConstructorTablePtr_()
         );
 
         auto* ctorPtr = lduMeshConstructorTable(agglomeratorType);
@@ -346,9 +346,9 @@ const Foam::GAMGAgglomeration& Foam::GAMGAgglomeration::New
                 << "Unknown GAMGAgglomeration type "
                 << agglomeratorType << ".\n"
                 << "Valid matrix GAMGAgglomeration types :"
-                << lduMatrixConstructorTablePtr_->sortedToc() << endl
+                << lduMatrixConstructorTablePtr_()->sortedToc() << endl
                 << "Valid geometric GAMGAgglomeration types :"
-                << lduMeshConstructorTablePtr_->sortedToc()
+                << lduMeshConstructorTablePtr_()->sortedToc()
                 << exit(FatalError);
         }
 
@@ -397,7 +397,7 @@ const Foam::GAMGAgglomeration& Foam::GAMGAgglomeration::New
         (
             controlDict,
             "algebraicGAMGAgglomerationLibs",
-            lduMatrixConstructorTablePtr_
+            lduMatrixConstructorTablePtr_()
         );
 
         auto* ctorPtr = lduMatrixConstructorTable(agglomeratorType);
@@ -455,7 +455,7 @@ const Foam::GAMGAgglomeration& Foam::GAMGAgglomeration::New
         (
             controlDict,
             "geometricGAMGAgglomerationLibs",
-            geometryConstructorTablePtr_
+            geometryConstructorTablePtr_()
         );
 
         auto* ctorPtr = geometryConstructorTable(agglomeratorType);
@@ -466,7 +466,7 @@ const Foam::GAMGAgglomeration& Foam::GAMGAgglomeration::New
                 << "Unknown GAMGAgglomeration type "
                 << agglomeratorType << ".\n"
                 << "Valid geometric GAMGAgglomeration types :"
-                << geometryConstructorTablePtr_->sortedToc()
+                << geometryConstructorTablePtr_()->sortedToc()
                 << exit(FatalError);
         }
 

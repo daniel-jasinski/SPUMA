@@ -127,7 +127,7 @@ Foam::exprTools::expressionEntry::New
         (
             "expressionEntry",
             name,
-            *emptyConstructorTablePtr_
+            *emptyConstructorTablePtr_()
         )  << exit(FatalError);
     }
 

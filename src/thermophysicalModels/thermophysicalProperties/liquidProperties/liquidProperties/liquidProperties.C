@@ -102,7 +102,7 @@ Foam::autoPtr<Foam::liquidProperties> Foam::liquidProperties::New
         (
             "liquidProperties",
             name,
-            *ConstructorTablePtr_
+            *ConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -142,7 +142,7 @@ Foam::autoPtr<Foam::liquidProperties> Foam::liquidProperties::New
                 dict,
                 "liquidProperties",
                 liquidType,
-                *dictionaryConstructorTablePtr_
+                *dictionaryConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 
@@ -161,7 +161,7 @@ Foam::autoPtr<Foam::liquidProperties> Foam::liquidProperties::New
             dict,
             "liquidProperties",
             liquidType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

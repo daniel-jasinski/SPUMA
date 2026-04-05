@@ -59,7 +59,7 @@ tmp<laplacianScheme<Type>> laplacianScheme<Type>::New
         FatalIOErrorInFunction(schemeData)
             << "Laplacian scheme not specified" << nl << nl
             << "Valid laplacian schemes are :" << nl
-            << IstreamConstructorTablePtr_->sortedToc()
+            << IstreamConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -74,7 +74,7 @@ tmp<laplacianScheme<Type>> laplacianScheme<Type>::New
             schemeData,
             "laplacian",
             schemeName,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

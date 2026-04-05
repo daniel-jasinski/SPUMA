@@ -61,7 +61,7 @@ Foam::autoPtr<Foam::VF::viewFactorModel> Foam::VF::viewFactorModel::New
             dict,
             typeName,
             modelType,
-            *meshConstructorTablePtr_
+            *meshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

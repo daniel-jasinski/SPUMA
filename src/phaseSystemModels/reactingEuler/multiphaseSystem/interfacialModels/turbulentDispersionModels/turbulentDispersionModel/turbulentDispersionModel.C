@@ -82,7 +82,7 @@ Foam::turbulentDispersionModel::New
             dict,
             "turbulentDispersionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

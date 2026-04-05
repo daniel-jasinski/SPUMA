@@ -58,7 +58,7 @@ Foam::autoPtr<Foam::thermophysicalFunction> Foam::thermophysicalFunction::New
         (
             "thermophysicalFunction",
             functionType,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << abort(FatalError);
     }
 
@@ -84,7 +84,7 @@ Foam::autoPtr<Foam::thermophysicalFunction> Foam::thermophysicalFunction::New
             dict,
             "thermophysicalFunction",
             functionType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

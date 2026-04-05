@@ -68,7 +68,7 @@ autoPtr<thermalBaffleModel> thermalBaffleModel::New(const fvMesh& mesh)
             dict,
             "thermalBaffleModel",
             modelType,
-            *meshConstructorTablePtr_
+            *meshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -96,7 +96,7 @@ autoPtr<thermalBaffleModel> thermalBaffleModel::New
             dict,
             "thermalBaffleModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -58,7 +58,7 @@ autoPtr<filmThermoModel> filmThermoModel::New
             dict,
             "filmThermoModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

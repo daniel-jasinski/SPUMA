@@ -52,7 +52,7 @@ Foam::autoPtr<Foam::eigenValueSolver> Foam::eigenValueSolver::New
         (
             "eigenValueSolver",
             type,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << abort(FatalError);
     }
 

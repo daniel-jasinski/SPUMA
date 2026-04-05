@@ -178,7 +178,7 @@ Foam::fileOperation::New
         (
             "fileHandler",
             handlerType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << abort(FatalError);
     }
 
@@ -225,7 +225,7 @@ Foam::fileOperation::New
         (
             "fileHandler",
             handlerType,
-            *commConstructorTablePtr_
+            *commConstructorTablePtr_()
         ) << abort(FatalError);
     }
 

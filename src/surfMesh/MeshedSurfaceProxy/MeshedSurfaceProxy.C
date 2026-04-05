@@ -38,7 +38,7 @@ License
 template<class Face>
 Foam::wordHashSet Foam::MeshedSurfaceProxy<Face>::writeTypes()
 {
-    return wordHashSet(*writefileExtensionMemberFunctionTablePtr_);
+    return wordHashSet(*writefileExtensionMemberFunctionTablePtr_());
 }
 
 

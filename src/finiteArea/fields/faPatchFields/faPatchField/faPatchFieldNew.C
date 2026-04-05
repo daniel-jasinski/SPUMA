@@ -50,7 +50,7 @@ Foam::tmp<Foam::faPatchField<Type>> Foam::faPatchField<Type>::New
         (
             "patchField",
             patchFieldType,
-            *patchConstructorTablePtr_
+            *patchConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -125,7 +125,7 @@ Foam::tmp<Foam::faPatchField<Type>> Foam::faPatchField<Type>::New
                 << "Unknown patchField type " << patchFieldType
                 << " for patch type " << p.type() << nl << nl
                 << "Valid patchField types are :" << nl
-                << dictionaryConstructorTablePtr_->sortedToc()
+                << dictionaryConstructorTablePtr_()->sortedToc()
                 << exit(FatalIOError);
         }
     }
@@ -169,7 +169,7 @@ Foam::tmp<Foam::faPatchField<Type>> Foam::faPatchField<Type>::New
         (
             "patchField",
             ptf.type(),
-            *patchMapperConstructorTablePtr_
+            *patchMapperConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

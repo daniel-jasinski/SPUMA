@@ -73,7 +73,7 @@ Foam::swarmCorrection::New
             dict,
             "swarmCorrection",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

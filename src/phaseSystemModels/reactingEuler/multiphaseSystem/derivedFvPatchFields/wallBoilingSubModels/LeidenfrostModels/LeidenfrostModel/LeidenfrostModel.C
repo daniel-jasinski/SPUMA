@@ -60,7 +60,7 @@ Foam::wallBoilingModels::LeidenfrostModel::New
             dict,
             "LeidenfrostModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

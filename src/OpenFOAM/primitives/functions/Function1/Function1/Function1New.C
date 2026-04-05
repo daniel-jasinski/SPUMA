@@ -141,7 +141,7 @@ Foam::Function1<Type>::New
             << "Unknown Function1 type "
             << modelType << " for " << entryName
             << "\n\nValid Function1 types :\n"
-            << dictionaryConstructorTablePtr_->sortedToc() << nl
+            << dictionaryConstructorTablePtr_()->sortedToc() << nl
             << exit(FatalIOError);
     }
 

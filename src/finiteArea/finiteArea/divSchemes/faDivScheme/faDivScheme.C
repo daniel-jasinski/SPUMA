@@ -56,7 +56,7 @@ tmp<divScheme<Type>> divScheme<Type>::New
         FatalIOErrorInFunction(schemeData)
             << "Div scheme not specified" << nl << nl
             << "Valid div schemes are :" << nl
-            << IstreamConstructorTablePtr_->sortedToc()
+            << IstreamConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -71,7 +71,7 @@ tmp<divScheme<Type>> divScheme<Type>::New
             schemeData,
             "div",
             schemeName,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

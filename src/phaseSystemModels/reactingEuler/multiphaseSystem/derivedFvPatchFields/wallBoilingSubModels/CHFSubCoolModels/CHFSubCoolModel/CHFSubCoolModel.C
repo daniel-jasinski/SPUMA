@@ -60,7 +60,7 @@ Foam::wallBoilingModels::CHFSubCoolModel::New
             dict,
             "CHFSubCoolModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

@@ -154,7 +154,7 @@ Foam::PatchFunction1<Type>::New
             << "Unknown PatchFunction1 type "
             << modelType << " for " << entryName
             << "\n\nValid PatchFunction1 types :\n"
-            << dictionaryConstructorTablePtr_->sortedToc() << nl
+            << dictionaryConstructorTablePtr_()->sortedToc() << nl
             << exit(FatalIOError);
     }
 

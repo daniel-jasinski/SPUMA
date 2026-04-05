@@ -53,8 +53,8 @@ bool Foam::surfaceWriter::supportedType(const word& writeType)
 {
     return
     (
-        wordConstructorTablePtr_->found(writeType)
-     || wordDictConstructorTablePtr_->found(writeType)
+        wordConstructorTablePtr_()->found(writeType)
+     || wordDictConstructorTablePtr_()->found(writeType)
      || MeshedSurfaceProxy<face>::canWriteType(writeType)
     );
 }
@@ -146,7 +146,7 @@ Foam::surfaceWriter::New(const word& writeType)
         FatalErrorInFunction
             << "Unknown write type \"" << writeType << "\"\n\n"
             << "Valid write types : "
-            << flatOutput(wordConstructorTablePtr_->sortedToc()) << nl
+            << flatOutput(wordConstructorTablePtr_()->sortedToc()) << nl
             << "Valid proxy types : "
             << flatOutput(MeshedSurfaceProxy<face>::writeTypes()) << endl
             << exit(FatalError);
@@ -173,7 +173,7 @@ Foam::surfaceWriter::New
         FatalErrorInFunction
             << "Unknown write type \"" << writeType << "\"\n\n"
             << "Valid write types : "
-            << flatOutput(wordConstructorTablePtr_->sortedToc()) << nl
+            << flatOutput(wordConstructorTablePtr_()->sortedToc()) << nl
             << "Valid proxy types : "
             << flatOutput(MeshedSurfaceProxy<face>::writeTypes()) << endl
             << exit(FatalError);

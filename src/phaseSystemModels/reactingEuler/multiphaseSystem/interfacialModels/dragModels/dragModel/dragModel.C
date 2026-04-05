@@ -122,7 +122,7 @@ Foam::dragModel::New
             dict,
             "dragModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

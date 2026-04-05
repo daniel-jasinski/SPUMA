@@ -366,7 +366,7 @@ Foam::autoPtr<Foam::GAMGProcAgglomeration> Foam::GAMGProcAgglomeration::New
             << "Unknown GAMGProcAgglomeration type "
             << type << " for GAMGAgglomeration " << agglom.type() << nl << nl
             << "Valid GAMGProcAgglomeration types :" << endl
-            << GAMGAgglomerationConstructorTablePtr_->sortedToc()
+            << GAMGAgglomerationConstructorTablePtr_()->sortedToc()
             << exit(FatalError);
     }
 

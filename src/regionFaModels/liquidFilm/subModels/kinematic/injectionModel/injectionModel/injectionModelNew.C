@@ -56,7 +56,7 @@ autoPtr<injectionModel> injectionModel::New
             dict,
             "injectionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

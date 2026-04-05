@@ -58,7 +58,7 @@ tmp<faD2dt2Scheme<Type>> faD2dt2Scheme<Type>::New
         FatalIOErrorInFunction(schemeData)
             << "faD2dt2 scheme not specified" << nl << nl
             << "Valid faD2dt2 schemes are :" << endl
-            << IstreamConstructorTablePtr_->sortedToc()
+            << IstreamConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -73,7 +73,7 @@ tmp<faD2dt2Scheme<Type>> faD2dt2Scheme<Type>::New
             schemeData,
             "d2dt2",
             schemeName,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

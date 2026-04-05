@@ -96,7 +96,7 @@ Foam::autoPtr<Foam::blockEdge> Foam::blockEdge::New
             dict,
             "blockEdge",
             edgeType,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

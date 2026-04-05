@@ -51,7 +51,7 @@ Foam::SurfaceReactionModel<CloudType>::New
             dict,
             "surfaceReactionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

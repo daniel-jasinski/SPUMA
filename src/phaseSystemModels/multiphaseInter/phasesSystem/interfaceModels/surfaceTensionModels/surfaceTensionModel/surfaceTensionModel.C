@@ -88,7 +88,7 @@ Foam::multiphaseInter::surfaceTensionModel::New
             dict,
             "surfaceTensionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

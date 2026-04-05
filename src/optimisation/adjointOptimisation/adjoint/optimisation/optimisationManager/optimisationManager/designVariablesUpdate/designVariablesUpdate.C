@@ -215,7 +215,7 @@ Foam::designVariablesUpdate::designVariablesUpdate
     )
     {
         const auto& cnstrTable =
-            *(constrainedOptimisationMethod::dictionaryConstructorTablePtr_);
+            *(constrainedOptimisationMethod::dictionaryConstructorTablePtr_());
 
         // Has constraints but is not a constraint optimisation method
         FatalErrorInFunction

@@ -60,7 +60,7 @@ bool Foam::faPatch::constraintType(const word& patchType)
 
 Foam::wordList Foam::faPatch::constraintTypes()
 {
-    const auto& cnstrTable = *dictionaryConstructorTablePtr_;
+    const auto& cnstrTable = *dictionaryConstructorTablePtr_();
 
     wordList cTypes(cnstrTable.size());
 

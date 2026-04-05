@@ -294,7 +294,7 @@ Foam::autoPtr<Foam::updateMethod> Foam::updateMethod::New
             dict,
             "updateMethod",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

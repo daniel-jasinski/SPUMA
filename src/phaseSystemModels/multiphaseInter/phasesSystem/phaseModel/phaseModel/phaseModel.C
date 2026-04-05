@@ -90,7 +90,7 @@ Foam::multiphaseInter::phaseModel::New
             dict,
             "phaseModel",
             modelType,
-            *multiphaseInterSystemConstructorTablePtr_
+            *multiphaseInterSystemConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

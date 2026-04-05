@@ -379,7 +379,7 @@ Foam::autoPtr<Foam::decompositionMethod> Foam::decompositionMethod::New
             decompDict,
             "decompositionMethod",
             methodType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

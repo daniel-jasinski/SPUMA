@@ -50,7 +50,7 @@ Foam::autoPtr<Foam::resolutionIndexModel> Foam::resolutionIndexModel::New
             dict,
             "resolutionIndexModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

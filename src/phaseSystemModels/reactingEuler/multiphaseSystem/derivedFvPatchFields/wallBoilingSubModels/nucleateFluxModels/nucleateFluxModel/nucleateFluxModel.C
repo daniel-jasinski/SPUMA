@@ -59,7 +59,7 @@ Foam::wallBoilingModels::nucleateFluxModel::New
             dict,
             "nucleateFluxModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

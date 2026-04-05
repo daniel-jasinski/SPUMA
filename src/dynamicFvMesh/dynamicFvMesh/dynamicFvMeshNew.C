@@ -62,10 +62,10 @@ Foam::autoPtr<Foam::dynamicFvMesh> Foam::dynamicFvMesh::New(const IOobject& io)
         (
             dict,
             "dynamicFvMeshLibs",
-            IOobjectConstructorTablePtr_
+            IOobjectConstructorTablePtr_()
         );
 
-        if (!IOobjectConstructorTablePtr_)
+        if (!IOobjectConstructorTablePtr_())
         {
             FatalErrorInFunction
                 << "dynamicFvMesh table is empty"
@@ -98,7 +98,7 @@ Foam::autoPtr<Foam::dynamicFvMesh> Foam::dynamicFvMesh::New(const IOobject& io)
                 dict,
                 "dynamicFvMesh",
                 modelType,
-                *IOobjectConstructorTablePtr_
+                *IOobjectConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

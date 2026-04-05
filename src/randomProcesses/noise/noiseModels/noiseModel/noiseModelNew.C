@@ -48,7 +48,7 @@ Foam::autoPtr<Foam::noiseModel> Foam::noiseModel::New
             dict,
             "noiseModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

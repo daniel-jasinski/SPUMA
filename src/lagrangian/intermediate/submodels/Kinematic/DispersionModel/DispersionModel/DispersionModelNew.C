@@ -51,7 +51,7 @@ Foam::DispersionModel<CloudType>::New
             dict,
             "dispersionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

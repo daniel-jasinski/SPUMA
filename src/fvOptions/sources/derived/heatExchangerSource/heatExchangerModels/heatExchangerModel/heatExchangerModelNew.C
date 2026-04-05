@@ -47,7 +47,7 @@ Foam::autoPtr<Foam::heatExchangerModel> Foam::heatExchangerModel::New
             coeffs,
             "heatExchangerModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -137,7 +137,7 @@ Foam::autoPtr<Foam::adjointSolver> Foam::adjointSolver::New
             dict,
             "adjointSolver",
             solverType,
-            *adjointSolverConstructorTablePtr_
+            *adjointSolverConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

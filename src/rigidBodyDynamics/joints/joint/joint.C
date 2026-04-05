@@ -65,7 +65,7 @@ Foam::autoPtr<Foam::RBD::joint> Foam::RBD::joint::New
             dict,
             "joint",
             bodyType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

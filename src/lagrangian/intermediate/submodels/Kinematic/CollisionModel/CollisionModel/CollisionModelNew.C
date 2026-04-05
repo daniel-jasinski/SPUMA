@@ -51,7 +51,7 @@ Foam::CollisionModel<CloudType>::New
             dict,
             "collisionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

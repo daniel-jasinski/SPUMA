@@ -62,7 +62,7 @@ Foam::twoPhaseSystem::New
             dict,
             "twoPhaseSystem",
             systemType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

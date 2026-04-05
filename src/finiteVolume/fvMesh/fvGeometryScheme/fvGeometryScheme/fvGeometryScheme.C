@@ -125,7 +125,7 @@ Foam::tmp<Foam::fvGeometryScheme> Foam::fvGeometryScheme::New
             dict,
             "fvGeometryScheme",
             schemeName,
-            *dictConstructorTablePtr_
+            *dictConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

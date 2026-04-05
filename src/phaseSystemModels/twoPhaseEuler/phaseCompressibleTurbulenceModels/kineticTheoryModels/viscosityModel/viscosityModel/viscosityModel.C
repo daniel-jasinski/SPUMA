@@ -72,7 +72,7 @@ Foam::kineticTheoryModels::viscosityModel::New
             dict,
             "viscosityModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

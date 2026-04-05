@@ -77,7 +77,7 @@ Foam::massTransferModel::New
             dict,
             "massTransferModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

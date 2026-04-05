@@ -51,7 +51,7 @@ Foam::SurfaceFilmModel<CloudType>::New
             dict,
             "surfaceFilmModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

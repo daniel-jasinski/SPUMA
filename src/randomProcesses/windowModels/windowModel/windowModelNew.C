@@ -48,7 +48,7 @@ Foam::autoPtr<Foam::windowModel> Foam::windowModel::New
             dict,
             "windowModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

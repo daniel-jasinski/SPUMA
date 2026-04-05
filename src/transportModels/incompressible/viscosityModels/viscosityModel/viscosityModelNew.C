@@ -53,7 +53,7 @@ Foam::autoPtr<Foam::viscosityModel> Foam::viscosityModel::New
             dict,
             "viscosityModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

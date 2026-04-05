@@ -54,7 +54,7 @@ Foam::autoPtr<Foam::GAMGInterface> Foam::GAMGInterface::New
         (
             "GAMGInterface",
             coupleType,
-            *lduInterfaceConstructorTablePtr_
+            *lduInterfaceConstructorTablePtr_()
         ) << exit(FatalError);
     }
 
@@ -90,7 +90,7 @@ Foam::autoPtr<Foam::GAMGInterface> Foam::GAMGInterface::New
         (
             "GAMGInterface",
             coupleType,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

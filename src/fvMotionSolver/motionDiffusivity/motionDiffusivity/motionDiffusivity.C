@@ -66,7 +66,7 @@ Foam::autoPtr<Foam::motionDiffusivity> Foam::motionDiffusivity::New
             is,
             "diffusion",
             modelType,
-            *IstreamConstructorTablePtr_
+            *IstreamConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

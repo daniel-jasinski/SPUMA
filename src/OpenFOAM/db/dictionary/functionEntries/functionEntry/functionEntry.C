@@ -103,7 +103,7 @@ bool Foam::functionEntry::execute
 {
     is.fatalCheck(FUNCTION_NAME);
 
-    if (!executedictionaryIstreamMemberFunctionTablePtr_)
+    if (!executedictionaryIstreamMemberFunctionTablePtr_())
     {
         std::cerr
             << FUNCTION_NAME << nl
@@ -124,7 +124,7 @@ bool Foam::functionEntry::execute
             << "' in " << is.relativeName()
             << " near line " << is.lineNumber() << nl << nl
             << "Valid functionEntries :" << nl
-            << executedictionaryIstreamMemberFunctionTablePtr_->sortedToc()
+            << executedictionaryIstreamMemberFunctionTablePtr_()->sortedToc()
             << exit(FatalError);
     }
 
@@ -142,7 +142,7 @@ bool Foam::functionEntry::execute
 {
     is.fatalCheck(FUNCTION_NAME);
 
-    if (!executeprimitiveEntryIstreamMemberFunctionTablePtr_)
+    if (!executeprimitiveEntryIstreamMemberFunctionTablePtr_())
     {
         std::cerr
             << FUNCTION_NAME << nl
@@ -163,7 +163,7 @@ bool Foam::functionEntry::execute
             << "' in " << is.relativeName()
             << " near line " << is.lineNumber() << nl << nl
             << "Valid functionEntries :" << nl
-            << executeprimitiveEntryIstreamMemberFunctionTablePtr_->sortedToc()
+            << executeprimitiveEntryIstreamMemberFunctionTablePtr_()->sortedToc()
             << exit(FatalError);
     }
 

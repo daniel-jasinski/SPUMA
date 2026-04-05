@@ -74,7 +74,7 @@ Foam::topoSetFaceSource::New
             dict,
             "faceSetSource",
             sourceType,
-            *wordConstructorTablePtr_
+            *wordConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
@@ -98,7 +98,7 @@ Foam::topoSetFaceSource::New
         (
             "faceSetSource",
             sourceType,
-            *istreamConstructorTablePtr_
+            *istreamConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

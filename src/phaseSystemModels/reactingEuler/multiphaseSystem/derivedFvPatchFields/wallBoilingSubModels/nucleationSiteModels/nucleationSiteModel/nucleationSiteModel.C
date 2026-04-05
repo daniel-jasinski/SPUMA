@@ -61,7 +61,7 @@ Foam::wallBoilingModels::nucleationSiteModel::New
             dict,
             "nucleationSiteModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

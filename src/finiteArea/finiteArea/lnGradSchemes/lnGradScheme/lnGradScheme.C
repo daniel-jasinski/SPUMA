@@ -62,7 +62,7 @@ tmp<lnGradScheme<Type>> lnGradScheme<Type>::New
         FatalIOErrorInFunction(schemeData)
             << "Grad scheme not specified" << nl << nl
             << "Valid schemes are :" << endl
-            << MeshConstructorTablePtr_->sortedToc()
+            << MeshConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -77,7 +77,7 @@ tmp<lnGradScheme<Type>> lnGradScheme<Type>::New
             schemeData,
             "grad",
             schemeName,
-            *MeshConstructorTablePtr_
+            *MeshConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

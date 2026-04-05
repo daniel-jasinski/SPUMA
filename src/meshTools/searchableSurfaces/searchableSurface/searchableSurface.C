@@ -55,7 +55,7 @@ Foam::autoPtr<Foam::searchableSurface> Foam::searchableSurface::New
             dict,
             "searchableSurface",
             searchableSurfaceType,
-            *dictConstructorTablePtr_
+            *dictConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -106,7 +106,7 @@ Foam::wallLubricationModel::New
             dict,
             "wallLubricationModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 

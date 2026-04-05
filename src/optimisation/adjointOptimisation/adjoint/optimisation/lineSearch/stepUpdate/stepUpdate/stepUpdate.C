@@ -72,7 +72,7 @@ Foam::autoPtr<Foam::stepUpdate> Foam::stepUpdate::New(const dictionary& dict)
             dict,
             "stepUpdate",
             type,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

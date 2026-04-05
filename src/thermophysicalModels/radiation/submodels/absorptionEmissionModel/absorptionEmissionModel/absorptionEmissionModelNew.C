@@ -51,7 +51,7 @@ Foam::radiation::absorptionEmissionModel::New
             dict,
             "absorptionEmissionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

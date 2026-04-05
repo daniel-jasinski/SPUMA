@@ -49,7 +49,7 @@ Foam::autoPtr<Foam::filmSeparationModel> Foam::filmSeparationModel::New
             dict,
             "filmSeparationModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -59,7 +59,7 @@ Foam::autoPtr<Foam::engineMesh> Foam::engineMesh::New(const IOobject& io)
             dict,
             "engineMesh",
             modelType,
-            *IOobjectConstructorTablePtr_
+            *IOobjectConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

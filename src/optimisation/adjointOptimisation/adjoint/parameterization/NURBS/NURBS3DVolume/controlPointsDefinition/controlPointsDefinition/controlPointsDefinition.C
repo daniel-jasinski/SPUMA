@@ -128,7 +128,7 @@ Foam::autoPtr<Foam::controlPointsDefinition> Foam::controlPointsDefinition::New
             dict,
             "controlPointsDefinition",
             type,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -56,7 +56,7 @@ Foam::autoPtr<Foam::surfaceTensionModel> Foam::surfaceTensionModel::New
                 dict,
                 "surfaceTensionModel",
                 modelType,
-                *dictionaryConstructorTablePtr_
+                *dictionaryConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

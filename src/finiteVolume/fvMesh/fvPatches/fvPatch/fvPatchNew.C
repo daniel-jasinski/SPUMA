@@ -47,7 +47,7 @@ Foam::autoPtr<Foam::fvPatch> Foam::fvPatch::New
         (
             "fvPatch",
             patch.type(),
-            *polyPatchConstructorTablePtr_
+            *polyPatchConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

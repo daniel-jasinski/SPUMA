@@ -107,7 +107,7 @@ autoPtr<adjointTurbulenceModel> adjointTurbulenceModel::New
         (
             "adjointTurbulenceModel",
             modelType,
-            *adjointTurbulenceModelConstructorTablePtr_
+            *adjointTurbulenceModelConstructorTablePtr_()
         ) << exit(FatalError);
     }
 

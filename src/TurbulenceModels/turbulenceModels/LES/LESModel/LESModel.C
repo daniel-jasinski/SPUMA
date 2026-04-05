@@ -172,7 +172,7 @@ Foam::LESModel<BasicTurbulenceModel>::New
             dict,
             "LES model",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

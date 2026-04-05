@@ -104,7 +104,7 @@ autoPtr<adjointSensitivity> adjointSensitivity::New
             dict,
             "adjointSensitivity",
             sensType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

@@ -54,7 +54,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::New
             << "Discretisation scheme not specified"
             << endl << endl
             << "Valid schemes are :" << endl
-            << MeshConstructorTablePtr_->sortedToc()
+            << MeshConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 
@@ -99,7 +99,7 @@ Foam::limitedSurfaceInterpolationScheme<Type>::New
             << "Discretisation scheme not specified"
             << endl << endl
             << "Valid schemes are :" << endl
-            << MeshConstructorTablePtr_->sortedToc()
+            << MeshConstructorTablePtr_()->sortedToc()
             << exit(FatalIOError);
     }
 

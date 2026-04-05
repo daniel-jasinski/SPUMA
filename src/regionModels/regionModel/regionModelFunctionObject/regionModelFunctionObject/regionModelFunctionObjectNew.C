@@ -51,7 +51,7 @@ Foam::regionModels::regionModelFunctionObject::New
             dict,
             "regionModelFunction",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

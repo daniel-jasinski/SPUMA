@@ -100,7 +100,7 @@ Foam::PackingModel<CloudType>::New
             dict,
             "packing model",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << abort(FatalIOError);
     }
 
