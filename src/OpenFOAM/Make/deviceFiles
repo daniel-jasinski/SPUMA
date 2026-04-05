@@ -14,3 +14,8 @@ ifneq (,$(findstring true,$(have_hip)))
         device/memoryExecutor/hipMemoryExecutor.hip \
         device/deviceInit/hipDeviceInit.C
 endif
+
+ifneq (,$(findstring true,$(have_sycl)))
+    DEVICE_SOURCE += \
+        device/syclGlobal.cpp
+endif

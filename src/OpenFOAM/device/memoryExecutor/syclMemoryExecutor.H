@@ -26,59 +26,85 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::cpuDeviceInit
+    Foam::syclMemoryExecutor
 
 Description
-    CPU device initialization backend.
+    SYCL executor for memory pool operations using AdaptiveCpp.
 
 SourceFiles
-    cpuDeviceInit.H
+    syclMemoryExecutor.H
+    syclMemoryExecutor.cpp
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_cpu_deviceInit_H
-#define Foam_cpu_deviceInit_H
+#ifndef Foam_sycl_Memory_Executor_H
+#define Foam_sycl_Memory_Executor_H
 
-#include "deviceInit.H"
+#include "memoryExecutor.H"
+#include <sycl/sycl.hpp>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
+// Forward declaration
+sycl::queue& getSyclQueue();
+
 /*---------------------------------------------------------------------------*\
-                           Class cpuDeviceInit Declaration
+                       Class syclMemoryExecutor Declaration
 \*---------------------------------------------------------------------------*/
 
-class cpuDeviceInit
-: public deviceInit<cpuDeviceInit>
+class syclMemoryExecutor
+: public memoryExecutor<syclMemoryExecutor>
 {
 public:
 
-    static void _backendShutdown() {}
+    static constexpr label _memAlignBytes = 16;
 
-    static void _backendInit()
-    {
-        if(!initDeviceFlag_)
-        {
-            initDeviceFlag_ = true;
-        }
-    }
+    static void* _backendAlloc(uint64_t size);
 
-    static void _setNumberOfThreadsPerBlock
+    static void _backendClear(void* ptr);
+
+    static void _backendMemCopy
     (
-        const int nThreadsPerBlock
-    ) {};
+        void* dst,
+        const void* src,
+        uint64_t size,
+        memCopyKind kind
+    );
 
-    static int _getNumberOfThreadsPerBlock()
-    {
-        return 1;
-    };
+    static void _backendMemSet
+    (
+        void* ptr,
+        const size_t sizeInBytes,
+        const void* value,
+        size_t sizeOfValue
+    );
+
+    static void _backendMemSetScalarOne
+    (
+       void* ptr,
+       const size_t sizeInBytes
+    );
+
+    static void _backendMemSet
+    (
+        void* ptr,
+        const size_t sizeInBytes,
+        const int value
+    );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "syclMemoryExecutor.cpp"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

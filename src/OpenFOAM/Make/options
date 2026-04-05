@@ -57,4 +57,15 @@ ifneq (,$(findstring true,$(have_cuda)))
     EXE_INC += -Dhave_cuda
 endif
 
+ifneq (,$(findstring true,$(have_sycl)))
+    EXE_INC += -Dhave_sycl
+endif
+
+/* SYCL device code: include .cpp implementation files for inline device code.
+   Detect SYCL from compiler name since have_sycl
+   may not be passed through to make on Windows. */
+ifneq (,$(findstring Sycl,$(WM_COMPILER)))
+    EXE_INC += -I$(LIB_SRC)/OpenFOAM/device/executor
+    EXE_INC += -I$(LIB_SRC)/OpenFOAM/device/memoryExecutor
+endif
 

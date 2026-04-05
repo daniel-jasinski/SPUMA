@@ -253,6 +253,7 @@ do
                 ${have_cuda:+-o -name '*.cuh'} \
                 ${have_hip:+-o -name '*.hip'} \
                 ${have_hip:+-o -name '*.hpp'} \
+                ${have_sycl:+-o -name 'sycl*.cpp'} \
             \)  \
             -exec ln "$link_option" {} . \;
     )

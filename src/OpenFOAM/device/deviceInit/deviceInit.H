@@ -72,6 +72,11 @@ public:
         T::_backendInit();
     }
 
+    static void shutdown()
+    {
+        T::_backendShutdown();
+    }
+
     static void setNumberOfThreadsPerBlock(int nThreadsPerBlock)
     {
         T::_setNumberOfThreadsPerBlock(nThreadsPerBlock);

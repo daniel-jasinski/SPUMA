@@ -26,54 +26,94 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::cpuDeviceInit
+    Foam::syclDeviceInit
 
 Description
-    CPU device initialization backend.
+    SYCL device initialization backend using AdaptiveCpp.
+    Attempts GPU selection with CPU fallback.
 
 SourceFiles
-    cpuDeviceInit.H
+    syclDeviceInit.H
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_cpu_deviceInit_H
-#define Foam_cpu_deviceInit_H
+#ifndef Foam_sycl_deviceInit_H
+#define Foam_sycl_deviceInit_H
 
 #include "deviceInit.H"
+#include "label.H"
+#include "messageStream.H"
+#include "error.H"
+#include <sycl/sycl.hpp>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
+// Global SYCL queue - defined in syclGlobal.cpp
+sycl::queue& getSyclQueue();
+void destroySyclQueue();
+
 /*---------------------------------------------------------------------------*\
-                           Class cpuDeviceInit Declaration
+                       Class syclDeviceInit Declaration
 \*---------------------------------------------------------------------------*/
 
-class cpuDeviceInit
-: public deviceInit<cpuDeviceInit>
+class syclDeviceInit
+: public deviceInit<syclDeviceInit>
 {
+    static int nThreadsPerBlock_;
+
 public:
 
-    static void _backendShutdown() {}
+    static void _setNumberOfThreadsPerBlock(const int nThreadsPerBlock);
+    static int _getNumberOfThreadsPerBlock();
 
-    static void _backendInit()
+    static void _backendShutdown()
     {
-        if(!initDeviceFlag_)
+        if (initDeviceFlag_)
         {
-            initDeviceFlag_ = true;
+            destroySyclQueue();
+            initDeviceFlag_ = false;
         }
     }
 
-    static void _setNumberOfThreadsPerBlock
-    (
-        const int nThreadsPerBlock
-    ) {};
-
-    static int _getNumberOfThreadsPerBlock()
+    static void _backendInit()
     {
-        return 1;
-    };
+        if (!initDeviceFlag_)
+        {
+            Info << "Initializing SYCL devices..." << nl << nl;
+
+            try
+            {
+                // Get the global queue (will be initialized on first access)
+                sycl::queue& q = getSyclQueue();
+
+                // Print device info
+                auto device = q.get_device();
+                Info << "  SYCL Device: "
+                     << device.get_info<sycl::info::device::name>()
+                     << nl;
+                Info << "  Vendor: "
+                     << device.get_info<sycl::info::device::vendor>()
+                     << nl;
+                Info << "  Max compute units: "
+                     << device.get_info<sycl::info::device::max_compute_units>()
+                     << nl;
+                Info << "  Max work-group size: "
+                     << device.get_info<sycl::info::device::max_work_group_size>()
+                     << nl << nl;
+            }
+            catch (const sycl::exception& e)
+            {
+                FatalErrorInFunction
+                    << "SYCL device initialization failed: " << e.what()
+                    << abort(FatalError);
+            }
+
+            initDeviceFlag_ = true;
+        }
+    }
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

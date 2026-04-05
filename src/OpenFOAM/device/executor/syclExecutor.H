@@ -26,59 +26,85 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::cpuDeviceInit
+    Foam::syclExecutor
 
 Description
-    CPU device initialization backend.
+    SYCL executor backend using AdaptiveCpp.
 
 SourceFiles
-    cpuDeviceInit.H
+    syclExecutor.H
+    syclExecutor.cpp
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_cpu_deviceInit_H
-#define Foam_cpu_deviceInit_H
+#ifndef Foam_sycl_executor_H
+#define Foam_sycl_executor_H
 
-#include "deviceInit.H"
+#include "executor.H"
+#include <sycl/sycl.hpp>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
+// Forward declaration
+class syclExecutor;
+
+// Global SYCL queue accessor
+sycl::queue& getSyclQueue();
+
 /*---------------------------------------------------------------------------*\
-                           Class cpuDeviceInit Declaration
+                          Class syclExecutor Declaration
 \*---------------------------------------------------------------------------*/
 
-class cpuDeviceInit
-: public deviceInit<cpuDeviceInit>
+class syclExecutor
+:
+    public executor<syclExecutor>
 {
+
 public:
 
-    static void _backendShutdown() {}
+    template<typename F>
+    void _backendFor(F& lambda, const label& size);
 
-    static void _backendInit()
-    {
-        if(!initDeviceFlag_)
-        {
-            initDeviceFlag_ = true;
-        }
-    }
+    template<typename F>
+    void _backendSerialFor(F& lambda, const label& size);
 
-    static void _setNumberOfThreadsPerBlock
+    //- Generic reduction: works for any binary op + identity
+    template<typename F, typename Op, typename resultT>
+    void _backendReduce
     (
-        const int nThreadsPerBlock
-    ) {};
+        F& lambda, Op op, resultT identity,
+        resultT* const __restrict__ result,
+        const label& size
+    );
 
-    static int _getNumberOfThreadsPerBlock()
-    {
-        return 1;
-    };
+    template<typename F, typename resultT>
+    void _backendReductionSum
+    (
+        F& lambda, resultT* const __restrict__ result,
+        const label& size
+    );
+
+    template<typename F, typename Op, typename resultT>
+    void _backendReductionCompare
+    (
+        F& lambda, Op& op,
+        resultT* const __restrict__ result,
+        const label& size
+    );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "syclExecutor.cpp"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

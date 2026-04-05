@@ -1,0 +1,150 @@
+/*---------------------------------------------------------------------------*\
+  *      .  *_______ * ______ .  __ *  __ * ___ .___    .  ___ .   *  .     *
+    *  .    /       | |   _  \  |  |  |  | |   \/   | *   /   \ *   .    *   .
+ *    .  * .\   (---*.|  |_)  |.|  |  |  |*|  \  /  |. * /  *  \  .  *     *
+ =^^=^^==^^^=\   \^=^=|   ___/=^|  |^=|  |=|  |\/|  |^^=/  /=\  \^=^=^^===^^^=
+ 0  o  O  o---)   \ 0 |  |   0  |  o--o  |o|  |  |  | o/  _____  \ 0   o  O
+     0    |_______/   |__| o   o \______/  |__| 0|__| /__/  o  \__\   o
+  O   o  o        0  o      0   O        o    o       O  o     0   o    0  o
+-------------------------------------------------------------------------------
+    Copyright (C) 2025 Cineca
+-------------------------------------------------------------------------------
+License
+    This file is part of SPUMA.
+
+    SPUMA is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    SPUMA is distributed in the hope that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#ifndef Foam_sycl_executor_cpp
+#define Foam_sycl_executor_cpp
+
+#include "syclExecutor.H"
+#include "deviceM.H"
+#include "zero.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+template<typename F>
+void Foam::syclExecutor::_backendFor(F& lambda, const label& size)
+{
+    if (size <= 0)
+        return;
+
+    sycl::queue& q = getSyclQueue();
+
+    q.parallel_for(sycl::range<1>(size), [=](sycl::id<1> idx)
+    {
+        lambda(idx[0]);
+    }).wait();
+}
+
+template<typename F>
+void Foam::syclExecutor::_backendSerialFor(F& lambda, const label& size)
+{
+    if (size <= 0)
+        return;
+
+    sycl::queue& q = getSyclQueue();
+
+    q.single_task([=]()
+    {
+        for (label i = 0; i < size; ++i)
+        {
+            lambda(i);
+        }
+    }).wait();
+}
+
+// Generic reduction: works for any binary op (plus, min, max, custom).
+// GPU uses sycl::reduction (USM-based). OMP uses CPU fallback (see below).
+template <typename F, typename Op, typename resultT>
+void Foam::syclExecutor::_backendReduce
+(
+    F& lambda,
+    Op op,
+    resultT identity,
+    resultT* const __restrict__ result,
+    const label& size
+)
+{
+    if (size <= 0) return;
+
+    sycl::queue& q = getSyclQueue();
+
+    if (q.get_device().is_gpu())
+    {
+        // GPU: USM-based sycl::reduction (no buffers, no accessor overhead).
+        // Works correctly after fixing reduction_engine.hpp value-copy bug.
+        resultT* reduced = sycl::malloc_shared<resultT>(1, q);
+        *reduced = identity;
+
+        q.parallel_for
+        (
+            sycl::range<1>(size),
+            sycl::reduction(reduced, identity, op),
+            [=](sycl::id<1> idx, auto& reducer)
+            {
+                reducer.combine(lambda(idx[0]));
+            }
+        ).wait();
+
+        *result = op(*result, *reduced);
+        sycl::free(reduced, q);
+    }
+    else
+    {
+        // CPU fallback: sycl::reduction returns 0 on AdaptiveCpp OMP
+        // backend. Use sequential loop for correctness.
+        resultT local = identity;
+
+        for (label i = 0; i < size; ++i)
+        {
+            local = op(local, lambda(i));
+        }
+
+        *result = op(*result, local);
+    }
+}
+
+template <typename F, typename resultT>
+void Foam::syclExecutor::_backendReductionSum
+(
+    F& lambda,
+    resultT* const __restrict__ result,
+    const label& size
+)
+{
+    _backendReduce(lambda, sycl::plus<resultT>(), resultT(Foam::Zero), result, size);
+}
+
+template <typename F, typename Op, typename resultT>
+void Foam::syclExecutor::_backendReductionCompare
+(
+    F& lambda,
+    Op& op,
+    resultT* const __restrict__ result,
+    const label& size
+)
+{
+    _backendReduce(lambda, op, *result, result, size);
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //

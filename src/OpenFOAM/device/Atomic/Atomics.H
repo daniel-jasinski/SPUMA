@@ -44,6 +44,8 @@ SourceFiles
     #include "cudaAtomic.cuh"
 #elif have_hip
     #include "hipAtomic.hpp"
+#elif have_sycl
+    #include "syclAtomic.H"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -55,6 +57,8 @@ namespace Foam
     typedef cudaAtomic foamAtomic;
 #elif have_hip
     typedef hipAtomic foamAtomic;
+#elif have_sycl
+    typedef syclAtomic foamAtomic;
 #else
     typedef cpuAtomic foamAtomic;
 #endif

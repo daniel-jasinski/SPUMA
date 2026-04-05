@@ -25,63 +25,66 @@ License
     You should have received a copy of the GNU General Public License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
-Class
-    Foam::cpuDeviceInit
-
 Description
-    CPU device initialization backend.
-
-SourceFiles
-    cpuDeviceInit.H
+    Global SYCL queue instance for SPUMA.
+    Uses GPU device if available, falls back to CPU.
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef Foam_cpu_deviceInit_H
-#define Foam_cpu_deviceInit_H
+#ifdef have_sycl
 
-#include "deviceInit.H"
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#include <sycl/sycl.hpp>
+#include "syclDeviceInit.H"
 
 namespace Foam
 {
 
-/*---------------------------------------------------------------------------*\
-                           Class cpuDeviceInit Declaration
-\*---------------------------------------------------------------------------*/
+// Static member definitions
+int syclDeviceInit::nThreadsPerBlock_ = 256;
 
-class cpuDeviceInit
-: public deviceInit<cpuDeviceInit>
+void syclDeviceInit::_setNumberOfThreadsPerBlock(const int n)
 {
-public:
+    nThreadsPerBlock_ = n;
+}
 
-    static void _backendShutdown() {}
+int syclDeviceInit::_getNumberOfThreadsPerBlock()
+{
+    return nThreadsPerBlock_;
+}
 
-    static void _backendInit()
+// Global SYCL queue - heap-allocated for explicit lifetime control.
+// Destroyed by destroySyclQueue() before process exit to ensure
+// AdaptiveCpp cleanup runs while CUDA/HIP runtime is still alive.
+static sycl::queue* syclQueuePtr_ = nullptr;
+
+sycl::queue& getSyclQueue()
+{
+    if (!syclQueuePtr_)
     {
-        if(!initDeviceFlag_)
+        try
         {
-            initDeviceFlag_ = true;
+            syclQueuePtr_ = new sycl::queue(sycl::gpu_selector_v);
+        }
+        catch (const sycl::exception&)
+        {
+            syclQueuePtr_ = new sycl::queue(sycl::default_selector_v);
         }
     }
+    return *syclQueuePtr_;
+}
 
-    static void _setNumberOfThreadsPerBlock
-    (
-        const int nThreadsPerBlock
-    ) {};
-
-    static int _getNumberOfThreadsPerBlock()
+void destroySyclQueue()
+{
+    if (syclQueuePtr_)
     {
-        return 1;
-    };
-};
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+        syclQueuePtr_->wait();
+        delete syclQueuePtr_;
+        syclQueuePtr_ = nullptr;
+    }
+}
 
 } // End namespace Foam
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#endif
+#endif // have_sycl
 
 // ************************************************************************* //
