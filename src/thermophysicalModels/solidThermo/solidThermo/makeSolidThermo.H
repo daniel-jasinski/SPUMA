@@ -83,39 +83,56 @@ defineTemplateTypeNameAndDebugWithName                                         \
 );                                                                             \
                                                                                \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+/* Compute key directly from typeName() functions. Do not reference */          \
+/* typeName data member (empty during static init on Windows DLLs). */         \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     basicThermo,                                                               \
     Cthermo##Mixture##Transport##Type##Thermo##EqnOfState##Specie,             \
-    fvMesh                                                                     \
+    fvMesh,                                                                    \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + Transport##Type##Thermo##EqnOfState##Specie::typeName()                   \
+   + ">>").c_str()                                                             \
 );                                                                             \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     BaseThermo,                                                                \
     Cthermo##Mixture##Transport##Type##Thermo##EqnOfState##Specie,             \
-    fvMesh                                                                     \
+    fvMesh,                                                                    \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + Transport##Type##Thermo##EqnOfState##Specie::typeName()                   \
+   + ">>").c_str()                                                             \
 );                                                                             \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     BaseThermo,                                                                \
     Cthermo##Mixture##Transport##Type##Thermo##EqnOfState##Specie,             \
-    dictionary                                                                 \
+    dictionary,                                                                \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + Transport##Type##Thermo##EqnOfState##Specie::typeName()                   \
+   + ">>").c_str()                                                             \
 );                                                                             \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     basicThermo,                                                               \
     Cthermo##Mixture##Transport##Type##Thermo##EqnOfState##Specie,             \
-    fvMeshDictPhase                                                            \
+    fvMeshDictPhase,                                                           \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + Transport##Type##Thermo##EqnOfState##Specie::typeName()                   \
+   + ">>").c_str()                                                             \
 );                                                                             \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     BaseThermo,                                                                \
     Cthermo##Mixture##Transport##Type##Thermo##EqnOfState##Specie,             \
-    fvMeshDictPhase                                                            \
+    fvMeshDictPhase,                                                           \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + Transport##Type##Thermo##EqnOfState##Specie::typeName()                   \
+   + ">>").c_str()                                                             \
 );
 
 
@@ -150,25 +167,32 @@ defineTemplateTypeNameAndDebugWithName                                         \
 );                                                                             \
                                                                                \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+/* Compute key directly from typeName() functions. */                          \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     basicThermo,                                                               \
     Cthermo##Mixture##SolidPhysicsType,                                        \
-    fvMesh                                                                     \
+    fvMesh,                                                                    \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + SolidPhysicsType::typeName() + ">>").c_str()                              \
 );                                                                             \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     BaseThermo,                                                                \
     Cthermo##Mixture##SolidPhysicsType,                                        \
-    fvMesh                                                                     \
+    fvMesh,                                                                    \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + SolidPhysicsType::typeName() + ">>").c_str()                              \
 );                                                                             \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     BaseThermo,                                                                \
     Cthermo##Mixture##SolidPhysicsType,                                        \
-    dictionary                                                                 \
+    dictionary,                                                                \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + SolidPhysicsType::typeName() + ">>").c_str()                              \
 );
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -74,25 +74,32 @@ defineTemplateTypeNameAndDebugWithName                                         \
     0                                                                          \
 );                                                                             \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+/* Compute key directly from typeName() functions. */                          \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     basicThermo,                                                               \
     Cthermo##Mixture##ThermoPhys,                                              \
-    fvMesh                                                                     \
+    fvMesh,                                                                    \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + ThermoPhys::typeName() + ">>").c_str()                                    \
 );                                                                             \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     BaseThermo,                                                                \
     Cthermo##Mixture##ThermoPhys,                                              \
-    fvMesh                                                                     \
+    fvMesh,                                                                    \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + ThermoPhys::typeName() + ">>").c_str()                                    \
 );                                                                             \
                                                                                \
-addToRunTimeSelectionTable                                                     \
+addToRunTimeSelectionTableKey                                                  \
 (                                                                              \
     BaseThermo,                                                                \
     Cthermo##Mixture##ThermoPhys,                                              \
-    dictionary                                                                 \
+    dictionary,                                                                \
+    (#Cthermo"<"#Mixture"<"                                                    \
+   + ThermoPhys::typeName() + ">>").c_str()                                    \
 );
 
 

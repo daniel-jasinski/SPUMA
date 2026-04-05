@@ -66,10 +66,14 @@ License
         ThermoPhys                                                             \
     );                                                                         \
                                                                                \
-    addThermoPhysicsThermo(basicThermo, CThermo##Mixture##ThermoPhys);         \
-    addThermoPhysicsThermo(fluidThermo, CThermo##Mixture##ThermoPhys);         \
-    addThermoPhysicsThermo(BaseThermo, CThermo##Mixture##ThermoPhys);          \
-    addThermoPhysicsThermo(BaseReactionThermo, CThermo##Mixture##ThermoPhys)
+    addThermoPhysicsThermo                                                     \
+        (basicThermo, CThermo##Mixture##ThermoPhys, CThermo, Mixture, ThermoPhys); \
+    addThermoPhysicsThermo                                                     \
+        (fluidThermo, CThermo##Mixture##ThermoPhys, CThermo, Mixture, ThermoPhys); \
+    addThermoPhysicsThermo                                                     \
+        (BaseThermo, CThermo##Mixture##ThermoPhys, CThermo, Mixture, ThermoPhys); \
+    addThermoPhysicsThermo                                                     \
+        (BaseReactionThermo, CThermo##Mixture##ThermoPhys, CThermo, Mixture, ThermoPhys)
 
 
 #define makeThermoPhysicsReactionThermo(BaseReactionThermo,CThermo,Mixture,ThermoPhys) \
@@ -82,8 +86,8 @@ License
         ThermoPhys                                                             \
     );                                                                         \
                                                                                \
-                                                                               \
-    addThermoPhysicsThermo(BaseReactionThermo, CThermo##Mixture##ThermoPhys)
+    addThermoPhysicsThermo                                                     \
+        (BaseReactionThermo, CThermo##Mixture##ThermoPhys, CThermo, Mixture, ThermoPhys)
 
 
 #define makeReactionThermos(BaseThermo,BaseReactionThermo,CThermo,Mixture,Transport,Type,Thermo,EqnOfState,Specie) \

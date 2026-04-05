@@ -50,11 +50,13 @@ License
         {                                                                      \
             typedef sootModelType<Thermo> sootModelType##Thermo;               \
                                                                                \
-            addToRunTimeSelectionTable                                         \
+            /* Use string literal as key (no data member needed). */            \
+            addToRunTimeSelectionTableKey                                      \
             (                                                                  \
                 sootModel,                                                     \
                 sootModelType##Thermo,                                         \
-                dictionary                                                     \
+                dictionary,                                                    \
+                #sootModelType"<"#Thermo">"                                    \
             );                                                                 \
         }                                                                      \
     }

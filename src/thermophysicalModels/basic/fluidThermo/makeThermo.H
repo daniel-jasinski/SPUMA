@@ -78,38 +78,48 @@ Description
     )
 
 
-#define addThermoPhysicsThermo(BaseThermo,CThermoMixtureThermoPhys)            \
+#define addThermoPhysicsThermo\
+(BaseThermo,CThermoMixtureThermoPhys,CThermo,Mixture,ThermoPhys)              \
                                                                                \
-    addToRunTimeSelectionTable                                                 \
+    /* Compute key directly from typeName() functions. Do not reference */      \
+    /* typeName data member (empty during static init on Windows DLLs). */     \
+    /* The typeName() chain calls typeName_() at each */                       \
+    /* level, returning string literals — safe during static init. */          \
+    addToRunTimeSelectionTableKey                                              \
     (                                                                          \
         BaseThermo,                                                            \
         CThermoMixtureThermoPhys,                                              \
-        fvMesh                                                                 \
+        fvMesh,                                                                \
+        (#CThermo"<" + Mixture<ThermoPhys>::typeName() + ">").c_str()          \
     );                                                                         \
                                                                                \
-    addToRunTimeSelectionTable                                                 \
+    addToRunTimeSelectionTableKey                                              \
     (                                                                          \
         BaseThermo,                                                            \
         CThermoMixtureThermoPhys,                                              \
-        fvMeshDictPhase                                                        \
-    );
+        fvMeshDictPhase,                                                       \
+        (#CThermo"<" + Mixture<ThermoPhys>::typeName() + ">").c_str()          \
+    )
 
 
 #define makeThermoPhysicsThermo(BaseThermo,CThermo,Mixture,ThermoPhys)         \
                                                                                \
     defineThermoPhysicsThermo(BaseThermo, CThermo, Mixture, ThermoPhys);       \
                                                                                \
-    addThermoPhysicsThermo(BaseThermo, CThermo##Mixture##ThermoPhys)
+    addThermoPhysicsThermo                                                     \
+        (BaseThermo, CThermo##Mixture##ThermoPhys, CThermo, Mixture, ThermoPhys)
 
 
 #define makeThermoPhysicsThermos(BaseThermo,CThermo,Mixture,ThermoPhys)        \
                                                                                \
     defineThermoPhysicsThermo(BaseThermo, CThermo, Mixture, ThermoPhys);       \
                                                                                \
-                                                                               \
-    addThermoPhysicsThermo(basicThermo, CThermo##Mixture##ThermoPhys);         \
-    addThermoPhysicsThermo(fluidThermo, CThermo##Mixture##ThermoPhys);         \
-    addThermoPhysicsThermo(BaseThermo, CThermo##Mixture##ThermoPhys)
+    addThermoPhysicsThermo                                                     \
+        (basicThermo, CThermo##Mixture##ThermoPhys, CThermo, Mixture, ThermoPhys); \
+    addThermoPhysicsThermo                                                     \
+        (fluidThermo, CThermo##Mixture##ThermoPhys, CThermo, Mixture, ThermoPhys); \
+    addThermoPhysicsThermo                                                     \
+        (BaseThermo, CThermo##Mixture##ThermoPhys, CThermo, Mixture, ThermoPhys)
 
 
 #define makeThermo(BaseThermo,CThermo,Mixture,Transport,Type,Thermo,EqnOfState,Specie) \

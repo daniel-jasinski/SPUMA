@@ -45,7 +45,7 @@ namespace Foam
     (                                                                          \
         CombustionModel##Comp,                                                 \
         (                                                                      \
-            word(CombustionModel##Comp::typeName_()) + "<" + Comp::typeName    \
+            word(CombustionModel##Comp::typeName_()) + "<" + Comp::typeName_()    \
           + ">"                                                                \
         ).c_str(),                                                             \
         0                                                                      \
@@ -67,7 +67,7 @@ namespace Foam
     (                                                                          \
         CombModel##Comp##Thermo,                                               \
         (                                                                      \
-            word(CombModel##Comp##Thermo::typeName_()) + "<" + Comp::typeName  \
+            word(CombModel##Comp##Thermo::typeName_()) + "<" + Comp::typeName_()  \
           + "," + Thermo::typeName() + ">"                                     \
         ).c_str(),                                                             \
         0                                                                      \
@@ -76,7 +76,11 @@ namespace Foam
     CombustionModel<Comp>::                                                    \
         add##dictionary##ConstructorToTable<CombModel##Comp##Thermo>           \
         add##CombModel##Comp##Thermo##dictionary##ConstructorTo##\
-CombustionModel##Comp##Table_;
+CombustionModel##Comp##Table_                                                  \
+        (                                                                      \
+            word(CombModel##Comp##Thermo::typeName_()) + "<" + Comp::typeName_()  \
+          + "," + Thermo::typeName() + ">"                                     \
+        );
 
 
 #define makeCombustionTypes(CombModel, Comp)                                   \
@@ -87,7 +91,7 @@ CombustionModel##Comp##Table_;
     (                                                                          \
         CombModel##Comp,                                                       \
         (                                                                      \
-            word(CombModel##Comp::typeName_()) + "<" + Comp::typeName + ">"    \
+            word(CombModel##Comp::typeName_()) + "<" + Comp::typeName_() + ">"    \
         ).c_str(),                                                             \
         0                                                                      \
     );                                                                         \
@@ -95,7 +99,10 @@ CombustionModel##Comp##Table_;
     CombustionModel<Comp>::                                                    \
         add##dictionary##ConstructorToTable<CombModel##Comp>                   \
         add##CombModel##Comp##dictionary##ConstructorTo##CombustionModel##Comp\
-##Table_;
+##Table_                                                                       \
+        (                                                                      \
+            word(CombModel##Comp::typeName_()) + "<" + Comp::typeName_() + ">"    \
+        );
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

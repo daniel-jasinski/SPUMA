@@ -59,11 +59,15 @@ namespace Foam
         0                                                                      \
     );                                                                         \
                                                                                \
-    addToRunTimeSelectionTable                                                 \
+    /* Compute key directly from typeName_() / typeName() functions. */         \
+    addToRunTimeSelectionTableKey                                              \
     (                                                                          \
         Comp,                                                                  \
         SS##Schem##Comp##SThermo##GThermo,                                     \
-        thermo                                                                 \
+        thermo,                                                                \
+        (#SS"<" + word(Schem<Comp, SThermo, GThermo>::typeName_())             \
+       + "<"#Comp"," + SThermo::typeName()                                     \
+       + ","  + GThermo::typeName() + ">>").c_str()                            \
     );
 
 
