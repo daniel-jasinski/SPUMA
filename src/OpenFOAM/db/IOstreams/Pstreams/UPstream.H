@@ -40,6 +40,7 @@ SourceFiles
 #ifndef Foam_UPstream_H
 #define Foam_UPstream_H
 
+#include "stdFoam.H"
 #include "wordList.H"
 #include "labelList.H"
 #include "DynamicList.H"
@@ -81,7 +82,7 @@ public:
     };
 
     //- Enumerated names for the communication types
-    static const Enum<commsTypes> commsTypeNames;
+    FOAM_EXPORT_DATA static const Enum<commsTypes> commsTypeNames;
 
     //- Different MPI-send modes (ignored for commsTypes::buffered)
     enum class sendModes : char
@@ -209,19 +210,19 @@ private:
     // Private Static Data
 
         //- By default this is not a parallel run
-        static bool parRun_;
+        FOAM_EXPORT_DATA static bool parRun_;
 
         //- Have support for threads?
-        static bool haveThreads_;
+        FOAM_EXPORT_DATA static bool haveThreads_;
 
         //- Standard transfer message type
-        static int msgType_;
+        FOAM_EXPORT_DATA static int msgType_;
 
         //- Names of all worlds
-        static wordList allWorlds_;
+        FOAM_EXPORT_DATA static wordList allWorlds_;
 
         //- Per processor the world index (into allWorlds_)
-        static labelList worldIDs_;
+        FOAM_EXPORT_DATA static labelList worldIDs_;
 
         //- Intra-host communicator
         static label intraHostComm_;
@@ -233,16 +234,16 @@ private:
     // Communicator specific data
 
         //- My processor number
-        static DynamicList<int> myProcNo_;
+        FOAM_EXPORT_DATA static DynamicList<int> myProcNo_;
 
         //- List of process IDs
-        static DynamicList<List<int>> procIDs_;
+        FOAM_EXPORT_DATA static DynamicList<List<int>> procIDs_;
 
         //- Parent communicator
-        static DynamicList<label> parentComm_;
+        FOAM_EXPORT_DATA static DynamicList<label> parentComm_;
 
         //- Free communicators
-        static DynamicList<label> freeComms_;
+        FOAM_EXPORT_DATA static DynamicList<label> freeComms_;
 
         //- Linear communication schedule
         static DynamicList<List<commsStruct>> linearCommunication_;
@@ -286,23 +287,23 @@ public:
         //- Should compact transfer be used in which floats replace doubles
         //- reducing the bandwidth requirement at the expense of some loss
         //- in accuracy
-        static bool floatTransfer;
+        FOAM_EXPORT_DATA static bool floatTransfer;
 
         //- Number of processors to change from linear to tree communication
-        static int nProcsSimpleSum;
+        FOAM_EXPORT_DATA static int nProcsSimpleSum;
 
         //- Number of processors to change to nonBlocking consensual
         //- exchange (NBX). Ignored for zero or negative values.
-        static int nProcsNonblockingExchange;
+        FOAM_EXPORT_DATA static int nProcsNonblockingExchange;
 
         //- Number of polling cycles in processor updates
-        static int nPollProcInterfaces;
+        FOAM_EXPORT_DATA static int nPollProcInterfaces;
 
         //- Default commsType
-        static commsTypes defaultCommsType;
+        FOAM_EXPORT_DATA static commsTypes defaultCommsType;
 
         //- Optional maximum message size (bytes)
-        static int maxCommsSize;
+        FOAM_EXPORT_DATA static int maxCommsSize;
 
         //- Tuning parameters for non-blocking exchange (NBX)
         static int tuning_NBX_;
@@ -315,10 +316,10 @@ public:
 
         //- Communicator for all ranks.
         //- May differ from commGlobal() if local worlds are in use
-        static label worldComm;
+        FOAM_EXPORT_DATA static label worldComm;
 
         //- Debugging: warn for use of any communicator differing from warnComm
-        static label warnComm;
+        FOAM_EXPORT_DATA static label warnComm;
 
         //- Communicator for all ranks, irrespective of any local worlds
         static constexpr label commGlobal() noexcept { return 0; }

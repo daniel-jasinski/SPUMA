@@ -99,6 +99,7 @@ SourceFiles
 #ifndef Foam_argList_H
 #define Foam_argList_H
 
+#include "stdFoam.H"
 #include "stringList.H"
 #include "SLList.H"
 #include "HashSet.H"
@@ -206,42 +207,42 @@ public:
     // Static Data Members
 
         //- A list of valid (mandatory) arguments
-        static SLList<string> validArgs;
+        FOAM_EXPORT_DATA static SLList<string> validArgs;
 
         //- The "advanced" options are shown with -help-full (not with --help)
-        static HashSet<string> advancedOptions;
+        FOAM_EXPORT_DATA static HashSet<string> advancedOptions;
 
         //- A list of valid options
-        static HashTable<string> validOptions;
+        FOAM_EXPORT_DATA static HashTable<string> validOptions;
 
         //- A list of valid parallel options
-        static HashTable<string> validParOptions;
+        FOAM_EXPORT_DATA static HashTable<string> validParOptions;
 
         //- A list of aliases for options.
         //  Stored as (alias = canonical, version)
-        static HashTable<std::pair<word,int>> validOptionsCompat;
+        FOAM_EXPORT_DATA static HashTable<std::pair<word,int>> validOptionsCompat;
 
         //- A list of options to ignore.
         //  Stored as (option = bool, version)
-        static HashTable<std::pair<bool,int>> ignoreOptionsCompat;
+        FOAM_EXPORT_DATA static HashTable<std::pair<bool,int>> ignoreOptionsCompat;
 
         //- Short description for program arguments
-        static HashTable<string, label, Hash<label>> argUsage;
+        FOAM_EXPORT_DATA static HashTable<string, label, Hash<label>> argUsage;
 
         //- Short description for validOptions
-        static HashTable<string> optionUsage;
+        FOAM_EXPORT_DATA static HashTable<string> optionUsage;
 
         //- General usage notes
-        static SLList<string> notes;
+        FOAM_EXPORT_DATA static SLList<string> notes;
 
         //- Min indentation when displaying usage (default: 20)
-        static std::string::size_type usageMin;
+        FOAM_EXPORT_DATA static std::string::size_type usageMin;
 
         //- Max screen width when displaying usage (default: 80)
-        static std::string::size_type usageMax;
+        FOAM_EXPORT_DATA static std::string::size_type usageMax;
 
         //- Standard name for the post-processing option
-        static word postProcessOptionName;
+        FOAM_EXPORT_DATA static word postProcessOptionName;
 
         //! \cond internalClass
         //  The constructor populates the standard options

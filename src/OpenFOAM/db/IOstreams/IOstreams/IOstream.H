@@ -45,6 +45,7 @@ SourceFiles
 #ifndef Foam_IOstream_H
 #define Foam_IOstream_H
 
+#include "stdFoam.H"
 #include "char.H"
 #include "bool.H"
 #include "label.H"
@@ -103,7 +104,7 @@ public:
     // Public Static Data
 
         //- Default precision
-        static unsigned int precision_;
+        FOAM_EXPORT_DATA static unsigned int precision_;
 
 
 protected:

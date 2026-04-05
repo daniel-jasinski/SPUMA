@@ -210,7 +210,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 //- Global predefined null output stream "/dev/null"
-extern OFstream Snull;
+FOAM_EXPORT_DATA extern OFstream Snull;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

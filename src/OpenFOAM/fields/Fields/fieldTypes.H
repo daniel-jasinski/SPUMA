@@ -48,6 +48,7 @@ Note
 #include "triad.H"
 #include "macros.H"
 #include "wordList.H"
+#include "stdFoam.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -79,7 +80,7 @@ namespace fieldTypes
 
 //- Standard basic field types (label, scalar, vector, tensor, etc)
 //  These also correspond to cloud output fields.
-extern const wordList basic;
+FOAM_EXPORT_DATA extern const wordList basic;
 
 
 // Commonly used patch field types
@@ -88,13 +89,13 @@ extern const wordList basic;
 inline const char* emptyTypeName_() noexcept { return "empty"; }
 
 //- An \c empty patch field type
-extern const word emptyType;
+FOAM_EXPORT_DATA extern const word emptyType;
 
 //- A \c calculated patch field type
 inline const char* calculatedTypeName_() noexcept { return "calculated"; }
 
 //- A \c calculated patch field type
-extern const word calculatedType;
+FOAM_EXPORT_DATA extern const word calculatedType;
 
 //- A combined \c zero-gradient and \c calculated patch field type
 inline const char* extrapolatedCalculatedTypeName_() noexcept
@@ -103,19 +104,19 @@ inline const char* extrapolatedCalculatedTypeName_() noexcept
 }
 
 //- A combined \c zero-gradient and \c calculated patch field type
-extern const word extrapolatedCalculatedType;
+FOAM_EXPORT_DATA extern const word extrapolatedCalculatedType;
 
 //- A \c processor patch field type
 inline const char* processorTypeName_() noexcept { return "processor"; }
 
 //- A \c processor patch field type
-extern const word processorType;
+FOAM_EXPORT_DATA extern const word processorType;
 
 //- A \c zeroGradient patch field type
 inline const char* zeroGradientTypeName_() noexcept { return "zeroGradient"; }
 
 //- A \c zeroGradient patch field type
-extern const word zeroGradientType;
+FOAM_EXPORT_DATA extern const word zeroGradientType;
 
 } // End namespace fieldTypes
 } // End namespace Foam

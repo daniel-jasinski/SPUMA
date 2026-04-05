@@ -44,6 +44,7 @@ SourceFiles
 #ifndef Foam_polyMesh_H
 #define Foam_polyMesh_H
 
+#include "stdFoam.H"
 #include "objectRegistry.H"
 #include "primitiveMesh.H"
 #include "pointField.H"
@@ -326,10 +327,10 @@ public:
     TypeName("polyMesh");
 
     //- Return the default region name
-    static word defaultRegion;
+    FOAM_EXPORT_DATA static word defaultRegion;
 
     //- Return the mesh sub-directory name (usually "polyMesh")
-    static word meshSubDir;
+    FOAM_EXPORT_DATA static word meshSubDir;
 
 
     // Constructors

@@ -391,25 +391,31 @@ public:
         //- Report optional keywords and values if not present in dictionary
         //  For value greater than 1: fatal.
         //  Set/unset via an InfoSwitch or -info-switch at the command-line
-        static int writeOptionalEntries;
+        FOAM_EXPORT_DATA static int writeOptionalEntries;
 
         //- An empty dictionary, which is also the parent for all dictionaries
-        static const dictionary null;
+        FOAM_EXPORT_DATA static const dictionary null;
 
         //- Output location when reporting default values
-        static refPtr<OSstream> reportingOutput;
+        FOAM_EXPORT_DATA static refPtr<OSstream> reportingOutput;
 
 
     // Static Member Functions
 
         //- Return the state of reporting optional (default) entries
         //  0: no reporting, 1: report, 2: fatal if not set
-        inline static int reportOptional() noexcept;
+        //  Non-inline: compiled in libOpenFOAM to avoid cross-DLL data access
+        static int reportOptional() noexcept;
 
         //- Change the state of reporting optional (default) entries
         //  0: no reporting, 1: report, 2: fatal if not set
         //  \return old level
-        inline static int reportOptional(const int level) noexcept;
+        //  Non-inline: compiled in libOpenFOAM to avoid cross-DLL data access
+        static int reportOptional(const int level) noexcept;
+
+        //- Return the output stream for reporting default values
+        //  Non-inline: compiled in libOpenFOAM to avoid cross-DLL data access
+        static OSstream& reportingOutputStream();
 
 
     // Constructors
