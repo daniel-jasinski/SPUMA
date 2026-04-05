@@ -119,6 +119,11 @@ public:
     //- Named/registered debug switch: 'fileMonitor'
     static int debug;
 
+    //- Function accessor for the debug switch. Defined inline so the
+    //- cross-DLL-safe form used by the Debug* macros in messageStream.H
+    //- works for this non-ClassName class.
+    static int debugLevel() { return debug; }
+
 
     // Constructors
 

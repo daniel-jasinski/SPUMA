@@ -541,7 +541,8 @@ void Foam::dynamicCode::waitForFile
     const dictionary& contextDict
 )
 {
-    const int debug = 0;
+    // Local debug gate: DebugPout below is a compile-time no-op.
+    auto debugLevel = []() noexcept { return 0; };
 
     if (!UPstream::parRun())
     {

@@ -256,6 +256,11 @@ public:
         //- Flag to execute debug content
         static int debug;
 
+        //- Function accessor for the debug switch. Defined inline so the
+        //- cross-DLL-safe form used by the Debug* macros in messageStream.H
+        //- works for this non-ClassName class.
+        static int debugLevel() { return debug; }
+
         //- Global post-processing mode switch
         static bool postProcess;
 

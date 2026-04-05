@@ -71,6 +71,45 @@ Description
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Windows DLL Export Macros
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// FOAM_EXPORT_DATA: For extern data symbols (FatalError, Info, etc.)
+// When building libOpenFOAM itself, define FOAM_BUILDING_LIB to use dllexport.
+// Downstream DLLs use dllimport (the default).
+#if defined(_WIN32)
+# if defined(FOAM_BUILDING_LIB)
+#  define FOAM_EXPORT_DATA __declspec(dllexport)
+# else
+#  define FOAM_EXPORT_DATA __declspec(dllimport)
+# endif
+#else
+# define FOAM_EXPORT_DATA
+#endif
+
+// FOAM_TYPENAME_EXPORT: For TypeName/ClassName macros' static member declarations.
+// On Windows, always use dllexport for ALL libraries (not just libOpenFOAM).
+// Always dllexport so declaration matches definition across all libraries.
+// Windows requires that if a definition has dllexport, the declaration must also have it.
+#if defined(_WIN32)
+# define FOAM_TYPENAME_EXPORT __declspec(dllexport)
+#else
+# define FOAM_TYPENAME_EXPORT
+#endif
+
+// FOAM_HOST_ONLY: Prevent SYCL/CUDA device pass from tracing through
+// host-only functions (e.g. those with complex constructors like Foam::word).
+// On SYCL with CUDA backend, the device pass traces all reachable code paths;
+// functions with local statics of non-trivial types cause compiler stack overflow.
+// __host__ tells the CUDA device pass to skip the function body entirely.
+#if defined(__CUDACC__) || (defined(have_sycl) && defined(__clang__) && defined(__CUDA__))
+# define FOAM_HOST_ONLY __host__
+#else
+# define FOAM_HOST_ONLY
+#endif
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 //- Namespace for OpenFOAM
 namespace Foam

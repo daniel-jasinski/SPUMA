@@ -62,14 +62,26 @@ Description
 // Declarations (for use in header files)
 
 //- Declare a ClassNameNoDebug() with extra virtual type info
+//  type() uses typeName_() (returns const char* literal) to avoid cross-DLL
+//  data access through DEF thunks which crash on Windows.
 #define TypeNameNoDebug(TypeNameString)                                        \
     ClassNameNoDebug(TypeNameString);                                          \
-    virtual const word& type() const { return typeName; }
+    FOAM_HOST_ONLY                                                            \
+    virtual const word& type() const                                           \
+    {                                                                          \
+        static const word tn(typeName_());                                     \
+        return tn;                                                             \
+    }
 
 //- Declare a ClassName() with extra virtual type info
 #define TypeName(TypeNameString)                                               \
     ClassName(TypeNameString);                                                 \
-    virtual const word& type() const { return typeName; }
+    FOAM_HOST_ONLY                                                            \
+    virtual const word& type() const                                           \
+    {                                                                          \
+        static const word tn(typeName_());                                     \
+        return tn;                                                             \
+    }
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

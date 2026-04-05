@@ -32,6 +32,7 @@ Description
 #ifndef Foam_defineDebugSwitch_H
 #define Foam_defineDebugSwitch_H
 
+#include "stdFoam.H"
 #include "simpleRegIOobject.H"
 #include "debug.H"
 #include "label.H"  // Also for defining Foam::word etc.
@@ -123,9 +124,23 @@ public:
 #define defineDebugSwitchWithName(Type, Name, Value)                           \
     int Type::debug(::Foam::debug::debugSwitch(Name, Value))
 
+//- Define the debugLevel() accessor function (cross-DLL safe alternative to
+//  reading the debug static member directly through DEF thunks).
+//  Classes that declare debugLevel() (via ClassName, TypeName, NamespaceName)
+//  get this definition automatically via defineTypeNameAndDebug and related
+//  wrappers. Standalone classes that declare 'static int debug;' directly
+//  without ClassName either inline-define their own debugLevel() in the
+//  header, or call this macro explicitly in their .C file.
+#define defineDebugLevelFunction(Type)                                         \
+    int Type::debugLevel() { return Type::debug; }
+
+//- Define the debugLevel() accessor for template specializations
+#define defineTemplateDebugLevelFunction(Type)                                 \
+    template<> int Type::debugLevel() { return Type::debug; }
+
 //- Define the debug information
 #define defineDebugSwitch(Type, Value)                                         \
-    defineDebugSwitchWithName(Type, Type::typeName_(), Value);                 \
+    defineDebugSwitchWithName(Type, Type::typeName_(), Value);              \
     registerDebugSwitchWithName(Type, Type, Type::typeName_())
 
 //- Define the debug information for templates, lookup as \a Name

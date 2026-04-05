@@ -123,6 +123,11 @@ public:
     //- Debug information
     static int debug;
 
+    //- Function accessor for the debug switch. Defined inline so the
+    //- cross-DLL-safe form used by the Debug* macros in messageStream.H
+    //- works for this non-ClassName class.
+    static int debugLevel() { return debug; }
+
 //- File extension for given output type
 //  constexpr static vtk::fileTag content = vtk::fileTag::UNSTRUCTURED_GRID;
 

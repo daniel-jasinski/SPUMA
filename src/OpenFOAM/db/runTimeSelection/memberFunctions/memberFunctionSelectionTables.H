@@ -56,13 +56,13 @@ Note
     {                                                                          \
         explicit add##funcName##argNames##MemberFunctionToTable                \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName                   \
+            const ::Foam::word& k = baseType##Type::typeName_()                   \
         )                                                                      \
         {                                                                      \
             funcName##argNames##MemberFunctionTablePtr_construct(true);        \
             if                                                                 \
             (                                                                  \
-                !funcName##argNames##MemberFunctionTablePtr_                   \
+                !funcName##argNames##MemberFunctionTablePtr_()                 \
                    ->insert(k, baseType##Type::funcName)                       \
             )                                                                  \
             {                                                                  \
@@ -94,21 +94,21 @@ Note
                                                                                \
         explicit addRemovable##funcName##argNames##MemberFunctionToTable       \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName                   \
+            const ::Foam::word& k = baseType##Type::typeName_()                   \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \
         {                                                                      \
             funcName##argNames##MemberFunctionTablePtr_construct(true);        \
-            funcName##argNames##MemberFunctionTablePtr_                        \
+            funcName##argNames##MemberFunctionTablePtr_()                      \
                ->set(k, baseType##Type::funcName);                             \
         }                                                                      \
                                                                                \
         ~addRemovable##funcName##argNames##MemberFunctionToTable()             \
         {                                                                      \
-            if (funcName##argNames##MemberFunctionTablePtr_)                   \
+            if (funcName##argNames##MemberFunctionTablePtr_())                 \
             {                                                                  \
-                funcName##argNames##MemberFunctionTablePtr_->erase(name);      \
+                funcName##argNames##MemberFunctionTablePtr_()->erase(name);    \
             }                                                                  \
         }                                                                      \
                                                                                \

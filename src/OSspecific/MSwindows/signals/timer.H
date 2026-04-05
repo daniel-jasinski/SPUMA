@@ -102,6 +102,11 @@ public:
         //- Named/registered debug switch: 'timer'
         static int debug;
 
+        //- Function accessor for the debug switch. Defined inline so the
+        //- cross-DLL-safe form used by the Debug* macros in messageStream.H
+        //- works for this non-ClassName class.
+        static int debugLevel() { return debug; }
+
         //- The time-out value (seconds). Needed by macro timedOut
         unsigned int timeOut_;
 

@@ -56,6 +56,18 @@ Note
         addRemovable##thisType##argNames##ConstructorTo##baseType##Table_
 
 
+//- Add to construction table with explicit key expression
+//  Use when the key is a runtime expression (e.g., thisType::typeName)
+//  rather than a string literal. Needed when typeName_() returns a generic
+//  name but the RTS lookup expects the full specialization name.
+#define addToRunTimeSelectionTableKey\
+(baseType,thisType,argNames,keyExpr)                                          \
+                                                                               \
+    /* Add thisType factory method to the table, using explicit key */         \
+    baseType::add##argNames##ConstructorToTable<thisType>                      \
+        add##thisType##argNames##ConstructorTo##baseType##Table_(keyExpr)
+
+
 //- Add to construction table with 'lookupName' as the key
 #define addNamedToRunTimeSelectionTable\
 (baseType,thisType,argNames,lookupName)                                        \

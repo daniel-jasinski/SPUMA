@@ -53,6 +53,7 @@ SourceFiles
 #ifndef Foam_messageStream_H
 #define Foam_messageStream_H
 
+#include "stdFoam.H"
 #include "label.H"
 #include "word.H"
 #include <string>
@@ -296,21 +297,21 @@ public:
 //
 //  The values are normally 0 or a positive value.
 //  \note This flag is initialized to 1 by default.
-extern int infoDetailLevel;
+FOAM_EXPORT_DATA extern int infoDetailLevel;
 
 //- Information stream (stdout output on master, null elsewhere)
-extern messageStream Info;
+FOAM_EXPORT_DATA extern messageStream Info;
 
 //- Information stream (stderr output on master, null elsewhere)
-extern messageStream InfoErr;
+FOAM_EXPORT_DATA extern messageStream InfoErr;
 
 //- Warning stream (stdout output on master, null elsewhere),
 //- with additional 'FOAM Warning' header text.
-extern messageStream Warning;
+FOAM_EXPORT_DATA extern messageStream Warning;
 
 //- Error stream (stdout output on all processes),
 //- with additional 'FOAM Serious Error' header text.
-extern messageStream SeriousError;
+FOAM_EXPORT_DATA extern messageStream SeriousError;
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -425,26 +426,36 @@ extern messageStream SeriousError;
 
 
 //- Report an information message using Foam::Info
-//  if the local debug switch is true
+//  if the local debug switch is true.
+//
+//  Uses the debugLevel() function accessor instead of reading the debug
+//  static data directly. This is the cross-DLL safe form: on Windows,
+//  template code instantiated in downstream DLLs cannot read data through
+//  a DEF-file JMP thunk without __declspec(dllimport), but a function
+//  call through the same thunk works because the JMP executes and
+//  reaches the real function. Every class that uses ClassName or
+//  defineTypeNameAndDebug gets debugLevel() for free; the two plain
+//  'static int debug;' outliers (timer, functionObject) define it
+//  inline alongside the data member.
 #define DebugInfo                                                              \
-    if (debug) Info
+    if (debugLevel()) Info
 
 //- Report an information message using Foam::Info
 //  for FUNCTION_NAME in file __FILE__ at line __LINE__
 //  if the local debug switch is true
 #define DebugInFunction                                                        \
-    if (debug) InfoInFunction
+    if (debugLevel()) InfoInFunction
 
 //- Report an information message using Foam::Pout
 //  if the local debug switch is true
 #define DebugPout                                                              \
-    if (debug) Pout
+    if (debugLevel()) Pout
 
 //- Report an information message using Foam::Pout
 //  for FUNCTION_NAME in file __FILE__ at line __LINE__
 //  if the local debug switch is true
 #define DebugPoutInFunction                                                    \
-    if (debug) PoutInFunction
+    if (debugLevel()) PoutInFunction
 
 //- Report a variable name and value
 //  using Foam::Pout in file __FILE__ at line __LINE__
