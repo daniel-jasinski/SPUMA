@@ -1,0 +1,20 @@
+#------------------------------------------------------------------------------
+# Windows 64-bit with GCC compiler
+#------------------------------------------------------------------------------
+
+CPP        = cpp -traditional-cpp $(GFLAGS)
+
+include $(GENERAL_RULES)/standard
+
+ifneq (,$(findstring ~openmp,$(WM_COMPILE_CONTROL)))
+    include $(GENERAL_RULES)/no-openmp
+endif
+
+include $(DEFAULT_RULES)/c
+include $(DEFAULT_RULES)/c++
+
+# Windows shared library and executable extensions
+EXT_SO  = .dll
+EXT_EXE = .exe
+
+#------------------------------------------------------------------------------

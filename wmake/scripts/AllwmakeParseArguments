@@ -222,7 +222,7 @@ then
         echo 1>&2
         exec wmake $wmakeOpt_frontend -all \
             $wmakeOpt_debug $wmakeOpt_strict $wmakeOpt_queue $wmakeOpt_openmp $* 2>&1 | \
-            /usr/bin/tee $wmakeOpt_log
+            tee $wmakeOpt_log
         # Need to cleanup after the tee
         rc=$? # Error code from tee (not wmake), but not entirely important
         echo "Done logging to '$wmakeOpt_log'" 1>&2

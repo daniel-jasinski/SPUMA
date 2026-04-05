@@ -1,0 +1,14 @@
+#------------------------------------------------------------------------------
+# AdaptiveCpp linker settings
+#------------------------------------------------------------------------------
+
+LINK_LIBS   = $(c++DBUG)
+LINKLIBSO   = $(CC) $(c++FLAGS) -shared
+LINKEXE     = $(CC) $(c++FLAGS)
+
+# Windows DLL export
+ifeq ($(WM_OSTYPE),MSwindows)
+    LINKLIBSO  += -Wl,--export-all-symbols
+endif
+
+#------------------------------------------------------------------------------
