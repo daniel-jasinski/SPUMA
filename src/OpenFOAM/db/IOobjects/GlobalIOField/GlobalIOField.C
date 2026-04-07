@@ -153,6 +153,24 @@ bool Foam::GlobalIOField<Type>::readData(Istream& is)
 
 
 template<class Type>
+bool Foam::GlobalIOField<Type>::writeObject
+(
+    IOstreamOption streamOpt,
+    const bool writeOnProc
+) const
+{
+    const word savedHdrClass(headerClassName());
+    const_cast<GlobalIOField&>(*this).headerClassName() = staticTypeName();
+
+    bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+    const_cast<GlobalIOField&>(*this).headerClassName() = savedHdrClass;
+
+    return good;
+}
+
+
+template<class Type>
 bool Foam::GlobalIOField<Type>::writeData(Ostream& os) const
 {
     os << static_cast<const Field<Type>&>(*this);

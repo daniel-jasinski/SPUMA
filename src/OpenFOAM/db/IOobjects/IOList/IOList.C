@@ -158,6 +158,28 @@ Foam::List<T> Foam::IOList<T>::readContents(const IOobject& io)
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class T>
+bool Foam::IOList<T>::writeObject
+(
+    IOstreamOption streamOpt,
+    const bool writeOnProc
+) const
+{
+    // Set headerClassName so writeHeader uses the correct per-specialization
+    // type name (e.g., "faceList") instead of type() which returns the
+    // generic typeName_() ("List") on Windows/SPUMA.
+    // staticTypeName() is safe for cross-DLL use (function call, not data).
+    const word savedHdrClass(headerClassName());
+    const_cast<IOList&>(*this).headerClassName() = staticTypeName();
+
+    bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+    const_cast<IOList&>(*this).headerClassName() = savedHdrClass;
+
+    return good;
+}
+
+
+template<class T>
 bool Foam::IOList<T>::writeData(Ostream& os) const
 {
     os << static_cast<const List<T>&>(*this);

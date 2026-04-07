@@ -42,12 +42,12 @@ bool Foam::CompactIOList<T, BaseType>::readIOcontents()
     {
         Istream& is = readStream(word::null);
 
-        if (headerClassName() == IOList<T>::typeName)
+        if (headerClassName() == IOList<T>::staticTypeName())
         {
             is >> static_cast<List<T>&>(*this);
             close();
         }
-        else if (headerClassName() == typeName)
+        else if (headerClassName() == staticTypeName())
         {
             is >> *this;
             close();
@@ -56,8 +56,8 @@ bool Foam::CompactIOList<T, BaseType>::readIOcontents()
         {
             FatalIOErrorInFunction(is)
                 << "Unexpected class name " << headerClassName()
-                << " expected " << typeName
-                << " or " << IOList<T>::typeName << endl
+                << " expected " << staticTypeName()
+                << " or " << IOList<T>::staticTypeName() << endl
                 << "    while reading object " << name()
                 << exit(FatalIOError);
         }
@@ -182,22 +182,31 @@ bool Foam::CompactIOList<T, BaseType>::writeObject
             << nl << "    Switching to ascii writing" << endl;
     }
 
+    // Set headerClassName so writeHeader uses the correct typedef name
+    // (e.g. "labelListList" or "CompactLabelListList") instead of type()
+    // which returns the generic typeName_() string from the template base.
+    // Use staticTypeName() (function accessor) rather than typeName (data
+    // member) to avoid cross-DLL JMP-thunk data reads on Windows.
+    const word savedHdrClass(headerClassName());
+
     if (streamOpt.format() == IOstreamOption::ASCII)
     {
-        // Change type to be non-compact format type
-        const word oldTypeName(typeName);
-
-        const_cast<word&>(typeName) = IOList<T>::typeName;
-
-        bool good = regIOobject::writeObject(streamOpt, writeOnProc);
-
-        // Change type back
-        const_cast<word&>(typeName) = oldTypeName;
-
-        return good;
+        // Write as non-compact (IOList) format.
+        const_cast<CompactIOList&>(*this).headerClassName() =
+            IOList<T>::staticTypeName();
+    }
+    else
+    {
+        // Binary: write as compact format.
+        const_cast<CompactIOList&>(*this).headerClassName() =
+            staticTypeName();
     }
 
-    return regIOobject::writeObject(streamOpt, writeOnProc);
+    bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+    const_cast<CompactIOList&>(*this).headerClassName() = savedHdrClass;
+
+    return good;
 }
 
 

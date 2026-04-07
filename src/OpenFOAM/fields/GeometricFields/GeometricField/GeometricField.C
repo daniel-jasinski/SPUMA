@@ -76,23 +76,32 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields
 template<class Type, template<class> class PatchField, class GeoMesh>
 void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields()
 {
-    dictionary dict
+    // NOTE: Cannot use readContents(io, typeName_()) because typeName_()
+    // returns the base template name ("GeometricField"), not the specialized
+    // name ("volScalarField"). And we can't use readContents(io, typeName)
+    // because 'typeName' is a cross-DLL data access via JMP thunk on Windows.
+    // Instead, construct localIOdictionary directly with empty type to skip
+    // the header class name check.
+    IOobject rio
     (
-        localIOdictionary::readContents
-        (
-            IOobject
-            (
-                this->name(),
-                this->instance(),
-                this->local(),
-                this->db(),
-                IOobjectOption::MUST_READ,
-                IOobjectOption::NO_WRITE,
-                IOobjectOption::NO_REGISTER
-            ),
-            typeName
-        )
+        this->name(),
+        this->instance(),
+        this->local(),
+        this->db(),
+        IOobjectOption::MUST_READ,
+        IOobjectOption::NO_WRITE,
+        IOobjectOption::NO_REGISTER
     );
+    if (rio.readOpt() == IOobjectOption::READ_MODIFIED)
+    {
+        rio.readOpt(IOobjectOption::MUST_READ);
+    }
+    localIOdictionary reader(rio, word());
+    // Propagate headerClassName from the temporary reader to this object.
+    // On Windows DLLs, writeHeader() uses headerClassName() instead of the
+    // virtual type() to avoid cross-DLL data access crashes.
+    this->headerClassName() = reader.headerClassName();
+    dictionary dict(std::move(static_cast<dictionary&>(reader)));
 
     this->close();
 
@@ -507,7 +516,7 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const bool readOldTime
 )
 :
-    Internal(io, mesh, dimless, false),
+    Internal(io, mesh, dimensionSet(), false),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary())
 {
@@ -544,7 +553,7 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const dictionary& dict
 )
 :
-    Internal(io, mesh, dimless, false),
+    Internal(io, mesh, dimensionSet(), false),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary())
 {

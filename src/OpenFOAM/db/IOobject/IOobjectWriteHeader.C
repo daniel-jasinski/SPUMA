@@ -279,6 +279,15 @@ bool Foam::IOobject::writeHeader
 
 bool Foam::IOobject::writeHeader(Ostream& os) const
 {
+    // Use headerClassName if set (e.g., read from file header).
+    // This avoids calling type() which crashes on Windows for cross-DLL
+    // template types (GeometricField) due to DEF-file JMP thunks.
+    const word& hdrClass = this->headerClassName();
+    if (!hdrClass.empty())
+    {
+        return IOobject::writeHeader(os, hdrClass);
+    }
+
     return IOobject::writeHeader(os, this->type());
 }
 

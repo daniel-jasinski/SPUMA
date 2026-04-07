@@ -113,6 +113,14 @@ public:
         //- The readData method for regIOobject read operation
         virtual bool readData(Istream& is);
 
+        //- Write using stream options, setting correct per-specialization
+        //  class name in header (staticTypeName() is cross-DLL safe)
+        virtual bool writeObject
+        (
+            IOstreamOption streamOpt,
+            const bool writeOnProc
+        ) const;
+
         //- The writeData method for regIOobject write operation
         bool writeData(Ostream& os) const;
 

@@ -137,6 +137,24 @@ bool Foam::GlobalIOList<Type>::readData(Istream& is)
 
 
 template<class Type>
+bool Foam::GlobalIOList<Type>::writeObject
+(
+    IOstreamOption streamOpt,
+    const bool writeOnProc
+) const
+{
+    const word savedHdrClass(headerClassName());
+    const_cast<GlobalIOList&>(*this).headerClassName() = staticTypeName();
+
+    bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+    const_cast<GlobalIOList&>(*this).headerClassName() = savedHdrClass;
+
+    return good;
+}
+
+
+template<class Type>
 bool Foam::GlobalIOList<Type>::writeData(Ostream& os) const
 {
     os << static_cast<const List<Type>&>(*this);

@@ -107,6 +107,14 @@ public:
 
     // Member Functions
 
+        //- Write using stream options, setting correct per-specialization
+        //  class name in header (staticTypeName() is cross-DLL safe)
+        virtual bool writeObject
+        (
+            IOstreamOption streamOpt,
+            const bool writeOnProc
+        ) const;
+
         //- The writeData method for regIOobject write operation
         virtual bool writeData(Ostream& os) const;
 
@@ -146,7 +154,7 @@ public:
     //- Type is identical to IOList
     virtual const word& type() const
     {
-        return IOList<T>::typeName;
+        return IOList<T>::staticTypeName();
     }
 
 

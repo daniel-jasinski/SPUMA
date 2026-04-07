@@ -41,6 +41,10 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::IOList<Foam::scalar>);
+#endif
+
 #endif
 
 // ************************************************************************* //
