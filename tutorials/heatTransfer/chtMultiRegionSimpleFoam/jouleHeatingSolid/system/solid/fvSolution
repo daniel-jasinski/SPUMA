@@ -24,7 +24,7 @@ solvers
         relTol           0.1;
     }
 
-    jouleHeatingSource:V
+    jouleHeatingSource_V
     {
         solver           PCG;
         preconditioner   DIC;

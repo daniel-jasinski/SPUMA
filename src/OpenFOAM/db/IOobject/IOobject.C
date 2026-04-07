@@ -40,14 +40,13 @@ namespace Foam
 
 bool Foam::IOobject::bannerEnabled_(true);
 
+// Default scope separator: '_' (historical default was ':', but colons are
+// illegal in filenames on Windows/NTFS and conflict with drive letters in
+// paths, so '_' is used uniformly across platforms). Configurable via
+// etc/controlDict infoSwitch for backwards compatibility with legacy cases.
 char Foam::IOobject::scopeSeparator
 (
-    #ifdef _WIN32
-    // Windows: using ':' causes scoping conflicts with d:/path etc
     Foam::debug::infoSwitch("scopeSeparator", '_')
-    #else
-    Foam::debug::infoSwitch("scopeSeparator", ':')
-    #endif
 );
 
 const Foam::Enum

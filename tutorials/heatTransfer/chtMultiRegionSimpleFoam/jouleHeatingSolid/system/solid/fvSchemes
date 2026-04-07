@@ -33,7 +33,7 @@ laplacianSchemes
 {
     default     none;
     laplacian(alpha,h) Gauss linear uncorrected;
-    laplacian(jouleHeatingSource:sigma,jouleHeatingSource:V) Gauss linear uncorrected;
+    laplacian(jouleHeatingSource_sigma,jouleHeatingSource_V) Gauss linear uncorrected;
 }
 
 interpolationSchemes

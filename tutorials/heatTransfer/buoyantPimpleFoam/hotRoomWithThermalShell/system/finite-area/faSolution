@@ -24,7 +24,7 @@ solvers
         relTol          0.01;
     }
 
-    jouleHeatingSource:V_ceilingShell
+    jouleHeatingSource_V_ceilingShell
     {
         solver          PBiCGStab;
         preconditioner  DIC;

@@ -98,7 +98,7 @@ Note
                     (1e-06             -5.0e-11)
                     (1e-05             -1.0e-10)
                 );
-                E   electricPotential:E;
+                E   electricPotential_E;
             }
         }
     \endverbatim

@@ -38,7 +38,7 @@ divSchemes
 laplacianSchemes
 {
     default         Gauss linear orthogonal;
-    laplacian(electricPotential:sigma,electricPotential:V) Gauss linear orthogonal;
+    laplacian(electricPotential_sigma,electricPotential_V) Gauss linear orthogonal;
 }
 
 interpolationSchemes

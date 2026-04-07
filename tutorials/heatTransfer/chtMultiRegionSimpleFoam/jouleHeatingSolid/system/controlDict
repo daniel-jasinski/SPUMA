@@ -52,7 +52,7 @@ functions
         libs            (sampling);
         writeControl    writeTime;
         region          solid;
-        fields          (T jouleHeatingSource:V jouleHeatingSource:sigma);
+        fields          (T jouleHeatingSource_V jouleHeatingSource_sigma);
         interpolationScheme cellPoint;
         setFormat       raw;
 

@@ -140,9 +140,9 @@ Usage
       epsilonr  | Isotropic relative permittivity of phase   | scalar | no  | -
       nCorr     | Number of corrector iterations      | int  | no   | 1
       writeDerivedFields | Flag to write extra fields | bool | no   | false
-      V    | Name of electric potential field | word | no | electricPotential:V
+      V    | Name of electric potential field | word | no | electricPotential_V
       electricField | Flag to calculate electric field  | bool | no | false
-      E    | Name of electric field           | word | no | electricPotential:E
+      E    | Name of electric field           | word | no | electricPotential_E
       fvOptions | List of finite-volume options       | dict | no   | -
       tolerance | Outer-loop initial-residual tolerance | scalar | no | 1
     \endtable
@@ -154,8 +154,8 @@ Usage
     Fields written out when the \c writeDerivedFields entry is \c true:
     \table
       Operand         | Type             | Location
-      Current density | volVectorField   | \<time\>/electricPotential:J
-      Charge density  | volScalarField   | \<time\>/electricPotential:rho
+      Current density | volVectorField   | \<time\>/electricPotential_J
+      Charge density  | volScalarField   | \<time\>/electricPotential_rho
     \endtable
 
 Note

@@ -76,7 +76,7 @@ solvers
         minIter         1;
     };
 
-    "electricPotential:V"
+    "electricPotential_V"
     {
         solver          PBiCGStab;
         preconditioner  DIC;
@@ -105,7 +105,7 @@ relaxationFactors
     equations
     {
         ".*" 1;
-        "electricPotential:V" 0.5;
+        "electricPotential_V" 0.5;
     }
 }
 

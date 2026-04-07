@@ -60,7 +60,7 @@ functions
     {
         type            fieldMinMax;
         libs            (fieldFunctionObjects);
-        fields          ("electricPotential:V");
+        fields          ("electricPotential_V");
     }
 }
 
