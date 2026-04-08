@@ -128,10 +128,18 @@ void Foam::coupledFvPatchField<Type>::snGrad
 
     const label len = result.size();
 
-    for (label i = 0; i < len; ++i)
+    auto resultPtr = result.begin();
+    const auto deltaCoeffsPtr = deltaCoeffs.cbegin();
+    const auto pnfPtr = pnf.cbegin();
+    const auto addrPtr = addr.cbegin();
+    const auto iFPtr = iF.cbegin();
+
+    foamExecutor exec;
+    auto Lambda = [=](label i)
     {
-        result[i] = deltaCoeffs[i]*(pnf[i] - iF[addr[i]]);
-    }
+        resultPtr[i] = deltaCoeffsPtr[i]*(pnfPtr[i] - iFPtr[addrPtr[i]]);
+    };
+    exec.parallelFor(Lambda, len);
 }
 
 
@@ -190,10 +198,16 @@ void Foam::coupledFvPatchField<Type>::valueInternalCoeffs
 
     const label len = result.size();
 
-    for (label i = 0; i < len; ++i)
+    auto resultPtr = result.begin();
+    const auto wPtr = w.cbegin();
+    const Type localType = Type(pTraits<Type>::one);
+
+    foamExecutor exec;
+    auto Lambda = [=](label i)
     {
-        result[i] = Type(pTraits<Type>::one)*w[i];
-    }
+        resultPtr[i] = localType*wPtr[i];
+    };
+    exec.parallelFor(Lambda, len);
     tweights.clear();
 }
 
