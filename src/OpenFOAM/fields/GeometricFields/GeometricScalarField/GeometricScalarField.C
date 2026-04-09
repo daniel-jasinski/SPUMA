@@ -162,7 +162,7 @@ tmp<GeometricField<scalar, PatchField, GeoMesh>> pow
     (
         "pow(" + f1.name() + ',' + f2.name() + ')',
         f1.mesh(),
-        dimless
+        dimensionSet()
     );
 
     pow(tresult.ref(), f1, f2);
@@ -208,7 +208,7 @@ tmp<GeometricField<scalar, PatchField, GeoMesh>> pow
         (
             tf1,
             "pow(" + f1.name() + ',' + f2.name() + ')',
-            dimless
+            dimensionSet()
         )
     );
 
@@ -257,7 +257,7 @@ tmp<GeometricField<scalar, PatchField, GeoMesh>> pow
         (
             tf2,
             "pow(" + f1.name() + ',' + f2.name() + ')',
-            dimless
+            dimensionSet()
         )
     );
 
@@ -308,7 +308,7 @@ tmp<GeometricField<scalar, PatchField, GeoMesh>> pow
             tf1,
             tf2,
             "pow(" + f1.name() + ',' + f2.name() + ')',
-            dimless
+            dimensionSet()
         )
     );
 
@@ -480,7 +480,7 @@ tmp<GeometricField<scalar, PatchField, GeoMesh>> pow
     (
         "pow(" + ds.name() + ',' + f2.name() + ')',
         f2.mesh(),
-        dimless
+        dimensionSet()
     );
 
     pow(tresult.ref(), ds, f2);
@@ -526,7 +526,7 @@ tmp<GeometricField<scalar, PatchField, GeoMesh>> pow
         (
             tf2,
             "pow(" + ds.name() + ',' + f2.name() + ')',
-            dimless
+            dimensionSet()
         )
     );
 
@@ -943,7 +943,7 @@ tmp<GeometricField<scalar, PatchField, GeoMesh>> func                          \
     (                                                                          \
         #func "(" + gsf.name() + ')',                                          \
         gsf.mesh(),                                                            \
-        dimless                                                                \
+        dimensionSet()                                                                \
     );                                                                         \
                                                                                \
     func(tFunc.ref(), n, gsf);                                                 \
@@ -973,7 +973,7 @@ tmp<GeometricField<scalar, PatchField, GeoMesh>> func                          \
         (                                                                      \
             tgsf,                                                              \
             #func "(" + gsf.name() + ')',                                      \
-            dimless                                                            \
+            dimensionSet()                                                            \
         )                                                                      \
     );                                                                         \
                                                                                \

@@ -40,6 +40,15 @@ SourceFiles
 #include "UniformDimensionedField.H"
 #include "uniformDimensionedFieldsFwd.H"
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::UniformDimensionedField<Foam::label>);
+declareStaticTypeName(Foam::UniformDimensionedField<Foam::scalar>);
+declareStaticTypeName(Foam::UniformDimensionedField<Foam::vector>);
+declareStaticTypeName(Foam::UniformDimensionedField<Foam::sphericalTensor>);
+declareStaticTypeName(Foam::UniformDimensionedField<Foam::symmTensor>);
+declareStaticTypeName(Foam::UniformDimensionedField<Foam::tensor>);
+#endif
+
 #endif
 
 // ************************************************************************* //

@@ -178,11 +178,11 @@ defineTemplateTypeNameAndDebugWithName                                         \
                                                                                \
 surfaceInterpolationScheme<TYPE>::addMeshConstructorToTable                    \
 <UpwindFitScheme<TYPE, POLYNOMIAL, STENCIL>>                                   \
-    add##SS##STENCIL##TYPE##MeshConstructorToTable_;                           \
+    add##SS##STENCIL##TYPE##MeshConstructorToTable_(#SS);                      \
                                                                                \
 surfaceInterpolationScheme<TYPE>::addMeshFluxConstructorToTable                \
 <UpwindFitScheme<TYPE, POLYNOMIAL, STENCIL>>                                   \
-    add##SS##STENCIL##TYPE##MeshFluxConstructorToTable_;
+    add##SS##STENCIL##TYPE##MeshFluxConstructorToTable_(#SS);
 
 #define makeUpwindFitSurfaceInterpolationScheme(SS, POLYNOMIAL, STENCIL)       \
                                                                                \

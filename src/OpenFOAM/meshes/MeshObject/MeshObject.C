@@ -35,7 +35,7 @@ License
 template<class Mesh, template<class> class MeshObjectType, class Type>
 Foam::MeshObject<Mesh, MeshObjectType, Type>::MeshObject(const Mesh& mesh)
 :
-    MeshObjectType<Mesh>(Type::typeName, mesh.thisDb()),
+    MeshObjectType<Mesh>(Type::typeName_(), mesh.thisDb()),
     mesh_(mesh)
 {}
 
@@ -64,7 +64,7 @@ const Type& Foam::MeshObject<Mesh, MeshObjectType, Type>::New
 {
     Type* ptr =
         mesh.thisDb().objectRegistry::template
-        getObjectPtr<Type>(Type::typeName);
+        getObjectPtr<Type>(Type::typeName_());
 
     if (ptr)
     {

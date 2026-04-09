@@ -44,6 +44,11 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::IOList<Foam::face>);
+declareStaticTypeName(Foam::CompactIOList<Foam::face, Foam::label>);
+#endif
+
 #endif
 
 // ************************************************************************* //

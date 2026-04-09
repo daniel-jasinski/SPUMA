@@ -220,7 +220,7 @@ inline bool Foam::expressions::exprResult::isUniform() const
 template<class Type>
 inline bool Foam::expressions::exprResult::isType() const
 {
-    return valType_ == pTraits<Type>::typeName;
+    return valType_ == pTraits<Type>::typeName_();
 }
 
 
@@ -252,7 +252,7 @@ inline const Foam::Field<Type>* Foam::expressions::exprResult::getField() const
 
 inline bool Foam::expressions::exprResult::is_bool() const
 {
-    return valType_ == pTraits<bool>::typeName;
+    return valType_ == pTraits<bool>::typeName_();
 }
 
 
@@ -303,7 +303,7 @@ void Foam::expressions::exprResult::setResultImpl
     isPointData_ = wantPointData;
 
     size_ = fld.size();
-    valType_ = pTraits<Type>::typeName;
+    valType_ = pTraits<Type>::typeName_();
     fieldPtr_ = new Field<Type>(fld);
 
     DebugInFunction << nl;
@@ -325,7 +325,7 @@ void Foam::expressions::exprResult::setResultImpl
     isPointData_ = wantPointData;
 
     size_ = fld.size();
-    valType_ = pTraits<Type>::typeName;
+    valType_ = pTraits<Type>::typeName_();
     fieldPtr_ = new Field<Type>(std::move(fld));
 
     DebugInFunction << nl;
@@ -358,7 +358,7 @@ void Foam::expressions::exprResult::setResultImpl
     if (fldPtr != nullptr)
     {
         size_ = fldPtr->size();
-        valType_ = pTraits<Type>::typeName;
+        valType_ = pTraits<Type>::typeName_();
         fieldPtr_ = fldPtr;
     }
 }
@@ -390,7 +390,7 @@ void Foam::expressions::exprResult::setResultImpl
     isPointData_ = false;
 
     size_ = len;
-    valType_ = pTraits<Type>::typeName;
+    valType_ = pTraits<Type>::typeName_();
     fieldPtr_ = new Field<Type>(size_, val);
 }
 
@@ -611,7 +611,7 @@ void Foam::expressions::exprResult::setSingleValueImpl(const Type& val)
     isPointData_ = false;
 
     size_ = 1;
-    valType_ = pTraits<Type>::typeName;
+    valType_ = pTraits<Type>::typeName_();
     fieldPtr_ = new Field<Type>(size_, val);
 }
 
@@ -625,7 +625,7 @@ Foam::expressions::exprResult::getResult(bool cacheCopy)
     if (!isType<Type>())
     {
         FatalErrorInFunction
-            << "The expected return type " << pTraits<Type>::typeName
+            << "The expected return type " << pTraits<Type>::typeName_()
             << " is different from the stored result type "
             << valueType() << nl << nl
             << exit(FatalError);
@@ -667,7 +667,7 @@ Foam::expressions::exprResult::cref() const
     if (!isType<Type>())
     {
         FatalErrorInFunction
-            << "The expected return type " << pTraits<Type>::typeName
+            << "The expected return type " << pTraits<Type>::typeName_()
             << " is different from the stored result type "
             << valueType() << nl << nl
             << exit(FatalError);
@@ -711,7 +711,7 @@ inline Type Foam::expressions::exprResult::getReduced
     if (!isType<Type>())
     {
         FatalErrorInFunction
-            << "The expected return type " << pTraits<Type>::typeName
+            << "The expected return type " << pTraits<Type>::typeName_()
             << " is different from the stored result type "
             << valueType() << nl << nl
             << exit(FatalError);

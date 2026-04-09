@@ -44,6 +44,11 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::IOField<Foam::vector2DField>);
+declareStaticTypeName(Foam::CompactIOField<Foam::vector2DField, Foam::vector2D>);
+#endif
+
 #endif
 
 // ************************************************************************* //

@@ -42,6 +42,10 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::IOList<Foam::vector>);
+#endif
+
 #endif
 
 // ************************************************************************* //

@@ -122,7 +122,8 @@ public:
             //- Return the constraint type this pointPatchField implements
             virtual const word& constraintType() const
             {
-                return cyclicPointPatch::typeName;
+                static const word tn(cyclicPointPatch::typeName_());
+                return tn;
             }
 
         //- Cyclic coupled interface functions

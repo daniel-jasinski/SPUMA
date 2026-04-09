@@ -120,7 +120,8 @@ public:
         //- Return the constraint type this pointPatchField implements
         virtual const word& constraintType() const
         {
-            return symmetryPlanePointPatch::typeName;
+            static const word tn(symmetryPlanePointPatch::typeName_());
+            return tn;
         }
 
         //- Update the patch field

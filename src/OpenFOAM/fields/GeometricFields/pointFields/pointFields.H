@@ -41,6 +41,19 @@ SourceFiles
 #include "pointPatchFields.H"
 #include "pointFieldsFwd.H"
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::pointScalarField);
+declareStaticTypeName(Foam::pointVectorField);
+declareStaticTypeName(Foam::pointSphericalTensorField);
+declareStaticTypeName(Foam::pointSymmTensorField);
+declareStaticTypeName(Foam::pointTensorField);
+declareStaticTypeName(Foam::DimensionedField<Foam::scalar, Foam::pointMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::vector, Foam::pointMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::sphericalTensor, Foam::pointMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::symmTensor, Foam::pointMesh>);
+declareStaticTypeName(Foam::DimensionedField<Foam::tensor, Foam::pointMesh>);
+#endif
+
 #endif
 
 // ************************************************************************* //
