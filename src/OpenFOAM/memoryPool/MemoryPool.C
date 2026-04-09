@@ -58,7 +58,7 @@ Foam::MemoryPool::MemoryPool(const dictionary& dict):
 
 Foam::MemoryPool::~MemoryPool()
 {
-    delete instance;
+    instance = nullptr;
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -69,6 +69,15 @@ Foam::MemoryPool* Foam::MemoryPool::New
     const uint64_t size
 )
 {
+    // If a dummyMemoryPool was auto-created during DLL static init
+    // (by getInstance()), replace it with the requested pool type.
+    if (instance && type != "dummyMemoryPool"
+        && dynamic_cast<dummyMemoryPool*>(instance))
+    {
+        delete instance;
+        instance = nullptr;
+    }
+
     if (!instance)
     {
         if(type == "fixedSizeMemoryPool")
@@ -101,11 +110,11 @@ Foam::MemoryPool* Foam::MemoryPool::getInstance()
 {
     if (!instance)
     {
-       FatalErrorInFunction
-        << "no instance of memory pool initialized" << nl
-        << abort(FatalError);
+        // Auto-create a dummyMemoryPool when getInstance() is called
+        // before explicit New(). This happens during DLL static init
+        // on Windows when some List operations need pool access.
+        instance = new dummyMemoryPool(0);
     }
-
     return instance;
 }
 
