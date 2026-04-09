@@ -98,15 +98,16 @@ public:
 
     // Static Data Members
 
-        static const char* const typeName;
-        static const char* const componentNames[];
-        static const Scalar zero;
-        static const Scalar one;
-        static const Scalar max;
-        static const Scalar min;
-        static const Scalar rootMax;
-        static const Scalar rootMin;
-        static const Scalar vsmall;
+        FOAM_EXPORT_DATA static const char* const typeName;
+        static const char* typeName_() { return "scalar"; }
+        FOAM_EXPORT_DATA static const char* const componentNames[];
+        FOAM_EXPORT_DATA static const Scalar zero;
+        FOAM_EXPORT_DATA static const Scalar one;
+        FOAM_EXPORT_DATA static const Scalar max;
+        FOAM_EXPORT_DATA static const Scalar min;
+        FOAM_EXPORT_DATA static const Scalar rootMax;
+        FOAM_EXPORT_DATA static const Scalar rootMin;
+        FOAM_EXPORT_DATA static const Scalar vsmall;
 
 
     // Constructors

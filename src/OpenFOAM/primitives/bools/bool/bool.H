@@ -93,10 +93,11 @@ public:
 
     // Static Data Members
 
-        static const char* const typeName;
-        static const char* const componentNames[];
-        static const bool zero;
-        static const bool one;
+        FOAM_EXPORT_DATA static const char* const typeName;
+        static const char* typeName_() { return "bool"; }
+        FOAM_EXPORT_DATA static const char* const componentNames[];
+        FOAM_EXPORT_DATA static const bool zero;
+        FOAM_EXPORT_DATA static const bool one;
 
 
     // Constructors

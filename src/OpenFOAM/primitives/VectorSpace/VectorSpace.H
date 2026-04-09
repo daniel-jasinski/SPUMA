@@ -114,14 +114,15 @@ public:
 
     // Static Data Members
 
-        static const char* const typeName;
-        static const char* const componentNames[];
-        static const Form zero;
-        static const Form one;
-        static const Form max;
-        static const Form min;
-        static const Form rootMax;
-        static const Form rootMin;
+        FOAM_EXPORT_DATA static const char* const typeName;
+        static const char* typeName_() { return typeName; }
+        FOAM_EXPORT_DATA static const char* const componentNames[];
+        FOAM_EXPORT_DATA static const Form zero;
+        FOAM_EXPORT_DATA static const Form one;
+        FOAM_EXPORT_DATA static const Form max;
+        FOAM_EXPORT_DATA static const Form min;
+        FOAM_EXPORT_DATA static const Form rootMax;
+        FOAM_EXPORT_DATA static const Form rootMin;
 
 
     // Sub-Block Classes
@@ -280,6 +281,35 @@ word name(const VectorSpace<Form, Cmpt, Ncmpts>& vs);
 
 #ifdef NoRepository
     #include "VectorSpace.C"
+#endif
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Windows DLL: declare explicit specializations of VectorSpace static data
+// members so the compiler uses dllimport instead of implicit instantiation.
+// Without this, FOAM_EXPORT_DATA (dllimport) on template members is ignored.
+// Used by vector.H, tensor.H, symmTensor.H, sphericalTensor.H to declare
+// their float/double specializations.
+#if defined(_WIN32) && !defined(FOAM_BUILDING_LIB)
+#define FOAM_VECTORSPACE_EXTERN_DATA(Form, Cmpt, N)                           \
+    template<> FOAM_EXPORT_DATA const char* const                             \
+        Foam::VectorSpace<Form, Cmpt, N>::typeName;                           \
+    template<> FOAM_EXPORT_DATA const char* const                             \
+        Foam::VectorSpace<Form, Cmpt, N>::componentNames[];                   \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::zero;                               \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::one;                                \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::max;                                \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::min;                                \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::rootMax;                            \
+    template<> FOAM_EXPORT_DATA const Form                                    \
+        Foam::VectorSpace<Form, Cmpt, N>::rootMin;
+#else
+#define FOAM_VECTORSPACE_EXTERN_DATA(Form, Cmpt, N)
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

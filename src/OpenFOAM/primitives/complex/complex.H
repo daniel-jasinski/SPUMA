@@ -275,15 +275,16 @@ public:
 
     // Static Data Members
 
-        static const char* const typeName;
-        static const char* const componentNames[];
+        FOAM_EXPORT_DATA static const char* const typeName;
+        static const char* typeName_() { return "complex"; }
+        FOAM_EXPORT_DATA static const char* const componentNames[];
 
-        static const complex zero;      //!< complex (0,0)
-        static const complex one;       //!< complex (1,0)
-        static const complex min;       //!< complex (-VGREAT,-VGREAT)
-        static const complex max;       //!< complex (VGREAT,VGREAT)
-        static const complex rootMin;   //!< complex (-ROOTVGREAT, -ROOTVGREAT)
-        static const complex rootMax;   //!< complex (ROOTVGREAT, ROOTVGREAT)
+        FOAM_EXPORT_DATA static const complex zero;      //!< complex (0,0)
+        FOAM_EXPORT_DATA static const complex one;       //!< complex (1,0)
+        FOAM_EXPORT_DATA static const complex min;       //!< complex (-VGREAT,-VGREAT)
+        FOAM_EXPORT_DATA static const complex max;       //!< complex (VGREAT,VGREAT)
+        FOAM_EXPORT_DATA static const complex rootMin;   //!< complex (-ROOTVGREAT, -ROOTVGREAT)
+        FOAM_EXPORT_DATA static const complex rootMax;   //!< complex (ROOTVGREAT, ROOTVGREAT)
 
 
     // Constructors

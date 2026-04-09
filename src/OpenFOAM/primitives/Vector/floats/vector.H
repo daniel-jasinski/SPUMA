@@ -89,6 +89,11 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// Windows DLL: explicit specialization declarations for VectorSpace static
+// data members. Macro defined in VectorSpace.H, no-op on non-Windows.
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::Vector<float>, float, 3)
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::Vector<double>, double, 3)
+
 #endif
 
 // ************************************************************************* //

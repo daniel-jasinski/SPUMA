@@ -121,6 +121,11 @@ symmTensor pinv(const symmTensor& st);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// Windows DLL: explicit specialization declarations for VectorSpace static
+// data members. Macro defined in VectorSpace.H, no-op on non-Windows.
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::SymmTensor<float>, float, 6)
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::SymmTensor<double>, double, 6)
+
 #endif
 
 // ************************************************************************* //

@@ -65,6 +65,14 @@ static const sphericalTensor2D twoThirdsI2D(2.0/3.0);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// Windows DLL: explicit specialization declarations for VectorSpace static
+// data members. Macro defined in VectorSpace.H, no-op on non-Windows.
+#if defined(WM_DP)
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::SphericalTensor2D<double>, double, 1)
+#else
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::SphericalTensor2D<float>, float, 1)
+#endif
+
 #endif
 
 // ************************************************************************* //

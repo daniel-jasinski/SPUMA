@@ -112,6 +112,14 @@ tensor2D eigenVectors(const symmTensor2D& T);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// Windows DLL: explicit specialization declarations for VectorSpace static
+// data members. Macro defined in VectorSpace.H, no-op on non-Windows.
+#if defined(WM_DP)
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::SymmTensor2D<double>, double, 3)
+#else
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::SymmTensor2D<float>, float, 3)
+#endif
+
 #endif
 
 // ************************************************************************* //

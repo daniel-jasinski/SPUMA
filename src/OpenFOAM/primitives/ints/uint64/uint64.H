@@ -157,14 +157,19 @@ public:
 
     // Static Data Members
 
-        static const char* const typeName;
-        static const char* const componentNames[];
-        static const uint64_t zero;
-        static const uint64_t one;
-        static const uint64_t min;
-        static const uint64_t max;
-        static const uint64_t rootMax;
-        static const uint64_t rootMin;
+        FOAM_EXPORT_DATA static const char* const typeName;
+        #if WM_LABEL_SIZE == 64
+        static const char* typeName_() { return "uLabel"; }
+        #else
+        static const char* typeName_() { return "uint64"; }
+        #endif
+        FOAM_EXPORT_DATA static const char* const componentNames[];
+        FOAM_EXPORT_DATA static const uint64_t zero;
+        FOAM_EXPORT_DATA static const uint64_t one;
+        FOAM_EXPORT_DATA static const uint64_t min;
+        FOAM_EXPORT_DATA static const uint64_t max;
+        FOAM_EXPORT_DATA static const uint64_t rootMax;
+        FOAM_EXPORT_DATA static const uint64_t rootMin;
 
 
     // Constructors

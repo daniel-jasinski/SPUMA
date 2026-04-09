@@ -131,6 +131,11 @@ tensor pinv(const tensor& t);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// Windows DLL: explicit specialization declarations for VectorSpace static
+// data members. Macro defined in VectorSpace.H, no-op on non-Windows.
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::Tensor<float>, float, 9)
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::Tensor<double>, double, 9)
+
 #endif
 
 // ************************************************************************* //

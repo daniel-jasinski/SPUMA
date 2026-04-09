@@ -65,6 +65,11 @@ typedef Vector2D<scalar> vector2D;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// Windows DLL: explicit specialization declarations for VectorSpace static
+// data members. Macro defined in VectorSpace.H, no-op on non-Windows.
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::Vector2D<float>, float, 2)
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::Vector2D<double>, double, 2)
+
 #endif
 
 // ************************************************************************* //

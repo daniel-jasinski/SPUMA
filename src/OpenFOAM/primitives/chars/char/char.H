@@ -88,7 +88,8 @@ public:
 
     // Static Data Members
 
-        static const char* const typeName;
+        FOAM_EXPORT_DATA static const char* const typeName;
+        static const char* typeName_() { return "char"; }
 
 
     // Constructors

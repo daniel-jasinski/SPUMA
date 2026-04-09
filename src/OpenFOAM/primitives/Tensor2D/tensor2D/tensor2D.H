@@ -135,6 +135,14 @@ Tensor2D<complex> eigenVectors(const tensor2D& T);
 
 #include "sphericalTensor2D.H"
 
+// Windows DLL: explicit specialization declarations for VectorSpace static
+// data members. Macro defined in VectorSpace.H, no-op on non-Windows.
+#if defined(WM_DP)
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::Tensor2D<double>, double, 4)
+#else
+FOAM_VECTORSPACE_EXTERN_DATA(Foam::Tensor2D<float>, float, 4)
+#endif
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
