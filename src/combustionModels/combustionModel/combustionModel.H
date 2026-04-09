@@ -43,6 +43,22 @@ SourceFiles
 #include "IOdictionary.H"
 #include "turbulentFluidThermoModel.H"
 
+// FOAM_COMBUSTION_EXPORT_DATA: per-library Windows DLL data export macro
+// for libcombustionModels statics. dllexport when compiling that library
+// itself (FOAM_COMBUSTION_BUILDING_LIB defined in its Make/options),
+// dllimport in any consumer TU. Used instead of the generic
+// FOAM_EXPORT_DATA from stdFoam.H to avoid re-exporting libOpenFOAM
+// template instantiations from this library.
+#if defined(_WIN32)
+# if defined(FOAM_COMBUSTION_BUILDING_LIB)
+#  define FOAM_COMBUSTION_EXPORT_DATA __declspec(dllexport)
+# else
+#  define FOAM_COMBUSTION_EXPORT_DATA __declspec(dllimport)
+# endif
+#else
+# define FOAM_COMBUSTION_EXPORT_DATA
+#endif
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -98,7 +114,7 @@ public:
     TypeName("combustionModel");
 
     //- Default combustionProperties dictionary name
-    static const word combustionPropertiesName;
+    FOAM_COMBUSTION_EXPORT_DATA static const word combustionPropertiesName;
 
 
     // Constructors

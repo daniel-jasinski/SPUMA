@@ -1,4 +1,11 @@
-EXE_INC = \
+/* Windows: per-library macro that makes FOAM_REACTINGEULER_EXPORT_DATA-marked
+ * statics (e.g. phaseSystem::propertiesName) dllexport in this library's TUs
+ * while leaving libOpenFOAM-owned data dllimport. */
+ifneq (,$(findstring windows,$(WM_OSTYPE)))
+    EXE_INC += -DFOAM_REACTINGEULER_BUILDING_LIB
+endif
+
+EXE_INC += \
     -I./../saturationModels/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \

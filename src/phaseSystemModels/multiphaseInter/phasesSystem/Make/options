@@ -1,4 +1,11 @@
-EXE_INC = \
+/* Windows: per-library macro that makes FOAM_MULTIPHASEINTER_EXPORT_DATA-marked
+ * statics (e.g. multiphaseInterSystem::phasePropertiesName) dllexport in this
+ * library's TUs while leaving libOpenFOAM-owned data dllimport. */
+ifneq (,$(findstring windows,$(WM_OSTYPE)))
+    EXE_INC += -DFOAM_MULTIPHASEINTER_BUILDING_LIB
+endif
+
+EXE_INC += \
     -I../../reactingEuler/saturationModels/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \

@@ -50,6 +50,22 @@ SourceFiles
 
 #include "compressibleTurbulenceModel.H"
 
+// FOAM_MULTIPHASEINTER_EXPORT_DATA: per-library Windows DLL data export
+// macro for libincompressibleMultiphaseSystems statics. dllexport when
+// compiling that library itself (FOAM_MULTIPHASEINTER_BUILDING_LIB defined
+// in its Make/options), dllimport in any consumer TU. Used instead of the
+// generic FOAM_EXPORT_DATA from stdFoam.H to avoid re-exporting libOpenFOAM
+// template instantiations from this library.
+#if defined(_WIN32)
+# if defined(FOAM_MULTIPHASEINTER_BUILDING_LIB)
+#  define FOAM_MULTIPHASEINTER_EXPORT_DATA __declspec(dllexport)
+# else
+#  define FOAM_MULTIPHASEINTER_EXPORT_DATA __declspec(dllimport)
+# endif
+#else
+# define FOAM_MULTIPHASEINTER_EXPORT_DATA
+#endif
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -260,7 +276,7 @@ public:
     TypeName("multiphaseInterSystem");
 
     //- Default name of the phase properties dictionary
-    static const word phasePropertiesName;
+    FOAM_MULTIPHASEINTER_EXPORT_DATA static const word phasePropertiesName;
 
 
     // Constructors
