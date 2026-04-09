@@ -74,6 +74,62 @@ constexpr doubleScalar doubleScalarROOTVSMALL = 1.0e-150;
 #define ScalarRead readDouble
 
 
+// When compiling SYCL code for CUDA device (via AdaptiveCpp), clang converts
+// ::sin(double) etc. to LLVM fsin/fcos intrinsics before AdaptiveCpp's LLVM
+// passes can intercept them. The NVPTX backend cannot lower f64 intrinsics.
+// Fix: call NVIDIA's device math library (__nv_sin etc.) directly on device.
+#if defined(__CUDA_ARCH__)
+
+// NVIDIA device math library declarations (defined in libdevice bitcode)
+extern "C" __device__ double __nv_fabs(double);
+extern "C" __device__ double __nv_hypot(double, double);
+extern "C" __device__ double __nv_atan2(double, double);
+extern "C" __device__ double __nv_sqrt(double);
+extern "C" __device__ double __nv_cbrt(double);
+extern "C" __device__ double __nv_exp(double);
+extern "C" __device__ double __nv_log(double);
+extern "C" __device__ double __nv_log10(double);
+extern "C" __device__ double __nv_sin(double);
+extern "C" __device__ double __nv_cos(double);
+extern "C" __device__ double __nv_tan(double);
+extern "C" __device__ double __nv_asin(double);
+extern "C" __device__ double __nv_acos(double);
+extern "C" __device__ double __nv_atan(double);
+extern "C" __device__ double __nv_sinh(double);
+extern "C" __device__ double __nv_cosh(double);
+extern "C" __device__ double __nv_tanh(double);
+extern "C" __device__ double __nv_asinh(double);
+extern "C" __device__ double __nv_acosh(double);
+extern "C" __device__ double __nv_atanh(double);
+extern "C" __device__ double __nv_erf(double);
+extern "C" __device__ double __nv_erfc(double);
+extern "C" __device__ double __nv_lgamma(double);
+extern "C" __device__ double __nv_tgamma(double);
+
+FOAM_DEVICE inline Scalar mag(const Scalar s)
+{
+    return __nv_fabs(s);
+}
+
+FOAM_DEVICE inline Scalar hypot(const Scalar x, const Scalar y)
+{
+    return __nv_hypot(x, y);
+}
+
+FOAM_DEVICE inline Scalar atan2(const Scalar y, const Scalar x)
+{
+    return __nv_atan2(y, x);
+}
+
+// Double-precision transcendental functions via NVIDIA device math
+#define transFunc(func)                                         \
+FOAM_DEVICE inline Scalar func(const Scalar s)                  \
+{                                                               \
+    return __nv_##func(s);                                      \
+}
+
+#else /* Host compilation */
+
 FOAM_DEVICE inline Scalar mag(const Scalar s)
 {
     return ::fabs(s);
@@ -89,7 +145,6 @@ FOAM_DEVICE inline Scalar atan2(const Scalar y, const Scalar x)
     return ::atan2(y, x);
 }
 
-
 // Normal (double-precision) transcendental functions
 #define transFunc(func)                                         \
 inline Scalar func(const Scalar s)                              \
@@ -97,9 +152,29 @@ inline Scalar func(const Scalar s)                              \
     return ::func(s);                                           \
 }
 
+#endif /* __CUDA_ARCH__ */
+
 // Normal (double-precision) bessel functions.
 // May not be available on all systems
-#ifdef Foam_no_besselFunc
+#if defined(__CUDA_ARCH__)
+    // CUDA device: use NVIDIA device math library for Bessel functions
+    extern "C" __device__ double __nv_j0(double);
+    extern "C" __device__ double __nv_j1(double);
+    extern "C" __device__ double __nv_y0(double);
+    extern "C" __device__ double __nv_y1(double);
+    extern "C" __device__ double __nv_jn(int, double);
+    extern "C" __device__ double __nv_yn(int, double);
+    #define besselFunc(func)                                    \
+    inline Scalar func(const Scalar s)                          \
+    {                                                           \
+        return __nv_##func(s);                                  \
+    }
+    #define besselFunc2(func)                                   \
+    inline Scalar func(const int n, const Scalar s)             \
+    {                                                           \
+        return __nv_##func(n, s);                               \
+    }
+#elif defined(Foam_no_besselFunc)
     // Not available
     #define besselFunc(func)                                    \
     inline Scalar func(const Scalar s)                          \
@@ -115,6 +190,18 @@ inline Scalar func(const Scalar s)                              \
     }
 #elif defined(__MINGW32__)
     // Mingw: with '_' prefix
+    #define besselFunc(func)                                    \
+    inline Scalar func(const Scalar s)                          \
+    {                                                           \
+        return _##func(s);                                      \
+    }
+    #define besselFunc2(func)                                   \
+    inline Scalar func(const int n, const Scalar s)             \
+    {                                                           \
+        return _##func(n, s);                                   \
+    }
+#elif defined(_MSC_VER)
+    // MSVC ABI (incl. Clang targeting MSVC): '_' prefix
     #define besselFunc(func)                                    \
     inline Scalar func(const Scalar s)                          \
     {                                                           \
