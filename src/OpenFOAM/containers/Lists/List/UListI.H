@@ -64,6 +64,7 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
         this->v_, this->size_, val
     );*/
 
+#ifndef SYCL_DEVICE_ONLY
     if(this->usePool_)
     {
         Foam::MemoryPool::getInstance()->memSet
@@ -75,6 +76,7 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
         );
     }
     else
+#endif
     {
         std::fill_n
         (
@@ -102,6 +104,7 @@ inline void Foam::UList<T>::fill_uniform(const Foam::zero)
             this->data_bytes(), this->size_bytes(), char(0)
         );*/
 
+#ifndef SYCL_DEVICE_ONLY
         if(this->usePool_)
         {
             Foam::MemoryPool::getInstance()->memSet
@@ -112,6 +115,7 @@ inline void Foam::UList<T>::fill_uniform(const Foam::zero)
             );
         }
         else
+#endif
         {
             std::fill_n
             (

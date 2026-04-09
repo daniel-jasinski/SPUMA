@@ -106,6 +106,7 @@ void Foam::UList<T>::swapLast(const label i)
 template<class T>
 void Foam::UList<T>::deepCopy(const UList<T>& list)
 {
+#ifndef SYCL_DEVICE_ONLY
     if (this->size_ != list.size_)
     {
         FatalErrorInFunction
@@ -113,11 +114,14 @@ void Foam::UList<T>::deepCopy(const UList<T>& list)
             << this->size_ << " != " << list.size() << nl
             << abort(FatalError);
     }
-    else if (this->size_ > 0)
+    else
+#endif
+    if (this->size_ > 0)
     {
         // Can dispatch with
         // - std::execution::parallel_unsequenced_policy
         // - std::execution::unsequenced_policy
+#ifndef SYCL_DEVICE_ONLY
         if (list.usePool() && this->usePool_) //ADD case were the src list is not on the pool?
         {
             MemoryPool::getInstance()->memCopy(this->v_,(void*)list.begin(),this->size_*sizeof(T));
@@ -127,6 +131,7 @@ void Foam::UList<T>::deepCopy(const UList<T>& list)
             MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
         }
         else
+#endif
         {
             std::copy(list.cbegin(), list.cend(), this->v_);
         }
@@ -138,6 +143,7 @@ template<class T>
 template<class Addr>
 void Foam::UList<T>::deepCopy(const IndirectListBase<T, Addr>& list)
 {
+#ifndef SYCL_DEVICE_ONLY
     if (this->size_ != list.size())
     {
         FatalErrorInFunction
@@ -145,7 +151,9 @@ void Foam::UList<T>::deepCopy(const IndirectListBase<T, Addr>& list)
             << this->size_ << " != " << list.size() << nl
             << abort(FatalError);
     }
-    else if (this->size_)
+    else
+#endif
+    if (this->size_)
     {
         // Copy the indirect list contents
 
@@ -179,12 +187,14 @@ void Foam::UList<T>::operator=(const Foam::zero)
 template<class T>
 std::streamsize Foam::UList<T>::byteSize() const
 {
+#ifndef SYCL_DEVICE_ONLY
     if (!is_contiguous<T>::value)
     {
         FatalErrorInFunction
             << "Invalid for non-contiguous data types"
             << abort(FatalError);
     }
+#endif
     return this->size_bytes();
 }
 
