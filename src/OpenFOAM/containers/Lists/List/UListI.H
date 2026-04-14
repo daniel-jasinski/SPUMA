@@ -422,6 +422,7 @@ inline void Foam::UList<T>::shallowCopy(const UList<T>& list) noexcept
 
     size_ = list.size_;
     v_ = list.v_;
+    usePool_ = list.usePool_;
 }
 
 
