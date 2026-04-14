@@ -265,7 +265,7 @@ public:
         inline SymmTensor<Cmpt> inv() const;
 
         //- Return inverse, with (ad hoc) failsafe handling of 2D tensors
-        inline SymmTensor<Cmpt> safeInv() const;
+        FOAM_DEVICE inline SymmTensor<Cmpt> safeInv() const;
 
         //- Return inverse of 2D tensor (by excluding given direction)
         inline SymmTensor<Cmpt> inv2D(const direction excludeCmpt) const;

@@ -56,7 +56,22 @@ void inv(Field<symmTensor>& result, const UList<symmTensor>& f1)
 {
     // With 'failsafe' invert
     // std::transform
-    TFOR_ALL_F_OP_F_FUNC(symmTensor, result, =, symmTensor, f1, safeInv)
+    if (result.usePool() && f1.usePool())
+    {
+        checkFields(result, f1, "result = f1.saveInv()"); 
+        foamExecutor exec;
+        auto resultPtr = result.begin();
+        const auto f1Ptr = f1.cbegin();
+        auto Lambda = [=](label i)
+        {
+            resultPtr[i] = f1Ptr[i].safeInv();
+        };
+        exec.parallelFor(Lambda,result.size());
+    }
+    else
+    {
+        TFOR_ALL_F_OP_F_FUNC(symmTensor, result, =, symmTensor, f1, safeInv)
+    }
 }
 
 tmp<symmTensorField> inv(const UList<symmTensor>& tf)

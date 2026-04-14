@@ -301,7 +301,7 @@ public:
         FOAM_DEVICE inline Tensor<Cmpt> inv() const;
 
         //- Return inverse, with (ad hoc) failsafe handling of 2D tensors
-        inline Tensor<Cmpt> safeInv() const;
+        FOAM_DEVICE inline Tensor<Cmpt> safeInv() const;
 
         //- Return inverse of 2D tensor (by excluding given direction)
         inline Tensor<Cmpt> inv2D(const direction excludeCmpt) const;
