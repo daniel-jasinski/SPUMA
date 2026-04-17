@@ -140,7 +140,7 @@ public:
         // Fundamental Properties
 
             //- Heat capacity at constant pressure [J/kg/K]
-            inline scalar Cp(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar Cp(const scalar p, const scalar T) const;
 
             //- Absolute enthalpy [J/kg]
             FOAM_DEVICE inline scalar Ha(const scalar p, const scalar T) const;
@@ -152,10 +152,10 @@ public:
             FOAM_DEVICE inline scalar Hc() const;
 
             //- Entropy [J/kg/K]
-            inline scalar S(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar S(const scalar p, const scalar T) const;
 
             //- Gibbs free energy of the mixture in the standard state [J/kg]
-            inline scalar Gstd(const scalar T) const;
+            FOAM_DEVICE inline scalar Gstd(const scalar T) const;
 
 
             #include "HtoEthermo.H"

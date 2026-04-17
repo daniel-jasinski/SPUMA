@@ -141,6 +141,18 @@ makeThermos
     specie
 );
 
+makeThermos
+(
+    rhoThermo,
+    deviceHeRhoThermo,
+    pureMixture,
+    tabulatedTransport,
+    sensibleEnthalpy,
+    hTabulatedThermo,
+    icoTabulated,
+    specie
+);
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

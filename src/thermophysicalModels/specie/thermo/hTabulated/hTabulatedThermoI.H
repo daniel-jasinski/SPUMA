@@ -56,7 +56,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::limit
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Cp
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Cp
 (
     const scalar p,
     const scalar T
@@ -97,7 +97,7 @@ const
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::S
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::S
 (
     const scalar p,
     const scalar T
@@ -108,7 +108,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::S
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Gstd
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Gstd
 (
     const scalar T
 ) const

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2020 OpenFOAM Foundation
     Copyright (C) 2020 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -128,7 +129,7 @@ public:
         }
 
         //- Evaluate the function and return the result
-        scalar f(scalar p, scalar T) const;
+        FOAM_DEVICE inline scalar f(scalar p, scalar T) const;
 
         //- Evaluate the derivative of the function and return the result
         scalar dfdT(scalar p, scalar T) const;

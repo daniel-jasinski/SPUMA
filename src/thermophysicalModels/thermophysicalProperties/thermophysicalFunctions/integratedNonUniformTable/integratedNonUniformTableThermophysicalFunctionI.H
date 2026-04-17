@@ -5,8 +5,8 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2020 OpenFOAM Foundation
-    Copyright (C) 2020-2022 OpenCFD Ltd.
+    Copyright (C) 2020-2022 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
     Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
@@ -27,52 +27,24 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "nonUniformTableThermophysicalFunction.H"
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-inline Foam::label Foam::nonUniformTable::index
-(
-    scalar p,
-    scalar T
-) const
-{
-    scalar nd = 0;
-    if (T > Trange_.min() && T < Trange_.max())
-    {
-        nd = (T - Trange_.min())/deltaT_;
-    }
-    else if (T > Trange_.max())
-    {
-        nd = (Trange_.max() - Trange_.min())/deltaT_;
-    }
-
-    const label j = nd;
-
-    label i = jumpTable_[j];
-
-    if (i < values_.size() - 1 && T > values_[i + 1].first())
-    {
-        ++i;
-    }
-
-    return i;
-}
-
-
-FOAM_DEVICE inline Foam::scalar Foam::nonUniformTable::f
+FOAM_DEVICE inline Foam::scalar Foam::thermophysicalFunctions::integratedNonUniformTable::intfdT
 (
     scalar p,
     scalar T
 ) const
 {
     const label i = index(p, T);
-    const scalar Ti = values_[i].first();
-    const scalar lambda = (T - Ti)/(values_[i + 1].first() - Ti);
+    const scalar Ti = values()[i].first();
+    const scalar fi = values()[i].second();
+    const scalar dT = T - Ti;
+    const scalar lambda = dT/(values()[i + 1].first() - Ti);
 
     return
-        values_[i].second()
-      + lambda*(values_[i + 1].second() - values_[i].second());
+        intf_[i]
+      + (fi + 0.5*lambda*(values()[i + 1].second() - fi))*dT;
 }
 
 
