@@ -448,7 +448,7 @@ FOAM_DEVICE inline Cmpt Foam::Tensor<Cmpt>::det() const
 
 
 template<class Cmpt>
-inline Cmpt Foam::Tensor<Cmpt>::det2D(const direction excludeCmpt) const
+FOAM_DEVICE inline Cmpt Foam::Tensor<Cmpt>::det2D(const direction excludeCmpt) const
 {
     switch (excludeCmpt)
     {
@@ -488,7 +488,7 @@ FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::cof() const
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct2D
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct2D
 (
     const direction excludeCmpt
 ) const
@@ -527,7 +527,7 @@ inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct2D
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv2D
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv2D
 (
     const direction excludeCmpt
 ) const
@@ -570,7 +570,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Foam::Tensor<Cmpt>
+FOAM_DEVICE inline Foam::Tensor<Cmpt>
 Foam::Tensor<Cmpt>::schur(const Tensor<Cmpt>& t2) const
 {
     const Tensor<Cmpt>& t1 = *this;
@@ -608,6 +608,8 @@ FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv() const
 template<class Cmpt>
 FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::safeInv() const
 {
+    static const Cmpt localOne(1);
+
     {
         // Attempt to identify and handle 2-D cases
         // - use diagSqr instead of magSqr for fewer operations
