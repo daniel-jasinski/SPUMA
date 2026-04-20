@@ -49,6 +49,7 @@ SourceFiles
 #else
     #define FOAM_DEVICE
     #define FOAM_DEVICE_I inline
+    #define FOAM_DEVICE_V
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
