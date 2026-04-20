@@ -154,7 +154,10 @@ inline void Foam::List<T>::clear()
     {
         if (this->usePool_)
         {
-            Spuma::MemoryPool::getInstance()->free((void*)this->v_);
+            Spuma::MemoryPool::getInstance()->free
+            (
+                reinterpret_cast<void*>(this->v_)
+            );
         }
         else
         {

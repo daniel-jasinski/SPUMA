@@ -69,7 +69,7 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
         Foam::Spuma::MemoryPool::getInstance()->memSet
         (
             this->v_,
-            (void*)&val,
+            reinterpret_cast<const void*>(&val),
             sizeof(T),
             this->size_bytes()
         );

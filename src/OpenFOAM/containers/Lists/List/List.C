@@ -415,7 +415,12 @@ void Foam::List<T>::transfer(List<T>& list)
     if (this->usePool() && !list.usePool())
     {
         doAlloc(list.size());
-        Spuma::MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+        Spuma::MemoryPool::getInstance()->copyIn
+        (
+            this->v_,
+            reinterpret_cast<void*>(list.begin()),
+            this->size_*sizeof(T)
+        );
         list.clear();
     }
     else if (!this->usePool() && list.usePool())

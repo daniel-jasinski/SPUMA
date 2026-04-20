@@ -119,11 +119,21 @@ void Foam::UList<T>::deepCopy(const UList<T>& list)
         // - std::execution::unseq
         if (list.usePool() && this->usePool_) //ADD case were the src list is not on the pool?
         {
-            Spuma::MemoryPool::getInstance()->memCopy(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+            Spuma::MemoryPool::getInstance()->memCopy
+            (
+                this->v_,
+                const_cast<void*>(reinterpret_cast<const void*>(list.cbegin())),
+                this->size_*sizeof(T)
+            );
         }
         else if (this->usePool_ && !list.usePool())
         {
-            Spuma::MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+            Spuma::MemoryPool::getInstance()->copyIn
+            (
+                this->v_,
+                const_cast<void*>(reinterpret_cast<const void*>(list.cbegin())),
+                this->size_*sizeof(T)
+            );
         }
         else
         {
