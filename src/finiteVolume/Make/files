@@ -1,5 +1,6 @@
 fvMesh/fvMeshGeometry.C
 fvMesh/fvMesh.C
+fvMesh/fvMeshLduAddressing.C
 fvMesh/fvMeshCsrAddressing.C
 
 fvGeometryScheme = fvMesh/fvGeometryScheme

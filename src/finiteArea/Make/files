@@ -2,6 +2,7 @@ faMesh/faGlobalMeshData/faGlobalMeshData.C
 faMesh/faMeshesRegistry.C
 faMesh/faMeshRegistry.C
 faMesh/faMesh.C
+faMesh/faMeshLduAddressing.C
 faMesh/faMeshNew.C
 faMesh/faMeshDemandDrivenData.C
 faMesh/faMeshPatches.C

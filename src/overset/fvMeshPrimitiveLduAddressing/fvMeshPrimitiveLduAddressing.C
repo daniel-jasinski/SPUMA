@@ -29,6 +29,7 @@ License
 #include "lduPrimitiveMesh.H"
 #include "processorLduInterface.H"
 #include "globalIndex.H"
+#include "graphColoring.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -70,6 +71,26 @@ Foam::fvMeshPrimitiveLduAddressing::fvMeshPrimitiveLduAddressing
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+const Foam::List<Foam::DynamicList<Foam::label>>&
+Foam::fvMeshPrimitiveLduAddressing::partitions(const dictionary& dict) const noexcept
+{
+    if (!partitions_)
+    {
+        partitions_ = std::make_unique<List<DynamicList<label>>>();
+
+        autoPtr<graphColoring> alg = graphColoring::New
+        (
+            dict,
+            *this,
+            *partitions_
+        );
+        alg->execute();
+    }
+
+    return *partitions_;
+}
+
 
 Foam::label Foam::fvMeshPrimitiveLduAddressing::triIndex
 (
