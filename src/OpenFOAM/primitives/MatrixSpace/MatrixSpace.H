@@ -192,7 +192,7 @@ public:
     // Constructors
 
         //- Construct initialized to zero
-        inline MatrixSpace(Foam::zero);
+        FOAM_DEVICE inline MatrixSpace(Foam::zero);
 
         //- Construct as copy of a VectorSpace with the same size
         template<class Form2, class Cmpt2>

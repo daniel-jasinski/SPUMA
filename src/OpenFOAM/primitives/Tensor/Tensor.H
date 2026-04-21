@@ -102,7 +102,7 @@ public:
     // Constructors
 
         //- Construct initialized to zero
-        inline Tensor(Foam::zero);
+        FOAM_DEVICE inline Tensor(Foam::zero);
 
         //- Construct given MatrixSpace of the same rank
         template<class Cmpt2>
@@ -174,15 +174,15 @@ public:
         FOAM_DEVICE const Cmpt& zy() const noexcept { return this->v_[ZY]; }
         FOAM_DEVICE const Cmpt& zz() const noexcept { return this->v_[ZZ]; }
 
-        Cmpt& xx() noexcept { return this->v_[XX]; }
-        Cmpt& xy() noexcept { return this->v_[XY]; }
-        Cmpt& xz() noexcept { return this->v_[XZ]; }
-        Cmpt& yx() noexcept { return this->v_[YX]; }
-        Cmpt& yy() noexcept { return this->v_[YY]; }
-        Cmpt& yz() noexcept { return this->v_[YZ]; }
-        Cmpt& zx() noexcept { return this->v_[ZX]; }
-        Cmpt& zy() noexcept { return this->v_[ZY]; }
-        Cmpt& zz() noexcept { return this->v_[ZZ]; }
+        FOAM_DEVICE Cmpt& xx() noexcept { return this->v_[XX]; }
+        FOAM_DEVICE Cmpt& xy() noexcept { return this->v_[XY]; }
+        FOAM_DEVICE Cmpt& xz() noexcept { return this->v_[XZ]; }
+        FOAM_DEVICE Cmpt& yx() noexcept { return this->v_[YX]; }
+        FOAM_DEVICE Cmpt& yy() noexcept { return this->v_[YY]; }
+        FOAM_DEVICE Cmpt& yz() noexcept { return this->v_[YZ]; }
+        FOAM_DEVICE Cmpt& zx() noexcept { return this->v_[ZX]; }
+        FOAM_DEVICE Cmpt& zy() noexcept { return this->v_[ZY]; }
+        FOAM_DEVICE Cmpt& zz() noexcept { return this->v_[ZZ]; }
 
 
     // Column-vector access

@@ -31,7 +31,7 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, Foam::direction Mrows, Foam::direction Ncols>
-inline Foam::MatrixSpace<Form, Cmpt, Mrows, Ncols>::MatrixSpace
+FOAM_DEVICE inline Foam::MatrixSpace<Form, Cmpt, Mrows, Ncols>::MatrixSpace
 (
     Foam::zero
 )
