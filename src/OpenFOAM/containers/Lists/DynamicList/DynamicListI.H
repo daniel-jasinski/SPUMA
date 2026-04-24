@@ -135,11 +135,17 @@ inline constexpr Foam::DynamicList<T, SizeMin>::DynamicList() noexcept
     capacity_(0)
 {}
 
+template<class T, int SizeMin>
+inline Foam::DynamicList<T, SizeMin>::DynamicList(const poolSwitch usePool) noexcept
+:
+    List<T>(usePool),
+    capacity_(0)
+{}
 
 template<class T, int SizeMin>
-inline Foam::DynamicList<T, SizeMin>::DynamicList(const label initialCapacity)
+inline Foam::DynamicList<T, SizeMin>::DynamicList(const label initialCapacity, poolSwitch usePool)
 :
-    List<T>(),
+    List<T>(usePool),
     capacity_(0)
 {
     reserve_nocopy(initialCapacity);
@@ -163,10 +169,11 @@ template<class T, int SizeMin>
 inline Foam::DynamicList<T, SizeMin>::DynamicList
 (
     const label len,
-    const T& val
+    const T& val,
+    poolSwitch usePool
 )
 :
-    List<T>(len, val),
+    List<T>(len, val, usePool),
     capacity_(List<T>::size())
 {}
 
@@ -175,10 +182,11 @@ template<class T, int SizeMin>
 inline Foam::DynamicList<T, SizeMin>::DynamicList
 (
     const label len,
-    Foam::zero
+    Foam::zero,
+    poolSwitch usePool
 )
 :
-    List<T>(len, Foam::zero{}),
+    List<T>(len, Foam::zero{}, usePool),
     capacity_(List<T>::size())
 {}
 

@@ -112,17 +112,19 @@ public:
         //- Default construct, an empty list without allocation.
         inline constexpr DynamicList() noexcept;
 
+        inline explicit DynamicList(const poolSwitch usePool) noexcept;
+
         //- Construct an empty list with given initial capacity
-        inline explicit DynamicList(const label initialCapacity);
+        inline explicit DynamicList(const label initialCapacity, poolSwitch usePool = poolSwitch(false));
 
         //- Construct with given size and capacity
         inline explicit DynamicList(std::pair<label,label> sizing);
 
         //- Construct with given size and value for all elements.
-        inline DynamicList(const label len, const T& val);
+        inline DynamicList(const label len, const T& val, poolSwitch usePool = poolSwitch(false));
 
         //- Construct with given size initializing all elements to zero
-        inline DynamicList(const label len, Foam::zero);
+        inline DynamicList(const label len, Foam::zero, poolSwitch usePool = poolSwitch(false));
 
         //- Copy construct.
         inline DynamicList(const DynamicList<T, SizeMin>& lst);

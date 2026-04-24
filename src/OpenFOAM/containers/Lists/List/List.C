@@ -235,7 +235,7 @@ Foam::List<T>::List(const UList<T>& list)
     }
 }
 
-// TODO memmoryPool
+
 template<class T>
 Foam::List<T>::List(const List<T>& list)
 :
@@ -347,7 +347,7 @@ template<class T>
 template<int SizeMin>
 Foam::List<T>::List(DynamicList<T, SizeMin>&& list)
 :
-    UList<T>()
+    UList<T>(nullptr,0,list.usePool())
 {
     transfer(list);
 }
