@@ -14,6 +14,14 @@ hipDBUG    :=
 hipOPT     := -O2
 ptFLAGS   := -DNoRepository
 
+# Add debug flags if requred
+ifneq (,$(or $(findstring Debug,$(WM_COMPILE_OPTION)),$(findstring Dbg,$(WM_COMPILE_OPTION))))
+    hipDBUG   := -ggdb #-DFULLDEBUG
+endif
+ifneq (,$(findstring Debug,$(WM_COMPILE_OPTION)))
+    hipOPT   := -O0
+endif
+
 hipWARN     = -Wall -Wextra -Wno-unused
 
 HIP_LIB_HEADER_DIRS = \

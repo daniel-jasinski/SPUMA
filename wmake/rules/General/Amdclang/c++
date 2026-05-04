@@ -32,11 +32,15 @@ c++LESSWARN = \
 
 include $(GENERAL_RULES)/hip
 
+# Tuning
+sinclude $(GENERAL_RULES)/common/c++$(WM_COMPILE_OPTION)
+
 ifneq (,$(findstring true,$(have_hip)))
+    ifneq (,$(or $(findstring Debug,$(WM_COMPILE_OPTION)),$(findstring Dbg,$(WM_COMPILE_OPTION))))
+        c++DBUG    := -ggdb #-DFULLDEBUG
+    endif
     CC := hipcc$(COMPILER_VERSION) -std=c++17 --offload-arch=$(AMDARCH):xnack+ -Dhave_hip -munsafe-fp-atomics
 endif
 
-# Tuning
-sinclude $(GENERAL_RULES)/common/c++$(WM_COMPILE_OPTION)
 
 #------------------------------------------------------------------------------
