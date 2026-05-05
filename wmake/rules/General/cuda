@@ -14,6 +14,14 @@ cuDBUG    :=
 cuOPT     := -O2
 ptFLAGS   := -DNoRepository
 
+# Add debug flags if requred
+ifneq (,$(or $(findstring Debug,$(WM_COMPILE_OPTION)),$(findstring Dbg,$(WM_COMPILE_OPTION))))
+    cuDBUG   := -G #-DFULLDEBUG
+endif
+ifneq (,$(findstring Debug,$(WM_COMPILE_OPTION)))
+    cuOPT   := -O0
+endif
+
 cuWARN     = --compiler-options '-Wall -Wextra -Wno-unused' \
                 -Xcudafe '--diag_suppress=177 \
                           --diag_suppress=611 \

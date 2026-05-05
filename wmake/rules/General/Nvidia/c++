@@ -27,6 +27,12 @@ endif
 # Tuning
 sinclude $(GENERAL_RULES)/common/c++$(WM_COMPILE_OPTION)
 
+ifneq (,$(findstring true,$(have_cuda)))
+    ifneq (,$(or $(findstring Debug,$(WM_COMPILE_OPTION)),$(findstring Dbg,$(WM_COMPILE_OPTION))))
+        c++DBUG    := -g #-DFULLDEBUG
+    endif
+endif
+
 #------------------------------------------------------------------------------
 # Warnings
 # --------
