@@ -83,6 +83,8 @@ void Foam::GAMGPreconditioner::precondition
     const direction cmpt
 ) const
 {
+    const bool useLowerCSR = controlDict_.getOrDefault<bool>("useLowerCSR", false);
+
     wA = Zero;
     solveScalarField AwA(wA.size());
     solveScalarField finestCorrection(wA.size());
@@ -142,7 +144,7 @@ void Foam::GAMGPreconditioner::precondition
         if (cycle < nVcycles_-1)
         {
             // Calculate finest level residual field
-            matrix_.Amul(AwA, wA, interfaceBouCoeffs_, interfaces_, cmpt);
+            matrix_.Amul(AwA, wA, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
             finestResidual = rA_ss;
             finestResidual -= AwA;
         }

@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2016-2024 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -754,7 +754,8 @@ public:
                 const tmp<solveScalarField>&,
                 const FieldField<Field, scalar>&,
                 const lduInterfaceFieldPtrsList&,
-                const direction cmpt
+                const direction cmpt,
+                const bool useLowerCSR=false
             ) const;
 
             //- Matrix transpose multiplication with updated interfaces.

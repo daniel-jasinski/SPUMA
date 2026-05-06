@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2017-2024 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -41,7 +41,8 @@ void Foam::lduMatrix::Amul
     const tmp<solveScalarField>& tpsi,
     const FieldField<Field, scalar>& interfaceBouCoeffs,
     const lduInterfaceFieldPtrsList& interfaces,
-    const direction cmpt
+    const direction cmpt,
+    const bool useLowerCSR
 ) const
 {
     const auto& addr = lduAddr();
@@ -76,7 +77,7 @@ void Foam::lduMatrix::Amul
 
     const label nCells = diag().size();
 
-    if (hasLowerCSR())
+    if (useLowerCSR)
     {
         // Use cell-based looping
         if (debug == 2) PoutInFunction<< "cell-based looping" << endl;
@@ -85,8 +86,8 @@ void Foam::lduMatrix::Amul
             addr.ownerStartAddr().begin();
         const label* const __restrict__ loStartPtr =
             addr.losortStartAddr().begin();
-            const label* const __restrict__ lcsrPtr =
-                addr.lowerCSRAddr().begin();
+        const label* const __restrict__ lcsrPtr =
+            addr.lowerCSRAddr().begin();
 
         // Note: lowerCSR constructed from lower if available, upper otherwise
         //       so is handling symmetric()
@@ -125,6 +126,8 @@ void Foam::lduMatrix::Amul
     }
     else
     {
+        if (debug == 2) PoutInFunction<< "ldu-based looping" << endl;
+
         const label nFaces = upper().size();
         auto LambdaDiag = [=](label cell)
         {

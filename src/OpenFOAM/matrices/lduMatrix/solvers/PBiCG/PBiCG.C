@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019-2022 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -84,6 +84,8 @@ Foam::solverPerformance Foam::PBiCG::solve
         fieldName_
     );
 
+    const bool useLowerCSR = controlDict_.getOrDefault<bool>("useLowerCSR", false);
+
     const label nCells = psi.size();
 
     solveScalar* __restrict__ psiPtr = psi.begin();
@@ -95,7 +97,7 @@ Foam::solverPerformance Foam::PBiCG::solve
     solveScalar* __restrict__ wAPtr = wA.begin();
 
     // --- Calculate A.psi
-    matrix_.Amul(wA, psi, interfaceBouCoeffs_, interfaces_, cmpt);
+    matrix_.Amul(wA, psi, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
 
     // --- Calculate initial residual field
     ConstPrecisionAdaptor<solveScalar, scalar> tsource(source);
@@ -194,7 +196,7 @@ Foam::solverPerformance Foam::PBiCG::solve
 
 
             // --- Update preconditioned residuals
-            matrix_.Amul(wA, pA, interfaceBouCoeffs_, interfaces_, cmpt);
+            matrix_.Amul(wA, pA, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
             matrix_.Tmul(wT, pT, interfaceIntCoeffs_, interfaces_, cmpt);
 
             const solveScalar wApT = gSumProd(wA, pT, matrix().mesh().comm());
