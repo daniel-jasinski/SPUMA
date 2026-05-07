@@ -41,6 +41,14 @@ inline void Foam::List<T>::doAlloc(const label len)
             (
                 Spuma::MemoryPool::getInstance()->allocate(len*sizeof(T))
             );
+
+            // mimimc placement new
+            // default-initialize memory
+            const T* value = new T;
+            Spuma::MemoryPool::getInstance()->memSet(this->v_,value,sizeof(T),len*sizeof(T));
+
+            // delete temporary object
+            delete value;
         }
         else
         {
