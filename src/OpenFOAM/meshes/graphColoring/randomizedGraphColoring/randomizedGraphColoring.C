@@ -191,14 +191,17 @@ void Foam::randomizedGraphColoring::execute
     // for all the remaining cells in U.
     for (label celli=0; celli<nCells; ++celli)
     {
+        HashSet<label>& cellPalette = cellPalettes[celli];
+        cellPalette.reserve(maxColor);
         for (label j=0; j<maxColor; ++j)
         {
-            cellPalettes[celli].insert(j);
+            cellPalette.insert(j);
         }
     }
 
     // Fill in the U set
     HashSet<label> U;
+    U.reserve(nCells);
     for (label celli=0; celli<nCells; ++celli)
     {
         U.insert(celli);
@@ -239,6 +242,7 @@ void Foam::randomizedGraphColoring::execute
         }
 
         HashSet<label> tmp;
+        tmp.reserve(U.size());
 
         // Conflict resolution
         // Now let's find all the nodes whose colors are different from all their neighbours.
@@ -382,10 +386,15 @@ void Foam::randomizedGraphColoring::execute
     }
 
     // Finally, we collect all the partitions then.
+    // We consider 5% of imbalance
+    const label estimateSameColorCells = 1.05*(nCells / maxColor); 
     partitions_.resize(maxColor);
     for(int i=0;i<maxColor;++i)
     {
-        DynamicList<label>* obj = new (partitions_.data_bytes() + i*sizeof(DynamicList<label>)) DynamicList<label>(16, poolSwitch(1));
+        DynamicList<label>* obj = new 
+        (
+            partitions_.data_bytes() + i*sizeof(DynamicList<label>)
+        ) DynamicList<label>(estimateSameColorCells, poolSwitch(1));
     }
 
     for (label color=0; color<maxColor; ++color)
