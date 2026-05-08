@@ -72,8 +72,16 @@ class multicolorGaussSeidelSmoother
 {
 private:
 
-    //- Read the control parameters from the controlDict_
-    void readControls();
+    // Private data
+
+        //- The inverse (reciprocal for scalars) diagonal
+        Field<solveScalar> rD_;
+
+
+    // Member functions
+
+        //- Read the control parameters from the controlDict_
+        void readControls();
 
 
 public:

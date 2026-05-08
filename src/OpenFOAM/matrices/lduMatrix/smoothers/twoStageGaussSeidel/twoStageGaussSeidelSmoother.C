@@ -64,9 +64,25 @@ Foam::twoStageGaussSeidelSmoother::twoStageGaussSeidelSmoother
         interfaceIntCoeffs,
         interfaces,
         solverControls
-    )
+    ),
+    rD_(matrix.diag().size())
 {
     readControls();
+
+    const label nCells = matrix.diag().size();
+
+    const scalar* const __restrict__ diagPtr =
+        matrix.diag().cbegin();
+    scalar* __restrict__ rDPtr = rD_.begin();
+
+    foamExecutor exec;
+
+    // -- Calculate the inverse of the diagonal matrix (D^-1)
+    auto LambdarD = [=](label celli)
+    {
+        rDPtr[celli] = 1. / diagPtr[celli];
+    };
+    exec.parallelFor(LambdarD, nCells);
 }
 
 
@@ -120,19 +136,11 @@ void Foam::twoStageGaussSeidelSmoother::smooth_
     solveScalarField g(nCells);
     solveScalar* __restrict__ gPtr = g.begin();
 
-    scalarField rD(nCells);
-    scalar* __restrict__ rDPtr = rD.begin();
+    const scalar* const __restrict__ rDPtr = rD_.cbegin();
 
     const scalar omega = this->omega_;
 
     foamExecutor exec;
-
-    // -- Calculate the inverse of the diagonal matrix (D^-1)
-    auto LambdarD = [=](label celli)
-    {
-        rDPtr[celli] = 1. / diagPtr[celli];
-    };
-    exec.parallelFor(LambdarD, nCells);
 
     for (label sweep=0; sweep<nSweeps; sweep++)
     {

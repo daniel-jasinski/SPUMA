@@ -64,9 +64,25 @@ Foam::multicolorGaussSeidelSmoother::multicolorGaussSeidelSmoother
         interfaceIntCoeffs,
         interfaces,
         solverControls
-    )
+    ),
+    rD_(matrix.diag().size())
 {
     readControls();
+
+    const label nCells = matrix.diag().size();
+
+    const scalar* const __restrict__ diagPtr =
+        matrix.diag().cbegin();
+    scalar* __restrict__ rDPtr = rD_.begin();
+
+    foamExecutor exec;
+
+    // -- Calculate the inverse of the diagonal matrix (D^-1)
+    auto LambdarD = [=](label celli)
+    {
+        rDPtr[celli] = 1. / diagPtr[celli];
+    };
+    exec.parallelFor(LambdarD, nCells);
 }
 
 
@@ -79,12 +95,12 @@ void Foam::multicolorGaussSeidelSmoother::readControls()
 
 void Foam::multicolorGaussSeidelSmoother::smooth_
 (
-    const word& fieldName_,
+    const word& fieldName,
     solveScalarField& psi,
-    const lduMatrix& matrix_,
+    const lduMatrix& matrix,
     const solveScalarField& source,
-    const FieldField<Field, scalar>& interfaceBouCoeffs_,
-    const lduInterfaceFieldPtrsList& interfaces_,
+    const FieldField<Field, scalar>& interfaceBouCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces,
     const direction cmpt,
     const label nSweeps
 ) const
@@ -93,10 +109,12 @@ void Foam::multicolorGaussSeidelSmoother::smooth_
     const solveScalar* const __restrict__ bPtr = source.cbegin();
 
     const label nCells = psi.size();
-    const label nInternalFaces = matrix_.upper().size();
+    const label nInternalFaces = matrix.upper().size();
  
-    solveScalarField& bPrime = matrix_.work(nCells);
+    solveScalarField& bPrime = matrix.work(nCells);
     solveScalar* __restrict__ bPrimePtr = bPrime.begin();
+
+    const scalar* const __restrict__ rDPtr = rD_.cbegin();
 
     const scalar* const __restrict__ diagPtr = 
         matrix_.diag().cbegin();
@@ -107,7 +125,7 @@ void Foam::multicolorGaussSeidelSmoother::smooth_
     const scalar* const __restrict__ lowercsrPtr = 
         matrix_.lowerCSR().begin();
 
-    const lduAddressing& addr = matrix_.lduAddr();
+    const lduAddressing& addr = matrix.lduAddr();
 
     const label* const __restrict__ uPtr =
         addr.upperAddr().begin();
@@ -129,6 +147,8 @@ void Foam::multicolorGaussSeidelSmoother::smooth_
 
     const List<DynamicList<label>>& partitions = addr.partitions(smootherDict);
 
+    foamExecutor exec;
+
     // Parallel boundary initialisation.  The parallel boundary is treated
     // as an effective jacobi interface in the boundary.
     // Note: there is a change of sign in the coupled
@@ -147,28 +167,26 @@ void Foam::multicolorGaussSeidelSmoother::smooth_
 
         const label startRequest = UPstream::nRequests();
 
-        matrix_.initMatrixInterfaces
+        matrix.initMatrixInterfaces
         (
             false,
-            interfaceBouCoeffs_,
-            interfaces_,
+            interfaceBouCoeffs,
+            interfaces,
             psi,
             bPrime,
             cmpt
         );
 
-        matrix_.updateMatrixInterfaces
+        matrix.updateMatrixInterfaces
         (
             false,
-            interfaceBouCoeffs_,
-            interfaces_,
+            interfaceBouCoeffs,
+            interfaces,
             psi,
             bPrime,
             cmpt,
             startRequest
         );
-
-        foamExecutor exec;
 
         for (const DynamicList<label>& partition : partitions)
         {
@@ -208,7 +226,7 @@ void Foam::multicolorGaussSeidelSmoother::smooth_
                 }
 
                 // Finish psi for this cell
-                psii /= diagPtr[celli];
+                psii *= rDPtr[celli];
 
                 psiPtr[celli] = psii;
             };
