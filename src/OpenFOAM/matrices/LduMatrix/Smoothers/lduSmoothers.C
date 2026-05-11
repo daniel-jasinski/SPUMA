@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,6 +28,7 @@ License
 
 #include "TGaussSeidelSmoother.H"
 #include "TtwoStageGaussSeidelSmoother.H"
+#include "TmulticolorGaussSeidelSmoother.H"
 #include "fieldTypes.H"
 
 #define makeLduSmoothers(Type, DType, LUType)                                  \
@@ -37,8 +38,10 @@ License
     makeLduAsymSmoother(TGaussSeidelSmoother, Type, DType, LUType);            \
     makeLduSmoother(TtwoStageGaussSeidelSmoother, Type, DType, LUType);        \
     makeLduSymSmoother(TtwoStageGaussSeidelSmoother, Type, DType, LUType);     \
-    makeLduAsymSmoother(TtwoStageGaussSeidelSmoother, Type, DType, LUType);
-
+    makeLduAsymSmoother(TtwoStageGaussSeidelSmoother, Type, DType, LUType);    \
+    makeLduSmoother(TmulticolorGaussSeidelSmoother, Type, DType, LUType);      \
+    makeLduSymSmoother(TmulticolorGaussSeidelSmoother, Type, DType, LUType);   \
+    makeLduAsymSmoother(TmulticolorGaussSeidelSmoother, Type, DType, LUType);
 
 namespace Foam
 {
