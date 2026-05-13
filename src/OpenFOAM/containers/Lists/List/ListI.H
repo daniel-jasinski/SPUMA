@@ -44,11 +44,15 @@ inline void Foam::List<T>::doAlloc(const label len)
 
             // mimimc placement new
             // default-initialize memory
-            const T* value = new T;
-            Spuma::MemoryPool::getInstance()->memSet(this->v_,value,sizeof(T),len*sizeof(T));
+            // use it just for ranges type T
+            if constexpr(Foam::is_range<T>::value)
+            {
+                const T* value = new T;
+                Spuma::MemoryPool::getInstance()->memSet(this->v_,value,sizeof(T),len*sizeof(T));
 
-            // delete temporary object
-            delete value;
+                // delete temporary object
+                delete value;
+            }
         }
         else
         {
