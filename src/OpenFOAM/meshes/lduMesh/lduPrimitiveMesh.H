@@ -63,6 +63,9 @@ class lduPrimitiveMesh
         //- Upper addressing
         labelList upperAddr_;
 
+        //- Demand-driven: graph coloring
+        mutable std::unique_ptr<List<DynamicList<label>>> partitions_;
+
         //- List of pointers for each patch
         //  with only those pointing to interfaces being set
         lduInterfacePtrsList interfaces_;
@@ -240,6 +243,12 @@ public:
             {
                 return comm_;
             }
+
+            //- Return partitions
+            virtual const List<DynamicList<label>>& partitions
+            (
+                const dictionary& dict
+            ) const;
 
             //- Return Lower addressing
             virtual const labelUList& lowerAddr() const

@@ -186,6 +186,12 @@ public:
             return size_;
         }
 
+        //- Return partitions
+        virtual const List<DynamicList<label, 16>>& partitions
+        (
+            const dictionary& dict
+        ) const = 0;
+
         //- Return lower addressing
         virtual const labelUList& lowerAddr() const = 0;
 

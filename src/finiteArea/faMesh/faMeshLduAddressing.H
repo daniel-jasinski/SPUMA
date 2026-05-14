@@ -69,6 +69,9 @@ class faMeshLduAddressing
         //- Patch addressing as a list of sublists
         const UPtrList<const labelUList> patchAddr_;
 
+        //- Demand-driven: graph coloring
+        mutable std::unique_ptr<List<DynamicList<label>>> partitions_;
+
         //- Patch field evaluation schedule
         const lduSchedule& patchSchedule_;
 
@@ -109,6 +112,12 @@ public:
 
 
     // Member Functions
+
+        //- Return partitions
+        const List<DynamicList<label>>& partitions
+        (
+            const dictionary& dict
+        ) const noexcept;
 
         //- Return number of interfaces
         virtual label nPatches() const noexcept

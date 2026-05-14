@@ -26,35 +26,34 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::twoStageGaussSeidelSmoother
+    Foam::multicolorGaussSeidelSmoother
 
 Group
     grpLduMatrixSmoothers
 
 Description
-    Two-stage Gauss-Seidel smoother for GAMG.
-    Reference paper: Luc Berger-Vergiat, Brian Kelley,
-    Sivasankaran Rajamanickam, Jonathan Hu, Katarzyna Swirydowicz,
-    Paul Mullowney, Stephen Thomas, Ichitaro Yamazaki
-    "Two-Stage Gauss--Seidel Preconditioners and
-    Smoothers for Krylov Solvers on a GPU cluster"
-    DOI:10.48550/arXiv.2104.01196, 2021
+    A race-condition-free implementation (based on color graph partitioning)
+    of Gauss-Seidel designed for multithreading.
 
 Usage
-    \table
-        Property    | Description                       | Required    | Default value
-        nInnerIter  | number of inner jacobi iterations | no          | 1
-        omega       | damping factor                    | no          | 0.9
-    \endtable
+    Example usage:
+    \verbatim
+    multicolorGaussSeidelSmoother
+    {
+        graphColoring      randomized;
+        deterministic      true;
+        shrinkingFactor    1.0;
+    }
+    \endverbatim
 
 SourceFiles
-    twoStageGaussSeidelSmoother.H
-    twoStageGaussSeidelSmoother.C
+    multicolorGaussSeidelSmoother.H
+    multicolorGaussSeidelSmoother.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef twoStageGaussSeidelSmoother_H
-#define twoStageGaussSeidelSmoother_H
+#ifndef multicolorGaussSeidelSmoother_H
+#define multicolorGaussSeidelSmoother_H
 
 #include "lduMatrix.H"
 
@@ -64,25 +63,19 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class twoStageGaussSeidel Smoother Declaration
+                           Class multicolorGaussSeidel Smoother Declaration
 \*---------------------------------------------------------------------------*/
 
-class twoStageGaussSeidelSmoother
+class multicolorGaussSeidelSmoother
 :
     public lduMatrix::smoother
 {
 private:
 
-   // Private data
+    // Private data
 
         //- The inverse (reciprocal for scalars) diagonal
         Field<solveScalar> rD_;
-
-        //- local inner (nInnerIter) Jacobi iterations
-        label nInnerIter_;
-
-        //- damping parameter
-        scalar omega_;
 
 
     // Member functions
@@ -94,13 +87,13 @@ private:
 public:
 
     //- Runtime type information
-    TypeName("twoStageGaussSeidel");
+    TypeName("multicolorGaussSeidel");
 
 
     // Constructors
 
         //- Construct from components
-        twoStageGaussSeidelSmoother
+        multicolorGaussSeidelSmoother
         (
             const word& fieldName,
             const lduMatrix& matrix,

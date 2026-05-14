@@ -26,37 +26,36 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::twoStageGaussSeidelSmoother
+    Foam::TmulticolorGaussSeidelSmoother
 
 Group
     grpLduMatrixSmoothers
 
 Description
-    Two-stage Gauss-Seidel smoother for GAMG.
-    Reference paper: Luc Berger-Vergiat, Brian Kelley,
-    Sivasankaran Rajamanickam, Jonathan Hu, Katarzyna Swirydowicz,
-    Paul Mullowney, Stephen Thomas, Ichitaro Yamazaki
-    "Two-Stage Gauss--Seidel Preconditioners and
-    Smoothers for Krylov Solvers on a GPU cluster"
-    DOI:10.48550/arXiv.2104.01196, 2021
+    A race-condition-free implementation (based on color graph partitioning)
+    of Gauss-Seidel designed for multithreading.
 
 Usage
-    \table
-        Property    | Description                       | Required    | Default value
-        nInnerIter  | number of inner jacobi iterations | no          | 1
-        omega       | damping factor                    | no          | 0.9
-    \endtable
+    Example usage:
+    \verbatim
+    multicolorGaussSeidelSmoother
+    {
+        graphColoring      randomized;
+        deterministic      true;
+        shrinkingFactor    1.0;
+    }
+    \endverbatim
 
 SourceFiles
-    twoStageGaussSeidelSmoother.H
-    twoStageGaussSeidelSmoother.C
+    TmulticolorGaussSeidelSmoother.H
+    TmulticolorGaussSeidelSmoother.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef twoStageGaussSeidelSmoother_H
-#define twoStageGaussSeidelSmoother_H
+#ifndef TmulticolorGaussSeidelSmoother_H
+#define TmulticolorGaussSeidelSmoother_H
 
-#include "lduMatrix.H"
+#include "LduMatrix.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -64,84 +63,55 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class twoStageGaussSeidel Smoother Declaration
+                           Class TmulticolorGaussSeidel Smoother Declaration
 \*---------------------------------------------------------------------------*/
 
-class twoStageGaussSeidelSmoother
+template<class Type, class DType, class LUType>
+class TmulticolorGaussSeidelSmoother
 :
-    public lduMatrix::smoother
+    public LduMatrix<Type, DType, LUType>::smoother
 {
 private:
 
-   // Private data
-
+    // Private data
+    
         //- The inverse (reciprocal for scalars) diagonal
-        Field<solveScalar> rD_;
-
-        //- local inner (nInnerIter) Jacobi iterations
-        label nInnerIter_;
-
-        //- damping parameter
-        scalar omega_;
-
-
-    // Member functions
-
-        //- Read the control parameters from the controlDict_
-        void readControls();
+        Field<DType> rD_;
 
 
 public:
 
     //- Runtime type information
-    TypeName("twoStageGaussSeidel");
+    TypeName("multicolorGaussSeidel");
 
 
     // Constructors
 
         //- Construct from components
-        twoStageGaussSeidelSmoother
+        TmulticolorGaussSeidelSmoother
         (
             const word& fieldName,
-            const lduMatrix& matrix,
-            const FieldField<Field, scalar>& interfaceBouCoeffs,
-            const FieldField<Field, scalar>& interfaceIntCoeffs,
-            const lduInterfaceFieldPtrsList& interfaces,
-            const dictionary& solverControls
+            const LduMatrix<Type, DType, LUType>& matrix
         );
 
 
     // Member Functions
 
         //- Smooth for the given number of sweeps
-        void smooth_
+        static void smooth
         (
             const word& fieldName,
-            solveScalarField& psi,
-            const lduMatrix& matrix,
-            const solveScalarField& source,
-            const FieldField<Field, scalar>& interfaceBouCoeffs,
-            const lduInterfaceFieldPtrsList& interfaces,
-            const direction cmpt,
+            const dictionary& controlDict,
+            Field<Type>& psi,
+            const LduMatrix<Type, DType, LUType>& matrix,
+            const Field<DType>& rD,
             const label nSweeps
-        ) const;
-
+        );
 
         //- Smooth the solution for a given number of sweeps
         virtual void smooth
         (
-            solveScalarField& psi,
-            const scalarField& Source,
-            const direction cmpt,
-            const label nSweeps
-        ) const;
-
-        //- Smooth the solution for a given number of sweeps
-        virtual void scalarSmooth
-        (
-            solveScalarField& psi,
-            const solveScalarField& Source,
-            const direction cmpt,
+            Field<Type>& psi,
             const label nSweeps
         ) const;
 };
@@ -150,6 +120,12 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "TmulticolorGaussSeidelSmoother.C"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -447,6 +447,7 @@ $(lduMatrix)/smoothers/symGaussSeidel/symGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/nonBlockingGaussSeidel/nonBlockingGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/twoStageGaussSeidel/twoStageGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/twoStageSymGaussSeidel/twoStageSymGaussSeidelSmoother.C
+$(lduMatrix)/smoothers/multicolorGaussSeidel/multicolorGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/DIC/DICSmoother.C
 $(lduMatrix)/smoothers/aDIC/aDICSmoother.C
 $(lduMatrix)/smoothers/FDIC/FDICSmoother.C
@@ -835,6 +836,9 @@ fields/GeometricFields/pointFields/pointFields.C
 
 meshes/bandCompression/bandCompression.C
 meshes/preservePatchTypes/preservePatchTypes.C
+
+meshes/graphColoring/graphColoring/graphColoring.C
+meshes/graphColoring/randomizedGraphColoring/randomizedGraphColoring.C
 
 interpolations = interpolations
 interpolation = $(interpolations)/interpolation

@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
     Copyright (C) 2017-2019 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -64,9 +64,25 @@ Foam::twoStageGaussSeidelSmoother::twoStageGaussSeidelSmoother
         interfaceIntCoeffs,
         interfaces,
         solverControls
-    )
+    ),
+    rD_(matrix.diag().size())
 {
     readControls();
+
+    const label nCells = matrix.diag().size();
+
+    const scalar* const __restrict__ diagPtr =
+        matrix.diag().cbegin();
+    scalar* __restrict__ rDPtr = rD_.begin();
+
+    foamExecutor exec;
+
+    // -- Calculate the inverse of the diagonal matrix (D^-1)
+    auto LambdarD = [=](label celli)
+    {
+        rDPtr[celli] = 1. / diagPtr[celli];
+    };
+    exec.parallelFor(LambdarD, nCells);
 }
 
 
@@ -94,6 +110,8 @@ void Foam::twoStageGaussSeidelSmoother::smooth_
     solveScalar* __restrict__ psiPtr = psi.begin();
     const solveScalar* const __restrict__ bPtr = source.cbegin();
 
+    const bool useLowerCSR = controlDict_.getOrDefault<bool>("useLowerCSR", false);
+
     const label nCells = psi.size();
     const label nInternalFaces = matrix_.upper().size();
 
@@ -118,26 +136,18 @@ void Foam::twoStageGaussSeidelSmoother::smooth_
     solveScalarField g(nCells);
     solveScalar* __restrict__ gPtr = g.begin();
 
-    scalarField rD(nCells);
-    scalar* __restrict__ rDPtr = rD.begin();
+    const scalar* const __restrict__ rDPtr = rD_.cbegin();
 
     const scalar omega = this->omega_;
 
     foamExecutor exec;
-
-    // -- Calculate the inverse of the diagonal matrix (D^-1)
-    auto LambdarD = [=](label celli)
-    {
-        rDPtr[celli] = 1. / diagPtr[celli];
-    };
-    exec.parallelFor(LambdarD, nCells);
 
     for (label sweep=0; sweep<nSweeps; sweep++)
     {
         // -- Compute new residual vector (scaled by D^-1)
 
         // --- Calculate A.psi (we use rDr as auxiliary field)
-        matrix_.Amul(rDr, psi, interfaceBouCoeffs_, interfaces_, cmpt);
+        matrix_.Amul(rDr, psi, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
 
         // --- Calculate rDr = D^-1 * rA
         // --- Initialize g with rDr
