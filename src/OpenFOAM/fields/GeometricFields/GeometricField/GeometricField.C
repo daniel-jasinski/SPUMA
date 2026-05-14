@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2015-2025 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -179,10 +180,11 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const IOobject& io,
     const Mesh& mesh,
     const dimensionSet& dims,
-    const word& patchFieldType
+    const word& patchFieldType,
+    const bool unifiedGeometricField
 )
 :
-    Internal(io, mesh, dims, false, FieldBase::unifiedGeometricField),
+    Internal(io, mesh, dims, false, unifiedGeometricField),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary(), *this, patchFieldType)
 {

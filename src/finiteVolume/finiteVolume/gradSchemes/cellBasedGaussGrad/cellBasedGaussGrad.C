@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2021 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -68,7 +68,7 @@ Foam::fv::cellBasedGaussGrad<Type>::gradf
                 IOobject::NO_WRITE
             ),
             mesh,
-            dimensioned<GradType>(ssf.dimensions()/dimLength, Zero),
+            dimensioned<GradType>(ssf.dimensions()/dimLength),
             fvPatchFieldBase::extrapolatedCalculatedType()
         )
     );
@@ -78,66 +78,46 @@ Foam::fv::cellBasedGaussGrad<Type>::gradf
     Field<GradType>& igGrad = gGrad.internalFieldRef();
 
     // The oriented area vectors for internal faces (owner -> neighbour) 
-    const vectorField& SfInt   = mesh.Sf().internalField();
+    const auto& Sfi   = mesh.Sf().internalField();
 
     // The interpolated surface scalar field at internal faces 
-    const Field<Type>& ssfInt  = ssf.internalField();
+    const auto& ssfi  = ssf.internalField();
+
+    const label nIntFaces = mesh.nInternalFaces();
 
     // Use CSR adapter from mesh, built on demand (once per mesh)
     const auto& csrAddr = mesh.csrAddr();
-    const auto offsp = csrAddr.offsets().cbegin();     // nCells+1
-    const auto idxp  = csrAddr.indices().cbegin();     // nnz
-    const auto sgnp  = csrAddr.signs().cbegin();       // nnz, they are the +1 and -1
+    const scalarList& V = mesh.V();
 
-    // Raw pointers 
-    auto igGradp = igGrad.begin();   // write
-    auto Sfp  = SfInt.cbegin();   // read
-    auto phip = ssfInt.cbegin();  // read
+    // Raw pointers
+    const label* const __restrict__ offsPtr = csrAddr.offsets().cbegin();
+    const label* const __restrict__ idxPtr  = csrAddr.indices().cbegin();
+    const label* const __restrict__ sgnPtr  = csrAddr.signs().cbegin();
+    const scalar* const __restrict__ VPtr = V.cbegin();
 
-    auto Kernel = [=](label c)
+    GradType* __restrict__ igGradPtr = igGrad.begin();
+    const vector* const __restrict__ SfiPtr = Sfi.cbegin();
+    const Type* const __restrict__ ssfiPtr = ssfi.cbegin();
+
+    auto gradLoopKernel = [=](label celli)
     {
         // accumulate in a register, write once 
-        GradType acc = igGradp[c]; 
+        GradType acc = Zero;
 
-        for (label k = offsp[c]; k < offsp[c+1]; ++k)
+        for (label i = offsPtr[celli]; i < offsPtr[celli + 1]; ++i)
         {
-            const label f = idxp[k];
-            const GradType Sfphi = Sfp[f] * phip[f];
-
-            acc += Sfphi * static_cast<scalar>(sgnp[k]);
+            const label facei = idxPtr[i];
+            const GradType Sfphi = SfiPtr[facei] * ssfiPtr[facei];
+            acc += Sfphi * static_cast<scalar>(sgnPtr[i]);
         }
 
-        igGradp[c] = acc;
+        igGradPtr[celli] = acc / VPtr[celli];
     };
 
     foamExecutor exec;
-    exec.parallelFor(Kernel, mesh.nCells());
-  
-    // Boundary contributions: owner-only, identical to Gauss
-    forAll(mesh.boundary(), patchi)
-    {
-        const labelUList& pFaceCells = mesh.boundary()[patchi].faceCells();
-
-        const vectorField& pSf = mesh.Sf().boundaryField()[patchi];
-        const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
-
-        const auto pSfp        = pSf.cbegin();
-        const auto pssfp       = pssf.cbegin();
-        const auto pFaceCellsp = pFaceCells.cbegin();
-        auto igGradp           = igGrad.begin();
-
-        auto LambdaFaces = [=](label iFace)
-        {
-            // atomic because different faces may hit the same cell concurrently
-            foamAtomic::AtomicAdd(igGradp[pFaceCellsp[iFace]], pSfp[iFace]*pssfp[iFace]);
-        };
-
-        foamExecutor exec;
-        exec.parallelFor(LambdaFaces, mesh.boundary()[patchi].size());
-    }
+    exec.parallelFor(gradLoopKernel, mesh.nCells());
 
     // ---- Finalize
-    igGrad /= mesh.V();
     gGrad.correctBoundaryConditions();
 
     return tgGrad;

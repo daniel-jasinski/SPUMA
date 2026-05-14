@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2021 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -76,74 +76,73 @@ void Foam::fvMeshCsrAddressing::buildIfNeeded() const
 
 void Foam::fvMeshCsrAddressing::build() const
 {
+    const auto& cells = mesh_.cells();
+    const labelUList& owner = mesh_.owner();
     const lduAddressing& base = mesh_.lduAddr();
     const label nCells    = base.size();
-    const labelUList& nbr = base.upperAddr();          // neighbour per internal face
-    const labelUList& ownStart = base.ownerStartAddr();// CSR ranges for owner faces
+    const labelUList& nbr = base.upperAddr();           // neighbour per internal face
+    const labelUList& ownStart = base.ownerStartAddr(); // CSR ranges for owner faces
     const label nIntFaces = nbr.size();
+    const label nFaces = mesh_.nFaces();
 
-    // 1) counts per cell = owned faces + neighbour appearances
-    // Use poolSwitch(1) to allocate from the appropriate memory pool
-    // (matching matrices/csrAddressing.C) so the underlying storage
-    // can be used safely by device kernels.
-    labelList counts(nCells, Foam::zero{}, poolSwitch(1));
-    for (label celli = 0; celli < nCells; ++celli)
-    {
-        counts[celli] += ownStart[celli+1] - ownStart[celli];   // owned faces
-    }
-
-    for (label facei = 0; facei < nIntFaces; ++facei)
-    {
-        ++counts[nbr[facei]];                            // neighbour side
-    }
-
-    // 2) prefix-sum -> offsets (size nCells+1)
+    // 1) prefix-sum -> offsets (size nCells+1)
     // Allocate persistent arrays using poolSwitch(1) so they are compatible
     // with device kernels and other pool-allocated structures. Ownership is
     // held by unique_ptr members so they will be reset safely when clear()
     // is called.
-    offsetsPtr_ = std::make_unique<labelList>(nCells + 1, Foam::zero{}, poolSwitch(1));
+    offsetsPtr_ = std::make_unique<labelList>
+    (
+        nCells + 1,
+        Foam::zero{},
+        poolSwitch(1)
+    );
     auto& offs = *offsetsPtr_;
 
     for (label celli = 0; celli < nCells; ++celli)
     {
-        offs[celli+1] = offs[celli] + counts[celli];
+        offs[celli+1] = offs[celli] + cells[celli].size();
     }
 
-    // 3) allocate flat arrays (nnz = offs[nCells])
+    // 2) allocate flat arrays (nnz = offs[nCells])
     const label nnz = offs[nCells];
+
     // Allocate flat arrays using poolSwitch(1) as well and store in
     // unique_ptr members.
-    indicesPtr_   = std::make_unique<labelList>(nnz, Foam::zero{}, poolSwitch(1));
-    signsPtr_     = std::make_unique<labelList>(nnz, Foam::zero{}, poolSwitch(1));
+    indicesPtr_ = std::make_unique<labelList>(nnz, Foam::zero{}, poolSwitch(1));
+    signsPtr_ = std::make_unique<labelList>(nnz, Foam::zero{}, poolSwitch(1));
     auto& idx = *indicesPtr_;
     auto& sgn = *signsPtr_;
 
-    // 4) fill using write heads
+    // 3) fill using write heads
     labelList head = offs;
 
-    // owners: contiguous per cell
     for (label celli = 0; celli < nCells; ++celli)
     {
-        for (label facei = ownStart[celli]; facei < ownStart[celli+1]; ++facei)
+        const auto& cFaces = cells[celli];
+
+        for (const label facei : cFaces)
         {
             const label entryi = head[celli]++;
-            idx[entryi] = facei;  sgn[entryi] =  1;
+            idx[entryi] = facei;
+
+            if (facei < nIntFaces)
+            {
+                // owner cells
+                if (owner[facei] == celli)
+                {
+                    sgn[entryi] = 1;
+                }
+                else // neighbour cells
+                {
+                    sgn[entryi] = -1;
+                }
+            }
+            else // boundary neighbour cells
+            {
+                sgn[entryi] = 1;
+            }
         }
     }
-
-    // neighbours: one per internal face, appended to neighbour cell
-    {
-        label curOwner = 0;
-        for (label facei = 0; facei < nIntFaces; ++facei)
-        {
-            while (facei >= ownStart[curOwner+1]) { ++curOwner; }
-            const label celli = nbr[facei];
-            const label entryi = head[celli]++;
-            idx[entryi] = facei;  sgn[entryi] = -1;
-        }
-    }
-
 }
 
 

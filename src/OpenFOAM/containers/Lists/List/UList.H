@@ -392,7 +392,12 @@ public:
     // Copy
 
         //- Copy the pointer and size
-        inline void shallowCopy(T* __restrict__ ptr, const label len) noexcept;
+        inline void shallowCopy
+        (
+            T* __restrict__ ptr, 
+            const label len, 
+            const bool usePool=false
+        ) noexcept;
 
         //- Copy nullptr and zero size
         inline void shallowCopy(std::nullptr_t) noexcept;

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2015-2025 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -173,7 +174,8 @@ public:
             const IOobject& io,
             const Mesh& mesh,
             const dimensionSet& dims,
-            const word& patchFieldType = PatchField<Type>::calculatedType()
+            const word& patchFieldType = PatchField<Type>::calculatedType(),
+            const bool unifiedGeometricField = FieldBase::unifiedGeometricField
         );
 
         //- Construct given IOobject, mesh, dimensions and patch types.

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017,2022 OpenFOAM Foundation
     Copyright (C) 2015-2025 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -84,6 +85,9 @@ private:
 
         //- Reference to BoundaryMesh for which this field is defined
         const BoundaryMesh& bmesh_;
+
+        //- List of begin pointers for each patch field
+        mutable autoPtr<List<const Type*>> patchFieldBeginPtr_;
 
 
     // Private Member Functions
@@ -239,6 +243,8 @@ public:
         //- Helper: check if field has been evaluated. See instantiations.
         bool check() const;
 
+        //- Return the list of begin pointers for each patch field
+        const List<const Type*>& patchFieldBegins() const;
 
     // Write
 

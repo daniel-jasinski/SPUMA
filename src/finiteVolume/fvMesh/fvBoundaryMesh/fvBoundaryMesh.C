@@ -161,6 +161,22 @@ Foam::fvBoundaryMesh::faceCells() const
 }
 
 
+Foam::List<const Foam::label*>
+Foam::fvBoundaryMesh::faceCellsBegins() const
+{
+    const fvPatchList& patches = *this;
+
+    List<const label*> list(patches.size(), poolSwitch(1));
+
+    forAll(list, patchi)
+    {
+        list[patchi] = patches[patchi].faceCells().cbegin();
+    }
+
+    return list;
+}
+
+
 Foam::lduInterfacePtrsList Foam::fvBoundaryMesh::interfaces() const
 {
     const fvPatchList& patches = *this;
