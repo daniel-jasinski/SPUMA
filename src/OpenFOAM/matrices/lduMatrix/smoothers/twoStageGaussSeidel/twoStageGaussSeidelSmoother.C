@@ -73,7 +73,7 @@ Foam::twoStageGaussSeidelSmoother::twoStageGaussSeidelSmoother
 
     const scalar* const __restrict__ diagPtr =
         matrix.diag().cbegin();
-    scalar* __restrict__ rDPtr = rD_.begin();
+    solveScalar* __restrict__ rDPtr = rD_.begin();
 
     foamExecutor exec;
 
@@ -136,7 +136,7 @@ void Foam::twoStageGaussSeidelSmoother::smooth_
     solveScalarField g(nCells);
     solveScalar* __restrict__ gPtr = g.begin();
 
-    const scalar* const __restrict__ rDPtr = rD_.cbegin();
+    const solveScalar* const __restrict__ rDPtr = rD_.cbegin();
 
     const scalar omega = this->omega_;
 

@@ -73,7 +73,7 @@ Foam::multicolorGaussSeidelSmoother::multicolorGaussSeidelSmoother
 
     const scalar* const __restrict__ diagPtr =
         matrix.diag().cbegin();
-    scalar* __restrict__ rDPtr = rD_.begin();
+    solveScalar* __restrict__ rDPtr = rD_.begin();
 
     foamExecutor exec;
 
@@ -114,7 +114,7 @@ void Foam::multicolorGaussSeidelSmoother::smooth_
     solveScalarField& bPrime = matrix.work(nCells);
     solveScalar* __restrict__ bPrimePtr = bPrime.begin();
 
-    const scalar* const __restrict__ rDPtr = rD_.cbegin();
+    const solveScalar* const __restrict__ rDPtr = rD_.cbegin();
 
     const scalar* const __restrict__ diagPtr = 
         matrix_.diag().cbegin();
