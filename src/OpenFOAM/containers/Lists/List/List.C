@@ -104,6 +104,17 @@ void Foam::List<T>::resize_copy(label count, const label len)
                     (
                         Spuma::MemoryPool::getInstance()->allocate(len*sizeof(T))
                     );
+                // mimimc placement new
+                // default-initialize memory
+                // use it just for ranges type T
+                if constexpr(Foam::is_range<T>::value)
+                {
+                    const T* value = new T;
+                    Spuma::MemoryPool::getInstance()->memSet(this->v_,value,sizeof(T),len*sizeof(T));
+
+                    // delete temporary object
+                    delete value;
+                }
             }
             else
             {
