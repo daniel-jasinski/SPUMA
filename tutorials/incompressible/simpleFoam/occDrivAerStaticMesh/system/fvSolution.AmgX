@@ -83,6 +83,7 @@ solvers
     {
         solver          smoothSolver;
         smoother        twoStageGaussSeidel;
+        useLowerCSR     true;
         tolerance       1e-8;
         relTol          0.1;
         nSweeps         1;
@@ -92,6 +93,7 @@ solvers
     {
         solver          smoothSolver;
         smoother        twoStageGaussSeidel;
+        useLowerCSR     true;
         tolerance       1e-8;
         relTol          0.1;
         nSweeps         1;
@@ -101,6 +103,7 @@ solvers
     {
         solver          smoothSolver;
         smoother        twoStageGaussSeidel;
+        useLowerCSR     true;
         tolerance       1e-8;
         relTol          0.1;
         nSweeps         1;
@@ -131,6 +134,7 @@ relaxationFactors
 cache
 {
     grad(U);
+    grad(p);
 }
 
 // ************************************************************************* //
