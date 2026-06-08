@@ -1,0 +1,10 @@
+allShearStress
+{
+    type            wallShearStress;
+    libs            ("libfieldFunctionObjects.so");
+
+    enabled         true;
+    writeControl    writeTime;
+
+    patches         ( forcesWallPatch );
+}
