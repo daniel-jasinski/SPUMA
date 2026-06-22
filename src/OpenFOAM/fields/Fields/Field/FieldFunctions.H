@@ -459,6 +459,22 @@ PRODUCT_OPERATOR(scalarProduct, &&, dotdot)
 #undef PRODUCT_OPERATOR
 
 
+#define INPLACE_PRODUCT_OPERATOR(product, CombineOp, Op, OpFunc)               \
+                                                                               \
+template<class Type1, class Type2>                                             \
+void OpFunc                                                                    \
+(                                                                              \
+    Field<typename product<Type1, Type2>::type>& result,                       \
+    const UList<Type1>& f1,                                                    \
+    const UList<Type2>& f2                                                     \
+);
+
+INPLACE_PRODUCT_OPERATOR(outerProduct, +=, *, multiplyAdd)
+INPLACE_PRODUCT_OPERATOR(outerProduct, -=, *, multiplySubtract)
+
+#undef INPLACE_PRODUCT_OPERATOR
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam

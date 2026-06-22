@@ -173,8 +173,7 @@ void Foam::fv::cellBasedGaussGrad<Type>::correctBoundaryConditions
         {
             const vectorField n
             (
-                vsf.mesh().Sf().boundaryField()[patchi]
-              / vsf.mesh().magSf().boundaryField()[patchi]
+                vsf.mesh().unitSf().boundaryField()[patchi]
             );
 
             gGradbf[patchi] += n *

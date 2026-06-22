@@ -258,7 +258,7 @@ public:
 
             //- Return face unit normals, like the fvMesh::unitSf() method.
             //- Same as nf().
-            tmp<vectorField> unitSf() const;
+            const vectorField& unitSf() const;
 
             //- Return face unit normals, like the fvMesh::unitSf() method
             //- Same as unitSf().
