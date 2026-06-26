@@ -494,21 +494,21 @@ FOAM_DEVICE inline const T& Foam::UList<T>::operator[](const label i) const
 // * * * * * * * * * * * * * * STL Member Functions  * * * * * * * * * * * * //
 
 template<class T>
-inline typename Foam::UList<T>::iterator
+FOAM_DEVICE_I typename Foam::UList<T>::iterator
 Foam::UList<T>::begin() noexcept
 {
     return v_;
 }
 
 template<class T>
-inline typename Foam::UList<T>::const_iterator
+FOAM_DEVICE_I typename Foam::UList<T>::const_iterator
 Foam::UList<T>::begin() const noexcept
 {
     return v_;
 }
 
 template<class T>
-inline typename Foam::UList<T>::const_iterator
+FOAM_DEVICE_I typename Foam::UList<T>::const_iterator
 Foam::UList<T>::cbegin() const noexcept
 {
     return v_;

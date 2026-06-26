@@ -461,7 +461,7 @@ public:
     // Random access iterator (non-const)
 
         //- Return an iterator to begin traversing the UList
-        inline iterator begin() noexcept;
+        FOAM_DEVICE_I iterator begin() noexcept;
 
         //- Return an iterator to end traversing the UList
         inline iterator end() noexcept;
@@ -474,13 +474,13 @@ public:
     // Random access iterator (const)
 
         //- Return const_iterator to begin traversing the constant UList
-        inline const_iterator cbegin() const noexcept;
+        FOAM_DEVICE_I const_iterator cbegin() const noexcept;
 
         //- Return const_iterator to end traversing the constant UList
         inline const_iterator cend() const noexcept;
 
         //- Return const_iterator to begin traversing the constant UList
-        inline const_iterator begin() const noexcept;
+        FOAM_DEVICE_I const_iterator begin() const noexcept;
 
         //- Return const_iterator to end traversing the constant UList
         inline const_iterator end() const noexcept;
