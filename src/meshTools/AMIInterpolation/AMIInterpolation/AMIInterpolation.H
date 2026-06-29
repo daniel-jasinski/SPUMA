@@ -62,6 +62,7 @@ SourceFiles
 #include "treeDataPrimitivePatch.H"
 #include "runTimeSelectionTables.H"
 #include "AMICache.H"
+#include "ListListAddr.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -149,6 +150,11 @@ protected:
             //- Source map pointer - parallel running only
             autoPtr<mapDistribute> srcMapPtr_;
 
+            //- ListListAddr objects for source patch
+            autoPtr<ListListAddr<labelList>> srcListAddr_;
+            
+            //- ListListAddr objects for source patch weights
+            autoPtr<ListListAddr<scalarList>> srcListWeights_;
 
         // Target patch
 
@@ -177,6 +183,11 @@ protected:
             //- Target map pointer - parallel running only
             autoPtr<mapDistribute> tgtMapPtr_;
 
+            //- ListListAddr objects for target patch
+            autoPtr<ListListAddr<labelList>> tgtListAddr_;
+
+            //- ListListAddr objects for target patch weights
+            autoPtr<ListListAddr<scalarList>> tgtListWeights_;
 
         //- Up-to-date flag
         bool upToDate_;
@@ -238,6 +249,22 @@ protected:
             (
                 const scalarList& patchAreas,
                 const word& patchName,
+                const labelListList& addr,
+                scalarListList& wght,
+                scalarField& wghtSum,
+                const bool conformal,
+                const bool output,
+                const scalar lowWeightTol,
+                const label comm
+            );
+
+            //- NormaliseWeights using indirect addressing (ListListAddr)
+            static void normaliseWeights
+            (
+                const scalarList& patchAreas,
+                const word& patchName,
+                const ListListAddr<labelList>& addrAddr,
+                ListListAddr<scalarList>& wghtAddr,
                 const labelListList& addr,
                 scalarListList& wght,
                 scalarField& wghtSum,
@@ -366,8 +393,32 @@ public:
                 const labelList& targetRestrictAddressing,
 
                 scalarList& srcMagSf,
-                labelListList& srcAddress,
-                scalarListList& srcWeights,
+                labelListList& srcAddressNew,
+                scalarListList& srcWeightsNew,
+                scalarField& srcWeightsSum,
+                autoPtr<mapDistribute>& tgtMap,
+                const label comm
+            );
+
+            //WIP
+            //- Agglomerate using indirect addressing (ListListAddr)
+            static void agglomerate
+            (
+                const autoPtr<mapDistribute>& targetMapPtr,
+                const scalarList& fineSrcMagSf,
+                const ListListAddr<labelList>& fineSrcAddressAddr,
+                const ListListAddr<scalarList>& fineSrcWeightsAddr,
+                const labelListList& fineSrcAddress,
+                const scalarListList& fineSrcWeights,
+
+                const labelList& sourceRestrictAddressing,
+                const labelList& targetRestrictAddressing,
+
+                scalarList& srcMagSf,
+                autoPtr<ListListAddr<labelList>>& srcAddressNewAddr,
+                autoPtr<ListListAddr<scalarList>>& srcWeightsNewAddr,
+                labelListList& srcAddressNew,
+                scalarListList& srcWeightsNew,
                 scalarField& srcWeightsSum,
                 autoPtr<mapDistribute>& tgtMap,
                 const label comm
@@ -445,6 +496,18 @@ public:
                 //- Return access to source patch weights
                 inline scalarListList& srcWeights();
 
+                //- Return const access to source ListListAddr
+                inline const ListListAddr<labelList>& srcListAddr() const;
+
+                //- Return access to source ListListAddr
+                inline ListListAddr<labelList>& srcListAddr();
+
+                //- Return const access to source ListListAddr weights
+                inline const ListListAddr<scalarList>& srcListWeights() const;
+
+                //- Return access to source ListListAddr weights
+                inline ListListAddr<scalarList>& srcListWeights();
+
                 //- Return const access to normalisation factor of source
                 //- patch weights (i.e. the sum before normalisation)
                 inline const scalarField& srcWeightsSum() const;
@@ -488,6 +551,18 @@ public:
 
                 //- Return access to target patch weights
                 inline scalarListList& tgtWeights();
+
+                //- Return const access to target ListListAddr
+                inline const ListListAddr<labelList>& tgtListAddr() const;
+
+                //- Return access to target ListListAddr
+                inline ListListAddr<labelList>& tgtListAddr();
+
+                //- Return const access to target ListListAddr weights
+                inline const ListListAddr<scalarList>& tgtListWeights() const;
+
+                //- Return access to target ListListAddr weights
+                inline ListListAddr<scalarList>& tgtListWeights();
 
                 //- Return const access to normalisation factor of target
                 //- patch weights (i.e. the sum before normalisation)
@@ -550,6 +625,22 @@ public:
                 static void weightedSum
                 (
                     const scalar lowWeightCorrection,
+                    const labelListList& allSlots,
+                    const scalarListList& allWeights,
+                    const scalarField& weightsSum,
+                    const UList<Type>& fld,
+                    const CombineOp& cop,
+                    List<Type>& result,
+                    const UList<Type>& defaultValues
+                );
+
+                //- Weighted sum of contributions using indirect addressing (ListListAddr)
+                template<class Type, class CombineOp>
+                static void weightedSumListListAddr
+                (
+                    const scalar lowWeightCorrection,
+                    const ListListAddr<labelList>& allSlotsAddr,
+                    const ListListAddr<scalarList>& allWeightsAddr,
                     const labelListList& allSlots,
                     const scalarListList& allWeights,
                     const scalarField& weightsSum,
