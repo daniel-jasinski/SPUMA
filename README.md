@@ -25,6 +25,14 @@ Where `M` represents the major version of the software, `m` the minor version an
 SPUMA version `0.1-v2412` is the first minor version of major version 0, based on
 the 2412 release of OpenFOAM by OpenCFD®.
 
+## Citing SPUMA
+
+For citations on the SPUMA approach use the following:
+
+[1] Simone Bnà, Giuseppe Giaquinto, Ettore Fadiga, Tommaso Zanelli, Francesco Bottau,
+"SPUMA: A minimally invasive approach to the GPU porting of OPENFOAM®", Computer Physics Communications, vol. 321, April 2026, 110009,
+[doi:10.1016/j.cpc.2025.110009](https://doi.org/10.1016/j.cpc.2025.110009)
+
 ## Using SPUMA
 
 Usage of SPUMA is identical to that of the OpenFOAM release it is based on, with
