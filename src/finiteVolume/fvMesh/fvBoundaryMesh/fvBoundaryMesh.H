@@ -110,6 +110,9 @@ public:
         //- Return a list of faceCells for each patch
         UPtrList<const labelUList> faceCells() const;
 
+        //- Return a list of faceCells begins for each patch
+        List<const label*> faceCellsBegins() const;
+
         //- Return a list of pointers for each patch
         //- with only those pointing to interfaces being set
         lduInterfacePtrsList interfaces() const;

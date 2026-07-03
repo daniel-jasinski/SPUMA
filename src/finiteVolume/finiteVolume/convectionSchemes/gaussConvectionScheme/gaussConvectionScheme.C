@@ -95,8 +95,15 @@ gaussConvectionScheme<Type>::fvmDiv
     );
     fvMatrix<Type>& fvm = tfvm.ref();
 
-    fvm.lower(false) = -weights.primitiveField()*faceFlux.primitiveField();
-    fvm.upper() = fvm.lower() + faceFlux.primitiveField();
+    multiplySubtract
+    (
+        fvm.lower(),
+        weights.primitiveField(),
+        faceFlux.primitiveField()
+    );
+
+    add(fvm.upper(), fvm.lower(), faceFlux.primitiveField());
+
     fvm.negSumDiag();
 
     forAll(vf.boundaryField(), patchi)
@@ -105,8 +112,13 @@ gaussConvectionScheme<Type>::fvmDiv
         const fvsPatchScalarField& patchFlux = faceFlux.boundaryField()[patchi];
         const fvsPatchScalarField& pw = weights.boundaryField()[patchi];
 
-        fvm.internalCoeffs()[patchi] = patchFlux*psf.valueInternalCoeffs(pw);
-        fvm.boundaryCoeffs()[patchi] = -patchFlux*psf.valueBoundaryCoeffs(pw);
+        auto& intCoeffs = fvm.internalCoeffs()[patchi];
+        auto& bouCoeffs = fvm.boundaryCoeffs()[patchi];
+
+        multiply(intCoeffs, patchFlux, psf.valueInternalCoeffs(pw)());
+
+        multiply(bouCoeffs, patchFlux, psf.valueBoundaryCoeffs(pw)());
+        bouCoeffs.negate();
     }
 
     if (tinterpScheme_().corrected())

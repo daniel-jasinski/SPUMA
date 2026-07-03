@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
     Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -75,9 +76,31 @@ Foam::fvsPatchField<Type>::fvsPatchField
 )
 :
     fvsPatchFieldBase(p),
-    Field<Type>(p.size()),
+    Field<Type>(),
     internalField_(iF)
-{}
+{
+    if
+    (
+        !isNull(iF) &&
+        (
+            (internalField_.capacity() ==
+            internalField_.mesh().nBoundaryFaces() + internalField_.size()) &&
+            internalField_.isFlattened()
+        )
+    )
+    {
+        UList<Type>::shallowCopy
+        (
+            const_cast<Type*>(internalField_.begin() + internalField_.size() + p.offset()),
+            p.size(),
+            true
+        );
+    }
+    else
+    {
+        this->resize(p.size());
+    }
+}
 
 
 template<class Type>

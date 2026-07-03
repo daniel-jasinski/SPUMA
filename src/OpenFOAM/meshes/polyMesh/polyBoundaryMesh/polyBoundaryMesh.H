@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2018-2025 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -75,6 +76,9 @@ class polyBoundaryMesh
 
         //- Demand-driven: list of patch ids per face.
         mutable autoPtr<labelList> patchIDPtr_;
+
+        //- Demand-driven: list of patch offset per face.
+        mutable autoPtr<labelList> patchOffsetPtr_;
 
         //- Demand-driven: list of patch ids per group
         mutable autoPtr<HashTable<labelList>> groupIDsPtr_;
@@ -227,6 +231,9 @@ public:
 
         //- Return a list of patch start face indices
         labelList patchStarts() const;
+
+        //- Return a list of patch offset face indices
+        const labelList& patchOffsets() const;
 
         //- Return a list of patch sizes
         labelList patchSizes() const;

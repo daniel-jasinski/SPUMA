@@ -379,11 +379,13 @@ template<class T>
 inline void Foam::UList<T>::shallowCopy
 (
     T* __restrict__ ptr,
-    const label len
+    const label len,
+    const bool usePool
 ) noexcept
 {
     size_ = len;
     v_ = ptr;
+    usePool_ = usePool;
 }
 
 
@@ -392,6 +394,7 @@ inline void Foam::UList<T>::shallowCopy(std::nullptr_t) noexcept
 {
     size_ = 0;
     v_ = nullptr;
+    usePool_ = false;
 }
 
 

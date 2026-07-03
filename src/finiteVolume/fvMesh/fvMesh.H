@@ -124,6 +124,9 @@ protected:
         //- Mag face area vectors
         mutable std::unique_ptr<surfaceScalarField> magSfPtr_;
 
+        //- Unit normal vectors
+        mutable std::unique_ptr<surfaceVectorField> unitSfPtr_;
+
         //- Cell centres
         mutable std::unique_ptr<slicedVolVectorField> CPtr_;
 
@@ -162,6 +165,7 @@ protected:
 
             void makeSf() const;
             void makeMagSf() const;
+            void makeUnitSf() const;
 
             void makeC() const;
             void makeCf() const;
@@ -477,7 +481,7 @@ public:
             const surfaceScalarField& magSf() const;
 
             //- Return cell face unit normals
-            tmp<surfaceVectorField> unitSf() const;
+            const surfaceVectorField& unitSf() const;
 
             //- Return cell face motion fluxes
             const surfaceScalarField& phi() const;

@@ -1193,6 +1193,44 @@ PRODUCT_OPERATOR(scalarProduct, &&, dotdot)
 #undef PRODUCT_OPERATOR
 
 
+#define INPLACE_PRODUCT_OPERATOR(product, CombineOp, Op, OpFunc)               \
+                                                                               \
+template<class Type1, class Type2>                                             \
+void OpFunc                                                                    \
+(                                                                              \
+    Field<typename product<Type1, Type2>::type>& result,                       \
+    const UList<Type1>& f1,                                                    \
+    const UList<Type2>& f2                                                     \
+)                                                                              \
+{                                                                              \
+    typedef typename product<Type1, Type2>::type resultType;                   \
+                                                                               \
+    if (result.usePool() && f1.usePool() && f2.usePool())                      \
+    {                                                                          \
+        /* Check fields have same size */                                      \
+        auto resPtr = result.begin();                                          \
+        auto f1Ptr = f1.cbegin();                                              \
+        auto f2Ptr = f2.cbegin();                                              \
+        auto Lambda = [=](label i)                                             \
+        {                                                                      \
+            (resPtr[i]) CombineOp (f1Ptr[i]) Op (f2Ptr[i]);                    \
+        };                                                                     \
+        foamExecutor exec;                                                     \
+        exec.parallelFor(Lambda, result.size());                               \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        TFOR_ALL_F_OP_F_OP_F                                                   \
+        (resultType, result, CombineOp, Type1, f1, Op, Type2, f2)              \
+    }                                                                          \
+}
+
+INPLACE_PRODUCT_OPERATOR(outerProduct, +=, *, multiplyAdd)
+INPLACE_PRODUCT_OPERATOR(outerProduct, -=, *, multiplySubtract)
+
+#undef INPLACE_PRODUCT_OPERATOR
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam

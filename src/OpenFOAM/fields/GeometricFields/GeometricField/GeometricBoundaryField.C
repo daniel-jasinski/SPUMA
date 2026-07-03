@@ -919,6 +919,29 @@ bool Foam::GeometricBoundaryField<Type, PatchField, GeoMesh>::check
 }
 
 
+template<class Type, template<class> class PatchField, class GeoMesh>
+const Foam::List<const Type*>&
+Foam::GeometricBoundaryField<Type, PatchField, GeoMesh>::patchFieldBegins
+(
+) const
+{
+    if (!patchFieldBeginPtr_)
+    {
+        patchFieldBeginPtr_.emplace(this->size(), poolSwitch(1));
+        auto& list = *patchFieldBeginPtr_;
+
+        const GeometricBoundaryField<Type, PatchField, GeoMesh>& patches = *this;
+
+        forAll(patches, patchi)
+        {
+            list[patchi] = patches[patchi].cbegin();
+        }
+    }
+
+    return *patchFieldBeginPtr_;
+}
+
+
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
 template<class Type, template<class> class PatchField, class GeoMesh>

@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2018-2025 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -284,6 +284,7 @@ void Foam::polyBoundaryMesh::clearLocalAddressing()
 {
     neighbourEdgesPtr_.reset(nullptr);
     patchIDPtr_.reset(nullptr);
+    patchOffsetPtr_.reset(nullptr);
     groupIDsPtr_.reset(nullptr);
 }
 
@@ -712,6 +713,25 @@ Foam::labelList Foam::polyBoundaryMesh::patchStarts() const
             *this,
             [](const polyPatch& p) { return p.start(); }
         );
+}
+
+
+const Foam::labelList& Foam::polyBoundaryMesh::patchOffsets() const
+{
+    if (!patchOffsetPtr_)
+    {
+        patchOffsetPtr_.emplace(mesh_.nBoundaryFaces(), poolSwitch(1));
+        auto& list = *patchOffsetPtr_;
+
+        const polyPatchList& patches = *this;
+
+        forAll(patches, patchi)
+        {
+            list[patchi] = patches[patchi].offset();
+        }
+    }
+
+    return *patchOffsetPtr_;
 }
 
 
@@ -1396,6 +1416,7 @@ void Foam::polyBoundaryMesh::updateMesh()
 {
     neighbourEdgesPtr_.reset(nullptr);
     patchIDPtr_.reset(nullptr);
+    patchOffsetPtr_.reset(nullptr);
     groupIDsPtr_.reset(nullptr);
 
     PstreamBuffers pBufs(Pstream::defaultCommsType);

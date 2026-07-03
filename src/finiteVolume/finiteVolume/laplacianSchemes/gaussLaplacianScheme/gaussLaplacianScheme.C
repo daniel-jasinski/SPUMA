@@ -63,7 +63,12 @@ gaussLaplacianScheme<Type, GType>::fvmLaplacianUncorrected
     );
     fvMatrix<Type>& fvm = tfvm.ref();
 
-    fvm.upper(false) = deltaCoeffs.primitiveField()*gammaMagSf.primitiveField();
+    multiply
+    (
+        fvm.upper(),
+        deltaCoeffs.primitiveField(),
+        gammaMagSf.primitiveField()
+    );
     fvm.negSumDiag();
 
     forAll(vf.boundaryField(), patchi)
@@ -73,17 +78,42 @@ gaussLaplacianScheme<Type, GType>::fvmLaplacianUncorrected
         const fvsPatchScalarField& pDeltaCoeffs =
             deltaCoeffs.boundaryField()[patchi];
 
+        auto& intCoeffs = fvm.internalCoeffs()[patchi];
+        auto& bouCoeffs = fvm.boundaryCoeffs()[patchi];
+
         if (pvf.coupled())
         {
-            fvm.internalCoeffs()[patchi] =
-                pGamma*pvf.gradientInternalCoeffs(pDeltaCoeffs);
-            fvm.boundaryCoeffs()[patchi] =
-               -pGamma*pvf.gradientBoundaryCoeffs(pDeltaCoeffs);
+            multiply
+            (
+                intCoeffs,
+                pGamma,
+                pvf.gradientInternalCoeffs(pDeltaCoeffs)()
+            );
+
+            multiply
+            (
+                bouCoeffs,
+                pGamma,
+                pvf.gradientBoundaryCoeffs(pDeltaCoeffs)()
+            );
+            bouCoeffs.negate();
         }
         else
         {
-            fvm.internalCoeffs()[patchi] = pGamma*pvf.gradientInternalCoeffs();
-            fvm.boundaryCoeffs()[patchi] = -pGamma*pvf.gradientBoundaryCoeffs();
+            multiply
+            (
+                intCoeffs,
+                pGamma,
+                pvf.gradientInternalCoeffs()()
+            );
+
+            multiply
+            (
+                bouCoeffs,
+                pGamma,
+                pvf.gradientBoundaryCoeffs()()
+            );
+            bouCoeffs.negate();
         }
     }
 
@@ -212,7 +242,7 @@ gaussLaplacianScheme<Type, GType>::fvcLaplacian
 {
     const fvMesh& mesh = this->mesh();
 
-    const surfaceVectorField Sn(mesh.Sf()/mesh.magSf());
+    const surfaceVectorField Sn(mesh.unitSf());
     const surfaceVectorField SfGamma(mesh.Sf() & gamma);
     const GeometricField<scalar, fvsPatchField, surfaceMesh> SfGammaSn
     (

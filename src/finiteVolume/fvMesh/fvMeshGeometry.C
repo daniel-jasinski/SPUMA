@@ -105,6 +105,40 @@ void Foam::fvMesh::makeMagSf() const
 }
 
 
+void Foam::fvMesh::makeUnitSf() const
+{
+    DebugInFunction << "Assembling unit normals" << endl;
+
+    // It is an error to attempt to recalculate
+    // if the pointer is already set
+    if (unitSfPtr_)
+    {
+        FatalErrorInFunction
+            << "unit normals already exist"
+            << abort(FatalError);
+    }
+
+    unitSfPtr_ = std::make_unique<surfaceVectorField>
+    (
+        IOobject
+        (
+            "unit(Sf)",
+            pointsInstance(),
+            meshSubDir,
+            *this,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE,
+            IOobject::NO_REGISTER
+        ),
+        *this,
+        dimless,
+        (this->Sf() / this->magSf())
+    );
+
+    unitSfPtr_.get()->oriented() = this->Sf().oriented();
+}
+
+
 void Foam::fvMesh::makeC() const
 {
     DebugInFunction << "Assembling cell centres" << endl;
@@ -326,27 +360,14 @@ const Foam::surfaceScalarField& Foam::fvMesh::magSf() const
 }
 
 
-Foam::tmp<Foam::surfaceVectorField> Foam::fvMesh::unitSf() const
+const Foam::surfaceVectorField& Foam::fvMesh::unitSf() const
 {
-    auto tunitVectors = tmp<surfaceVectorField>::New
-    (
-        IOobject
-        (
-            "unit(Sf)",
-            pointsInstance(),
-            meshSubDir,
-            *this,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE,
-            IOobject::NO_REGISTER
-        ),
-        *this,
-        dimless,
-        (this->Sf() / this->magSf())
-    );
+    if (!unitSfPtr_)
+    {
+        makeUnitSf();
+    }
 
-    tunitVectors.ref().oriented() = this->Sf().oriented();
-    return tunitVectors;
+    return *unitSfPtr_;
 }
 
 
