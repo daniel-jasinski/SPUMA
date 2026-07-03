@@ -181,10 +181,11 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const Mesh& mesh,
     const dimensionSet& dims,
     const word& patchFieldType,
-    const bool unifiedGeometricField
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
-    Internal(io, mesh, dims, false, unifiedGeometricField),
+    Internal(io, mesh, dims, false, extraCapacity, isFlattened),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary(), *this, patchFieldType)
 {

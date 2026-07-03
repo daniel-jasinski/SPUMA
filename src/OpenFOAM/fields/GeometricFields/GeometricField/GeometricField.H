@@ -175,7 +175,8 @@ public:
             const Mesh& mesh,
             const dimensionSet& dims,
             const word& patchFieldType = PatchField<Type>::calculatedType(),
-            const bool unifiedGeometricField = FieldBase::unifiedGeometricField
+            const bool extraCapacity = FieldBase::unifiedGeometricField,
+            const bool isFlattened = false
         );
 
         //- Construct given IOobject, mesh, dimensions and patch types.

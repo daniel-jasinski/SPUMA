@@ -112,6 +112,10 @@ private:
         //- Oriented flag
         orientedType oriented_;
 
+        //- Flattened array: patches are allocated as slicedPatches
+        // in the extra capacity space
+        const bool isFlattened_;
+
 
     // Private Member Functions
 
@@ -200,7 +204,8 @@ public:
             //! Handle mandatory/optional reading?
             const bool checkIOFlags = true,
             //! Additional space for geometric boundary size?
-            const bool extraCapacity = false
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
         //- Construct from components, setting dimensions and initial
@@ -214,7 +219,8 @@ public:
             //! Handle mandatory/optional reading?
             const bool checkIOFlags = true,
             //! Additional space for geometric boundary size?
-            const bool extraCapacity = false
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
         //- Construct from components, setting dimensions and initial
@@ -228,7 +234,8 @@ public:
             //! Handle mandatory/optional reading?
             const bool checkIOFlags = true,
             //! Additional space for geometric boundary size?
-            const bool extraCapacity = false
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
         //- Construct from Istream (uses an intermediate dictionary)
@@ -238,7 +245,8 @@ public:
             const Mesh& mesh,
             const word& fieldDictEntry = "value",
             //! Additional space for geometric boundary size?
-            const bool extraCapacity = false
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
         //- Construct from dictionary
@@ -249,7 +257,8 @@ public:
             const dictionary& fieldDict,
             const word& fieldDictEntry = "value",
             //! Additional space for geometric boundary size?
-            const bool extraCapacity = false
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
         //- Copy construct
@@ -578,6 +587,9 @@ public:
 
         //- Set the oriented flag: on/off
         inline void setOriented(bool on = true) noexcept;
+
+        //- Return isFlattened boolean value
+        inline bool isFlattened() const noexcept { return isFlattened_; }
 
         //- Return const-reference to the primitive field values
         const DynamicField<Type>& field() const noexcept { return *this; }

@@ -124,11 +124,13 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     const IOobject& io,
     const Mesh& mesh,
     const word& fieldDictEntry,
-    const bool extraCapacity
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
     regIOobject(io),
-    mesh_(mesh)
+    mesh_(mesh),
+    isFlattened_(isFlattened)
 {
     if (extraCapacity)
     {
@@ -148,11 +150,13 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     const Mesh& mesh,
     const dictionary& fieldDict,
     const word& fieldDictEntry,
-    const bool extraCapacity
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
     regIOobject(io),
-    mesh_(mesh)
+    mesh_(mesh),
+    isFlattened_(isFlattened)
 {
     if (extraCapacity)
     {

@@ -83,8 +83,9 @@ Foam::fvsPatchField<Type>::fvsPatchField
     (
         !isNull(iF) &&
         (
-            internalField_.capacity() ==
-            internalField_.mesh().nBoundaryFaces() + internalField_.size()
+            (internalField_.capacity() ==
+            internalField_.mesh().nBoundaryFaces() + internalField_.size()) &&
+            internalField_.isFlattened()
         )
     )
     {

@@ -164,6 +164,7 @@ Foam::surfaceInterpolationScheme<Type>::interpolate
             mesh,
             vf.dimensions(),
             fvsPatchFieldBase::calculatedType(),
+            true,
             true
         )
     );
@@ -266,6 +267,7 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
             mesh,
             Sf.dimensions()*vf.dimensions(),
             fvsPatchFieldBase::calculatedType(),
+            true,
             true
         )
     );

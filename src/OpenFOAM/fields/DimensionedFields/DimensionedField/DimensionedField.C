@@ -79,7 +79,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     regIOobject(io),
     DynamicField<Type>(field),
     mesh_(mesh),
-    dimensions_(dims)
+    dimensions_(dims),
+    isFlattened_(false)
 {
     checkFieldSize();
 }
@@ -97,7 +98,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     regIOobject(io),
     DynamicField<Type>(std::move(field)),
     mesh_(mesh),
-    dimensions_(dims)
+    dimensions_(dims),
+    isFlattened_(false)
 {
     checkFieldSize();
 }
@@ -115,7 +117,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     regIOobject(io),
     DynamicField<Type>(std::move(field)),
     mesh_(mesh),
-    dimensions_(dims)
+    dimensions_(dims),
+    isFlattened_(false)
 {
     checkFieldSize();
 }
@@ -133,7 +136,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     regIOobject(io),
     DynamicField<Type>(tfield.constCast(), tfield.movable()),
     mesh_(mesh),
-    dimensions_(dims)
+    dimensions_(dims),
+    isFlattened_(false)
 {
     tfield.clear();
     checkFieldSize();
@@ -147,7 +151,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     const Mesh& mesh,
     const dimensionSet& dims,
     const bool checkIOFlags,
-    const bool extraCapacity
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
     regIOobject(io),
@@ -162,7 +167,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
         )
     ),
     mesh_(mesh),
-    dimensions_(dims)
+    dimensions_(dims),
+    isFlattened_(isFlattened)
 {
     if (checkIOFlags)
     {
@@ -179,7 +185,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     const Type& value,
     const dimensionSet& dims,
     const bool checkIOFlags,
-    const bool extraCapacity
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
     regIOobject(io),
@@ -194,7 +201,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
         )
     ),
     mesh_(mesh),
-    dimensions_(dims)
+    dimensions_(dims),
+    isFlattened_(isFlattened)
 {
     if (!checkIOFlags || !readIfPresent())
     {
@@ -211,7 +219,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     const Mesh& mesh,
     const dimensioned<Type>& dt,
     const bool checkIOFlags,
-    const bool extraCapacity
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
     DimensionedField<Type, GeoMesh>
@@ -221,7 +230,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
         dt.value(),
         dt.dimensions(),
         checkIOFlags,
-        extraCapacity
+        extraCapacity,
+        isFlattened
     )
 {}
 
@@ -236,7 +246,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     DynamicField<Type>(df),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -261,7 +272,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     DynamicField<Type>(df, reuse),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -288,7 +300,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     DynamicField<Type>(df),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -315,7 +328,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     DynamicField<Type>(df, reuse),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -343,7 +357,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     DynamicField<Type>(df),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -370,7 +385,8 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     DynamicField<Type>(df, reuse),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
