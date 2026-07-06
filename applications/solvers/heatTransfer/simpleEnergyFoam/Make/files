@@ -1,0 +1,3 @@
+simpleEnergyFoam.C
+
+EXE = $(FOAM_APPBIN)/simpleEnergyFoam

@@ -96,6 +96,7 @@ wmake $targetType ODE
 
 thermophysicalModels/Allwmake $targetType $*
 TurbulenceModels/Allwmake $targetType $*
+ThermalTurbulenceModels/Allwmake $targetType $*
 wmake $targetType combustionModels
 
 wmakeLnInclude -u regionFaModels

@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2023 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -286,7 +286,7 @@ public:
         FOAM_DEVICE inline Cmpt det() const;
 
         //- The 2D determinant by excluding given direction
-        inline Cmpt det2D(const direction excludeCmpt) const;
+        FOAM_DEVICE inline Cmpt det2D(const direction excludeCmpt) const;
 
         //- Return adjunct matrix (transpose of cofactor matrix)
         FOAM_DEVICE inline Tensor<Cmpt> adjunct() const;
@@ -295,7 +295,7 @@ public:
         FOAM_DEVICE inline Tensor<Cmpt> cof() const;
 
         //- Return 2D adjunct matrix by excluding given direction
-        inline Tensor<Cmpt> adjunct2D(const direction excludeCmpt) const;
+        FOAM_DEVICE inline Tensor<Cmpt> adjunct2D(const direction excludeCmpt) const;
 
         //- Return inverse
         FOAM_DEVICE inline Tensor<Cmpt> inv() const;
@@ -304,13 +304,13 @@ public:
         FOAM_DEVICE inline Tensor<Cmpt> safeInv() const;
 
         //- Return inverse of 2D tensor (by excluding given direction)
-        inline Tensor<Cmpt> inv2D(const direction excludeCmpt) const;
+        FOAM_DEVICE inline Tensor<Cmpt> inv2D(const direction excludeCmpt) const;
 
         //- Inner-product of this with another Tensor.
         FOAM_DEVICE inline Tensor<Cmpt> inner(const Tensor<Cmpt>& t2) const;
 
         //- Schur-product of this with another Tensor.
-        inline Tensor<Cmpt> schur(const Tensor<Cmpt>& t2) const;
+        FOAM_DEVICE inline Tensor<Cmpt> schur(const Tensor<Cmpt>& t2) const;
 
 
     // Member Operators

@@ -28,17 +28,6 @@ License
 
 #include "EddyDiffusivity.H"
 
-// * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
-
-template<class BasicTurbulenceModel>
-void Foam::EddyDiffusivity<BasicTurbulenceModel>::correctNut()
-{
-    // Read Prt if provided
-    Prt_ = dimensionedScalar("Prt", dimless, 1.0, this->coeffDict());
-    alphat_ = this->rho_*this->nut()/Prt_;
-    alphat_.correctBoundaryConditions();
-}
-
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -65,47 +54,8 @@ Foam::EddyDiffusivity<BasicTurbulenceModel>::EddyDiffusivity
         phi,
         transport,
         propertiesName
-    ),
-
-    // Cannot read Prt yet
-    Prt_("Prt", dimless, 1.0),
-
-    alphat_
-    (
-        IOobject
-        (
-            IOobject::groupName("alphat", alphaRhoPhi.group()),
-            this->runTime_.timeName(),
-            this->mesh_,
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        this->mesh_
     )
 {}
-
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-template<class BasicTurbulenceModel>
-bool Foam::EddyDiffusivity<BasicTurbulenceModel>::read()
-{
-    if (BasicTurbulenceModel::read())
-    {
-        Prt_.readIfPresent(this->coeffDict());
-
-        return true;
-    }
-
-    return false;
-}
-
-
-template<class BasicTurbulenceModel>
-void Foam::EddyDiffusivity<BasicTurbulenceModel>::correctEnergyTransport()
-{
-    EddyDiffusivity<BasicTurbulenceModel>::correctNut();
-}
 
 
 // ************************************************************************* //

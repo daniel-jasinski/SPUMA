@@ -1,0 +1,4 @@
+incompressibleThermalTurbulenceModel.C
+thermalTurbulentTransportModels/thermalTurbulentTransportModels.C
+
+LIB = $(FOAM_LIBBIN)/libincompressibleThermalTurbulenceModels

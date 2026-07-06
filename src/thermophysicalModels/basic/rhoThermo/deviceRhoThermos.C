@@ -122,10 +122,34 @@ makeThermos
     rhoThermo,
     deviceHeRhoThermo,
     pureMixture,
+    constTransport,
+    sensibleEnthalpy,
+    hConstThermo,
+    Boussinesq,
+    specie
+);
+
+makeThermos
+(
+    rhoThermo,
+    deviceHeRhoThermo,
+    pureMixture,
     sutherlandTransport,
     sensibleEnthalpy,
     hConstThermo,
     incompressiblePerfectGas,
+    specie
+);
+
+makeThermos
+(
+    rhoThermo,
+    deviceHeRhoThermo,
+    pureMixture,
+    tabulatedTransport,
+    sensibleEnthalpy,
+    hTabulatedThermo,
+    icoTabulated,
     specie
 );
 
@@ -202,6 +226,18 @@ makeThermos
     sensibleInternalEnergy,
     hConstThermo,
     incompressiblePerfectGas,
+    specie
+);
+
+makeThermos
+(
+    rhoThermo,
+    deviceHeRhoThermo,
+    pureMixture,
+    constTransport,
+    sensibleInternalEnergy,
+    hConstThermo,
+    Boussinesq,
     specie
 );
 

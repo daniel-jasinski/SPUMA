@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2020 OpenFOAM Foundation
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -102,7 +103,7 @@ public:
     // Member Functions
 
         //- Integrate the function and return the result
-        scalar intfdT(scalar p, scalar T) const;
+        FOAM_DEVICE inline scalar intfdT(scalar p, scalar T) const;
 
         //- Integrate the function divided by T and return the result
         scalar intfByTdT(scalar p, scalar T) const;
@@ -116,6 +117,10 @@ public:
 
 } // End namespace thermophysicalFunctions
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#include "integratedNonUniformTableThermophysicalFunctionI.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

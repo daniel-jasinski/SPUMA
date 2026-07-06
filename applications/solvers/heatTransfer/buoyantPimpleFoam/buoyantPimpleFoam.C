@@ -44,6 +44,7 @@ Description
 #include "dynamicFvMesh.H"
 #include "rhoThermo.H"
 #include "turbulentFluidThermoModel.H"
+#include "thermalTurbulentFluidThermoModel.H"
 #include "radiationModel.H"
 #include "CorrectPhi.H"
 #include "fvOptions.H"
@@ -67,6 +68,8 @@ int main(int argc, char *argv[])
 
     #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
+    #include "initDevice.H"
+    #include "createMemoryPool.H"
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
     #include "createDyMControls.H"
@@ -76,6 +79,7 @@ int main(int argc, char *argv[])
     #include "createRhoUfIfPresent.H"
 
     turbulence->validate();
+    thermalTurbulence->validate();
 
     if (!LTS)
     {
@@ -179,6 +183,7 @@ int main(int argc, char *argv[])
             if (pimple.turbCorr())
             {
                 turbulence->correct();
+                thermalTurbulence->correct();
             }
         }
 

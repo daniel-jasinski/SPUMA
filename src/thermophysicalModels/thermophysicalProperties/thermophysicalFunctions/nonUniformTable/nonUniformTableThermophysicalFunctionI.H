@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2020 OpenFOAM Foundation
     Copyright (C) 2020-2022 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -56,6 +57,22 @@ inline Foam::label Foam::nonUniformTable::index
     }
 
     return i;
+}
+
+
+FOAM_DEVICE inline Foam::scalar Foam::nonUniformTable::f
+(
+    scalar p,
+    scalar T
+) const
+{
+    const label i = index(p, T);
+    const scalar Ti = values_[i].first();
+    const scalar lambda = (T - Ti)/(values_[i + 1].first() - Ti);
+
+    return
+        values_[i].second()
+      + lambda*(values_[i + 1].second() - values_[i].second());
 }
 
 
