@@ -758,7 +758,7 @@ bool Foam::faceAreaWeightAMI::calculate
             extendedTgtMapPtr_->subMap(),
             false,                      // has flip
             tgtAddress_,
-            labelList(),
+            labelList(poolSwitch(1)),
             ListOps::appendEqOp<label>(),
             flipOp(),                   // flip operation
             UPstream::msgType()+77431,
@@ -775,7 +775,7 @@ bool Foam::faceAreaWeightAMI::calculate
             extendedTgtMapPtr_->subMap(),
             false,
             tgtWeights_,
-            scalarList(),
+            scalarList(poolSwitch(1)),
             ListOps::appendEqOp<scalar>(),
             flipOp(),
             UPstream::msgType()+77432,

@@ -244,7 +244,7 @@ void Foam::AMIInterpolation::interpolate
     };
 
     // Work space for if distributed
-    List<Type> work;
+    List<Type> work(poolSwitch(1));
 
     List<Type> result0;
     if (cache_.index0() != -1)
@@ -387,7 +387,6 @@ void Foam::AMIInterpolation::interpolate
         //     result = Zero;
         // }
 
-        //TODO replace with weightedSumListListAddr when ListListAddr is ready
         if constexpr(std::is_same<CombineOp,multiplyWeightedOp<Type, plusEqOp<Type>>>::value)
         {
             weightedSumListListAddr

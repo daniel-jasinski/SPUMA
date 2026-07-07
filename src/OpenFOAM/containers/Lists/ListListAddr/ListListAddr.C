@@ -44,9 +44,8 @@ usepool_(ListListOps::subUsePool(listlist,accessOp<T>()))
     const label N = listlist.size();
     if (N <= 0)
     {
-        FatalErrorInFunction
-            << "Empty list of lists provided to ListListAddr constructor"
-            << abort(FatalError);
+        this->sizes_ = autoPtr<labelList>::New(1,0,poolSwitch(usepool_));
+        this->begins_ = autoPtr<List<iterator_type>>::New(1,nullptr,poolSwitch(usepool_));
         return;
     }
     

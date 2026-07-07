@@ -430,10 +430,10 @@ void Foam::AMIInterpolation::normaliseWeights
         
     };
     exec.parallelFor(Lambda,wght.size());
-    label nLowWeight = nLowWeightField[0];
 
     if (output && comm != -1 && returnReduceOr(wght.size(), comm))
     {
+        const label nLowWeight = nLowWeightField[0];
         auto limits = gMinMax(wghtSum, comm);
         auto avg = gAverage(wghtSum, comm);
 
@@ -847,7 +847,6 @@ void Foam::AMIInterpolation::agglomerate
     // Agglomerate weights and indices
     if (targetMapPtr)
     {
-        FatalErrorInFunction<<"not implemented"<<abort(FatalError);
         // We are involved in the communicator but our maps are still empty.
         // Fix 'm up so they are the same size as the communicator.
         const mapDistribute& map = *targetMapPtr;
@@ -1575,6 +1574,12 @@ void Foam::AMIInterpolation::reset
     srcWeights_.transfer(srcWeights);
     tgtAddress_.transfer(tgtAddress);
     tgtWeights_.transfer(tgtWeights);
+
+    // evaluate the indexing for the ListListAddr objects
+    this->srcListAddr_.reset(new ListListAddr<labelList>(srcAddress_));
+    this->srcListWeights_.reset(new ListListAddr<scalarList>(srcWeights_));
+    this->tgtListAddr_.reset(new ListListAddr<labelList>(tgtAddress_));
+    this->tgtListWeights_.reset(new ListListAddr<scalarList>(tgtWeights_));
 
     // Reset the sums of the weights
     srcWeightsSum_.resize_nocopy(srcWeights_.size());
