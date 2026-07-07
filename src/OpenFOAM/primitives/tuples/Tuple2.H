@@ -118,16 +118,16 @@ public:
     // Member Functions
 
         //- Access the first element
-        const T1& first() const noexcept { return f_; }
+        FOAM_DEVICE const T1& first() const noexcept { return f_; }
 
         //- Access the first element
-        T1& first() noexcept { return f_; }
+        FOAM_DEVICE T1& first() noexcept { return f_; }
 
         //- Access the second element
-        const T2& second() const noexcept { return s_; }
+        FOAM_DEVICE const T2& second() const noexcept { return s_; }
 
         //- Access the second element
-        T2& second() noexcept { return s_; }
+        FOAM_DEVICE T2& second() noexcept { return s_; }
 };
 
 

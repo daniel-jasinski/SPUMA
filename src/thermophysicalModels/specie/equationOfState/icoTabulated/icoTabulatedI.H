@@ -75,7 +75,7 @@ Foam::icoTabulated<Specie>::New(const dictionary& dict)
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Specie>
-inline Foam::scalar Foam::icoTabulated<Specie>::rho
+FOAM_DEVICE inline Foam::scalar Foam::icoTabulated<Specie>::rho
 (
     scalar p,
     scalar T
@@ -86,7 +86,7 @@ inline Foam::scalar Foam::icoTabulated<Specie>::rho
 
 
 template<class Specie>
-inline Foam::scalar Foam::icoTabulated<Specie>::H
+FOAM_DEVICE inline Foam::scalar Foam::icoTabulated<Specie>::H
 (
     scalar p,
     scalar T
@@ -97,7 +97,7 @@ inline Foam::scalar Foam::icoTabulated<Specie>::H
 
 
 template<class Specie>
-inline Foam::scalar Foam::icoTabulated<Specie>::Cp
+FOAM_DEVICE inline Foam::scalar Foam::icoTabulated<Specie>::Cp
 (
     scalar p,
     scalar T
@@ -108,7 +108,7 @@ inline Foam::scalar Foam::icoTabulated<Specie>::Cp
 
 
 template<class Specie>
-inline Foam::scalar Foam::icoTabulated<Specie>::E
+FOAM_DEVICE inline Foam::scalar Foam::icoTabulated<Specie>::E
 (
     scalar p,
     scalar T
@@ -119,7 +119,7 @@ inline Foam::scalar Foam::icoTabulated<Specie>::E
 
 
 template<class Specie>
-inline Foam::scalar Foam::icoTabulated<Specie>::Cv
+FOAM_DEVICE inline Foam::scalar Foam::icoTabulated<Specie>::Cv
 (
     scalar p,
     scalar T
@@ -130,7 +130,7 @@ inline Foam::scalar Foam::icoTabulated<Specie>::Cv
 
 
 template<class Specie>
-inline Foam::scalar Foam::icoTabulated<Specie>::S
+FOAM_DEVICE inline Foam::scalar Foam::icoTabulated<Specie>::S
 (
     scalar p,
     scalar T
@@ -141,7 +141,7 @@ inline Foam::scalar Foam::icoTabulated<Specie>::S
 
 
 template<class Specie>
-inline Foam::scalar Foam::icoTabulated<Specie>::psi
+FOAM_DEVICE inline Foam::scalar Foam::icoTabulated<Specie>::psi
 (
     scalar p,
     scalar T
@@ -152,7 +152,7 @@ inline Foam::scalar Foam::icoTabulated<Specie>::psi
 
 
 template<class Specie>
-inline Foam::scalar Foam::icoTabulated<Specie>::Z
+FOAM_DEVICE inline Foam::scalar Foam::icoTabulated<Specie>::Z
 (
     scalar p,
     scalar T
@@ -163,7 +163,7 @@ inline Foam::scalar Foam::icoTabulated<Specie>::Z
 
 
 template<class Specie>
-inline Foam::scalar Foam::icoTabulated<Specie>::CpMCv
+FOAM_DEVICE inline Foam::scalar Foam::icoTabulated<Specie>::CpMCv
 (
     scalar p,
     scalar T

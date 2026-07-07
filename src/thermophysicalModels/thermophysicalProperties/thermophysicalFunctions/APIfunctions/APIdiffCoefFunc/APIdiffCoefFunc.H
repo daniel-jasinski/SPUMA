@@ -89,7 +89,7 @@ public:
 
         //- API vapour mass diffusivity function using properties from
         //  construction
-        scalar f(scalar p, scalar T) const
+        FOAM_DEVICE inline scalar f(scalar p, scalar T) const
         {
             return 3.6059e-3*(pow(1.8*T, 1.75))*alpha_/(p*beta_);
         }

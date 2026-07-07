@@ -102,7 +102,7 @@ public:
     // Member Functions
 
         //- Evaluate the function and return the result
-        scalar f(scalar, scalar T) const
+        FOAM_DEVICE inline scalar f(scalar, scalar T) const
         {
             scalar Tdash = min(T, Tc_ - ROOTVSMALL);
 

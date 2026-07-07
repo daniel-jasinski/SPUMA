@@ -102,7 +102,7 @@ public:
     // Member Functions
 
         //- Evaluate the function and return the result
-        scalar f(scalar, scalar T) const
+        FOAM_DEVICE inline scalar f(scalar, scalar T) const
         {
             return exp(a_ + b_/T + c_*log(T) + d_*pow(T, e_));
         }

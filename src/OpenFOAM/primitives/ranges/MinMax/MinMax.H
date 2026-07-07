@@ -178,16 +178,16 @@ public:
     // Access
 
         //- The min value
-        const T& min() const noexcept { return min_; }
+        FOAM_DEVICE const T& min() const noexcept { return min_; }
 
         //- The min value
-        T& min() noexcept { return min_; }
+        FOAM_DEVICE T& min() noexcept { return min_; }
 
         //- The max value
-        const T& max() const noexcept { return max_; }
+        FOAM_DEVICE const T& max() const noexcept { return max_; }
 
         //- The max value
-        T& max() noexcept { return max_; }
+        FOAM_DEVICE T& max() noexcept { return max_; }
 
         //- The min/max average value
         inline T centre() const;

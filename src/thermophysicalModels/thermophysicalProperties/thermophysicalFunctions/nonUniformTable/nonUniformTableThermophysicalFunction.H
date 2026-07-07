@@ -102,7 +102,7 @@ protected:
         //- Return the lower index of the interval in the table
         //- corresponding to the given temperature.
         //  Checks the temperature range
-        inline label index(scalar p, scalar T) const;
+        FOAM_DEVICE inline label index(scalar p, scalar T) const;
 
 
 public:
@@ -123,7 +123,7 @@ public:
     // Member Functions
 
         //- Return the non-uniform table of values
-        const List<Tuple2<scalar, scalar>>& values() const
+        FOAM_DEVICE const List<Tuple2<scalar, scalar>>& values() const
         {
             return values_;
         }

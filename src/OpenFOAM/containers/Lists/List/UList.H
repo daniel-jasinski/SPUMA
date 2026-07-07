@@ -435,12 +435,12 @@ public:
     // Member Operators
 
         //- Return element of UList
-        inline T& operator[](const label i);
+        FOAM_DEVICE inline T& operator[](const label i);
 
         //- Return element of constant UList
         //  \note bool specialization adds lazy evaluation so reading an
         //       out-of-range element returns false without ill-effects
-        inline const T& operator[](const label i) const;
+        FOAM_DEVICE inline const T& operator[](const label i) const;
 
         //- Allow cast to a const List<T>&.
         //  \note Marked as "strictly" deprecated.
@@ -524,7 +524,7 @@ public:
         bool empty() const noexcept { return !size_; }
 
         //- The number of elements in the container
-        label size() const noexcept { return size_; }
+        FOAM_DEVICE label size() const noexcept { return size_; }
 
         //- Size of the underlying storage.
         label capacity() const noexcept { return size_; }

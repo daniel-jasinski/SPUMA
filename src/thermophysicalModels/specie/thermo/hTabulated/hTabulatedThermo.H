@@ -134,7 +134,7 @@ public:
 
         //- Limit the temperature to be in the temperature range
         //  Currently no limit applied
-        inline scalar limit(const scalar T) const;
+        FOAM_DEVICE inline scalar limit(const scalar T) const;
 
 
         // Fundamental Properties

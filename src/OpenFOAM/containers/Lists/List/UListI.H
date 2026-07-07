@@ -448,7 +448,7 @@ inline void Foam::UList<T>::operator=(Foam::zero)
 
 
 template<class T>
-inline T& Foam::UList<T>::operator[](const label i)
+FOAM_DEVICE inline T& Foam::UList<T>::operator[](const label i)
 {
     if constexpr (std::is_same_v<bool, std::remove_cv_t<T>>)
     {
@@ -471,7 +471,7 @@ inline T& Foam::UList<T>::operator[](const label i)
 
 
 template<class T>
-inline const T& Foam::UList<T>::operator[](const label i) const
+FOAM_DEVICE inline const T& Foam::UList<T>::operator[](const label i) const
 {
     if constexpr (std::is_same_v<bool, std::remove_cv_t<T>>)
     {

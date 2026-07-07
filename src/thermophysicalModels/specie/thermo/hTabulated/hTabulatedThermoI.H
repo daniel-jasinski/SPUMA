@@ -46,7 +46,7 @@ inline Foam::hTabulatedThermo<EquationOfState>::hTabulatedThermo
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::limit
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::limit
 (
     const scalar T
 ) const

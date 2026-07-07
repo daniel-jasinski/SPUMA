@@ -79,7 +79,7 @@ Foam::Boussinesq<Specie>::New
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Specie>
-inline Foam::scalar Foam::Boussinesq<Specie>::rho
+FOAM_DEVICE inline Foam::scalar Foam::Boussinesq<Specie>::rho
 (
     scalar p,
     scalar T
@@ -90,34 +90,34 @@ inline Foam::scalar Foam::Boussinesq<Specie>::rho
 
 
 template<class Specie>
-inline Foam::scalar Foam::Boussinesq<Specie>::H(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::Boussinesq<Specie>::H(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::Boussinesq<Specie>::Cp(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::Boussinesq<Specie>::Cp(scalar p, scalar T) const
 {
     return 0;
 }
 
 template<class Specie>
-inline Foam::scalar Foam::Boussinesq<Specie>::E(scalar p, scalar T) const
-{
-    return 0;
-}
-
-
-template<class Specie>
-inline Foam::scalar Foam::Boussinesq<Specie>::Cv(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::Boussinesq<Specie>::E(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::Boussinesq<Specie>::S
+FOAM_DEVICE inline Foam::scalar Foam::Boussinesq<Specie>::Cv(scalar p, scalar T) const
+{
+    return 0;
+}
+
+
+template<class Specie>
+FOAM_DEVICE inline Foam::scalar Foam::Boussinesq<Specie>::S
 (
     scalar p,
     scalar T
@@ -128,7 +128,7 @@ inline Foam::scalar Foam::Boussinesq<Specie>::S
 
 
 template<class Specie>
-inline Foam::scalar Foam::Boussinesq<Specie>::psi
+FOAM_DEVICE inline Foam::scalar Foam::Boussinesq<Specie>::psi
 (
     scalar p,
     scalar T
@@ -139,7 +139,7 @@ inline Foam::scalar Foam::Boussinesq<Specie>::psi
 
 
 template<class Specie>
-inline Foam::scalar Foam::Boussinesq<Specie>::Z
+FOAM_DEVICE inline Foam::scalar Foam::Boussinesq<Specie>::Z
 (
     scalar p,
     scalar T
@@ -150,7 +150,7 @@ inline Foam::scalar Foam::Boussinesq<Specie>::Z
 
 
 template<class Specie>
-inline Foam::scalar Foam::Boussinesq<Specie>::CpMCv
+FOAM_DEVICE inline Foam::scalar Foam::Boussinesq<Specie>::CpMCv
 (
     scalar p,
     scalar T

@@ -31,7 +31,7 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-inline Foam::label Foam::nonUniformTable::index
+FOAM_DEVICE inline Foam::label Foam::nonUniformTable::index
 (
     scalar p,
     scalar T

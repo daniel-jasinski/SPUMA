@@ -160,31 +160,31 @@ public:
             static const bool isochoric = false;
 
             //- Return density [kg/m^3]
-            inline scalar rho(scalar p, scalar T) const;
+            FOAM_DEVICE inline scalar rho(scalar p, scalar T) const;
 
             //- Return enthalpy departure [J/kg]
-            inline scalar H(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar H(const scalar p, const scalar T) const;
 
             //- Return Cp departure [J/(kg K]
-            inline scalar Cp(scalar p, scalar T) const;
+            FOAM_DEVICE inline scalar Cp(scalar p, scalar T) const;
 
             //- Return internal energy departure [J/kg]
-            inline scalar E(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar E(const scalar p, const scalar T) const;
 
             //- Return Cv departure [J/(kg K]
-            inline scalar Cv(scalar p, scalar T) const;
+            FOAM_DEVICE inline scalar Cv(scalar p, scalar T) const;
 
             //- Return entropy [J/(kg K)]
-            inline scalar S(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar S(const scalar p, const scalar T) const;
 
             //- Return compressibility rho/p [s^2/m^2]
-            inline scalar psi(scalar p, scalar T) const;
+            FOAM_DEVICE inline scalar psi(scalar p, scalar T) const;
 
             //- Return compression factor []
-            inline scalar Z(scalar p, scalar T) const;
+            FOAM_DEVICE inline scalar Z(scalar p, scalar T) const;
 
             //- Return (Cp - Cv) [J/(kg K]
-            inline scalar CpMCv(scalar p, scalar T) const;
+            FOAM_DEVICE inline scalar CpMCv(scalar p, scalar T) const;
 
 
         // IO

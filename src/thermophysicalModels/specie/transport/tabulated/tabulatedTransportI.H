@@ -76,7 +76,7 @@ Foam::tabulatedTransport<Thermo>::New(const dictionary& dict)
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Thermo>
-inline Foam::scalar Foam::tabulatedTransport<Thermo>::mu
+FOAM_DEVICE inline Foam::scalar Foam::tabulatedTransport<Thermo>::mu
 (
     const scalar p,
     const scalar T
@@ -87,7 +87,7 @@ inline Foam::scalar Foam::tabulatedTransport<Thermo>::mu
 
 
 template<class Thermo>
-inline Foam::scalar Foam::tabulatedTransport<Thermo>::kappa
+FOAM_DEVICE inline Foam::scalar Foam::tabulatedTransport<Thermo>::kappa
 (
     const scalar p,
     const scalar T
@@ -98,7 +98,7 @@ inline Foam::scalar Foam::tabulatedTransport<Thermo>::kappa
 
 
 template<class Thermo>
-inline Foam::scalar Foam::tabulatedTransport<Thermo>::alphah
+FOAM_DEVICE inline Foam::scalar Foam::tabulatedTransport<Thermo>::alphah
 (
     const scalar p,
     const scalar T
