@@ -22,7 +22,7 @@ c++LESSWARN = \
 
 # AdaptiveCpp target (generic for JIT, or cuda:sm_XX, hip:gfxXXX)
 ifeq (,$(strip $(ACPP_TARGETS)))
-    ACPP_TARGETS := generic
+    override ACPP_TARGETS := generic
 endif
 
 # AdaptiveCpp specific flags

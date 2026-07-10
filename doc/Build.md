@@ -32,6 +32,74 @@ Some known build issues related to specific compiler and VTK library versions
 can be found in the [$WM_PROJECT_DIR/doc/BuildIssues.md][link openfoam-issues]
 file.
 
+## Native Windows builds
+
+Native Windows builds use the normal OpenFOAM environment and build entry
+points. Run them from an MSYS2 shell, select the compiler while sourcing
+`etc/bashrc`, and invoke the top-level `Allwmake`. No separate Windows build
+script is required.
+
+Common requirements are:
+
+- 64-bit MSYS2 with `bash`, GNU `make`, `sed`, `awk`, `grep` and `flex`;
+- Visual Studio 2022 C++ build tools and a Windows 10 or 11 SDK;
+- LLVM tools including `clang`, `lld-link`, `llvm-lib` and `llvm-nm`;
+- the selected accelerator toolkit.
+
+Windows builds currently use the serial (`dummy`) Pstream implementation.
+MPI and zlib support are not yet enabled.
+
+### AdaptiveCpp/SYCL
+
+The Windows fixes required by SPUMA have been merged into upstream
+AdaptiveCpp. Until they appear in a tagged AdaptiveCpp release, build an
+unmodified upstream `develop` revision at commit `33729bc` or newer. This
+revision also contains the earlier Win32/OpenMP fix from commit `05194e7`.
+
+Add the resulting AdaptiveCpp `bin` directory to `PATH`, set `ACPP_PATH` to
+its installation prefix, and use the standard OpenFOAM setup:
+
+```
+export ACPP_PATH=/c/path/to/AdaptiveCpp-install
+export PATH="$ACPP_PATH/bin:$PATH"
+source etc/bashrc WM_COMPILER=Sycl WM_MPLIB=dummy
+export ACPP_TARGETS=generic
+./Allwmake -j -s -l
+```
+
+`ACPP_TARGETS=generic` produces AdaptiveCpp's JIT-capable target. Runtime
+device selection is controlled by AdaptiveCpp itself. Use a clean shell when
+switching between compiler backends.
+
+### Native CUDA
+
+Set `CUDA_PATH` to the toolkit installation and select the `Cuda` compiler.
+`wmake` converts the toolkit path to the short Windows form required by the
+MSVC linker. `NVARCH` defaults to `80` when it is not specified.
+
+```
+export CUDA_PATH='C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.x'
+export NVARCH=86
+source etc/bashrc WM_COMPILER=Cuda WM_MPLIB=dummy
+./Allwmake -j -s -l
+```
+
+### Native HIP
+
+Set `HIP_PATH` to the ROCm installation and select the `Hip` compiler.
+`AMDARCH` defaults to `gfx1030` when it is not specified.
+
+```
+export HIP_PATH='C:/Program Files/AMD/ROCm/6.x'
+export AMDARCH=gfx1030
+source etc/bashrc WM_COMPILER=Hip WM_MPLIB=dummy
+./Allwmake -j -s -l
+```
+
+The CUDA and HIP backends are experimental. A successful link must not be
+treated as runtime validation; validate the resulting solver on the intended
+GPU and driver before production use.
+
 If you need to change the default versions for third-party libraries,
 or use system libraries for some components, please some additional
 information about the [config structure][wiki-config].

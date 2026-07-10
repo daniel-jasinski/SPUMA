@@ -259,7 +259,7 @@ $(LIB)$(EXT_SO): $(OBJECTS)
 	$(call QUIET_MESSAGE,link,$(LIB)$(EXT_SO))
 	@printf '%s\n' $(OBJECTS) | $(WIN_PATH_SED) > $(OBJECTS_DIR)/link_objects.rsp
 	$(call QUIET_MESSAGE,def,$(notdir $(LIB)).def)
-	@$(WM_SCRIPTS)/generate-msvc-def $(LIB).def @$(OBJECTS_DIR)/link_objects.rsp $(filter %.lib,$(PROJECT_LIBS) $(LIB_LIBS))
+	@sh $(WM_SCRIPTS)/generate-msvc-def $(LIB).def @$(OBJECTS_DIR)/link_objects.rsp $(filter %.lib,$(PROJECT_LIBS) $(LIB_LIBS))
 	$E export $(WIN_LINK_ENV) && \
 	    $(LINKLIBSO) $(FOAM_EXTRA_LDFLAGS) \
 	    -Wl,/DEF:$$($(call WIN_TOWINPATH,$(LIB).def)) \

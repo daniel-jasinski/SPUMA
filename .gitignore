@@ -23,6 +23,13 @@
 # Derived files
 lex.yy.c
 
+# Build and test logs
+*.log
+/log.*
+
+# AdaptiveCpp JIT cache
+.acpp/
+
 # Core dumps
 core
 

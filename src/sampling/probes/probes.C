@@ -291,7 +291,7 @@ Foam::label Foam::probes::prepare(unsigned request)
         #define doLocalCode(InputType, Target)                                \
         {                                                                     \
             Target.clear();  /* Remove old values */                          \
-            const auto iter = selected.cfind(InputType::typeName);            \
+            const auto iter = selected.cfind(InputType::staticTypeName());    \
             if (iter.good())                                                  \
             {                                                                 \
                 /* Add new (current) values */                                \

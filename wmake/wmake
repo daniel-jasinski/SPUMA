@@ -920,7 +920,9 @@ case "$WM_OSTYPE" in
     fi
     winLinkVars="WIN_TMP=${_winTmp:-C:/Temp}"
     if [ -n "$CUDA_PATH" ]; then
+        _cudaRoot="$(_toWinShort "$CUDA_PATH")"
         _cudaLib="$(_toWinShort "$CUDA_PATH/lib/x64")"
+        [ -n "$_cudaRoot" ] && winLinkVars="$winLinkVars CUDA_PATH_SHORT=$_cudaRoot"
         [ -n "$_cudaLib" ] && winLinkVars="$winLinkVars WIN_CUDA_LIB=$_cudaLib"
     fi
     if [ -n "$ACPP_PATH" ]; then
@@ -928,7 +930,9 @@ case "$WM_OSTYPE" in
         [ -n "$_acppLib" ] && winLinkVars="$winLinkVars WIN_ACPP_LIB=$_acppLib"
     fi
     if [ -n "$HIP_PATH" ]; then
+        _hipRoot="$(_toWinShort "$HIP_PATH")"
         _hipLib="$(_toWinShort "$HIP_PATH/lib")"
+        [ -n "$_hipRoot" ] && winLinkVars="$winLinkVars HIP_PATH_SHORT=$_hipRoot"
         [ -n "$_hipLib" ] && winLinkVars="$winLinkVars WIN_HIP_LIB=$_hipLib"
     fi
     # MSVC runtime libraries (libomp.lib, etc.)

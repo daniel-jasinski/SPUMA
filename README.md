@@ -54,16 +54,21 @@ For all other aspects of SPUMA utilization you can refer to the
 
 ## Compiling SPUMA
 
-SPUMA can be compiled to target three different hardware configurations:
+SPUMA can be compiled to target four different hardware configurations:
 * CPU only
 * Nvidia GPUs (CUDA backend)
 * AMD GPUs (HIP backend)
+* SYCL targets supported by AdaptiveCpp
 
 The procedure to compile the CPU only version of SPUMA is the same as that for the
 OpenFOAM release it is based on. To compile SPUMA for GPUs, some additional steps
 are required, as presented below. For all other requirements and procedures to
 compile SPUMA you can refer to the
 [official OpenFOAM build guide](https://develop.openfoam.com/Development/openfoam/blob/develop/doc/Build.md).
+
+Native Windows builds use the same `etc/bashrc` and top-level `Allwmake`
+workflow as other OpenFOAM builds. Requirements and compiler-selection examples
+are documented in [doc/Build.md](doc/Build.md#native-windows-builds).
 
 #### Nvidia CUDA version
 

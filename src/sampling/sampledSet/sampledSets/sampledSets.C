@@ -232,7 +232,7 @@ Foam::IOobjectList Foam::sampledSets::preCheckFields(unsigned request)
         #undef  doLocalCode
         #define doLocalCode(InputType)                                        \
         {                                                                     \
-            const auto iter = selected.find(InputType::typeName);             \
+            const auto iter = selected.find(InputType::staticTypeName());     \
             if (iter.good())                                                  \
             {                                                                 \
                 selectedFieldNames_.append(iter.val().sortedToc());           \

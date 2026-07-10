@@ -233,7 +233,7 @@ namespace Foam
                                                                                \
         explicit add##argNames##ConstructorToTable                             \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName_()               \
+            const ::Foam::word& k = baseType##Type::staticTypeName()          \
         )                                                                      \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
@@ -272,7 +272,7 @@ namespace Foam
                                                                                \
         explicit addRemovable##argNames##ConstructorToTable                    \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName_()               \
+            const ::Foam::word& k = baseType##Type::staticTypeName()          \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \
@@ -331,7 +331,7 @@ namespace Foam
                                                                                \
         explicit add##argNames##ConstructorToTable                             \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName_()               \
+            const ::Foam::word& k = baseType##Type::staticTypeName()          \
         )                                                                      \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
@@ -369,7 +369,7 @@ namespace Foam
                                                                                \
         explicit addRemovable##argNames##ConstructorToTable                    \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::typeName_()               \
+            const ::Foam::word& k = baseType##Type::staticTypeName()          \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \
