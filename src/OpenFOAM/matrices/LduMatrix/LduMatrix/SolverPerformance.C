@@ -40,7 +40,7 @@ bool Foam::SolverPerformance<Type>::checkSingularity
     for(direction cmpt=0; cmpt<pTraits<Type>::nComponents; cmpt++)
     {
         singular_[cmpt] =
-            component(wApA, cmpt) < vsmall_;
+            component(wApA, cmpt) < vsmallValue();
     }
 
     return singular();
@@ -67,7 +67,7 @@ bool Foam::SolverPerformance<Type>::checkConvergence
     const int logLevel
 )
 {
-    if ((logLevel >= 2) || (debug >= 2))
+    if ((logLevel >= 2) || (debugLevel() >= 2))
     {
         Info<< solverName_
             << ":  Iteration " << nIterations_
@@ -79,7 +79,7 @@ bool Foam::SolverPerformance<Type>::checkConvergence
     (
         finalResidual_ < Tolerance
      || (
-            RelTolerance > small_*pTraits<Type>::one
+            RelTolerance > smallValue()*pTraits<Type>::one
          && finalResidual_ < cmptMultiply(RelTolerance, initialResidual_)
         )
     );

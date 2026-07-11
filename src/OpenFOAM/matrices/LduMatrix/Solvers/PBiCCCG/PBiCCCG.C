@@ -99,7 +99,11 @@ Foam::PBiCCCG<Type, DType, LUType>::solve
     // --- Calculate normalisation factor
     Type normFactor = this->normFactor(psi, wA, pA);
 
-    if ((this->log_ >= 2) || (LduMatrix<Type, DType, LUType>::debug >= 2))
+    if
+    (
+        (this->log_ >= 2)
+     || (LduMatrix<Type, DType, LUType>::debugLevel() >= 2)
+    )
     {
         Info<< "   Normalisation factor = " << normFactor << endl;
     }

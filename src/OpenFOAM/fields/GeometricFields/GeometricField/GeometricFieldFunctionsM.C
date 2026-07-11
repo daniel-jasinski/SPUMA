@@ -48,7 +48,7 @@ void Func                                                                      \
     Foam::Func(result.boundaryFieldRef(), f1.boundaryField());                 \
     result.oriented() = f1.oriented();                                         \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \
@@ -111,7 +111,7 @@ void OpFunc                                                                    \
     Foam::OpFunc(result.boundaryFieldRef(), f1.boundaryField());               \
     result.oriented() = f1.oriented();                                         \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \
@@ -185,7 +185,7 @@ void Func                                                                      \
     );                                                                         \
     result.oriented() = Func(f1.oriented(), f2.oriented());                    \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \
@@ -302,7 +302,7 @@ void Func                                                                      \
     Foam::Func(result.boundaryFieldRef(), dt1.value(), f2.boundaryField());    \
     result.oriented() = f2.oriented();                                         \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \
@@ -388,7 +388,7 @@ void Func                                                                      \
     Foam::Func(result.boundaryFieldRef(), f1.boundaryField(), dt2.value());    \
     result.oriented() = f1.oriented();                                         \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \
@@ -491,7 +491,7 @@ void OpFunc                                                                    \
     );                                                                         \
     result.oriented() = (f1.oriented() Op f2.oriented());                      \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \
@@ -607,7 +607,7 @@ void OpFunc                                                                    \
     Foam::OpFunc(result.boundaryFieldRef(), dt1.value(), f2.boundaryField());  \
     result.oriented() = f2.oriented();                                         \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \
@@ -692,7 +692,7 @@ void OpFunc                                                                    \
     Foam::OpFunc(result.boundaryFieldRef(), f1.boundaryField(), dt2.value());  \
     result.oriented() = f1.oriented();                                         \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \
@@ -798,7 +798,7 @@ void Func                                                                      \
     );                                                                         \
     result.oriented() = Func(f1.oriented(), f2.oriented());                    \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \
@@ -1035,7 +1035,7 @@ void Func                                                                      \
     );                                                                         \
     result.oriented() = Func(f1.oriented(), f2.oriented());                    \
     result.correctLocalBoundaryConditions();                                   \
-    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debug)        \
+    if (GeometricBoundaryField<ReturnType, PatchField, GeoMesh>::debugLevel())        \
     {                                                                          \
         result.boundaryField().check();                                        \
     }                                                                          \

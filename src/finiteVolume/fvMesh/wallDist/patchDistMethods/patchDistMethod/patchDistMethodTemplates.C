@@ -45,7 +45,7 @@ Foam::wordList Foam::patchDistMethod::patchTypes
 
     for (const label patchi : patchIDs)
     {
-        yTypes[patchi] = fixedValueFvPatchField<Type>::typeName;
+        yTypes[patchi] = fixedValueFvPatchField<Type>::staticTypeName();
     }
 
     return yTypes;

@@ -196,7 +196,7 @@ Type Foam::LduMatrix<Type, DType, LUType>::solver::normFactor
                     cmptMag(Apsi - tmpField)
                   + cmptMag(matrix_.source() - tmpField)
                 ),
-                SolverPerformance<Type>::small_
+                SolverPerformance<Type>::smallValue()
             );
 
             // Equivalent at convergence:

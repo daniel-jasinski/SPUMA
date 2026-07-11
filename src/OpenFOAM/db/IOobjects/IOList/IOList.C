@@ -36,7 +36,7 @@ bool Foam::IOList<T>::readIOcontents()
 {
     if (isReadRequired() || (isReadOptional() && headerOk()))
     {
-        readStream(typeName) >> *this;
+        readStream(staticTypeName()) >> *this;
         close();
         return true;
     }

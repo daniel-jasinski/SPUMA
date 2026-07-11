@@ -87,7 +87,7 @@ void assign
         );
     }
     result.correctLocalBoundaryConditions();
-    if (GeometricBoundaryField<Tout, PatchField, GeoMesh>::debug)
+    if (GeometricBoundaryField<Tout, PatchField, GeoMesh>::debugLevel())
     {
         result.boundaryField().check();
     }
@@ -133,7 +133,7 @@ void assign
         );
     }
     result.correctLocalBoundaryConditions();
-    if (GeometricBoundaryField<Tout, PatchField, GeoMesh>::debug)
+    if (GeometricBoundaryField<Tout, PatchField, GeoMesh>::debugLevel())
     {
         result.boundaryField().check();
     }
@@ -178,7 +178,7 @@ void ternary
         );
     }
     result.correctLocalBoundaryConditions();
-    if (GeometricBoundaryField<T, PatchField, GeoMesh>::debug)
+    if (GeometricBoundaryField<T, PatchField, GeoMesh>::debugLevel())
     {
         result.boundaryField().check();
     }
@@ -229,7 +229,7 @@ void ternarySelect
         );
     }
     result.correctLocalBoundaryConditions();
-    if (GeometricBoundaryField<T, PatchField, GeoMesh>::debug)
+    if (GeometricBoundaryField<T, PatchField, GeoMesh>::debugLevel())
     {
         result.boundaryField().check();
     }

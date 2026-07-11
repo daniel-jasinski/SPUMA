@@ -79,6 +79,7 @@ defineTemplateDebugSwitchWithName
 );
 
 
+
 // Tolerance optimisation switch
 
 template<> scalar volScalarField::Boundary::tolerance
@@ -202,6 +203,19 @@ registerOptSwitch
     Foam::volTensorField::Boundary::localConsistency
 );
 
+
+#define defineBoundaryAccessors(Type)                                         \
+    defineTemplateDebugLevelFunction(Type);                                   \
+    template<> int& Type::localConsistencyRef()                               \
+    { return Type::localConsistency; }
+
+defineBoundaryAccessors(volScalarField::Boundary);
+defineBoundaryAccessors(volVectorField::Boundary);
+defineBoundaryAccessors(volSphericalTensorField::Boundary);
+defineBoundaryAccessors(volSymmTensorField::Boundary);
+defineBoundaryAccessors(volTensorField::Boundary);
+
+#undef defineBoundaryAccessors
 
 } // End namespace Foam
 

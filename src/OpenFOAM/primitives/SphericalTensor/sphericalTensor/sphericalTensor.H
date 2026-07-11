@@ -67,6 +67,21 @@ static const sphericalTensor twoThirdsI(2.0/3.0);
 FOAM_VECTORSPACE_EXTERN_DATA(Foam::SphericalTensor<float>, float, 1)
 FOAM_VECTORSPACE_EXTERN_DATA(Foam::SphericalTensor<double>, double, 1)
 
+#if defined(_WIN32) && !defined(FOAM_BUILDING_LIB)
+#define FOAM_SPHERICAL_TENSOR_EXTERN_DATA(Cmpt)                               \
+    template<> FOAM_EXPORT_DATA const Foam::SphericalTensor<Cmpt>             \
+        Foam::SphericalTensor<Cmpt>::I;                                       \
+    template<> FOAM_EXPORT_DATA const Foam::SphericalTensor<Cmpt>             \
+        Foam::SphericalTensor<Cmpt>::oneThirdI;                               \
+    template<> FOAM_EXPORT_DATA const Foam::SphericalTensor<Cmpt>             \
+        Foam::SphericalTensor<Cmpt>::twoThirdsI;
+
+FOAM_SPHERICAL_TENSOR_EXTERN_DATA(float)
+FOAM_SPHERICAL_TENSOR_EXTERN_DATA(double)
+
+#undef FOAM_SPHERICAL_TENSOR_EXTERN_DATA
+#endif
+
 #endif
 
 // ************************************************************************* //

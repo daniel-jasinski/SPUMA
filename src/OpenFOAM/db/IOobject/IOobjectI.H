@@ -264,7 +264,7 @@ inline bool Foam::IOobject::hasHeaderClass() const noexcept
 template<class Type>
 inline bool Foam::IOobject::isHeaderClass() const
 {
-    return (Type::typeName == headerClassName_);
+    return (Type::staticTypeName() == headerClassName_);
 }
 
 

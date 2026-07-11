@@ -74,7 +74,7 @@ Foam::PCICG<Type, DType, LUType>::solve(Field<Type>& psi) const
     Field<Type> wA(nCells);
     Type* __restrict__ wAPtr = wA.begin();
 
-    Type wArA = solverPerf.great_*pTraits<Type>::one;
+    Type wArA = solverPerf.greatValue()*pTraits<Type>::one;
     Type wArAold = wArA;
 
     // --- Calculate A.psi
@@ -87,7 +87,11 @@ Foam::PCICG<Type, DType, LUType>::solve(Field<Type>& psi) const
     // --- Calculate normalisation factor
     Type normFactor = this->normFactor(psi, wA, pA);
 
-    if ((this->log_ >= 2) || (LduMatrix<Type, DType, LUType>::debug >= 2))
+    if
+    (
+        (this->log_ >= 2)
+     || (LduMatrix<Type, DType, LUType>::debugLevel() >= 2)
+    )
     {
         Info<< "   Normalisation factor = " << normFactor << endl;
     }
@@ -140,7 +144,7 @@ Foam::PCICG<Type, DType, LUType>::solve(Field<Type>& psi) const
                 Type beta = cmptDivide
                 (
                     wArA,
-                    stabilise(wArAold, solverPerf.vsmall_)
+                    stabilise(wArAold, solverPerf.vsmallValue())
                 );
 
                 for (label cell=0; cell<nCells; cell++)
@@ -174,7 +178,7 @@ Foam::PCICG<Type, DType, LUType>::solve(Field<Type>& psi) const
             Type alpha = cmptDivide
             (
                 wArA,
-                stabilise(wApA, solverPerf.vsmall_)
+                stabilise(wApA, solverPerf.vsmallValue())
             );
 
             for (label cell=0; cell<nCells; cell++)

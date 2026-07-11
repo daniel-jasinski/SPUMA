@@ -71,7 +71,7 @@ void Foam::LduMatrix<Type, DType, LUType>::Amul
     if (hasLowerCSR())
     {
         // Use cell-based looping
-        if (debug == 2) PoutInFunction<< "cell-based looping" << endl;
+        if (debugLevel() == 2) PoutInFunction<< "cell-based looping" << endl;
 
         const label* const __restrict__ oStartPtr =
             addr.ownerStartAddr().begin();
@@ -260,7 +260,7 @@ void Foam::LduMatrix<Type, DType, LUType>::sumA
     if (hasLowerCSR())
     {
         // Use cell-based looping
-        if (debug == 2) PoutInFunction<< "cell-based looping" << endl;
+        if (debugLevel() == 2) PoutInFunction<< "cell-based looping" << endl;
 
         const label* const __restrict__ oStartPtr =
             addr.ownerStartAddr().begin();
@@ -399,7 +399,7 @@ void Foam::LduMatrix<Type, DType, LUType>::residual
     if (hasLowerCSR())
     {
         // Use cell-based looping
-        if (debug == 2) PoutInFunction<< "cell-based looping" << endl;
+        if (debugLevel() == 2) PoutInFunction<< "cell-based looping" << endl;
 
         const label* const __restrict__ oStartPtr =
             addr.ownerStartAddr().begin();

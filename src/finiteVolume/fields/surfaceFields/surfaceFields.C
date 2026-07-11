@@ -77,6 +77,7 @@ defineTemplateDebugSwitchWithName
     0
 );
 
+
 template<> scalar surfaceScalarField::Boundary::tolerance
 (
     debug::floatOptimisationSwitch("surfaceScalarField::Boundary::tolerance", 0)
@@ -164,6 +165,19 @@ registerOptSwitch
     Foam::surfaceTensorField::Boundary::localConsistency
 );
 
+
+#define defineBoundaryAccessors(Type)                                         \
+    defineTemplateDebugLevelFunction(Type);                                   \
+    template<> int& Type::localConsistencyRef()                               \
+    { return Type::localConsistency; }
+
+defineBoundaryAccessors(surfaceScalarField::Boundary);
+defineBoundaryAccessors(surfaceVectorField::Boundary);
+defineBoundaryAccessors(surfaceSphericalTensorField::Boundary);
+defineBoundaryAccessors(surfaceSymmTensorField::Boundary);
+defineBoundaryAccessors(surfaceTensorField::Boundary);
+
+#undef defineBoundaryAccessors
 
 } // End namespace Foam
 

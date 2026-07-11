@@ -30,4 +30,10 @@ LINK_LIBS   = $(c++DBUG)
 LINKLIBSO   = $(CC) $(c++FLAGS) -shared -fuse-ld=lld
 LINKEXE     = $(CC) $(c++FLAGS) -fuse-ld=lld
 
+# MSVC import libraries do not resolve Pstream references transitively through
+# libOpenFOAM.  Template code in other DLLs and applications calls Pstream
+# directly, so link the selected dummy implementation in both cases.
+LINKLIBSO  += -L$(FOAM_LIBBIN)/dummy -lPstream
+LINKEXE    += -L$(FOAM_LIBBIN)/dummy -lPstream
+
 #------------------------------------------------------------------------------

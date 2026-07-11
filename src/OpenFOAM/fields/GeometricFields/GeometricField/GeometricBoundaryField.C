@@ -719,7 +719,7 @@ void Foam::GeometricBoundaryField<Type, PatchField, GeoMesh>::evaluateLocal
 {
     // DebugInFunction << nl;
 
-    if (!localConsistency)
+    if (!localConsistencyRef())
     {
         return;
     }

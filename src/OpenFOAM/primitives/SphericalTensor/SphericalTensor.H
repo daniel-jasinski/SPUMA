@@ -76,9 +76,9 @@ public:
 
     // Static Data Members
 
-        static const SphericalTensor I;
-        static const SphericalTensor oneThirdI;
-        static const SphericalTensor twoThirdsI;
+        FOAM_EXPORT_DATA static const SphericalTensor I;
+        FOAM_EXPORT_DATA static const SphericalTensor oneThirdI;
+        FOAM_EXPORT_DATA static const SphericalTensor twoThirdsI;
 
 
     //- Component labeling enumeration

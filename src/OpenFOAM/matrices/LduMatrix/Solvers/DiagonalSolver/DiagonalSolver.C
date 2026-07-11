@@ -87,7 +87,7 @@ Foam::DiagonalSolver<Type, DType, LUType>::solve
 
     return SolverPerformance<Type>
     (
-        typeName,
+        staticTypeName(),
         this->fieldName_,
         Zero,
         Zero,

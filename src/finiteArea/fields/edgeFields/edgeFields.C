@@ -77,6 +77,7 @@ defineTemplateDebugSwitchWithName
     0
 );
 
+
 template<> scalar edgeScalarField::Boundary::tolerance
 (
     debug::floatOptimisationSwitch("tolerance", 0)
@@ -154,6 +155,19 @@ registerOptSwitch
     int,
     Foam::edgeTensorField::Boundary::localConsistency
 );
+
+#define defineBoundaryAccessors(Type)                                         \
+    defineTemplateDebugLevelFunction(Type);                                   \
+    template<> int& Type::localConsistencyRef()                               \
+    { return Type::localConsistency; }
+
+defineBoundaryAccessors(edgeScalarField::Boundary);
+defineBoundaryAccessors(edgeVectorField::Boundary);
+defineBoundaryAccessors(edgeSphericalTensorField::Boundary);
+defineBoundaryAccessors(edgeSymmTensorField::Boundary);
+defineBoundaryAccessors(edgeTensorField::Boundary);
+
+#undef defineBoundaryAccessors
 
 } // End namespace Foam
 

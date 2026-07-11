@@ -234,8 +234,8 @@ bool Foam::functionObjects::setFlow::execute()
         }
         case modeType::ROTATION:
         {
-            const int oldLocal = volVectorField::Boundary::localConsistency;
-            volVectorField::Boundary::localConsistency = 0;
+            const int oldLocal = volVectorField::Boundary::localConsistencyRef();
+            volVectorField::Boundary::localConsistencyRef() = 0;
 
             const volVectorField& C = mesh_.C();
             const volVectorField d
@@ -269,7 +269,7 @@ bool Foam::functionObjects::setFlow::execute()
             }
 
             U = U & R_;
-            volVectorField::Boundary::localConsistency = oldLocal;
+            volVectorField::Boundary::localConsistencyRef() = oldLocal;
             U.correctBoundaryConditions();
             setPhi(U);
 
@@ -279,8 +279,8 @@ bool Foam::functionObjects::setFlow::execute()
         {
             const scalar pi = Foam::constant::mathematical::pi;
 
-            const int oldLocal = volVectorField::Boundary::localConsistency;
-            volVectorField::Boundary::localConsistency = 0;
+            const int oldLocal = volVectorField::Boundary::localConsistencyRef();
+            volVectorField::Boundary::localConsistencyRef() = 0;
 
             const volVectorField& C = mesh_.C();
 
@@ -298,7 +298,7 @@ bool Foam::functionObjects::setFlow::execute()
             Uc.replace(vector::Z, sin(2*pi*x)*sqr(sin(pi*z)));
 
             U = U & R_;
-            volVectorField::Boundary::localConsistency = oldLocal;
+            volVectorField::Boundary::localConsistencyRef() = oldLocal;
             U.correctBoundaryConditions();
 
             // Calculating phi
@@ -343,8 +343,8 @@ bool Foam::functionObjects::setFlow::execute()
         {
             const scalar pi = Foam::constant::mathematical::pi;
 
-            const int oldLocal = volVectorField::Boundary::localConsistency;
-            volVectorField::Boundary::localConsistency = 0;
+            const int oldLocal = volVectorField::Boundary::localConsistencyRef();
+            volVectorField::Boundary::localConsistencyRef() = 0;
 
             const volVectorField& C = mesh_.C();
 
@@ -363,7 +363,7 @@ bool Foam::functionObjects::setFlow::execute()
             Uc.replace(vector::Z, -sin(2*pi*x)*sin(2*pi*y)*sqr(sin(pi*z)));
 
             U = U & R_;
-            volVectorField::Boundary::localConsistency = oldLocal;
+            volVectorField::Boundary::localConsistencyRef() = oldLocal;
             U.correctBoundaryConditions();
 
             // Calculating phi

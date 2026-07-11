@@ -80,7 +80,7 @@ public:
 
     // Static Data Members
 
-        static const Tensor I;
+        FOAM_EXPORT_DATA static const Tensor I;
 
 
     //- Component labeling enumeration

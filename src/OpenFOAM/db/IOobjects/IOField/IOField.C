@@ -36,7 +36,7 @@ bool Foam::IOField<Type>::readIOcontents(bool readOnProc)
     if (isReadRequired() || (isReadOptional() && headerOk()))
     {
         // Do reading
-        Istream& is = readStream(typeName, readOnProc);
+        Istream& is = readStream(staticTypeName(), readOnProc);
 
         if (readOnProc)
         {

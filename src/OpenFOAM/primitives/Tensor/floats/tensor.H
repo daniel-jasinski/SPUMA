@@ -136,6 +136,11 @@ tensor pinv(const tensor& t);
 FOAM_VECTORSPACE_EXTERN_DATA(Foam::Tensor<float>, float, 9)
 FOAM_VECTORSPACE_EXTERN_DATA(Foam::Tensor<double>, double, 9)
 
+#if defined(_WIN32) && !defined(FOAM_BUILDING_LIB)
+template<> FOAM_EXPORT_DATA const Foam::Tensor<float> Foam::Tensor<float>::I;
+template<> FOAM_EXPORT_DATA const Foam::Tensor<double> Foam::Tensor<double>::I;
+#endif
+
 #endif
 
 // ************************************************************************* //

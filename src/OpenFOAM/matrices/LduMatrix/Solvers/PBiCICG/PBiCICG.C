@@ -80,7 +80,7 @@ Foam::PBiCICG<Type, DType, LUType>::solve(Field<Type>& psi) const
     Field<Type> wT(nCells);
     Type* __restrict__ wTPtr = wT.begin();
 
-    Type wArT = solverPerf.great_*pTraits<Type>::one;
+    Type wArT = solverPerf.greatValue()*pTraits<Type>::one;
     Type wArTold = wArT;
 
     // --- Calculate A.psi and T.psi
@@ -96,7 +96,11 @@ Foam::PBiCICG<Type, DType, LUType>::solve(Field<Type>& psi) const
     // --- Calculate normalisation factor
     Type normFactor = this->normFactor(psi, wA, pA);
 
-    if ((this->log_ >= 2) || (LduMatrix<Type, DType, LUType>::debug >= 2))
+    if
+    (
+        (this->log_ >= 2)
+     || (LduMatrix<Type, DType, LUType>::debugLevel() >= 2)
+    )
     {
         Info<< "   Normalisation factor = " << normFactor << endl;
     }
@@ -150,7 +154,7 @@ Foam::PBiCICG<Type, DType, LUType>::solve(Field<Type>& psi) const
                 Type beta = cmptDivide
                 (
                     wArT,
-                    stabilise(wArTold, solverPerf.vsmall_)
+                    stabilise(wArTold, solverPerf.vsmallValue())
                 );
 
                 for (label cell=0; cell<nCells; cell++)
@@ -185,7 +189,7 @@ Foam::PBiCICG<Type, DType, LUType>::solve(Field<Type>& psi) const
             Type alpha = cmptDivide
             (
                 wArT,
-                stabilise(wApT, solverPerf.vsmall_)
+                stabilise(wApT, solverPerf.vsmallValue())
             );
 
             for (label cell=0; cell<nCells; cell++)

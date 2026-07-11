@@ -80,6 +80,7 @@ defineTemplateDebugSwitchWithName
 
 
 
+
 // Local-ops consistency enforcing
 
 template<> int pointScalarField::Boundary::localConsistency
@@ -137,6 +138,19 @@ registerOptSwitch
     Foam::pointTensorField::Boundary::localConsistency
 );
 
+
+#define defineBoundaryAccessors(Type)                                         \
+    defineTemplateDebugLevelFunction(Type);                                   \
+    template<> int& Type::localConsistencyRef()                               \
+    { return Type::localConsistency; }
+
+defineBoundaryAccessors(pointScalarField::Boundary);
+defineBoundaryAccessors(pointVectorField::Boundary);
+defineBoundaryAccessors(pointSphericalTensorField::Boundary);
+defineBoundaryAccessors(pointSymmTensorField::Boundary);
+defineBoundaryAccessors(pointTensorField::Boundary);
+
+#undef defineBoundaryAccessors
 
 } // End namespace Foam
 

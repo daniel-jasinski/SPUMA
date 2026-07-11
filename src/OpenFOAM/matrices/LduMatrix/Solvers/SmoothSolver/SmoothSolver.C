@@ -111,7 +111,11 @@ Foam::SmoothSolver<Type, DType, LUType>::solve(Field<Type>& psi) const
             solverPerf.finalResidual() = solverPerf.initialResidual();
         }
 
-        if ((this->log_ >= 2) || (LduMatrix<Type, DType, LUType>::debug >= 2))
+        if
+        (
+            (this->log_ >= 2)
+         || (LduMatrix<Type, DType, LUType>::debugLevel() >= 2)
+        )
         {
             Info<< "   Normalisation factor = " << normFactor << endl;
         }

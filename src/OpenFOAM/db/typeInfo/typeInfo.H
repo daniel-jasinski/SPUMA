@@ -175,7 +175,7 @@ inline Type& refCast(U& obj)
     {
         FatalErrorInFunction
             << "Attempt to cast type " << obj.type()
-            << " to type " << Type::typeName
+            << " to type " << Type::staticTypeName()
             << abort(FatalError);
     }
 
@@ -198,7 +198,7 @@ inline Type& refConstCast(const U& obj)
     {
         FatalErrorInFunction
             << "Attempt to cast type " << obj.type()
-            << " to type " << Type::typeName
+            << " to type " << Type::staticTypeName()
             << abort(FatalError);
     }
 
@@ -219,7 +219,7 @@ inline Type& refCast(U& obj, const dictionary& dict)
     {
         FatalIOErrorInFunction(dict)
             << "Attempt to cast type " << obj.type()
-            << " to type " << Type::typeName
+            << " to type " << Type::staticTypeName()
             << abort(FatalIOError);
     }
 
@@ -241,7 +241,7 @@ inline Type& refCast(U& obj, const label index)
     {
         FatalErrorInFunction
             << "Attempt to cast type " << obj.type()
-            << " to type " << Type::typeName
+            << " to type " << Type::staticTypeName()
             << " at index " << index
             << abort(FatalError);
     }

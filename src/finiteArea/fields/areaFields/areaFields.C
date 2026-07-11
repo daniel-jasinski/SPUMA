@@ -79,6 +79,7 @@ defineTemplateDebugSwitchWithName
     0
 );
 
+
 template<> scalar areaScalarField::Boundary::tolerance
 (
     debug::floatOptimisationSwitch("areaScalarField::Boundary::tolerance", 0)
@@ -199,6 +200,19 @@ registerOptSwitch
     int,
     Foam::areaTensorField::Boundary::localConsistency
 );
+
+#define defineBoundaryAccessors(Type)                                         \
+    defineTemplateDebugLevelFunction(Type);                                   \
+    template<> int& Type::localConsistencyRef()                               \
+    { return Type::localConsistency; }
+
+defineBoundaryAccessors(areaScalarField::Boundary);
+defineBoundaryAccessors(areaVectorField::Boundary);
+defineBoundaryAccessors(areaSphericalTensorField::Boundary);
+defineBoundaryAccessors(areaSymmTensorField::Boundary);
+defineBoundaryAccessors(areaTensorField::Boundary);
+
+#undef defineBoundaryAccessors
 
 } // End namespace Foam
 

@@ -116,7 +116,7 @@ Foam::cyclicACMIFvPatchField<Type>::cyclicACMIFvPatchField
 
         int& consistency =
             GeometricField<Type, fvPatchField, volMesh>::
-            Boundary::localConsistency;
+            Boundary::localConsistencyRef();
 
         const int oldConsistency = consistency;
         consistency = 0;
@@ -333,7 +333,7 @@ bool Foam::cyclicACMIFvPatchField<Type>::cacheNeighbourField()
     /*
     return
     (
-        GeometricField<Type, fvPatchField, volMesh>::Boundary::localConsistency
+        GeometricField<Type, fvPatchField, volMesh>::Boundary::localConsistencyRef()
      != 0
     );
     */

@@ -97,16 +97,20 @@ public:
     //- Enable debug
     static int debug;
 
-    //- Function accessor for the debug switch. Defined inline so the
-    //- cross-DLL-safe form used by the Debug* macros in messageStream.H
-    //- works for this non-ClassName class.
-    static int debugLevel() { return debug; }
+    //- Function accessor for the debug switch. Standard field
+    //- specializations define this in their owning library so Windows
+    //- consumers call through a DLL-safe function thunk.
+    static int debugLevel();
 
     //- User-defined tolerance (for consistency checks)
     static scalar tolerance;
 
     //- Enable local consistency
     static int localConsistency;
+
+    //- Mutable accessor for the local-consistency switch. Standard field
+    //- specializations define this in their owning library.
+    static int& localConsistencyRef();
 
 
     // Constructors

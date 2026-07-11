@@ -111,6 +111,11 @@ public:
         //- Very small Type for the use in solvers
         static const scalar vsmall_;
 
+        //- DLL-safe accessors for solver constants
+        static scalar greatValue();
+        static scalar smallValue();
+        static scalar vsmallValue();
+
 
     // Constructors
 
@@ -293,6 +298,15 @@ const scalar solverPerformance##Type::small_(1e-20);                           \
                                                                                \
 template<>                                                                     \
 const scalar solverPerformance##Type::vsmall_(VSMALL);                         \
+                                                                               \
+template<> scalar solverPerformance##Type::greatValue()                        \
+{ return solverPerformance##Type::great_; }                                    \
+                                                                               \
+template<> scalar solverPerformance##Type::smallValue()                        \
+{ return solverPerformance##Type::small_; }                                    \
+                                                                               \
+template<> scalar solverPerformance##Type::vsmallValue()                       \
+{ return solverPerformance##Type::vsmall_; }                                   \
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

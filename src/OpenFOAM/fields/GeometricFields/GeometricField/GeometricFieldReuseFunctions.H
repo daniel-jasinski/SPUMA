@@ -50,7 +50,7 @@ inline bool reusable
 {
     const bool ok = tfld.movable();
 
-    if (ok && GeometricField<Type, PatchField, GeoMesh>::debug)
+    if (ok && GeometricField<Type, PatchField, GeoMesh>::debugLevel())
     {
         for (const auto& p : tfld().boundaryField())
         {

@@ -38,7 +38,13 @@ else
     LIB_LIBS += $(FOAM_LIBBIN)/dummy/libPstream.o
 endif
 else
+ifneq (,$(findstring windows,$(WM_OSTYPE)))
+    # Use the concrete import library so DEF generation retains the Pstream
+    # forwarding exports expected by existing Windows OpenFOAM DLLs.
+    LIB_LIBS += $(FOAM_LIBBIN)/dummy/libPstream.lib
+else
     LIB_LIBS += -L$(FOAM_LIBBIN)/dummy -lPstream
+endif
 endif
 
 /* umpire memory pool source files */
@@ -68,4 +74,3 @@ ifneq (,$(findstring Sycl,$(WM_COMPILER)))
     EXE_INC += -I$(LIB_SRC)/OpenFOAM/device/executor
     EXE_INC += -I$(LIB_SRC)/OpenFOAM/device/memoryExecutor
 endif
-
