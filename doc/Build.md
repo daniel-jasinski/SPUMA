@@ -44,6 +44,7 @@ Common requirements are:
 - 64-bit MSYS2 with `bash`, GNU `make`, `sed`, `awk`, `grep` and `flex`;
 - Visual Studio 2022 C++ build tools and a Windows 10 or 11 SDK;
 - LLVM tools including `clang`, `lld-link`, `llvm-lib` and `llvm-nm`;
+- native Windows Python 3 with the `py.exe` launcher;
 - the selected accelerator toolkit.
 
 Windows builds currently use the serial (`dummy`) Pstream implementation.
@@ -66,6 +67,12 @@ source etc/bashrc WM_COMPILER=Sycl WM_MPLIB=dummy
 export ACPP_TARGETS=generic
 ./Allwmake -j -s -l
 ```
+
+The `win64Sycl` rule runs AdaptiveCpp's Python driver with the native Windows
+Python launcher. This is required so the driver selects Windows DLLs and paths
+instead of Unix deployment artifacts when the build is started from MSYS2.
+Set `ACPP_COMMAND` to override the driver command for installations that
+provide a native executable or use a different Python launcher.
 
 `ACPP_TARGETS=generic` produces AdaptiveCpp's JIT-capable target. Runtime
 device selection is controlled by AdaptiveCpp itself. Use a clean shell when

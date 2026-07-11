@@ -4,6 +4,13 @@
 
 include $(GENERAL_RULES)/Sycl/c++
 
+# AdaptiveCpp's Windows driver is a Python script.  Invoking it through its
+# MSYS shebang makes Python report a non-Windows platform, which selects Unix
+# deployment artifacts and paths.  Use the native Windows Python launcher;
+# ACPP_COMMAND remains overridable for installations with a native executable.
+ACPP_COMMAND ?= py.exe -3 $(shell command -v acpp)
+CC            = $(ACPP_COMMAND) -std=c++17
+
 c++ARCH    := -m64
 
 # For MSVC ABI, use clang's MSVC target (implicit when acpp is built for MSVC)
