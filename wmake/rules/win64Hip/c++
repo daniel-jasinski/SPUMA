@@ -70,15 +70,14 @@ cxxtoo      = $(Ctoo)
 hiptoo      = $(Ctoo)
 
 # MSVC ABI linker settings
-# -fuse-ld=lld: LLVM linker (handles /force:multiple for duplicate symbols)
+# -fuse-ld=lld: LLVM linker (handles /force:multiple for duplicate COMDATs)
 c++LINKFLAGS = $(c++ARCH) $(c++DBUG) -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH \
     -fuse-ld=lld
 ifneq (,$(HIP_PATH_SHORT))
     c++LINKFLAGS += --rocm-path=$(HIP_PATH_SHORT) -Wl,/LIBPATH:$(HIP_PATH_SHORT)/lib
 endif
 LINK_LIBS   = $(c++DBUG)
-# /force:multiple: keep for safety (COMDAT duplicates possible)
-# /force:unresolved: ~30 dummy Pstream symbols (same as SYCL/CUDA build)
+# /force:multiple: required for duplicate COMDATs emitted by HIP compilation.
 #
 # HIP runtime library: amdhip64.lib MUST be in LINKLIBSO/LINKEXE, not LIB_LIBS.
 # Make/options uses LIB_LIBS = (assignment) which overwrites any += from here.
@@ -86,15 +85,21 @@ LINK_LIBS   = $(c++DBUG)
 # references it — without this, lld-link drops amdhip64_7.dll from the import
 # table, and the .CRT$XCU hipfb registration entries call address 0 -> crash.
 ifneq (,$(HIP_PATH_SHORT))
-    LINKLIBSO = $(CC) $(c++LINKFLAGS) -shared -Wl,/force:multiple,/force:unresolved \
+    LINKLIBSO = $(CC) $(c++LINKFLAGS) -shared -Wl,/force:multiple \
         -Wl,/INCLUDE:__hipRegisterFatBinary $(HIP_PATH_SHORT)/lib/amdhip64.lib
-    LINKEXE   = $(CC) $(c++LINKFLAGS) -Wl,/force:multiple,/force:unresolved \
+    LINKEXE   = $(CC) $(c++LINKFLAGS) -Wl,/force:multiple \
         -Wl,/INCLUDE:__hipRegisterFatBinary $(HIP_PATH_SHORT)/lib/amdhip64.lib
 else
-    LINKLIBSO = $(CC) $(c++LINKFLAGS) -shared -Wl,/force:multiple,/force:unresolved \
+    LINKLIBSO = $(CC) $(c++LINKFLAGS) -shared -Wl,/force:multiple \
         -Wl,/INCLUDE:__hipRegisterFatBinary -Wl,/DEFAULTLIB:amdhip64
-    LINKEXE   = $(CC) $(c++LINKFLAGS) -Wl,/force:multiple,/force:unresolved \
+    LINKEXE   = $(CC) $(c++LINKFLAGS) -Wl,/force:multiple \
         -Wl,/INCLUDE:__hipRegisterFatBinary -Wl,/DEFAULTLIB:amdhip64
 endif
+
+# MSVC import libraries do not resolve Pstream references transitively through
+# libOpenFOAM. Template code calls Pstream directly, so link the selected dummy
+# implementation explicitly instead of allowing unresolved symbols.
+LINKLIBSO  += -L$(FOAM_LIBBIN)/dummy -lPstream
+LINKEXE    += -L$(FOAM_LIBBIN)/dummy -lPstream
 
 #------------------------------------------------------------------------------

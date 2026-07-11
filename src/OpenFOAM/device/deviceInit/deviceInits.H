@@ -59,6 +59,25 @@ namespace Foam
     typedef cpuDeviceInit foamDeviceInit;
 #endif
 
+
+//- Shut down the selected device runtime after later-created objects have
+//  been destroyed. Construct this guard immediately after device startup.
+class deviceShutdownGuard
+{
+public:
+
+    deviceShutdownGuard() noexcept = default;
+
+    deviceShutdownGuard(const deviceShutdownGuard&) = delete;
+
+    void operator=(const deviceShutdownGuard&) = delete;
+
+    ~deviceShutdownGuard()
+    {
+        foamDeviceInit::shutdown();
+    }
+};
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam

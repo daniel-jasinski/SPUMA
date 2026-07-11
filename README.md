@@ -27,8 +27,8 @@ the 2412 release of OpenFOAM by OpenCFD®.
 
 ## Using SPUMA
 
-Usage of SPUMA is identical to that of the OpenFOAM release it is based on, with
-the exception that executables accept two additional command line arguments:
+Usage of SPUMA follows the OpenFOAM release it is based on, with the exceptions
+described here. Executables accept two additional command line arguments:
 `-pool` and `-poolSize`. These are used to specify which type of memory pool to use
 and its size (if applicable):
 ```
@@ -51,6 +51,23 @@ application.
 
 For all other aspects of SPUMA utilization you can refer to the
 [official OpenFOAM documentation](https://www.openfoam.com/documentation/overview).
+
+For Windows-compatible case and field names, SPUMA uses `_` as the default
+separator for scoped object names on every platform. Standard OpenFOAM uses `:`.
+Thus a name such as `jouleHeatingSource:V` is written as
+`jouleHeatingSource_V` by default in SPUMA. Existing cases and post-processing
+scripts that refer to scoped names may need to be updated. On platforms whose
+filesystems permit colons, the legacy behavior can be selected by setting the
+ASCII value of `:` in the central `etc/controlDict`:
+
+```
+InfoSwitches
+{
+    scopeSeparator 58;
+}
+```
+
+Do not select the colon separator for cases stored on Windows filesystems.
 
 ## Compiling SPUMA
 

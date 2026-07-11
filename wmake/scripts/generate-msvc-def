@@ -146,3 +146,12 @@ done
 
 count=$(grep -c '^?' "$DEF_FILE" 2>/dev/null || echo 0)
 echo "Generated $DEF_FILE ($count symbols)"
+
+# PE/COFF permits at most 65535 exports. Leave headroom for linker-generated
+# entries and fail at generation time instead of producing a cryptic link error.
+max_safe_exports=${FOAM_MAX_MSVC_EXPORTS:-60000}
+if [ "$count" -gt "$max_safe_exports" ]; then
+    echo "Error: $DEF_FILE has $count symbols (safe limit: $max_safe_exports)" >&2
+    echo "Reduce exported symbols or override FOAM_MAX_MSVC_EXPORTS after review." >&2
+    exit 1
+fi

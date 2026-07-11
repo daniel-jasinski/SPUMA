@@ -8,7 +8,13 @@ include $(GENERAL_RULES)/Sycl/c++
 # MSYS shebang makes Python report a non-Windows platform, which selects Unix
 # deployment artifacts and paths.  Use the native Windows Python launcher;
 # ACPP_COMMAND remains overridable for installations with a native executable.
-ACPP_COMMAND ?= py.exe -3 $(shell command -v acpp)
+ACPP_DRIVER := $(shell command -v acpp 2>/dev/null)
+ifeq (,$(strip $(ACPP_COMMAND)))
+    ifeq (,$(strip $(ACPP_DRIVER)))
+        $(error AdaptiveCpp driver 'acpp' not found in PATH; set ACPP_PATH/PATH or ACPP_COMMAND)
+    endif
+    ACPP_COMMAND := py.exe -3 $(ACPP_DRIVER)
+endif
 CC            = $(ACPP_COMMAND) -std=c++17
 
 c++ARCH    := -m64

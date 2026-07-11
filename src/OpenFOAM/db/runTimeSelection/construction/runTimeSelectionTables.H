@@ -50,10 +50,10 @@ Description
 
 namespace Foam
 {
-    // On Windows, skip RTS table cleanup in static destructors.
-    // DLL unload during failed LoadLibrary triggers these destructors,
-    // destroying shared tables in other DLLs. Safe to skip on Windows
-    // since solvers use _exit(0) at exit.
+    // On Windows, skip RTS table cleanup in static destructors. A DLL can be
+    // unloaded after a failed LoadLibrary or before another DLL that shares its
+    // table. Deleting the process-lifetime table then leaves the registrations
+    // in the remaining DLLs referring to freed storage.
     #ifdef _WIN32
     inline constexpr bool RTS_TABLE_CLEANUP = false;
     #else
@@ -143,10 +143,8 @@ namespace Foam
                 constructed = true;                                            \
             }                                                                  \
         }                                                                      \
-        /* On Windows, skip table deletion. DLL unload during a */             \
-        /* failed LoadLibrary triggers addXXXConstructorToTable destructors */ \
-        /* which call construct(false), destroying the shared RTS table in */ \
-        /* other DLLs. Safe to skip: Windows solvers use _exit(0). */         \
+        /* On Windows, retain process-lifetime tables during DLL unload. */    \
+        /* Another loaded DLL may still own registrations in shared storage. */\
         else if (!::Foam::RTS_TABLE_CLEANUP)                                  \
         {                                                                      \
             /* no-op on Windows */                                             \
@@ -233,15 +231,16 @@ namespace Foam
                                                                                \
         explicit add##argNames##ConstructorToTable                             \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::staticTypeName()          \
+            const ::Foam::word& k = baseType##Type::typeName_()               \
         )                                                                      \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
             if (!argNames##ConstructorTablePtr_()->insert(k, New))             \
             {                                                                  \
                 std::cerr                                                      \
-                    << "Duplicate entry " << k << " in runtime table "         \
-                    << #baseType << std::endl;                                       \
+                    << "Duplicate entry " << k << " (type "                    \
+                    << baseType##Type::typeName_() << ") in runtime table "    \
+                    << #baseType << std::endl;                                 \
                 ::Foam::error::safePrintStack(std::cerr);                      \
             }                                                                  \
         }                                                                      \
@@ -272,7 +271,7 @@ namespace Foam
                                                                                \
         explicit addRemovable##argNames##ConstructorToTable                    \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::staticTypeName()          \
+            const ::Foam::word& k = baseType##Type::typeName_()               \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \
@@ -331,15 +330,16 @@ namespace Foam
                                                                                \
         explicit add##argNames##ConstructorToTable                             \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::staticTypeName()          \
+            const ::Foam::word& k = baseType##Type::typeName_()               \
         )                                                                      \
         {                                                                      \
             argNames##ConstructorTablePtr_construct(true);                     \
             if (!argNames##ConstructorTablePtr_()->insert(k, New##baseType))   \
             {                                                                  \
                 std::cerr                                                      \
-                    << "Duplicate entry " << k << " in runtime table "         \
-                    << #baseType << std::endl;                                       \
+                    << "Duplicate entry " << k << " (type "                    \
+                    << baseType##Type::typeName_() << ") in runtime table "    \
+                    << #baseType << std::endl;                                 \
                 ::Foam::error::safePrintStack(std::cerr);                      \
             }                                                                  \
         }                                                                      \
@@ -369,7 +369,7 @@ namespace Foam
                                                                                \
         explicit addRemovable##argNames##ConstructorToTable                    \
         (                                                                      \
-            const ::Foam::word& k = baseType##Type::staticTypeName()          \
+            const ::Foam::word& k = baseType##Type::typeName_()               \
         )                                                                      \
         :                                                                      \
             name(k)                                                            \

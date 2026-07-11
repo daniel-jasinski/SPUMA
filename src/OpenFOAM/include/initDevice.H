@@ -26,11 +26,13 @@ License
     along with SPUMA.  If not, see <http://www.gnu.org/licenses/>.
 
 Description
-    Device initialization.
+    Device initialization with scoped shutdown after application objects have
+    been destroyed.
 
 \*---------------------------------------------------------------------------*/
 
 foamDeviceInit::init();
+deviceShutdownGuard deviceShutdown;
 
 const label nThreadsPerBlock = args.getOrDefault<label>
 (

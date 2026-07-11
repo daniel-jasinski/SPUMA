@@ -50,6 +50,11 @@ Common requirements are:
 Windows builds currently use the serial (`dummy`) Pstream implementation.
 MPI and zlib support are not yet enabled.
 
+SPUMA uses `_` instead of `:` as its default scoped-object separator so cases
+can be stored on Windows filesystems. See the compatibility note in the main
+README before using existing cases or post-processing scripts with scoped field
+names.
+
 ### AdaptiveCpp/SYCL
 
 The Windows fixes required by SPUMA have been merged into upstream
