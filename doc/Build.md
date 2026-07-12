@@ -42,8 +42,10 @@ script is required.
 Common requirements are:
 
 - 64-bit MSYS2 with `bash`, GNU `make`, `sed`, `awk`, `grep` and `flex`;
-- Visual Studio 2022 C++ build tools and a Windows 10 or 11 SDK;
-- LLVM tools including `clang`, `lld-link`, `llvm-lib` and `llvm-nm`;
+- Visual Studio C++ build tools and a Windows 10 or 11 SDK. The MSVC
+  headers and libraries must match the compatibility version reported by the
+  bootstrap compiler;
+- LLVM tools including `clang-cl`, `lld-link`, `llvm-lib` and `llvm-nm`;
 - native Windows Python 3 with the `py.exe` launcher;
 - the selected accelerator toolkit.
 
@@ -58,10 +60,70 @@ names.
 ### AdaptiveCpp/SYCL
 
 The Windows fixes required by SPUMA have been merged into upstream
-AdaptiveCpp. Until they appear in a tagged AdaptiveCpp release, build an
-unmodified upstream `develop` revision at commit `faeed4a0` or newer. This
-revision includes the Win32/OpenMP, `rootn`, and Windows application-database
-fixes merged in AdaptiveCpp pull requests 2033, 2034, and 2037.
+AdaptiveCpp. Until they appear in a tagged AdaptiveCpp release, use an
+unmodified upstream `develop` revision at commit `da2463e4` or newer. The
+following CUDA/generic configuration was verified with AdaptiveCpp
+`da2463e4`, LLVM 20.1.8 (`llvmorg-20.1.8`), CUDA 12.5, clang-cl 20.1.8, and
+Visual Studio Build Tools 2026 18.5 (MSVC 14.50).
+
+AdaptiveCpp's full compiler feature profile must be built as an LLVM external
+project on Windows. A standalone full-profile build against a static LLVM
+installation is not supported. From an x64 Visual Studio developer prompt
+where CMake, Ninja and the bootstrap LLVM tools are on `PATH`, configure and
+install it with the normal CMake workflow (replace the source, build, install,
+and CUDA paths):
+
+```powershell
+git clone --branch llvmorg-20.1.8 https://github.com/llvm/llvm-project C:/src/llvm-project
+git clone https://github.com/AdaptiveCpp/AdaptiveCpp C:/src/AdaptiveCpp
+git -C C:/src/AdaptiveCpp checkout da2463e4
+
+cmake -S C:/src/llvm-project/llvm -B C:/build/llvm-acpp -G Ninja `
+  -DCMAKE_BUILD_TYPE=Release `
+  -DCMAKE_INSTALL_PREFIX=C:/opt/AdaptiveCpp `
+  -DCMAKE_C_COMPILER=clang-cl `
+  -DCMAKE_CXX_COMPILER=clang-cl `
+  -DCMAKE_LINKER=lld-link `
+  -DCMAKE_AR=llvm-lib `
+  -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" `
+  -DLLVM_ENABLE_PROJECTS="clang;lld" `
+  -DLLVM_EXTERNAL_PROJECTS=AdaptiveCpp `
+  -DLLVM_EXTERNAL_ADAPTIVECPP_SOURCE_DIR=C:/src/AdaptiveCpp `
+  -DLLVM_ADAPTIVECPP_LINK_INTO_TOOLS=ON `
+  -DLLVM_TOOL_BUGPOINT_BUILD=OFF `
+  -DLLVM_ENABLE_RTTI=ON `
+  -DLLVM_INCLUDE_TESTS=OFF `
+  -DLLVM_INCLUDE_EXAMPLES=OFF `
+  -DLLVM_INCLUDE_BENCHMARKS=OFF `
+  -DLLVM_INCLUDE_DOCS=OFF `
+  -DCLANG_INCLUDE_TESTS=OFF `
+  -DCLANG_INCLUDE_DOCS=OFF `
+  -DLLVM_ENABLE_DIA_SDK=OFF `
+  -DLLVM_ENABLE_LIBXML2=OFF `
+  -DLLVM_ENABLE_ZLIB=OFF `
+  -DLLVM_ENABLE_ZSTD=OFF `
+  -DLLVM_ENABLE_CURL=OFF `
+  -DLLVM_ENABLE_FFI=OFF `
+  -DACPP_COMPILER_FEATURE_PROFILE=full `
+  -DWITH_CUDA_BACKEND=ON `
+  -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5" `
+  -DWITH_OPENCL_BACKEND=OFF `
+  -DWITH_LEVEL_ZERO_BACKEND=OFF `
+  -DWITH_ROCM_BACKEND=OFF `
+  -DWITH_VULKAN_BACKEND=OFF
+cmake --build C:/build/llvm-acpp --target install --parallel
+```
+
+Do not mix the bootstrap compiler's MSVC compatibility mode with older MSVC
+headers or libraries. For example, clang-cl 20 reports MSVC 19.50: linking
+objects produced with it against the Visual Studio 2022 MSVC 14.41 runtime
+fails on missing `__std_*` helper symbols. The verified 14.50 toolset is a
+coherent match.
+
+CUDA/generic does not use the LLVM-to-SPIR-V translator. Keep OpenCL and Level
+Zero disabled unless those backends are actually required. With `bugpoint`
+disabled, the verified configuration builds from unmodified AdaptiveCpp and
+does not require local SPIR-V, recursion, or LLVM component-list patches.
 
 Add the resulting AdaptiveCpp `bin` directory to `PATH`, set `ACPP_PATH` to
 its installation prefix, and use the standard OpenFOAM setup:

@@ -94,6 +94,9 @@ public:
         //- Typename for Field
         static const char* const typeName;
 
+        //- Cross-DLL safe type name access
+        static const char* typeName_() noexcept { return "Field"; }
+
         //- Permit read construct from a larger size.
         //  Mostly required for things like column mesh, for example.
         static bool allowConstructFromLargerSize;
