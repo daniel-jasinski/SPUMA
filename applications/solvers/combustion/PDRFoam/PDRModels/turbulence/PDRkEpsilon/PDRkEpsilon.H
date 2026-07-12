@@ -111,7 +111,7 @@ public:
             const surfaceScalarField& alphaRhoPhi,
             const surfaceScalarField& phi,
             const fluidThermo& thermophysicalModel,
-            const word& turbulenceModelName = turbulenceModel::typeName,
+            const word& turbulenceModelName = turbulenceModel::staticTypeName(),
             const word& modelName = typeName
         );
 

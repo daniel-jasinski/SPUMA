@@ -46,14 +46,14 @@ const word pName = args.getOrDefault<word>("pName", "p");
 wordList pBCTypes
 (
     U.boundaryField().size(),
-    fixedValueFvPatchScalarField::typeName
+    fixedValueFvPatchScalarField::staticTypeName()
 );
 
 forAll(U.boundaryField(), patchi)
 {
     if (U.boundaryField()[patchi].fixesValue())
     {
-        pBCTypes[patchi] = zeroGradientFvPatchScalarField::typeName;
+        pBCTypes[patchi] = zeroGradientFvPatchScalarField::staticTypeName();
     }
 }
 
@@ -77,14 +77,14 @@ volScalarField p
 wordList PhiBCTypes
 (
     p.boundaryField().size(),
-    zeroGradientFvPatchScalarField::typeName
+    zeroGradientFvPatchScalarField::staticTypeName()
 );
 
 forAll(p.boundaryField(), patchi)
 {
     if (p.boundaryField()[patchi].fixesValue())
     {
-        PhiBCTypes[patchi] = fixedValueFvPatchScalarField::typeName;
+        PhiBCTypes[patchi] = fixedValueFvPatchScalarField::staticTypeName();
     }
 }
 

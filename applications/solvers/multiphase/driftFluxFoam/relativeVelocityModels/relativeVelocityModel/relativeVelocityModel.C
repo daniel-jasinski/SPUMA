@@ -60,7 +60,7 @@ Foam::wordList Foam::relativeVelocityModel::UdmPatchFieldTypes() const
          || isA<partialSlipFvPatchVectorField>(U.boundaryField()[i])
         )
         {
-            UdmTypes[i] = fixedValueFvPatchVectorField::typeName;
+            UdmTypes[i] = fixedValueFvPatchVectorField::staticTypeName();
         }
     }
 

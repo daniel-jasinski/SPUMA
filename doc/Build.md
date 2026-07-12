@@ -59,8 +59,9 @@ names.
 
 The Windows fixes required by SPUMA have been merged into upstream
 AdaptiveCpp. Until they appear in a tagged AdaptiveCpp release, build an
-unmodified upstream `develop` revision at commit `33729bc` or newer. This
-revision also contains the earlier Win32/OpenMP fix from commit `05194e7`.
+unmodified upstream `develop` revision at commit `faeed4a0` or newer. This
+revision includes the Win32/OpenMP, `rootn`, and Windows application-database
+fixes merged in AdaptiveCpp pull requests 2033, 2034, and 2037.
 
 Add the resulting AdaptiveCpp `bin` directory to `PATH`, set `ACPP_PATH` to
 its installation prefix, and use the standard OpenFOAM setup:
@@ -82,6 +83,33 @@ provide a native executable or use a different Python launcher.
 `ACPP_TARGETS=generic` produces AdaptiveCpp's JIT-capable target. Runtime
 device selection is controlled by AdaptiveCpp itself. Use a clean shell when
 switching between compiler backends.
+
+Use one coherent AdaptiveCpp installation: `ACPP_PATH`, the `acpp` driver on
+`PATH`, and the AdaptiveCpp runtime DLLs loaded by an application must all come
+from the same prefix. The LLVM libraries and SSCP bitcode installed in that
+prefix must also match that AdaptiveCpp build. Do not replace an installation's
+runtime DLLs with files from a sibling build.
+
+The generic target contains portable IR, but JIT compilation still needs the
+compiler assets installed with AdaptiveCpp. CUDA execution additionally needs
+the CUDA compiler bitcode and toolkit version configured when AdaptiveCpp was
+built. These are build-install requirements. The Windows loader imports only
+runtime DLL names, not their installation directory. Compiler diagnostic
+metadata can still contain build-time header paths, but the loader does not use
+those paths to locate AdaptiveCpp or CUDA.
+
+For redistribution, populate a package directory with AdaptiveCpp's normal
+deployment command after building SPUMA, for example:
+
+```
+py.exe -3 "$ACPP_PATH/bin/acpp" --acpp-deploy=core:C:/path/to/package/runtime
+py.exe -3 "$ACPP_PATH/bin/acpp" --acpp-deploy=cuda:C:/path/to/package/runtime
+```
+
+Put that directory on the packaged application's DLL search path and audit its
+remaining transitive DLL dependencies. Ship redistributable CUDA runtime
+components as permitted by their licences, but not the NVIDIA driver DLL
+(`nvcuda.dll`), which is supplied by the installed display driver.
 
 ### Native CUDA
 
@@ -108,9 +136,9 @@ source etc/bashrc WM_COMPILER=Hip WM_MPLIB=dummy
 ./Allwmake -j -s -l
 ```
 
-The CUDA and HIP backends are experimental. A successful link must not be
-treated as runtime validation; validate the resulting solver on the intended
-GPU and driver before production use.
+The accelerator backends are experimental. A successful link or a `blockMesh`
+run is not runtime validation: run an actual solver through several numerical
+iterations on the intended GPU and driver before production use.
 
 If you need to change the default versions for third-party libraries,
 or use system libraries for some components, please some additional

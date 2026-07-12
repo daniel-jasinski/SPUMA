@@ -102,7 +102,7 @@ void MapGeometricFields
 
         if (&field.mesh() == &mapper.mesh())
         {
-            if (polyMesh::debug)
+            if (polyMesh::debugLevel())
             {
                 Info<< "Mapping "
                     << FieldType::typeName_() << ' ' << field.name() << endl;
@@ -130,7 +130,7 @@ void MapGeometricFields
 
             fld.instance() = fld.time().timeName();
         }
-        else if (polyMesh::debug)
+        else if (polyMesh::debugLevel())
         {
             Info<< "Not mapping "
                 << FieldType::typeName_() << ' ' << field.name()

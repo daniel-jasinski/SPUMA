@@ -240,9 +240,9 @@
     if
     (
         word(mesh.ddtScheme("ddt(rho,U)"))
-     == fv::EulerDdtScheme<vector>::typeName
+     == fv::EulerDdtScheme<vector>::staticTypeName()
      || word(mesh.ddtScheme("ddt(rho,U)"))
-     == fv::localEulerDdtScheme<vector>::typeName
+     == fv::localEulerDdtScheme<vector>::staticTypeName()
     )
     {
         rhoPhi = alphaPhi10*(rho1f - rho2f) + phiCN*rho2f;

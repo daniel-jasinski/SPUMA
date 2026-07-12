@@ -15,7 +15,7 @@ if (!thermo.isotropic())
     (
         mesh,
         thermo,
-        coordinateSystem::typeName
+        coordinateSystem::staticTypeName()
     );
 
     tmp<volVectorField> tkappaByCp = thermo.Kappa()/thermo.Cp();

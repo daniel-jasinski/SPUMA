@@ -238,7 +238,7 @@
     if
     (
         word(mesh.ddtScheme("ddt(rho,U)"))
-     == fv::EulerDdtScheme<vector>::typeName
+     == fv::EulerDdtScheme<vector>::staticTypeName()
     )
     {
         #include "rhofs.H"

@@ -231,6 +231,9 @@ public:
         //- Flag to activate debug statements
         static int debug;
 
+        //- Function accessor for the debug switch
+        static int debugLevel() { return debug; }
+
 
     // Member Functions
 

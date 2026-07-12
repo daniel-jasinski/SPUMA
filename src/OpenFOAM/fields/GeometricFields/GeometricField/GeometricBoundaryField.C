@@ -46,7 +46,7 @@ bool Foam::GeometricBoundaryField<Type, PatchField, GeoMesh>::checkConsistency
         return true;
     }
 
-    if (debug&2)
+    if (debugLevel() & 2)
     {
         const auto& pfld0 = this->operator[](0);
         PoutInFunction
@@ -174,7 +174,7 @@ bool Foam::GeometricBoundaryField<Type, PatchField, GeoMesh>::checkConsistency
         }
     }
 
-    if (debug&2)
+    if (debugLevel() & 2)
     {
         const auto& pfld0 = this->operator[](0);
         PoutInFunction

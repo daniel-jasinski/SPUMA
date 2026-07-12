@@ -122,7 +122,11 @@ bool Foam::GeometricField<Type, PatchField, GeoMesh>::readIfPresent()
     else if
     (
         this->isReadOptional()
-     && this->template typeHeaderOk<this_type>(true)  // checkType = true
+     // The registered names of specializations (eg, volScalarField) are
+     // defined in their owning DLL, whereas typeName_() is the base template
+     // name (GeometricField). Check that a valid header exists here; readFields
+     // performs the field-content validation without a cross-DLL data access.
+     && this->template typeHeaderOk<this_type>(false)
     )
     {
         readFields();
@@ -834,7 +838,7 @@ template<class Type, template<class> class PatchField, class GeoMesh>
 Foam::GeometricField<Type, PatchField, GeoMesh>::~GeometricField()
 {
     /*
-    if (debug)
+    if (debugLevel())
     {
         // Problem: temporary fields might have their internal field
         // already stolen so boundary fields will not be able to access the

@@ -236,7 +236,7 @@ turbulentTemperatureTwoPhaseRadCoupledMixedFvPatchScalarField
     if (!isA<mappedPatchBase>(this->patch().patch()))
     {
         FatalErrorInFunction
-            << "' not type '" << mappedPatchBase::typeName << "'"
+            << "' not type '" << mappedPatchBase::staticTypeName() << "'"
             << "\n    for patch " << p.name()
             << " of field " << internalField().name()
             << " in file " << internalField().objectPath()

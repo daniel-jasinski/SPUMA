@@ -434,9 +434,8 @@ FOAM_EXPORT_DATA extern messageStream SeriousError;
 //  a DEF-file JMP thunk without __declspec(dllimport), but a function
 //  call through the same thunk works because the JMP executes and
 //  reaches the real function. Every class that uses ClassName or
-//  defineTypeNameAndDebug gets debugLevel() for free; the two plain
-//  'static int debug;' outliers (timer, functionObject) define it
-//  inline alongside the data member.
+//  defineTypeNameAndDebug gets debugLevel() for free; classes that declare
+//  a standalone 'static int debug;' define an accessor alongside it.
 #define DebugInfo                                                              \
     if (debugLevel()) Info
 

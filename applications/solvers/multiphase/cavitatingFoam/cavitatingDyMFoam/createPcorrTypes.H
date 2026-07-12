@@ -8,6 +8,6 @@
     {
         if (p.boundaryField()[i].fixesValue())
         {
-            pcorrTypes[i] = fixedValueFvPatchScalarField::typeName;
+            pcorrTypes[i] = fixedValueFvPatchScalarField::staticTypeName();
         }
     }
