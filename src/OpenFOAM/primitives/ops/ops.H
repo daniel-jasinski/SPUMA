@@ -193,7 +193,7 @@ EqOp(nopEq, (void)x)
             cop_(cop)                                                          \
         {}                                                                     \
                                                                                \
-        void operator()                                                        \
+        FOAM_DEVICE void operator()                                            \
         (                                                                      \
             T& x,                                                              \
             const label index,                                                 \

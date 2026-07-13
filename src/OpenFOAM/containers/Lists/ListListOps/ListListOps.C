@@ -27,13 +27,31 @@ License
 \*---------------------------------------------------------------------------*/
 
 template<class T, class AccessOp>
+bool Foam::ListListOps::subUsePool
+(
+    const UList<T>& lists,
+    AccessOp aop
+)
+{
+    if (!lists.size()) return false;
+    for (const T& sub : lists)
+    {
+        if (!aop(sub).usePool())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+template<class T, class AccessOp>
 Foam::labelList Foam::ListListOps::subSizes
 (
     const UList<T>& lists,
     AccessOp aop
 )
 {
-    labelList output(lists.size());
+    labelList output(lists.size(), lists.usePool());
     auto out = output.begin();
 
     for (const T& sub : lists)

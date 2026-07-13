@@ -80,6 +80,78 @@ void Foam::AMIInterpolation::weightedSum
 }
 
 
+template<class Type, class CombineOp>
+void Foam::AMIInterpolation::weightedSumListListAddr
+(
+    const scalar lowWeightCorrection,
+    const ListListAddr<labelList>& allSlotsAddr,
+    const ListListAddr<scalarList>& allWeightsAddr,
+    const labelListList& allSlots,
+    const scalarListList& allWeights,
+    const scalarField& weightsSum,
+    const UList<Type>& fld,
+    const CombineOp& cop,
+    List<Type>& result,
+    const UList<Type>& defaultValues
+)
+{
+    // check if list of list access works
+    if (allSlots.size() != allWeights.size())
+    {
+        FatalErrorInFunction<<"different size in AMI addressing"<<abort(FatalError);
+    }
+
+    foamExecutor exec;
+    auto resultPtr = result.begin();
+    const auto weightsSumPtr = weightsSum.cbegin();
+    const auto defaultValuesPtr = defaultValues.cbegin();
+    const auto fldPtr = fld.cbegin();
+    const auto slotsSizePtr = allSlotsAddr.sizes().cbegin();
+    const auto slotsPtrsPtr = allSlotsAddr.begins().cbegin();
+    const auto weightsPtrsPtr = allWeightsAddr.begins().cbegin();
+
+
+    if (lowWeightCorrection > 0)
+    {
+        auto Lambda = [=](label facei)
+        {
+            if (weightsSumPtr[facei] < lowWeightCorrection)
+            {
+                resultPtr[facei] = defaultValuesPtr[facei];
+            }
+            else
+            {
+                const auto slots = slotsPtrsPtr[facei];
+                const auto weights = weightsPtrsPtr[facei];
+
+                for (label i = 0; i < slotsSizePtr[facei]; i++)
+                {
+                   cop(resultPtr[facei], facei, fldPtr[slots[i]], weights[i]);
+                }
+                
+            }
+        };
+        exec.parallelFor(Lambda,result.size());
+
+    }
+    else
+    {
+        auto Lambda = [=](label facei)
+        {
+            const auto slots = slotsPtrsPtr[facei];
+            const auto weights = weightsPtrsPtr[facei];
+
+            for (label i = 0; i < slotsSizePtr[facei]; i++)
+            {
+                cop(resultPtr[facei], facei, fldPtr[slots[i]], weights[i]);
+            }            
+        };
+        exec.parallelFor(Lambda,result.size());
+    }
+
+}
+
+
 template<class Type>
 void Foam::AMIInterpolation::weightedSum
 (
@@ -90,9 +162,11 @@ void Foam::AMIInterpolation::weightedSum
 ) const
 {
     // Note: using non-caching AMI
-    weightedSum
+    weightedSumListListAddr
     (
         lowWeightCorrection_,
+        (toSource ? srcListAddr_() : tgtListAddr_()), //listlistAddr
+        (toSource ? srcListWeights_() : tgtListWeights_()), //listlistAdrr
         (toSource ? srcAddress_ : tgtAddress_),
         (toSource ? srcWeights_ : tgtWeights_),
         (toSource ? srcWeightsSum_ : tgtWeightsSum_),
@@ -170,7 +244,7 @@ void Foam::AMIInterpolation::interpolate
     };
 
     // Work space for if distributed
-    List<Type> work;
+    List<Type> work(poolSwitch(1));
 
     List<Type> result0;
     if (cache_.index0() != -1)
@@ -313,17 +387,36 @@ void Foam::AMIInterpolation::interpolate
         //     result = Zero;
         // }
 
-        weightedSum
-        (
-            lowWeightCorrection_,
-            srcAddress,
-            srcWeights,
-            srcWeightsSum,
-            (distributed() ? work : fld),
-            cop,
-            result,
-            defaultValues
-        );
+        if constexpr(std::is_same<CombineOp,multiplyWeightedOp<Type, plusEqOp<Type>>>::value)
+        {
+            weightedSumListListAddr
+            (
+                lowWeightCorrection_,
+                (toSource ? srcListAddr_() : tgtListAddr_()), //listlistAddr
+                (toSource ? srcListWeights_() : tgtListWeights_()), //listlistAdrr
+                srcAddress,
+                srcWeights,
+                srcWeightsSum,
+                (distributed() ? work : fld),
+                cop,
+                result,
+                defaultValues
+            );
+        }
+        else
+        {
+            weightedSum
+            (
+                lowWeightCorrection_,
+                srcAddress,
+                srcWeights,
+                srcWeightsSum,
+                (distributed() ? work : fld),
+                cop,
+                result,
+                defaultValues
+            );
+        }
     }
 }
 
