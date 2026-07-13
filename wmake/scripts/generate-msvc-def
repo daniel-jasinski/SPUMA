@@ -144,7 +144,9 @@ done
         sort -u
 } > "$DEF_FILE"
 
-count=$(grep -c '^?' "$DEF_FILE" 2>/dev/null || echo 0)
+# Every line except the LIBRARY/EXPORTS headers is one export (decorated
+# C++ names and undecorated C names alike).
+count=$(($(wc -l < "$DEF_FILE") - 2))
 echo "Generated $DEF_FILE ($count symbols)"
 
 # PE/COFF permits at most 65535 exports. Leave headroom for linker-generated

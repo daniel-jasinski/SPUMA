@@ -29,7 +29,7 @@
 # Use POSIX shell. Default to POSIX for the OS.
 #------------------------------------------------------------------------------
 
-SHELL           = sh
+SHELL           = /bin/sh
 
 ifeq (,$(strip $(WM_OSTYPE)))
     WM_OSTYPE  := POSIX
@@ -42,6 +42,9 @@ endif
 # Also compute CUDA/ACPP library paths for MSVC's LIB search variable
 # (handles paths with spaces that -L flags can't handle properly).
 ifneq (,$(findstring windows,$(WM_OSTYPE)))
+    # A native Windows make has no /bin/sh; resolve the shell via PATH.
+    SHELL       = sh
+
     # WIN_TMP, WIN_CUDA_LIB, WIN_ACPP_LIB are computed by wmake and passed
     # as Make variables (using 8.3 short names to avoid spaces in paths).
     # Fallback to C:/Temp if WIN_TMP is not set.
