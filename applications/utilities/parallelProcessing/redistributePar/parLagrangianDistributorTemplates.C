@@ -108,7 +108,7 @@ Foam::label Foam::parLagrangianDistributor::distributeFields
     if (verbose_ && fieldNames.size())
     {
         Info<< "    Distributing lagrangian "
-            << Container::typeName << "s\n" << nl;
+            << Container::staticTypeName() << "s\n" << nl;
     }
 
     for (const word& objectName : fieldNames)
@@ -208,7 +208,7 @@ Foam::label Foam::parLagrangianDistributor::distributeFieldFields
     if (verbose_ && fieldNames.size())
     {
         Info<< "    Distributing lagrangian "
-            << Container::typeName << "s\n" << nl;
+            << Container::staticTypeName() << "s\n" << nl;
     }
 
     for (const word& objectName : fieldNames)
@@ -278,7 +278,7 @@ Foam::label Foam::parLagrangianDistributor::readFields
     if (verbose_ && fieldNames.size())
     {
         Info<< "    Reading lagrangian "
-            << Container::typeName << "s\n" << nl;
+            << Container::staticTypeName() << "s\n" << nl;
     }
 
     for (const word& objectName : fieldNames)
@@ -327,7 +327,7 @@ Foam::label Foam::parLagrangianDistributor::distributeStoredFields
     if (verbose_ && fields.size())
     {
         Info<< "    Distributing lagrangian "
-            << Container::typeName << "s\n" << nl;
+            << Container::staticTypeName() << "s\n" << nl;
     }
 
     for (Container& field : fields)

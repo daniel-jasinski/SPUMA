@@ -111,7 +111,7 @@ cmake -S C:/src/llvm-project/llvm -B C:/build/llvm-acpp -G Ninja `
   -DWITH_LEVEL_ZERO_BACKEND=OFF `
   -DWITH_ROCM_BACKEND=OFF `
   -DWITH_VULKAN_BACKEND=OFF
-cmake --build C:/build/llvm-acpp --target install --parallel
+cmake --build C:/build/llvm-acpp --target install --parallel 8
 ```
 
 Do not mix the bootstrap compiler's MSVC compatibility mode with older MSVC
@@ -131,10 +131,14 @@ its installation prefix, and use the standard OpenFOAM setup:
 ```
 export ACPP_PATH=/c/path/to/AdaptiveCpp-install
 export PATH="$ACPP_PATH/bin:$PATH"
+export CUDA_PATH='C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5'
 source etc/bashrc WM_COMPILER=Sycl WM_MPLIB=dummy
 export ACPP_TARGETS=generic
-./Allwmake -j -s -l
+./Allwmake -j 8 -s -l
 ```
+
+The eight-job build was verified on a machine with eight performance cores.
+Adjust the job count to the available performance cores on other machines.
 
 The `win64Sycl` rule runs AdaptiveCpp's Python driver with the native Windows
 Python launcher. This is required so the driver selects Windows DLLs and paths
@@ -145,6 +149,11 @@ provide a native executable or use a different Python launcher.
 `ACPP_TARGETS=generic` produces AdaptiveCpp's JIT-capable target. Runtime
 device selection is controlled by AdaptiveCpp itself. Use a clean shell when
 switching between compiler backends.
+
+On Windows, the standard OpenFOAM setup adds its DLL directories and the `bin`
+directories below `CUDA_PATH` and `HIP_PATH` to `PATH`. Setting `CUDA_PATH` is
+therefore also required when running CUDA-backed AdaptiveCpp applications from
+MSYS2, even when the generic target was selected at compile time.
 
 Use one coherent AdaptiveCpp installation: `ACPP_PATH`, the `acpp` driver on
 `PATH`, and the AdaptiveCpp runtime DLLs loaded by an application must all come
@@ -183,7 +192,7 @@ MSVC linker. `NVARCH` defaults to `80` when it is not specified.
 export CUDA_PATH='C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.x'
 export NVARCH=86
 source etc/bashrc WM_COMPILER=Cuda WM_MPLIB=dummy
-./Allwmake -j -s -l
+./Allwmake -j 8 -s -l
 ```
 
 ### Native HIP
@@ -195,7 +204,7 @@ Set `HIP_PATH` to the ROCm installation and select the `Hip` compiler.
 export HIP_PATH='C:/Program Files/AMD/ROCm/6.x'
 export AMDARCH=gfx1030
 source etc/bashrc WM_COMPILER=Hip WM_MPLIB=dummy
-./Allwmake -j -s -l
+./Allwmake -j 8 -s -l
 ```
 
 The accelerator backends are experimental. A successful link or a `blockMesh`

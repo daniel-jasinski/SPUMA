@@ -70,7 +70,10 @@ public:
         //- Runtime type name information. Use cloud type.
         virtual const word& type() const
         {
-            return Cloud<typename CloudType::particleType>::typeName;
+            return Cloud
+            <
+                typename CloudType::particleType
+            >::staticTypeName();
         }
 
 

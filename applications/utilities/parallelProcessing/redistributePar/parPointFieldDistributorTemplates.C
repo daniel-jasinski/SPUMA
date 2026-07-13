@@ -200,7 +200,7 @@ Foam::label Foam::parPointFieldDistributor::distributePointFields
             if (!nFields)
             {
                 Info<< "    Reconstructing "
-                    << fieldType::typeName << "s\n" << nl;
+                    << fieldType::staticTypeName() << "s\n" << nl;
             }
             Info<< "        " << io.name() << nl;
         }

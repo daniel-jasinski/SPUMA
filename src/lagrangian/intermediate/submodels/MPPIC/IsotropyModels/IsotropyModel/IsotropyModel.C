@@ -47,12 +47,12 @@ Foam::IsotropyModel<CloudType>::IsotropyModel
     const word& type
 )
 :
-    CloudSubModelBase<CloudType>(owner, dict, typeName, type),
+    CloudSubModelBase<CloudType>(owner, dict, staticTypeName(), type),
     timeScaleModel_
     (
         TimeScaleModel::New
         (
-            this->coeffDict().subDict(TimeScaleModel::typeName)
+            this->coeffDict().subDict(TimeScaleModel::staticTypeName())
         )
     )
 {}
@@ -88,7 +88,7 @@ Foam::IsotropyModel<CloudType>::New
 {
     const word modelType
     (
-        dict.template getOrDefault<word>(typeName, "none")
+        dict.template getOrDefault<word>(staticTypeName(), "none")
     );
 
     Info<< "Selecting isotropy model " << modelType << endl;

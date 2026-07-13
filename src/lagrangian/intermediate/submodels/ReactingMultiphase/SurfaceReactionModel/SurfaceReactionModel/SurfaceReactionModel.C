@@ -49,7 +49,7 @@ Foam::SurfaceReactionModel<CloudType>::SurfaceReactionModel
     const word& type
 )
 :
-    CloudSubModelBase<CloudType>(owner, dict, typeName, type),
+    CloudSubModelBase<CloudType>(owner, dict, staticTypeName(), type),
     dMass_(0)
 {}
 

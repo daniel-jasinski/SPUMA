@@ -149,7 +149,8 @@ void Foam::CorrectPhi
     {
         if (p.boundaryField()[patchi].fixesValue())
         {
-            pcorrTypes[patchi] = fixedValueFvPatchScalarField::typeName;
+            pcorrTypes[patchi] =
+                fixedValueFvPatchScalarField::staticTypeName();
         }
     }
 

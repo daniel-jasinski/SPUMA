@@ -72,7 +72,7 @@ void ReadAndMapFields
     for (const IOobject& io : fieldObjects)
     {
         Info<< "Converting "
-            << ReadGeoField::typeName << ' ' << io.name() << endl;
+            << ReadGeoField::staticTypeName() << ' ' << io.name() << endl;
 
         ReadGeoField readField(io, mesh);
 

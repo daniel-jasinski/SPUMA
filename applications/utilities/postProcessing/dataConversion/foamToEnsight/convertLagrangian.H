@@ -91,7 +91,10 @@ if (doLagrangian)
                 #undef  ensight_WRITE_CLOUD_FIELD
                 #define ensight_WRITE_CLOUD_FIELD(PrimitiveType)              \
                                                                               \
-                if (fieldType == IOField<PrimitiveType>::typeName)            \
+                if                                                               \
+                (                                                                \
+                    fieldType == IOField<PrimitiveType>::staticTypeName()         \
+                )                                                                \
                 {                                                             \
                     autoPtr<ensightFile> os =                                 \
                         ensCase.newCloudData<PrimitiveType>                   \

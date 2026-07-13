@@ -135,7 +135,7 @@ bool setField
 )
 {
     Info<< "setField(" << fieldName << "): "
-        << pTraits<GeoField>::typeName << endl;
+        << GeoField::staticTypeName() << endl;
 
     const auto& mesh = evaluated.mesh();
 

@@ -54,7 +54,7 @@ void Foam::KinematicParcel<ParcelType>::setCellValues
 
     if (td.rhoc() < cloud.constProps().rhoMin())
     {
-        if (debug)
+        if (debugLevel())
         {
             WarningInFunction
                 << "Limiting observed density in cell " << this->cell()

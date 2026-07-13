@@ -251,7 +251,7 @@ void Foam::ReactingParcel<ParcelType>::setCellValues
 
     if (td.pc() < cloud.constProps().pMin())
     {
-        if (debug)
+        if (debugLevel())
         {
             WarningInFunction
                 << "Limiting observed pressure in cell " << this->cell()
@@ -307,7 +307,7 @@ void Foam::ReactingParcel<ParcelType>::cellValueSourceCorrection
 
     if (td.Tc() < cloud.constProps().TMin())
     {
-        if (debug)
+        if (debugLevel())
         {
             WarningInFunction
                 << "Limiting observed temperature in cell " << this->cell()

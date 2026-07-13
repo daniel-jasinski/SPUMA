@@ -49,12 +49,12 @@ Foam::PackingModel<CloudType>::PackingModel
     const word& type
 )
 :
-    CloudSubModelBase<CloudType>(owner, dict, typeName, type),
+    CloudSubModelBase<CloudType>(owner, dict, staticTypeName(), type),
     particleStressModel_
     (
         ParticleStressModel::New
         (
-            this->coeffDict().subDict(ParticleStressModel::typeName)
+            this->coeffDict().subDict(ParticleStressModel::staticTypeName())
         )
     )
 {}
@@ -87,7 +87,7 @@ Foam::PackingModel<CloudType>::New
 {
     const word modelType
     (
-        dict.template getOrDefault<word>(typeName, "none")
+        dict.template getOrDefault<word>(staticTypeName(), "none")
     );
     Info<< "Selecting packing model " << modelType << endl;
 

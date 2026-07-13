@@ -31,7 +31,7 @@
 #     _foamEtc       : resolve etc files (silent or verbose)
 #     _foamAddPath   : prepend to PATH
 #     _foamAddMan    : prepend to MANPATH
-#     _foamAddLib    : prepend to {DY,FOAM_}LD_LIBRARY_PATH
+#     _foamAddLib    : prepend to PATH or {DY,FOAM_}LD_LIBRARY_PATH
 #     _foamAddLibAuto: prepend to lib64/lib resolved name
 #
 #------------------------------------------------------------------------------
@@ -87,10 +87,18 @@ then
         case "$1" in (/?*) export MANPATH="$1:$MANPATH" ;; esac
     }
 
-    # Prepend LD_LIBRARY_PATH (DYLD_LIBRARY_PATH for Darwin)
+    # Prepend library path (PATH for Windows, DYLD_LIBRARY_PATH for Darwin)
     unset -f _foamAddLib 2>/dev/null
-    if [ "${_foam_uname_s}" = Darwin ]
-    then
+    case "${_foam_uname_s}" in
+    MSYS_NT* | MINGW* | MSYS* | CYGWIN*)
+        _foamAddLib()
+        {
+            case "$1" in (/?*)
+                export PATH="${1}${PATH:+:}${PATH}"
+            esac
+        }
+        ;;
+    Darwin)
         _foamAddLib()
         {
             case "$1" in (/?*)
@@ -101,14 +109,16 @@ then
             fi
             esac
         }
-    else
+        ;;
+    *)
         _foamAddLib()
         {
             case "$1" in (/?*)
                 export LD_LIBRARY_PATH="${1}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}"
             esac
         }
-    fi
+        ;;
+    esac
 
 
     # Prepend to LD_LIBRARY_PATH with additional checking

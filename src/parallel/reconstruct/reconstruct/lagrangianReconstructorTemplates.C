@@ -169,7 +169,7 @@ Foam::label Foam::lagrangianReconstructor::reconstructFields
                 if (!nFields)
                 {
                     Info<< "    Reconstructing lagrangian "
-                        << fieldType::typeName << "s\n" << nl;
+                        << fieldType::staticTypeName() << "s\n" << nl;
                 }
                 Info<< "        " << io.name() << endl;
             }
@@ -240,7 +240,7 @@ Foam::label Foam::lagrangianReconstructor::reconstructFieldFields
             if (!nFields)
             {
                 Info<< "    Reconstructing lagrangian "
-                    << fieldType::typeName << "s\n" << nl;
+                    << fieldType::staticTypeName() << "s\n" << nl;
             }
             Info<< "        " << io.name() << endl;
         }

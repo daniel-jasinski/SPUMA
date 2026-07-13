@@ -112,7 +112,7 @@ void fieldInterpolator::interpolate()
 
         if (!nFields)
         {
-            Info<< "    " << GeoFieldType::typeName << 's';
+            Info<< "    " << GeoFieldType::staticTypeName() << 's';
         }
 
         Info<< ' ' << fieldName << '(';

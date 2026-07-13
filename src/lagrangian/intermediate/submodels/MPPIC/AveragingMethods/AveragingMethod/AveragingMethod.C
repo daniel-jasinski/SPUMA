@@ -89,7 +89,7 @@ Foam::AveragingMethod<Type>::New
 {
     const word modelType
     (
-        dict.template getOrDefault<word>(typeName, "basic")
+        dict.template getOrDefault<word>(staticTypeName(), "basic")
     );
 
     auto* ctorPtr = dictionaryConstructorTable(modelType);

@@ -94,6 +94,10 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::Cloud<Foam::indexedParticle>);
+#endif
+
 #endif
 
 // ************************************************************************* //

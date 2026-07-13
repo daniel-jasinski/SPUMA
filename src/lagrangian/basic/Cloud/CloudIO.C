@@ -133,14 +133,18 @@ void Foam::Cloud<ParticleType>::initCloud(const bool checkClass)
     IOPosition<Cloud<ParticleType>> ioP(*this, geometryType_);
 
     const bool haveFile = ioP.headerOk();
-    Istream& is = ioP.readStream(checkClass ? typeName : word::null, haveFile);
+    Istream& is = ioP.readStream
+    (
+        checkClass ? staticTypeName() : word::null,
+        haveFile
+    );
     if (haveFile)
     {
         ioP.readData(is, *this);
         ioP.close();
     }
 
-    if (!haveFile && debug)
+    if (!haveFile && debugLevel())
     {
         Pout<< "Not reading particle positions file: "
             << ioP.objectRelPath() << nl

@@ -165,6 +165,20 @@ fi
 # OpenFOAM executables (user, group, standard)
 _foamAddPath "$FOAM_USER_APPBIN:$FOAM_SITE_APPBIN:$FOAM_APPBIN"
 
+# Native Windows loads accelerator runtime DLLs from PATH. Toolkit installers
+# use Windows path syntax, so convert their roots for the POSIX shell.
+if [ "$WM_OSTYPE" = MSwindows ] && command -v cygpath >/dev/null
+then
+    for _foamToolkitRoot in "$CUDA_PATH" "$HIP_PATH"
+    do
+        if [ -n "$_foamToolkitRoot" ]
+        then
+            _foamAddPath "$(cygpath -u "$_foamToolkitRoot")/bin"
+        fi
+    done
+    unset _foamToolkitRoot
+fi
+
 # Dummy versions of external libraries. To be found last in library path
 _foamAddLib  "$FOAM_LIBBIN/dummy"
 

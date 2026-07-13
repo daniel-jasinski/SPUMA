@@ -47,7 +47,7 @@ Foam::CompositionModel<CloudType>::CompositionModel
     const word& type
 )
 :
-    CloudSubModelBase<CloudType>(owner, dict, typeName, type),
+    CloudSubModelBase<CloudType>(owner, dict, staticTypeName(), type),
     thermo_(owner.thermo()),
     phaseProps_
     (
@@ -503,7 +503,7 @@ Foam::scalar Foam::CompositionModel<CloudType>::L
     {
         case phaseProperties::GAS:
         {
-            if (debug)
+            if (debugLevel())
             {
                 WarningInFunction
                     << "No support for gaseous components" << endl;
@@ -520,7 +520,7 @@ Foam::scalar Foam::CompositionModel<CloudType>::L
         }
         case phaseProperties::SOLID:
         {
-            if (debug)
+            if (debugLevel())
             {
                 WarningInFunction
                     << "No support for solid components" << endl;

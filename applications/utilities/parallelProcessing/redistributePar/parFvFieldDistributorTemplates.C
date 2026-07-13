@@ -433,7 +433,7 @@ Foam::label Foam::parFvFieldDistributor::distributeInternalFields
             if (!nFields)
             {
                 Info<< "    Reconstructing "
-                    << fieldType::typeName << "s\n" << nl;
+                    << fieldType::staticTypeName() << "s\n" << nl;
             }
             Info<< "        " << io.name() << nl;
         }
@@ -498,7 +498,7 @@ Foam::label Foam::parFvFieldDistributor::distributeVolumeFields
             if (!nFields)
             {
                 Info<< "    Reconstructing "
-                    << fieldType::typeName << "s\n" << nl;
+                    << fieldType::staticTypeName() << "s\n" << nl;
             }
             Info<< "        " << io.name() << nl;
         }
@@ -558,7 +558,7 @@ Foam::label Foam::parFvFieldDistributor::distributeSurfaceFields
             if (!nFields)
             {
                 Info<< "    Reconstructing "
-                    << fieldType::typeName << "s\n" << nl;
+                    << fieldType::staticTypeName() << "s\n" << nl;
             }
             Info<< "        " << io.name() << nl;
         }

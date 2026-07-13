@@ -69,7 +69,7 @@ class readFieldsHandler
             {
                 // Store field on mesh database
                 Log << "    Reading " << io.name()
-                    << " (" << FieldType::typeName << ')' << endl;
+                    << " (" << FieldType::staticTypeName() << ')' << endl;
 
                 regIOobject::store(new FieldType(io, mesh_));
                 return true;
@@ -158,6 +158,8 @@ class readFieldsHandler
 public:
 
     static const bool debug = false;
+
+    static bool debugLevel() noexcept { return debug; }
 
 
     // Constructors

@@ -50,7 +50,7 @@ void Foam::ThermoParcel<ParcelType>::setCellValues
 
     if (td.Tc() < cloud.constProps().TMin())
     {
-        if (debug)
+        if (debugLevel())
         {
             WarningInFunction
                 << "Limiting observed temperature in cell " << this->cell()
@@ -84,7 +84,7 @@ void Foam::ThermoParcel<ParcelType>::cellValueSourceCorrection
 
     if (td.Tc() < cloud.constProps().TMin())
     {
-        if (debug)
+        if (debugLevel())
         {
             WarningInFunction
                 << "Limiting observed temperature in cell " << celli
@@ -115,7 +115,7 @@ void Foam::ThermoParcel<ParcelType>::calcSurfaceValues
 
     if (Ts < cloud.constProps().TMin())
     {
-        if (debug)
+        if (debugLevel())
         {
             WarningInFunction
                 << "Limiting parcel surface temperature to "

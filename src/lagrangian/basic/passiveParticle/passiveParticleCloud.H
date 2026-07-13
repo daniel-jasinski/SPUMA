@@ -95,6 +95,10 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef _WIN32
+declareStaticTypeName(Foam::Cloud<Foam::passiveParticle>);
+#endif
+
 #endif
 
 // ************************************************************************* //
