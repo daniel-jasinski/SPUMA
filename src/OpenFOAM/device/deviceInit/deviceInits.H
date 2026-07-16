@@ -82,6 +82,35 @@ public:
 
 } // End namespace Foam
 
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+//- Return \a code from an application main().
+//  On Windows the process is terminated with TerminateProcess() after
+//  shutting down the device runtime: the static-destructor / DLL-detach
+//  chain crashes at exit due to cross-DLL destruction order, after all
+//  application work (including result writing) has completed. std::_Exit()
+//  is not sufficient: it reaches ExitProcess(), which still delivers
+//  DLL_PROCESS_DETACH notifications. Skips the destructors of main()
+//  locals; the device runtime is shut down explicitly instead of via
+//  deviceShutdownGuard.
+#ifdef _WIN32
+    // Manual Win32 declarations: <windows.h> cannot be included in
+    // acpp-compiled code (winnt.h conflicts with SYCL device compilation).
+    extern "C" __declspec(dllimport) void* __stdcall GetCurrentProcess(void);
+    extern "C" __declspec(dllimport) int __stdcall
+        TerminateProcess(void* hProcess, unsigned int uExitCode);
+
+    #define FOAM_EXIT_MAIN(code)                                               \
+        do                                                                     \
+        {                                                                      \
+            ::Foam::foamDeviceInit::shutdown();                                \
+            TerminateProcess(GetCurrentProcess(), (code));                     \
+        } while (false)
+#else
+    #define FOAM_EXIT_MAIN(code) return (code)
+#endif
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
