@@ -182,6 +182,12 @@ remaining transitive DLL dependencies. Ship redistributable CUDA runtime
 components as permitted by their licences, but not the NVIDIA driver DLL
 (`nvcuda.dll`), which is supplied by the installed display driver.
 
+The mandatory `core` manifest also deploys the OpenMP CPU backend
+(`hipSYCL/rt-backend-omp.dll`), which currently depends on a non-redistributable
+MSVC debug DLL on Windows. Delete it from CUDA-only packages, accepting that the
+packaged applications then require a CUDA device and cannot fall back to CPU
+execution at runtime.
+
 ### Native CUDA
 
 Set `CUDA_PATH` to the toolkit installation and select the `Cuda` compiler.
