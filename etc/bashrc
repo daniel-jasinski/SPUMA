@@ -67,7 +67,7 @@ export WM_COMPILER_TYPE=system
 
 # [WM_COMPILER] - Compiler:
 # = Gcc | Clang | Icc | Icx | Amd | Arm | Cray | Fujitsu | Nvidia | Sycl |
-#   Gcc<digits> | Clang<digits> | Amdclang
+#   Cuda | Hip | Gcc<digits> | Clang<digits> | Amdclang
 : "${WM_COMPILER:=Nvidia}"; export WM_COMPILER
 
 # [WM_PRECISION_OPTION] - Floating-point precision:

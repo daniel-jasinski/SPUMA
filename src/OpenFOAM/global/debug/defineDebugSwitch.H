@@ -140,7 +140,7 @@ public:
 
 //- Define the debug information
 #define defineDebugSwitch(Type, Value)                                         \
-    defineDebugSwitchWithName(Type, Type::typeName_(), Value);              \
+    defineDebugSwitchWithName(Type, Type::typeName_(), Value);                 \
     registerDebugSwitchWithName(Type, Type, Type::typeName_())
 
 //- Define the debug information for templates, lookup as \a Name

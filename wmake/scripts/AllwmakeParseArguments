@@ -220,9 +220,11 @@ then
     else
         echo "Logging wmake -all output to '$wmakeOpt_log'" 1>&2
         echo 1>&2
+        # /usr/bin/tee may not exist in native Windows shells: fall back to PATH
+        [ -x /usr/bin/tee ] && _wmake_tee=/usr/bin/tee || _wmake_tee=tee
         exec wmake $wmakeOpt_frontend -all \
             $wmakeOpt_debug $wmakeOpt_strict $wmakeOpt_queue $wmakeOpt_openmp $* 2>&1 | \
-            tee $wmakeOpt_log
+            "$_wmake_tee" $wmakeOpt_log
         # Need to cleanup after the tee
         rc=$? # Error code from tee (not wmake), but not entirely important
         echo "Done logging to '$wmakeOpt_log'" 1>&2

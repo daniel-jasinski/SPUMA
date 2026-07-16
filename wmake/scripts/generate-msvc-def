@@ -6,6 +6,14 @@
 #   \\  /    A nd           | www.openfoam.com
 #    \\/     M anipulation  |
 #------------------------------------------------------------------------------
+#     Copyright (C) 2026 Cineca
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
+#
+# File
+#     wmake/scripts/generate-msvc-def
+#
 # Description
 #     Generate a Windows MSVC DEF file from object files for DLL export.
 #     Extracts all global symbols (T, D, B, C, R types) from COFF object files.

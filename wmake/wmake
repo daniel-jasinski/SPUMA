@@ -628,15 +628,24 @@ fi
 # Common variables passed explicitly to make because MSYS2 make does
 # not reliably inherit shell-exported environment variables.
 # Intentionally unquoted at call sites for word-splitting into make args.
-_wmakePassVars="\
+# Windows-only: command-line assignments override makefile assignments,
+# so keep the bundle empty on POSIX to leave those builds untouched.
+_wmakePassVars=""
+case "$WM_OSTYPE" in
+(*[Ww]indows*)
+    _wmakePassVars="\
     WM_DIR=$WM_DIR WM_ARCH=$WM_ARCH WM_COMPILER=$WM_COMPILER \
     WM_PRECISION_OPTION=$WM_PRECISION_OPTION WM_LABEL_SIZE=$WM_LABEL_SIZE \
     WM_COMPILE_OPTION=$WM_COMPILE_OPTION WM_PROJECT=$WM_PROJECT \
     WM_PROJECT_DIR=$WM_PROJECT_DIR WM_OSTYPE=$WM_OSTYPE \
+    WM_OPTIONS=$WM_OPTIONS ACPP_TARGETS=$ACPP_TARGETS \
+    FOAM_LIBBIN=$FOAM_LIBBIN FOAM_APPBIN=$FOAM_APPBIN \
     have_cuda=$have_cuda have_hip=$have_hip have_sycl=$have_sycl \
     NVARCH=$NVARCH CUDA_PATH_SHORT=$CUDA_PATH_SHORT \
     AMDARCH=$AMDARCH HIP_PATH_SHORT=$HIP_PATH_SHORT \
     FOAM_LINK_DUMMY_PSTREAM=$FOAM_LINK_DUMMY_PSTREAM"
+    ;;
+esac
 
 #------------------------------------------------------------------------------
 # Recurse the source tree to compile "all" targets
@@ -687,9 +696,6 @@ then
         $make ${WM_CONTINUE_ON_ERROR:+-k} \
               -f "$WM_DIR"/makefiles/apps \
               $_wmakePassVars \
-              WM_OPTIONS="$WM_OPTIONS" \
-              ACPP_TARGETS="$ACPP_TARGETS" \
-              FOAM_LIBBIN="$FOAM_LIBBIN" FOAM_APPBIN="$FOAM_APPBIN" \
               TARGET="$targetType" FOAM_APPS="$FOAM_APPS"
         exitCode=$?
     fi
@@ -807,12 +813,10 @@ fi
     # Note: WM_* vars passed explicitly for Windows make compatibility
     $make -s -f "$WM_DIR"/makefiles/files \
         $_wmakePassVars \
-        FOAM_LIBBIN="$FOAM_LIBBIN" \
         MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" "$objectsDir"/options
 
     $make -s -f "$WM_DIR"/makefiles/files \
         $_wmakePassVars \
-        FOAM_LIBBIN="$FOAM_LIBBIN" \
         MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir"
 )
 
@@ -839,7 +843,6 @@ case "$targetType" in
     then
         $make -s -f "$WM_DIR"/makefiles/general \
             $_wmakePassVars \
-            WM_OPTIONS="$WM_OPTIONS" \
             MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" lnInclude
     fi
     ;;
@@ -856,7 +859,6 @@ then
 
     $make -f "$WM_DIR"/makefiles/general \
         $_wmakePassVars \
-        WM_OPTIONS="$WM_OPTIONS" \
         MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" updatedep
     exitCode="$?"
 
@@ -970,9 +972,6 @@ esac
 
 exec $make -f "$WM_DIR"/makefiles/general \
      $_wmakePassVars \
-     WM_OPTIONS="$WM_OPTIONS" \
-     ACPP_TARGETS="$ACPP_TARGETS" \
-     FOAM_LIBBIN="$FOAM_LIBBIN" FOAM_APPBIN="$FOAM_APPBIN" \
      $winLinkVars \
      MAKE_DIR="$MakeDir" OBJECTS_DIR="$objectsDir" $targetType
 

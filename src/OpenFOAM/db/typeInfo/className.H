@@ -40,25 +40,25 @@ Description
 //- Add typeName information from argument \a TypeNameString to a class.
 //  Without debug information
 #define ClassNameNoDebug(TypeNameString)                                       \
-    static const char* typeName_() { return TypeNameString; }                 \
-    FOAM_TYPENAME_EXPORT static const ::Foam::word typeName;                  \
-    FOAM_HOST_ONLY                                                            \
-    static const ::Foam::word& staticTypeName()                               \
-    {                                                                         \
-        static const ::Foam::word tn(typeName_());                         \
-        return tn;                                                            \
+    static const char* typeName_() { return TypeNameString; }                  \
+    FOAM_TYPENAME_EXPORT static const ::Foam::word typeName;                   \
+    FOAM_HOST_ONLY                                                             \
+    static const ::Foam::word& staticTypeName()                                \
+    {                                                                          \
+        static const ::Foam::word tn(typeName_());                             \
+        return tn;                                                             \
     }
 
 //- Add typeName information from argument \a TypeNameString to a namespace.
 //  Without debug information.
 #define NamespaceNameNoDebug(TypeNameString)                                   \
-    inline const char* typeName_() { return TypeNameString; }              \
-    extern const ::Foam::word typeName;                                       \
-    FOAM_HOST_ONLY                                                            \
-    inline const ::Foam::word& staticTypeName()                               \
-    {                                                                         \
-        static const ::Foam::word tn(typeName_());                         \
-        return tn;                                                            \
+    inline const char* typeName_() { return TypeNameString; }                  \
+    extern const ::Foam::word typeName;                                        \
+    FOAM_HOST_ONLY                                                             \
+    inline const ::Foam::word& staticTypeName()                                \
+    {                                                                          \
+        static const ::Foam::word tn(typeName_());                             \
+        return tn;                                                             \
     }
 
 //- Add typeName information from argument \a TemplateNameString to a
@@ -79,14 +79,14 @@ public:                                                                        \
 //  Also declares debug information.
 #define ClassName(TypeNameString)                                              \
     ClassNameNoDebug(TypeNameString);                                          \
-    FOAM_TYPENAME_EXPORT static int debug;                                    \
+    FOAM_TYPENAME_EXPORT static int debug;                                     \
     static int debugLevel()
 
 //- Add typeName information from argument \a TypeNameString to a namespace.
 //  Also declares debug information.
 #define NamespaceName(TypeNameString)                                          \
     NamespaceNameNoDebug(TypeNameString);                                      \
-    extern int debug;                                                         \
+    extern int debug;                                                          \
     int debugLevel()
 
 //- Add typeName information from argument \a TypeNameString to a
