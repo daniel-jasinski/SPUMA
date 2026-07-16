@@ -579,6 +579,14 @@ public:
 
     // Write
 
+        //- Write using stream options, setting correct per-specialization
+        //  class name in header (staticTypeName() is cross-DLL safe)
+        virtual bool writeObject
+        (
+            IOstreamOption streamOpt,
+            const bool writeOnProc
+        ) const;
+
         //- Write dimensions, oriented flag (if valid) and the
         //- field data as a dictionary entry with the specified name.
         bool writeData(Ostream& os, const word& fieldDictEntry) const;

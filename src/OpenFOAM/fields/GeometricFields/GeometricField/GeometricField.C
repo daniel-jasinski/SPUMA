@@ -1156,6 +1156,28 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::writeMinMax
 
 
 template<class Type, template<class> class PatchField, class GeoMesh>
+bool Foam::GeometricField<Type, PatchField, GeoMesh>::writeObject
+(
+    IOstreamOption streamOpt,
+    const bool writeOnProc
+) const
+{
+    // Set headerClassName so writeHeader uses the correct per-specialization
+    // type name (e.g., "surfaceScalarField") instead of type() which returns
+    // the generic typeName_() ("GeometricField") on Windows/SPUMA.
+    // staticTypeName() is safe for cross-DLL use (function call, not data).
+    const word savedHdrClass(this->headerClassName());
+    const_cast<GeometricField&>(*this).headerClassName() = staticTypeName();
+
+    bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+    const_cast<GeometricField&>(*this).headerClassName() = savedHdrClass;
+
+    return good;
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
 bool Foam::GeometricField<Type, PatchField, GeoMesh>::
 writeData(Ostream& os) const
 {

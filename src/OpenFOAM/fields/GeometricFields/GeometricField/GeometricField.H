@@ -1012,6 +1012,14 @@ public:
 
     // Write
 
+        //- Write using stream options, setting correct per-specialization
+        //  class name in header (staticTypeName() is cross-DLL safe)
+        virtual bool writeObject
+        (
+            IOstreamOption streamOpt,
+            const bool writeOnProc
+        ) const;
+
         //- The writeData function (required by regIOobject)
         bool writeData(Ostream& os) const;
 

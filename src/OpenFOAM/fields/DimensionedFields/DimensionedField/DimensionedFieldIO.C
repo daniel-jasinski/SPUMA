@@ -148,6 +148,28 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Type, class GeoMesh>
+bool Foam::DimensionedField<Type, GeoMesh>::writeObject
+(
+    IOstreamOption streamOpt,
+    const bool writeOnProc
+) const
+{
+    // Set headerClassName so writeHeader uses the correct per-specialization
+    // type name (e.g., "volScalarField::Internal") instead of type() which
+    // returns the generic typeName_() ("DimensionedField") on Windows/SPUMA.
+    // staticTypeName() is safe for cross-DLL use (function call, not data).
+    const word savedHdrClass(this->headerClassName());
+    const_cast<DimensionedField&>(*this).headerClassName() = staticTypeName();
+
+    bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+    const_cast<DimensionedField&>(*this).headerClassName() = savedHdrClass;
+
+    return good;
+}
+
+
+template<class Type, class GeoMesh>
 bool Foam::DimensionedField<Type, GeoMesh>::writeData
 (
     Ostream& os,

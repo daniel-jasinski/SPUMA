@@ -134,6 +134,30 @@ bool Foam::UniformDimensionedField<Type>::readData(Istream& is)
 
 
 template<class Type>
+bool Foam::UniformDimensionedField<Type>::writeObject
+(
+    IOstreamOption streamOpt,
+    const bool writeOnProc
+) const
+{
+    // Set headerClassName so writeHeader uses the correct per-specialization
+    // type name (e.g., "uniformDimensionedScalarField") instead of type()
+    // which returns the generic typeName_() on Windows/SPUMA.
+    // staticTypeName() is safe for cross-DLL use (function call, not data).
+    const word savedHdrClass(this->headerClassName());
+    const_cast<UniformDimensionedField&>(*this).headerClassName() =
+        staticTypeName();
+
+    bool good = regIOobject::writeObject(streamOpt, writeOnProc);
+
+    const_cast<UniformDimensionedField&>(*this).headerClassName() =
+        savedHdrClass;
+
+    return good;
+}
+
+
+template<class Type>
 bool Foam::UniformDimensionedField<Type>::writeData(Ostream& os) const
 {
     // The dimensions
