@@ -398,12 +398,12 @@ inline void Foam::UList<T>::shallowCopy(const UList<T>& list) noexcept
     if(this->usePool_){
         if (!list.usePool())
         {
-            DebugInFunction<<"Error shallow copy from non-pool to pool"<<endl;
+            WarningInFunction<<"Error shallow copy from non-pool to pool"<<endl;
         }
     }else{
         if (list.usePool())
         {
-            DebugInFunction<<"Error shallow copy from pool to non-pool"<<endl;
+            WarningInFunction<<"Error shallow copy from pool to non-pool"<<endl;
         }
     }
     if

@@ -92,6 +92,9 @@ public:
     //- Debug switch
     static int debug;
 
+    //- Function accessor for the debug switch (cross-DLL safe form)
+    static int debugLevel() { return debug; }
+
     //- Tolerance used in calculating barycentric coordinates
     //  (applied to normalised values)
     static scalar tol;

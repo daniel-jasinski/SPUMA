@@ -74,6 +74,9 @@ public:
         //- Debugging
         static int debug;
 
+        //- Function accessor for the debug switch (cross-DLL safe form)
+        static int debugLevel() { return debug; }
+
 
     // Generated Methods: copy/move construct, copy/move assignment
 

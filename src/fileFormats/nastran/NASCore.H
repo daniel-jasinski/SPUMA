@@ -63,6 +63,9 @@ public:
         //- Named/registered debug switch: 'nastran.debug'
         static int debug;
 
+        //- Function accessor for the debug switch (cross-DLL safe form)
+        static int debugLevel() { return debug; }
+
 
         //- File field formats
         enum fieldFormat

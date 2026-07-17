@@ -145,6 +145,9 @@ public:
         //- Flag to activate debug statements
         static int debug;
 
+        //- Function accessor for the debug switch (cross-DLL safe form)
+        static int debugLevel() { return debug; }
+
 
     // Public Member Functions
 

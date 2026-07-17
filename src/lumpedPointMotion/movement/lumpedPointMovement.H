@@ -237,6 +237,9 @@ public:
         //- Debug switch
         static int debug;
 
+        //- Function accessor for the debug switch (cross-DLL safe form)
+        static int debugLevel() { return debug; }
+
         //- The canonical name ("lumpedPointMovement") for the dictionary
         static const word canonicalName;
 

@@ -164,6 +164,9 @@ public:
         //- The debug flag
         static int debug;
 
+        //- Function accessor for the debug switch (cross-DLL safe form)
+        static int debugLevel() { return debug; }
+
         //- An empty string
         static const string null;
 
