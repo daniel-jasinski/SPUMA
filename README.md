@@ -138,6 +138,27 @@ Finally, run the `./Allwmake` script from the main folder to compile SPUMA.
 More information on compiling SPUMA for AMD GPUs can be found at
 [SPUMA/Wiki/How-to-build](https://gitlab.hpc.cineca.it/exafoam/spuma/-/wikis/How-to-build).
 
+#### SYCL (AdaptiveCpp) version
+
+Requires an [AdaptiveCpp](https://github.com/AdaptiveCpp/AdaptiveCpp)
+installation with the `acpp` driver on `PATH`, built with the backends you
+intend to target (CUDA, ROCm, OpenMP). To build SPUMA with the SYCL backend:
+```
+source etc/bashrc WM_COMPILER=Sycl
+export ACPP_TARGETS=<target specification>
+```
+`ACPP_TARGETS` accepts any AdaptiveCpp target specification, for example
+`generic` (JIT-compiled, the default when unset), `cuda:sm_86` or
+`hip:gfx90a`. The `generic` target requires an AdaptiveCpp build with the
+SSCP compiler feature profile.
+
+Finally, run the `./Allwmake` script from the main folder to compile SPUMA.
+
+On Windows the SYCL backend is built with the same compiler selection; see
+[doc/Build.md](doc/Build.md#adaptivecppsycl) for the Windows-specific
+requirements and [doc/Build.md](doc/Build.md#linux-sycl-builds-adaptivecpp)
+for the Linux build.
+
 #### Compile with Umpire support
 
 To compile SPUMA with support enabled for the Umpire library, you need to set the

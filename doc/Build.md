@@ -221,6 +221,38 @@ If you need to change the default versions for third-party libraries,
 or use system libraries for some components, please some additional
 information about the [config structure][wiki-config].
 
+## Linux SYCL builds (AdaptiveCpp)
+
+The SYCL backend is also available on Linux through the `linux64Sycl` wmake
+rules. It uses the same `WM_COMPILER=Sycl` selection as the Windows build; no
+Windows-specific steps apply.
+
+Requirements are a native Linux AdaptiveCpp installation with the `acpp`
+driver on `PATH`. Build AdaptiveCpp with the backends you intend to target
+(CUDA, ROCm, OpenMP) and, for the default `generic` JIT target, the SSCP
+compiler feature profile (`ACPP_COMPILER_FEATURE_PROFILE=full`, the upstream
+default). Refer to the
+[AdaptiveCpp installation guide](https://github.com/AdaptiveCpp/AdaptiveCpp/blob/develop/doc/installing.md)
+for distribution-specific instructions.
+
+```
+export ACPP_PATH=/path/to/AdaptiveCpp-install
+export PATH="$ACPP_PATH/bin:$PATH"
+source etc/bashrc WM_COMPILER=Sycl
+export ACPP_TARGETS=generic
+./Allwmake -j -s -l
+```
+
+`ACPP_TARGETS` accepts any AdaptiveCpp target specification, for example
+`generic` (JIT, default when unset), `cuda:sm_86` or `hip:gfx90a`. Unlike the
+Windows build, MPI is available: the default `WM_MPLIB=SYSTEMOPENMPI` builds
+the regular Pstream layer, with all sources (including MPI-facing code)
+compiled by the clang-based `acpp` driver.
+
+Applications link against the AdaptiveCpp runtime (`libacpp-rt`) from the
+installation prefix used at build time. Keep that installation in place, or
+add its `lib` directory to `LD_LIBRARY_PATH` when relocating.
+
 ## Compile OpenFOAM
 
 The compilation process is self-contained and will compile and install
