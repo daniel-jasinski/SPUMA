@@ -37,8 +37,12 @@ Description
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 // Declarations (without debug information)
 
+#ifdef _WIN32
+
 //- Add typeName information from argument \a TypeNameString to a class.
 //  Without debug information
+//  staticTypeName() uses typeName_() (returns const char* literal) to avoid
+//  cross-DLL data access through DEF thunks which crash on Windows.
 #define ClassNameNoDebug(TypeNameString)                                       \
     static const char* typeName_() { return TypeNameString; }                  \
     FOAM_TYPENAME_EXPORT static const ::Foam::word typeName;                   \
@@ -60,6 +64,31 @@ Description
         static const ::Foam::word tn(typeName_());                             \
         return tn;                                                             \
     }
+
+#else
+
+//- Add typeName information from argument \a TypeNameString to a class.
+//  Without debug information
+//  staticTypeName() returns the typeName static data member: on POSIX
+//  platforms this is safe across shared libraries and, unlike a
+//  typeName_()-based local static, resolves explicit specializations of
+//  typeName correctly even in translation units that have not seen the
+//  specialization declaration.
+#define ClassNameNoDebug(TypeNameString)                                       \
+    static const char* typeName_() { return TypeNameString; }                  \
+    FOAM_TYPENAME_EXPORT static const ::Foam::word typeName;                   \
+    FOAM_HOST_ONLY                                                             \
+    static const ::Foam::word& staticTypeName() { return typeName; }
+
+//- Add typeName information from argument \a TypeNameString to a namespace.
+//  Without debug information.
+#define NamespaceNameNoDebug(TypeNameString)                                   \
+    inline const char* typeName_() { return TypeNameString; }                  \
+    extern const ::Foam::word typeName;                                        \
+    FOAM_HOST_ONLY                                                             \
+    inline const ::Foam::word& staticTypeName() { return typeName; }
+
+#endif
 
 //- Add typeName information from argument \a TemplateNameString to a
 //  template class.  Without debug information.

@@ -316,7 +316,15 @@ void Foam::IOobject::writeHeader
     IOstreamOption streamOpt
 ) const
 {
-    IOobject::writeHeader(dict, this->type(), streamOpt);
+    // Prefer headerClassName if set - same logic as writeHeader(Ostream&)
+    const word& hdrClass = this->headerClassName();
+
+    IOobject::writeHeader
+    (
+        dict,
+        (hdrClass.empty() ? this->type() : hdrClass),
+        streamOpt
+    );
 }
 
 

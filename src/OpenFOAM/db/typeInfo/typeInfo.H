@@ -61,6 +61,8 @@ Description
 
 // Declarations (for use in header files)
 
+#ifdef _WIN32
+
 //- Declare a ClassNameNoDebug() with extra virtual type info
 //  type() uses typeName_() (returns const char* literal) to avoid cross-DLL
 //  data access through DEF thunks which crash on Windows.
@@ -82,6 +84,26 @@ Description
         static const word tn(typeName_());                                     \
         return tn;                                                             \
     }
+
+#else
+
+//- Declare a ClassNameNoDebug() with extra virtual type info
+//  type() returns the typeName static data member: on POSIX platforms this
+//  is safe across shared libraries and, unlike a typeName_()-based local
+//  static, resolves explicit specializations of typeName correctly even in
+//  translation units that have not seen the specialization declaration.
+#define TypeNameNoDebug(TypeNameString)                                        \
+    ClassNameNoDebug(TypeNameString);                                          \
+    FOAM_HOST_ONLY                                                            \
+    virtual const word& type() const { return typeName; }
+
+//- Declare a ClassName() with extra virtual type info
+#define TypeName(TypeNameString)                                               \
+    ClassName(TypeNameString);                                                 \
+    FOAM_HOST_ONLY                                                            \
+    virtual const word& type() const { return typeName; }
+
+#endif
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

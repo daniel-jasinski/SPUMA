@@ -186,7 +186,13 @@ void Foam::decomposedBlockData::writeExtraHeaderContent
 )
 {
     dict.set("data.format", streamOptData.format());
-    dict.set("data.class", io.type());
+    // Prefer headerClassName (set by writeObject overrides to the concrete
+    // per-specialization name) over type(), matching IOobject::writeHeader
+    dict.set
+    (
+        "data.class",
+        io.headerClassName().empty() ? io.type() : io.headerClassName()
+    );
 
     // Deep-copy of meta-data (if any)
     const dictionary* metaDataDict = io.findMetaData();
@@ -223,7 +229,12 @@ void Foam::decomposedBlockData::writeHeader
 
     {
         writeHeaderEntry(os, "data.format", streamOptData.format());
-        writeHeaderEntry(os, "data.class", io.type());
+        writeHeaderEntry
+        (
+            os,
+            "data.class",
+            io.headerClassName().empty() ? io.type() : io.headerClassName()
+        );
     }
 
     // Meta-data (if any)
