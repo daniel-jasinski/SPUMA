@@ -74,6 +74,17 @@ Foam::MemoryPool* Foam::MemoryPool::New
     if (instance && type != "dummyMemoryPool"
         && dynamic_cast<dummyMemoryPool*>(instance))
     {
+        // Live allocations become stranded: their pointers are unknown
+        // to the replacement pool, so a later free() of one fails with a
+        // pool-validity error. Warn here so that error is explicable.
+        // Allocations that live for the whole run are unaffected.
+        if (instance->allocatedSize() != 0)
+        {
+            WarningInFunction
+                << "Replacing the auto-created dummyMemoryPool while it"
+                << " still holds " << instance->allocatedSize()
+                << " bytes of live allocations" << nl;
+        }
         delete instance;
         instance = nullptr;
     }

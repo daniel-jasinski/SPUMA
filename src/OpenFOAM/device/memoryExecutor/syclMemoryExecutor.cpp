@@ -54,7 +54,11 @@ inline void* Foam::syclMemoryExecutor::_backendAlloc(uint64_t size)
 
 inline void Foam::syclMemoryExecutor::_backendClear(void* ptr)
 {
-    if (ptr)
+    // Skip the free once the queue has been shut down (static-duration
+    // objects destroyed after main returns): the USM allocation is
+    // released with its context, and freeing into a new queue would be
+    // undefined behaviour.
+    if (ptr && !syclQueueShutdown())
     {
         sycl::queue& q = getSyclQueue();
         sycl::free(ptr, q);
@@ -69,6 +73,14 @@ inline void Foam::syclMemoryExecutor::_backendMemCopy
     memCopyKind kind
 )
 {
+    // No-op after device shutdown (static-duration objects destroyed
+    // after main returns): the queue and its allocations are gone.
+    // Before first use the queue is still created lazily.
+    if (syclQueueShutdown())
+    {
+        return;
+    }
+
     sycl::queue& q = getSyclQueue();
 
     // SYCL USM handles all directions transparently
@@ -83,6 +95,14 @@ inline void Foam::syclMemoryExecutor::_backendMemSet
     size_t sizeOfValue
 )
 {
+    // No-op after device shutdown (static-duration objects destroyed
+    // after main returns): the queue and its allocations are gone.
+    // Before first use the queue is still created lazily.
+    if (syclQueueShutdown())
+    {
+        return;
+    }
+
     sycl::queue& q = getSyclQueue();
 
     // Copy first element
@@ -112,6 +132,14 @@ inline void Foam::syclMemoryExecutor::_backendMemSetScalarOne
     const size_t sizeInBytes
 )
 {
+    // No-op after device shutdown (static-duration objects destroyed
+    // after main returns): the queue and its allocations are gone.
+    // Before first use the queue is still created lazily.
+    if (syclQueueShutdown())
+    {
+        return;
+    }
+
     sycl::queue& q = getSyclQueue();
 
     const size_t numScalars = sizeInBytes / sizeof(scalar);
@@ -130,6 +158,14 @@ inline void Foam::syclMemoryExecutor::_backendMemSet
     const int value
 )
 {
+    // No-op after device shutdown (static-duration objects destroyed
+    // after main returns): the queue and its allocations are gone.
+    // Before first use the queue is still created lazily.
+    if (syclQueueShutdown())
+    {
+        return;
+    }
+
     sycl::queue& q = getSyclQueue();
 
     q.memset(ptr, value, sizeInBytes).wait();

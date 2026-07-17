@@ -50,6 +50,7 @@ namespace Foam
 
 // Forward declaration
 sycl::queue& getSyclQueue();
+bool syclQueueShutdown();
 
 /*---------------------------------------------------------------------------*\
                        Class syclMemoryExecutor Declaration

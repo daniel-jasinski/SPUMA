@@ -56,11 +56,21 @@ int syclDeviceInit::_getNumberOfThreadsPerBlock()
 // Destroyed by destroySyclQueue() before process exit to ensure
 // AdaptiveCpp cleanup runs while CUDA/HIP runtime is still alive.
 static sycl::queue* syclQueuePtr_ = nullptr;
+static bool syclQueueDestroyed_ = false;
 
 sycl::queue& getSyclQueue()
 {
     if (!syclQueuePtr_)
     {
+        if (syclQueueDestroyed_)
+        {
+            // Re-creating a queue after shutdown would hand out a new
+            // context while earlier allocations belong to the destroyed
+            // one - surface the logic error instead of silent UB.
+            FatalErrorInFunction
+                << "SYCL queue accessed after device shutdown"
+                << abort(FatalError);
+        }
         try
         {
             syclQueuePtr_ = new sycl::queue(sycl::gpu_selector_v);
@@ -73,6 +83,16 @@ sycl::queue& getSyclQueue()
     return *syclQueuePtr_;
 }
 
+bool syclQueueActive()
+{
+    return syclQueuePtr_ != nullptr;
+}
+
+bool syclQueueShutdown()
+{
+    return syclQueueDestroyed_;
+}
+
 void destroySyclQueue()
 {
     if (syclQueuePtr_)
@@ -81,6 +101,7 @@ void destroySyclQueue()
         delete syclQueuePtr_;
         syclQueuePtr_ = nullptr;
     }
+    syclQueueDestroyed_ = true;
 }
 
 } // End namespace Foam

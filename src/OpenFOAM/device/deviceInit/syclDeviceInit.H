@@ -53,6 +53,8 @@ namespace Foam
 
 // Global SYCL queue - defined in syclGlobal.cpp
 sycl::queue& getSyclQueue();
+bool syclQueueActive();
+bool syclQueueShutdown();
 void destroySyclQueue();
 
 /*---------------------------------------------------------------------------*\
