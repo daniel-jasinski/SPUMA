@@ -37,6 +37,7 @@ License
 namespace Foam
 {
     int labelRange::debug(debug::debugSwitch("labelRange", 0));
+    int labelRange::debugLevel() { return debug; }
 }
 
 

@@ -129,8 +129,12 @@ public:
 //  Classes that declare debugLevel() (via ClassName, TypeName, NamespaceName)
 //  get this definition automatically via defineTypeNameAndDebug and related
 //  wrappers. Standalone classes that declare 'static int debug;' directly
-//  without ClassName either inline-define their own debugLevel() in the
-//  header, or call this macro explicitly in their .C file.
+//  without ClassName declare 'static int debugLevel();' alongside it and
+//  define it out-of-line in their .C file (this macro, or by hand). Do NOT
+//  inline-define it in the header: the inline body compiles the debug data
+//  read into downstream DLLs, which reads DEF-thunk instruction bytes on
+//  Windows whenever the accessor is reachable from another DLL (e.g. via
+//  templates or inline members of derived classes).
 #define defineDebugLevelFunction(Type)                                         \
     int Type::debugLevel() { return Type::debug; }
 

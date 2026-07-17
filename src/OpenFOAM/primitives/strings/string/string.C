@@ -36,6 +36,7 @@ License
 const char* const Foam::string::typeName = "string";
 
 int Foam::string::debug(Foam::debug::debugSwitch(Foam::string::typeName, 0));
+int Foam::string::debugLevel() { return debug; }
 
 const Foam::string Foam::string::null;
 

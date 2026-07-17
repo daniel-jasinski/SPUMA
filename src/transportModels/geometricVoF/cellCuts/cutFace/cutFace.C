@@ -33,6 +33,7 @@ License
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 int Foam::cutFace::debug = 0;
+int Foam::cutFace::debugLevel() { return debug; }
 
 // * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * *
 

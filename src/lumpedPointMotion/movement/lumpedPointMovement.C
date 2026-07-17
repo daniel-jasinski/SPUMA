@@ -45,6 +45,7 @@ int Foam::lumpedPointMovement::debug
 (
     ::Foam::debug::debugSwitch("lumpedPointMovement", 0)
 );
+int Foam::lumpedPointMovement::debugLevel() { return debug; }
 
 
 const Foam::word

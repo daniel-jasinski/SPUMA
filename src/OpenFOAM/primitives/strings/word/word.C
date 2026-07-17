@@ -37,6 +37,7 @@ License
 const char* const Foam::word::typeName = "word";
 
 int Foam::word::debug(Foam::debug::debugSwitch(word::typeName, 0));
+int Foam::word::debugLevel() { return debug; }
 
 const Foam::word Foam::word::null;
 

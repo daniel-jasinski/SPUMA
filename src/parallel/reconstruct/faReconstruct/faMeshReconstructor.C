@@ -35,6 +35,7 @@ License
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 int Foam::faMeshReconstructor::debug = 0;
+int Foam::faMeshReconstructor::debugLevel() { return debug; }
 
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //

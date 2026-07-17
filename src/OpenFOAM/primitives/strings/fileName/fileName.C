@@ -39,6 +39,7 @@ License
 const char* const Foam::fileName::typeName = "fileName";
 
 int Foam::fileName::debug(Foam::debug::debugSwitch(fileName::typeName, 0));
+int Foam::fileName::debugLevel() { return debug; }
 
 int Foam::fileName::allowSpaceInFileName
 (

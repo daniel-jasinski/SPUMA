@@ -35,6 +35,7 @@ License
 namespace Foam
 {
     defineDebugSwitchWithName(cloudSolution, "cloudSolution", 0);
+    defineDebugLevelFunction(cloudSolution);
 }
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //

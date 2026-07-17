@@ -32,6 +32,7 @@ License
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 int Foam::cellPointWeight::debug(debug::debugSwitch("cellPointWeight", 0));
+int Foam::cellPointWeight::debugLevel() { return debug; }
 
 Foam::scalar Foam::cellPointWeight::tol(SMALL);
 

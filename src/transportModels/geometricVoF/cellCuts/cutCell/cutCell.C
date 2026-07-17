@@ -33,6 +33,7 @@ License
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 int Foam::cutCell::debug = 0;
+int Foam::cutCell::debugLevel() { return debug; }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //

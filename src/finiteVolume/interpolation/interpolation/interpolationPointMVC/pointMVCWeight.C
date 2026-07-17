@@ -33,6 +33,7 @@ License
 namespace Foam
 {
     defineDebugSwitchWithName(pointMVCWeight, "pointMVCWeight", 0);
+    defineDebugLevelFunction(pointMVCWeight);
 }
 
 Foam::scalar Foam::pointMVCWeight::tol(SMALL);

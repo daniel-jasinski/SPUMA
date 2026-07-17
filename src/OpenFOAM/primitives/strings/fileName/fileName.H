@@ -98,7 +98,7 @@ public:
         static int debug;
 
         //- Function accessor for the debug switch (cross-DLL safe form)
-        static int debugLevel() { return debug; }
+        static int debugLevel();
 
         //- Allow space character in fileName. To be used with caution.
         static int allowSpaceInFileName;

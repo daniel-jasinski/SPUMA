@@ -36,6 +36,7 @@ using namespace Foam::constant;
 Foam::label Foam::eddy::Gamma2Values[] = {1, 2, 3, 4, 5, 6, 7, 8};
 Foam::UList<Foam::label> Foam::eddy::Gamma2(&Gamma2Values[0], 8);
 int Foam::eddy::debug = 0;
+int Foam::eddy::debugLevel() { return debug; }
 
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //

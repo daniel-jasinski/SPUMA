@@ -42,6 +42,7 @@ namespace fileFormats
     (
         NASCore, Nastran, "nastran.debug"
     );
+    defineDebugLevelFunction(NASCore);
 }
 }
 

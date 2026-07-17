@@ -79,7 +79,7 @@ public:
         FOAM_TYPENAME_EXPORT static int debug;
 
         //- Function accessor for the debug switch (cross-DLL safe form)
-        static int debugLevel() { return debug; }
+        static int debugLevel();
 
         //- An empty word
         FOAM_EXPORT_DATA static const word null;
