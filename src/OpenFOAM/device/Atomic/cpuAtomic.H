@@ -55,8 +55,19 @@ namespace Foam
 struct cpuAtomic
 : Atomic<cpuAtomic>
 {
-    template<typename T>
-    static void  _backendAtomicAdd(T& x, const T& y)
+    static void _backendAtomicAdd(scalar& x, const scalar& y)
+    {
+        x += y;
+    }
+
+#ifdef WM_SPDP
+    static void _backendAtomicAdd(solveScalar& x, const solveScalar& y)
+    {
+        x += y;
+    }
+#endif
+
+    static void _backendAtomicAdd(label& x, const label& y)
     {
         x += y;
     }
@@ -71,10 +82,21 @@ struct cpuAtomic
         vs1 += vs2;
     }
 
-    template<typename T>
-    static void  _backendAtomicMax(T& x, const T& y)
+    static void  _backendAtomicMax(scalar& x, const scalar& y)
     {
-        x = max(x,y);
+        x = max(x, y);
+    }
+
+#ifdef WM_SPDP
+    static void  _backendAtomicMax(solveScalar& x, const solveScalar& y)
+    {
+        x = max(x, y);
+    }
+#endif
+
+    static void  _backendAtomicMax(label& x, const label& y)
+    {
+        x = max(x, y);
     }
 
     template<class Form, class Cmpt, direction Ncmpts>
@@ -87,10 +109,21 @@ struct cpuAtomic
         vs1 = max(vs1,vs2);
     }
 
-    template<typename T>
-    static void  _backendAtomicMin(T& x, const T& y)
+    static void  _backendAtomicMin(scalar& x, const scalar& y)
     {
-        x = min(x,y);
+        x = min(x, y);
+    }
+
+#ifdef WM_SPDP
+    static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
+    {
+        x = min(x, y);
+    }
+#endif
+
+    static void  _backendAtomicMin(label& x, const label& y)
+    {
+        x = min(x, y);
     }
 
     template<class Form, class Cmpt, direction Ncmpts>
