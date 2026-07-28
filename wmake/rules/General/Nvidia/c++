@@ -18,9 +18,8 @@ c++WARN     = \
 # Less restrictive warnings (eg, for flex++, CGAL, etc.)
 c++LESSWARN =
 
-include $(GENERAL_RULES)/cuda
-
 ifneq (,$(findstring true,$(have_cuda)))
+    include $(GENERAL_RULES)/cuda
     CC += -gpu=cc$(NVARCH) -cuda -Dhave_cuda
 endif
 
