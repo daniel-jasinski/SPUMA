@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2012-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -78,11 +78,9 @@ bool Foam::checkFileExistence(const fileName& fName)
         for (const fileName& dirN : dirEntries)
         {
             // Analyse directory name
-            fileName rp, rd, rl;
-            label rNum;
+            label rNum(-1);
             const label readProci =
-                fileOperation::splitProcessorPath
-                (dirN, rp, rd, rl, group, rNum);
+                fileOperation::detectProcessorPath(dirN, group, &rNum);
 
             if (proci == readProci)
             {
@@ -211,18 +209,8 @@ Foam::boolList Foam::haveMeshFile
             // Collect local block number
             label myBlockNumber = -1;
             {
-                fileName path, pDir, local;
                 procRangeType group;
-                label numProcs;
-                label proci = fileOperation::splitProcessorPath
-                (
-                    fName,
-                    path,
-                    pDir,
-                    local,
-                    group,
-                    numProcs
-                );
+                label proci = fileOperation::detectProcessorPath(fName, group);
 
                 if (proci == -1 && group.empty())
                 {

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -51,13 +51,13 @@ SourceFiles
 #include "uLabel.H"
 #include "zero.H"
 #include "one.H"
-#include "contiguous.H"
 #include "stdFoam.H"
+#include "labelRange.H"
 #include "nullObject.H"
 #include "Hash.H"
-#include "ListPolicy.H"
+#include "contiguous.H"
+#include "ListPolicy.H"  // Also includes "contiguous"
 
-#include <iterator>
 #include <vector>  // i.e, std::vector
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -84,6 +84,11 @@ typedef UList<bool> boolUList;      //!< A UList of bools
 typedef UList<char> charUList;      //!< A UList of chars
 typedef UList<label> labelUList;    //!< A UList of labels
 
+namespace Expression
+{
+template<class E> class ListExpression;
+template<class T> class ListConstRefWrap;
+}
 
 /*---------------------------------------------------------------------------*\
                            Class UList Declaration
@@ -130,15 +135,8 @@ protected:
 
         //- Assign all entries to zero
         //  Caution: method name subject to change
-        inline void fill_uniform(const Foam::zero);
+        inline void fill_uniform(Foam::zero);
 
-        //- No copy assignment (default: shallow copy)
-        //
-        //  Assignment may need to be shallow (copy pointer)
-        //  or deep (copy elements) depending on context or type of list.
-        //  Disallow default assignment and provide separate 'shallowCopy' and
-        //  'deepCopy' member functions.
-        UList<T>& operator=(const UList<T>&) = delete;
 
 public:
 
@@ -234,8 +232,22 @@ public:
 
     // Generated Methods
 
-        //- Copy construct
-        UList(const UList<T>&) = default;
+        //- Copy construct, shallow copy
+        UList(const UList<T>&) noexcept = default;
+
+        //- Move construct, shallow copy
+        UList(UList<T>&&) noexcept = default;
+
+        //- No copy assignment (default: shallow copy)
+        //  Assignment may need to be shallow (copy pointer)
+        //  or deep (copy elements) depending on context or type of list.
+        //  Disallow default assignment and provide separate 'shallowCopy' and
+        //  'deepCopy' member functions.
+        UList<T>& operator=(const UList<T>&) = delete;
+
+        //- Move assignment, shallow copy.
+        //  No ambiguity between shallow or deep copying in this form.
+        UList<T>& operator=(UList<T>&&) noexcept = default;
 
 
     // Constructors
@@ -244,7 +256,10 @@ public:
         inline constexpr UList() noexcept;
 
         //- Construct from components
-        inline UList(T* __restrict__ v, const label len, bool usePool = false) noexcept;
+        inline UList(T* __restrict__ ptr, const label len,  bool usePool = false) noexcept;
+
+        //- Move construct from a SubList, shallow copy
+        UList(SubList<T>&&) noexcept;
 
 
     // Member Functions
@@ -377,7 +392,12 @@ public:
     // Copy
 
         //- Copy the pointer and size
-        inline void shallowCopy(T* __restrict__ ptr, const label len) noexcept;
+        inline void shallowCopy
+        (
+            T* __restrict__ ptr, 
+            const label len, 
+            const bool usePool=false
+        ) noexcept;
 
         //- Copy nullptr and zero size
         inline void shallowCopy(std::nullptr_t) noexcept;
@@ -415,27 +435,33 @@ public:
     // Member Operators
 
         //- Return element of UList
-        inline T& operator[](const label i);
+        FOAM_DEVICE inline T& operator[](const label i);
 
         //- Return element of constant UList
         //  \note bool specialization adds lazy evaluation so reading an
         //       out-of-range element returns false without ill-effects
-        inline const T& operator[](const label i) const;
+        FOAM_DEVICE inline const T& operator[](const label i) const;
 
-        //- Allow cast to a const List<T>&
-        inline operator const Foam::List<T>&() const;
+        //- Allow cast to a const List<T>&.
+        //  \note Marked as "strictly" deprecated.
+        //  Currently (2025-04) code still depends on this cast.
+        FOAM_DEPRECATED_STRICTER(2025-04, "dereference as UList, not List?")
+        operator const Foam::List<T>&() const
+        {
+            return *reinterpret_cast<const List<T>*>(this);
+        }
 
         //- Assignment of all entries to the given value
         inline void operator=(const T& val);
 
         //- Assignment of all entries to zero
-        void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
 
     // Random access iterator (non-const)
 
         //- Return an iterator to begin traversing the UList
-        inline iterator begin() noexcept;
+        FOAM_DEVICE_I iterator begin() noexcept;
 
         //- Return an iterator to end traversing the UList
         inline iterator end() noexcept;
@@ -448,13 +474,13 @@ public:
     // Random access iterator (const)
 
         //- Return const_iterator to begin traversing the constant UList
-        inline const_iterator cbegin() const noexcept;
+        FOAM_DEVICE_I const_iterator cbegin() const noexcept;
 
         //- Return const_iterator to end traversing the constant UList
         inline const_iterator cend() const noexcept;
 
         //- Return const_iterator to begin traversing the constant UList
-        inline const_iterator begin() const noexcept;
+        FOAM_DEVICE_I const_iterator begin() const noexcept;
 
         //- Return const_iterator to end traversing the constant UList
         inline const_iterator end() const noexcept;
@@ -498,7 +524,7 @@ public:
         bool empty() const noexcept { return !size_; }
 
         //- The number of elements in the container
-        label size() const noexcept { return size_; }
+        FOAM_DEVICE label size() const noexcept { return size_; }
 
         //- Size of the underlying storage.
         label capacity() const noexcept { return size_; }
@@ -559,12 +585,51 @@ public:
 
     // Special Methods
 
+        //- True if all entries are 'true' or if the list is empty.
+        //  \note Method name compatibility with bitSet
+        template
+        <
+            class TypeT = T,
+            class = std::enable_if_t<stdFoam::is_bool_v<TypeT>>
+        >
+        inline bool all() const
+        {
+            return !contains(false);
+        }
+
+        //- True if any entries are 'true'.
+        //  \note Method name compatibility with bitSet
+        template
+        <
+            class TypeT = T,
+            class = std::enable_if_t<stdFoam::is_bool_v<TypeT>>
+        >
+        inline bool any() const
+        {
+            return contains(true);
+        }
+
+        //- True if no entries are 'true'.
+        //  \note Method name compatibility with bitSet
+        template
+        <
+            class TypeT = T,
+            class = std::enable_if_t<stdFoam::is_bool_v<TypeT>>
+        >
+        inline bool none() const
+        {
+            return !contains(true);
+        }
+
         //- Test \c bool value at specified position,
         //- always false for out-of-range access.
         //  \note Method name compatibility with bitSet, HashSet
-        template<class TypeT = T>
-        typename std::enable_if<std::is_same<bool, TypeT>::value, bool>::type
-        inline test(const label i) const
+        template
+        <
+            class TypeT = T,
+            class = std::enable_if_t<stdFoam::is_bool_v<TypeT>>
+        >
+        inline bool test(const label i) const
         {
             return (i >= 0 && i < size_ && v_[i]);
         }
@@ -572,9 +637,12 @@ public:
         //- Return \c bool value at specified position,
         //- always false for out-of-range access.
         //  \note Method name compatibility with bitSet
-        template<class TypeT = T>
-        typename std::enable_if<std::is_same<bool, TypeT>::value, bool>::type
-        inline get(const label i) const
+        template
+        <
+            class TypeT = T,
+            class = std::enable_if_t<stdFoam::is_bool_v<TypeT>>
+        >
+        inline bool get(const label i) const
         {
             return (i >= 0 && i < size_ && v_[i]);
         }
@@ -583,9 +651,12 @@ public:
         //- always false for out-of-range access.
         //  \return True if value changed and was not out-of-range
         //  \note Method name compatibility with bitSet
-        template<class TypeT = T>
-        typename std::enable_if<std::is_same<bool, TypeT>::value, bool>::type
-        inline unset(const label i)
+        template
+        <
+            class TypeT = T,
+            class = std::enable_if_t<stdFoam::is_bool_v<TypeT>>
+        >
+        inline bool unset(const label i)
         {
             if (i >= 0 && i < size_ && v_[i])
             {
@@ -593,6 +664,17 @@ public:
                 return true;
             }
             return false;
+        }
+
+        //- Return a string_view of the charList. Content is non-modifiable.
+        template
+        <
+            class TypeT = T,
+            class = std::enable_if_t<stdFoam::is_char_v<TypeT>>
+        >
+        inline std::string_view view() const
+        {
+            return std::string_view(v_, size_);
         }
 
 
@@ -607,17 +689,19 @@ public:
                 unsigned seed=0
             ) const
             {
-                if (is_contiguous<T>::value)
+                if constexpr (is_contiguous_v<T>)
                 {
                     return Foam::Hasher(obj.cdata(), obj.size_bytes(), seed);
                 }
-
-                Foam::Hash<T> op;
-                for (const T& val : obj)
+                else
                 {
-                    seed = op(val, seed);
+                    Foam::Hash<T> op;
+                    for (const T& val : obj)
+                    {
+                        seed = op(val, seed);
+                    }
+                    return seed;
                 }
-                return seed;
             }
         };
 
@@ -653,18 +737,27 @@ public:
         {
             return this->contains(val, pos);
         }
+
+
+    // Expression templates
+
+        //- Have unique tag
+        using is_List = void;
+
+        //- Wrap value as expression
+        auto expr() const
+        {
+            return Expression::ListConstRefWrap<T>(*this);
+        }
+
+        //- Assign values from expression
+        template<typename E>
+        void operator=(const Expression::ListExpression<E>& expr)
+        {
+            // bypass expr.evaluate to avoid resize ...
+            expr.fill(*this);
+        }
 };
-
-
-// * * * * * * * * * * * * Template Specializations  * * * * * * * * * * * * //
-
-//- Character list writeEntry
-template<>
-void UList<char>::writeEntry(Ostream& os) const;
-
-//- Character list assign zero - avoids Foam::zero casting ambiguities
-template<>
-void UList<char>::operator=(const Foam::zero);
 
 
 // * * * * * * * * * * * * * * * IOstream Operators  * * * * * * * * * * * * //
@@ -678,11 +771,11 @@ Istream& operator>>(Istream& is, UList<T>& list)
 
 
 //- Write List to Ostream, as per UList::writeList() with default length.
-//  The default short-length is given by Detail::ListPolicy::short_length
+//  The default short-length is given by Foam::ListPolicy::short_length
 template<class T>
 Ostream& operator<<(Ostream& os, const UList<T>& list)
 {
-    return list.writeList(os, Detail::ListPolicy::short_length<T>::value);
+    return list.writeList(os, Foam::ListPolicy::short_length<T>::value);
 }
 
 //- Write std::vector to Ostream. ASCII only, no line-breaks
@@ -781,7 +874,8 @@ struct sizeOp
 #ifdef NoRepository
     #include "UList.C"
     #include "UListIO.C"
-    #include "stdVectorIO.C"
+    #include "IntRangeIO.H"
+    #include "stdVectorIO.H"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

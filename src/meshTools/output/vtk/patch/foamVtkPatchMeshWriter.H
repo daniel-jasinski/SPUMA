@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -43,8 +43,8 @@ See Also
     Foam::vtk::patchWriter
 
 SourceFiles
-    foamVtkPatchMeshWriter.C
-    foamVtkPatchMeshWriterTemplates.C
+    foamVtkPatchMeshWriter.cxx
+    foamVtkPatchMeshWriter.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -73,45 +73,46 @@ protected:
 
     // Protected Member Data
 
-        //- The number of field points for the current Piece
-        label numberOfPoints_;
-
-        //- The number of field cells (faces) for the current Piece
-        label numberOfCells_;
-
-        //- Local number of points
-        label nLocalPoints_;
-
-        //- Local number of polys (faces)
-        label nLocalPolys_;
-
-        //- Local connectivity count for polys (faces) == sum of face sizes
-        label nLocalPolyConn_;
-
         //- Reference to the OpenFOAM mesh (or subset)
         const polyMesh& mesh_;
 
         //- The selected patch ids
         labelList patchIDs_;
 
+        //- Slab addressing for field points of the current Piece
+        OffsetRange<label> pointSlab_;
 
-    // Private Member Functions
+        //- Slab addressing for field cells (faces) for the current Piece
+        OffsetRange<label> cellSlab_;
 
-        //- Determine sizes (nLocalPoints_, nLocalPolys_),
-        //- and begin piece.
+        //- Slab addressing for cell (face) connectivity count,
+        //- which is just the sum of the face sizes.
+        OffsetRange<label> connectivitySlab_;
+
+
+    // Protected Member Functions
+
+        //- Total number of field points for the current Piece
+        label nTotalPoints() const noexcept { return pointSlab_.total(); }
+
+        //- Total number of field cells (faces) for the current Piece
+        label nTotalCells() const noexcept { return cellSlab_.total(); }
+
+        //- Determine sizes and begin piece.
         void beginPiece();
 
         //- Write patch points
         void writePoints();
 
         //- Write patch faces, legacy format
-        //  \param pointOffset processor-local point offset
-        void writePolysLegacy(const label pointOffset);
+        void writePolys_legacy();
 
         //- Write patch faces
-        //  \param pointOffset processor-local point offset
-        void writePolys(const label pointOffset);
+        void writePolys();
 
+public:
+
+    // Generated Methods
 
         //- No copy construct
         patchMeshWriter(const patchMeshWriter&) = delete;
@@ -120,15 +121,13 @@ protected:
         void operator=(const patchMeshWriter&) = delete;
 
 
-public:
-
     // Constructors
 
         //- Construct from components (default format INLINE_BASE64)
         patchMeshWriter
         (
             const polyMesh& mesh,
-            const labelList& patchIDs,
+            const labelUList& patchIDs,
             const vtk::outputOptions opts = vtk::formatType::INLINE_BASE64
         );
 
@@ -138,21 +137,20 @@ public:
         patchMeshWriter
         (
             const polyMesh& mesh,
-            const labelList& patchIDs,
+            const labelUList& patchIDs,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
-        //- Construct from components (default format INLINE_BASE64),
         //- Construct from components and open the file for writing.
         //  The file name is with/without an extension.
         patchMeshWriter
         (
             const polyMesh& mesh,
-            const labelList& patchIDs,
+            const labelUList& patchIDs,
             const vtk::outputOptions opts,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
 
@@ -234,7 +232,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "foamVtkPatchMeshWriterTemplates.C"
+    #include "foamVtkPatchMeshWriter.txx"
 #endif
 
 

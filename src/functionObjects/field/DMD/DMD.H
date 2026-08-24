@@ -52,13 +52,13 @@ Description
     Operands:
     \table
       Operand      | Type                 | Location
-      input        | {vol,surface}\<Type\>Field(s) <!--
-                   -->                    | \<time\>/\<inputField\>(s)
-      output file  | dat           | postProcessing/\<FO\>/\<time\>/\<file\>(s)
-      output field | volVectorField(s)    | \<time\>/\<outputField\>(s)
+      input        | {vol,surface}<Type>Field(s)  | <time>/inputField(s)
+      output file  | dat                  | postProcessing/<FO>/<time>/files
+      output field | volVectorField(s)    | <time>/outputField(s)
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
     Output fields:
     \verbatim
@@ -85,7 +85,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    DMD1
+    DMDFO
     {
         // Mandatory entries
         type                DMD;
@@ -123,23 +123,12 @@ Usage
     \endverbatim
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        <solver> -postProcess -fields '(U p)' -time '10:'
-    \endverbatim
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 Note
   - Warning: DMD is an active research area at the time of writing;
     therefore, there could be cases whereat oddities can be seen.
-
-See also
-  - Foam::functionObjects::fvMeshFunctionObject
-  - Foam::functionObjects::writeFile
-  - Foam::DMDModel
-  - Foam::DMDModels::STDMD
 
 SourceFiles
     DMD.C
@@ -147,8 +136,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_DMD_H
-#define functionObjects_DMD_H
+#ifndef Foam_functionObjects_DMD_H
+#define Foam_functionObjects_DMD_H
 
 #include "fvMeshFunctionObject.H"
 #include "RectangularMatrix.H"
@@ -244,7 +233,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         DMD
         (
             const word& name,
@@ -265,13 +254,13 @@ public:
 
     // Member Functions
 
-        //- Read DMD settings
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute DMD
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write DMD results
+        //- Write the function-object results
         virtual bool write();
 
         //- Write DMD results

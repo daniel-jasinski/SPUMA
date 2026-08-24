@@ -36,8 +36,8 @@ Description
     Operands:
     \table
       Operand        | Type           | Location
-      input          | volScalarField | \<time\>/\<inpField\>
-      output file    | dat            | postProcessing/\<FO\>/\<time\>/histogram
+      input          | volScalarField | <time>/inputField
+      output file    | dat            | postProcessing/<FO>/<time>/histogram
       output field   | -              | -
     \endtable
 
@@ -50,7 +50,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    histogram1
+    histogramFO
     {
         // Mandatory entries
         type            histogram;
@@ -131,7 +131,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         histogram
         (
             const word& name,
@@ -152,13 +152,13 @@ public:
 
     // Member Functions
 
-        //- Read the top-level dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute (effectively no-op)
+        //- Execute the function-object operations (effectively no-op)
         virtual bool execute();
 
-        //- Calculate the histogram and write
+        //- Write the function-object results
         //  postProcess overrides the usual writeControl behaviour and
         //  forces writing always (used in post-processing mode)
         virtual bool write();

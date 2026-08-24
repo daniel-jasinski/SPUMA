@@ -46,54 +46,42 @@ Description
     Operands:
     \table
       Operand        | Type           | Location
-      input          | volVectorField | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | volVectorField | <time>/inputField
       output file    | -              | -
-      output field   | volVectorField | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | volVectorField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    vorticity1
+    vorticityFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        vorticity;
         libs        (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: vorticity               | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func vorticity
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::fieldExpression
-    - ExtendedCodeGuide::functionObjects::field::vorticity
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     vorticity.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_vorticity_H
-#define functionObjects_vorticity_H
+#ifndef Foam_functionObjects_vorticity_H
+#define Foam_functionObjects_vorticity_H
 
 #include "fieldExpression.H"
 
@@ -126,7 +114,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         vorticity
         (
             const word& name,

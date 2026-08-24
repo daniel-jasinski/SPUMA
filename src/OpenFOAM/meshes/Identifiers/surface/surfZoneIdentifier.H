@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
-    Copyright (C) 2016-2021 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -39,8 +39,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef surfZoneIdentifier_H
-#define surfZoneIdentifier_H
+#ifndef Foam_surfZoneIdentifier_H
+#define Foam_surfZoneIdentifier_H
 
 #include "word.H"
 #include "label.H"
@@ -97,8 +97,14 @@ public:
         //- Copy construct
         surfZoneIdentifier(const surfZoneIdentifier&) = default;
 
+        //- Move construct
+        surfZoneIdentifier(surfZoneIdentifier&&) = default;
+
         //- Copy assignment
         surfZoneIdentifier& operator=(const surfZoneIdentifier&) = default;
+
+        //- Move assignment
+        surfZoneIdentifier& operator=(surfZoneIdentifier&&) = default;
 
 
     // Constructors
@@ -106,7 +112,7 @@ public:
         //- Default construct. Uses name="", index=0
         surfZoneIdentifier();
 
-        //- Construct null with specified index
+        //- Construct with name="" and specified index
         explicit surfZoneIdentifier(const label index);
 
         //- Construct from mandatory components
@@ -128,51 +134,40 @@ public:
             const label index
         );
 
-        //- Copy construct, resetting the index
+        //- Copy construct, resetting the index (if non-negative)
         surfZoneIdentifier
         (
             const surfZoneIdentifier& ident,
-            const label index
+            const label newIndex
+        );
+
+        //- Move construct, resetting the index (if non-negative)
+        surfZoneIdentifier
+        (
+            surfZoneIdentifier&& ident,
+            const label newIndex
         );
 
 
     // Member Functions
 
         //- The patch/zone name
-        const word& name() const
-        {
-            return name_;
-        }
+        const word& name() const noexcept { return name_; }
 
         //- Modifiable patch/zone name
-        word& name()
-        {
-            return name_;
-        }
+        word& name() noexcept { return name_; }
 
-        //- The geometric type of the patch/zone
-        const word& geometricType() const
-        {
-            return geometricType_;
-        }
+        //- The (optional) geometric type of the patch/zone
+        const word& geometricType() const noexcept { return geometricType_; }
 
-        //- Modifiable geometric type of the patch/zone
-        word& geometricType()
-        {
-            return geometricType_;
-        }
+        //- Modifiable (optional) geometric type of the patch/zone
+        word& geometricType() noexcept { return geometricType_; }
 
         //- The index of this patch/zone in the surface mesh
-        label index() const
-        {
-            return index_;
-        }
+        label index() const noexcept { return index_; }
 
         //- Modifiable index of this patch/zone in the surface mesh
-        label& index()
-        {
-            return index_;
-        }
+        label& index() noexcept { return index_; }
 
         //- Write (geometricType) dictionary entry
         //- (without surrounding braces)

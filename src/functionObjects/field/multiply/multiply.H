@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2020 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -39,48 +39,40 @@ Description
 
     Operands:
     \table
-      Operand      | Type                          | Location
-      input        | vol\<Type\>Field(s) <!--
-               --> |$FOAM_CASE/\<time\>/\<inpField\>s
-      output field | vol\<Type\>Field    <!--
-               --> | $FOAM_CASE/\<time\>/\<outField\>
+      Operand      | Type                       | Location
+      input field  | vol<Type>Field(s)          | <time>/inputFields
+      output file  | -                          | -
+      output field | vol<Type>Field             | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    multiply1
+    multiplyFO
     {
-        // Mandatory entries (unmodifiable)
-        type    multiply;
-        libs    (fieldFunctionObjects);
+        // Mandatory entries
+        type        multiply;
+        libs        (fieldFunctionObjects);
 
-        // Mandatory (inherited) entry (runtime modifiable)
-        fields  (<field1> <field2> ... <fieldN>);
-
-        // Optional (inherited) entries
+        // Inherited entries
+        fields      (<wordList>);  // (<field1> <field2> ... <fieldN>);
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Reqd | Dflt
-      type         | Type name: multiply                | word | yes | -
-      libs         | Library name: fieldFunctionObjects | word | yes | -
+      Property     | Description                        | Type | Reqd | Deflt
+      type         | Type name: multiply                | word | yes  | -
+      libs         | Library name: fieldFunctionObjects | word | yes  | -
       fields       | Names of the operand fields        | wordList | yes | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldsExpression.H \endlink
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldsExpression
-    - Foam::functionObjects::fvMeshFunctionObject
+      - \link fieldsExpression.H \endlink
 
 SourceFiles
     multiply.C
@@ -88,8 +80,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_multiply_H
-#define functionObjects_multiply_H
+#ifndef Foam_functionObjects_multiply_H
+#define Foam_functionObjects_multiply_H
 
 #include "fieldsExpression.H"
 
@@ -120,30 +112,17 @@ class multiply
 
     // Private Member Functions
 
+        //- Initialise the result field
         template<class Type>
         bool initialiseResult(const word& fieldName);
 
+        //- Multiply the result field with the given field
         template<class Type>
         bool multiplyResult(const word& fieldName, bool& processed);
 
+        //- Multiply two fields of given types and return true if successful
         template<class Type1, class Type2>
-        typename std::enable_if
-        <
-            is_valid_op<Type1, Type2>::value, bool
-        >::type
-        multiplyFieldType
-        (
-            GeometricField<Type1, fvPatchField, volMesh>& result,
-            const word& fieldName,
-            bool& processed
-        );
-
-        template<class Type1, class Type2>
-        typename std::enable_if
-        <
-            !is_valid_op<Type1, Type2>::value, bool
-        >::type
-        multiplyFieldType
+        bool multiplyFieldType
         (
             GeometricField<Type1, fvPatchField, volMesh>& result,
             const word& fieldName,
@@ -156,6 +135,7 @@ class multiply
 
 public:
 
+    //- Grant fieldsExpression access to private and protected members
     friend class fieldsExpression;
 
 
@@ -165,7 +145,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         multiply
         (
             const word& name,

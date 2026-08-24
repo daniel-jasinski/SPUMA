@@ -33,6 +33,10 @@ License
 #include "processorPolyPatch.H"
 #include "syncTools.H"
 
+// With older boost...
+#pragma clang diagnostic ignored "-Wdeprecated-builtins"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 #include <boost/config.hpp>
 #include <vector>
 #include <iostream>

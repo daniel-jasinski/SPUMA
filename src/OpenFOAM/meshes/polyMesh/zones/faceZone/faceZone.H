@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -78,12 +78,12 @@ class faceZone
 
     // Private Data
 
+        //- Reference to zone list
+        const faceZoneMesh& zoneMesh_;
+
         //- Flip map for all faces in the zone.
         //  True if the face needs flipping for the correct orientation.
         boolList flipMap_;
-
-        //- Reference to zone list
-        const faceZoneMesh& zoneMesh_;
 
         //- Demand-driven: Primitive patch of correctly flipped faces
         mutable std::unique_ptr<primitiveFacePatch> patchPtr_;
@@ -120,8 +120,7 @@ public:
     // Static Data Members
 
         //- The name associated with the zone-labels dictionary entry
-        //- ("faceLabels")
-        static const char * const labelsName;
+        static constexpr const char* labelsName() { return "faceLabels"; }
 
 
     //- Runtime type information
@@ -211,13 +210,23 @@ public:
             const faceZoneMesh& zm
         );
 
-        //- Construct empty with original zone information (name, index, groups)
-        //- and mesh reference. Optionally specify a new index.
+        //- Copy construct with new mesh reference.
         faceZone
         (
             const faceZone& originalZone,
-            const Foam::zero,
             const faceZoneMesh& zm,
+            //! The new index (optional. -1 retains the original value)
+            const label newIndex = -1
+        );
+
+        //- Construct empty with original zone information (name, index, groups)
+        //- and mesh reference.
+        faceZone
+        (
+            const faceZone& originalZone,
+            Foam::zero,
+            const faceZoneMesh& zm,
+            //! The new index (optional. -1 retains the original value)
             const label newIndex = -1
         );
 
@@ -226,7 +235,8 @@ public:
         faceZone
         (
             const faceZone& originalZone,
-            const Foam::zero,
+            Foam::zero,
+            //! The new index (-1 retains the original value)
             const label index,
             const faceZoneMesh& zm
         );
@@ -239,6 +249,7 @@ public:
             const faceZone& originalZone,
             const labelUList& addr,
             const boolUList& fm,
+            //! The new index (-1 retains the original value)
             const label index,
             const faceZoneMesh& zm
         );
@@ -251,14 +262,20 @@ public:
             const faceZone& originalZone,
             labelList&& addr,
             boolList&& fm,
+            //! The new index (-1 retains the original value)
             const label index,
             const faceZoneMesh& zm
         );
 
         //- Construct and return a clone, resetting the zone mesh
-        virtual autoPtr<faceZone> clone(const faceZoneMesh& zm) const
+        virtual autoPtr<faceZone> clone
+        (
+            const faceZoneMesh& zm,
+            //! The new index (optional. -1 retains the original value)
+            const label newIndex = -1
+        ) const
         {
-            return autoPtr<faceZone>::New(*this, *this, flipMap(), index(), zm);
+            return autoPtr<faceZone>::New(*this, zm, newIndex);
         }
 
         //- Construct and return a clone,
@@ -267,6 +284,7 @@ public:
         (
             const labelUList& addr,
             const boolUList& fm,
+            //! The new index (-1 retains the original value)
             const label index,
             const faceZoneMesh& zm
         ) const
@@ -294,24 +312,41 @@ public:
 
     // Member Functions
 
+        //- The maximum index the zone may contain == mesh nFaces()
+        label max_index() const noexcept;
+
         //- Return reference to the zone mesh
         const faceZoneMesh& zoneMesh() const noexcept { return zoneMesh_; }
 
         //- The addressing (face IDs) used for the zone
-        const labelList& addressing() const noexcept
-        {
-            return static_cast<const labelList&>(*this);
-        }
+        using zone::addressing;
 
         //- Return face flip map
         const boolList& flipMap() const noexcept { return flipMap_; }
 
-        //- Helper function to re-direct to zone::localID(...)
-        label whichFace(const label globalCellID) const;
+        //- The local index of the given mesh face, -1 if not in the zone
+        label whichFace(const label meshFaceID) const
+        {
+            return zone::localID(meshFaceID);
+        }
 
         //- Return [demand-driven] reference to an equivalent primitive patch,
         //- with faces oriented according to flipMap()
         const primitiveFacePatch& patch() const;
+
+
+    // Checks
+
+        //- Check zone definition.
+        //  \return True if any errors.
+        virtual bool checkDefinition(const bool report = false) const
+        {
+            return zone::checkDefinition(max_index(), report);
+        }
+
+        //- Check whether all procs have faces synchronised.
+        //  \return True if any errors.
+        virtual bool checkParallelSync(const bool report = false) const;
 
 
     // Addressing into mesh
@@ -328,25 +363,6 @@ public:
 
         //- Return global edge index for local edges
         const labelList& meshEdges() const;
-
-        //- Check zone definition. Return true if in error.
-        virtual bool checkDefinition(const bool report = false) const;
-
-        //- Check whether all procs have faces synchronised.
-        //  \return True if any errors.
-        virtual bool checkParallelSync(const bool report = false) const;
-
-        //- Correct patch after moving points
-        virtual void movePoints(const pointField& pts);
-
-        //- Update for changes in topology
-        virtual void updateMesh(const mapPolyMesh& mpm);
-
-        //- Write
-        virtual void write(Ostream& os) const;
-
-        //- Write dictionary
-        virtual void writeDict(Ostream& os) const;
 
 
     // Assign addressing
@@ -392,7 +408,19 @@ public:
         void operator=(const faceZone& zn);
 
 
+    // Mesh Changes
+
+        //- Correct patch after moving points
+        virtual void movePoints(const pointField& pts);
+
+        //- Update for changes in topology
+        virtual void updateMesh(const mapPolyMesh& mpm);
+
+
     // I-O
+
+        //- Write (dictionary entries)
+        virtual void write(Ostream& os) const;
 
         //- Ostream Operator
         friend Ostream& operator<<(Ostream& os, const faceZone& zn);
@@ -411,6 +439,14 @@ public:
         //- Deprecated(2023-09) same as backCells
         //  \deprecated(2023-09) same as backCells #1832
         const labelList& slaveCells() const { return backCells(); }
+
+        //- Deprecated(2025-09) Write dictionary
+        //  \deprecated(2025-09) Write dictionary
+        FOAM_DEPRECATED_FOR(2025-09, "write() or operator<<")
+        void writeDict(Ostream& os) const
+        {
+            os.beginBlock(name()); write(os); os.endBlock();
+        }
 };
 
 

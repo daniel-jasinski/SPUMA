@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -113,21 +113,6 @@ protected:
 
 public:
 
-        //- Set updated state
-        void setUpdated(bool state) noexcept
-        {
-            updated_ = state;
-        }
-
-        //- Set matrix manipulated state
-        void setManipulated(bool state) noexcept
-        {
-            manipulatedMatrix_ = state;
-        }
-
-
-public:
-
     //- Debug switch to disallow the use of generic fvPatchField
     static int disallowGenericPatchField;
 
@@ -184,6 +169,12 @@ public:
             return Foam::fieldTypes::zeroGradientType;
         }
 
+        //- The type name for \c zeroValue patch fields
+        static const word& zeroValueType() noexcept
+        {
+            return Foam::fieldTypes::zeroValueType;
+        }
+
 
     // Member Functions
 
@@ -238,6 +229,12 @@ public:
             return patchType_;
         }
 
+        //- True if the type does not correspond to the constraint type
+        virtual bool constraintOverride() const
+        {
+            return !patchType_.empty() && patchType_ != type();
+        }
+
 
     // Solution
 
@@ -247,10 +244,22 @@ public:
             return updated_;
         }
 
+        //- Set updated state
+        void setUpdated(bool state) noexcept
+        {
+            updated_ = state;
+        }
+
         //- True if the matrix has already been manipulated
         bool manipulatedMatrix() const noexcept
         {
             return manipulatedMatrix_;
+        }
+
+        //- Set matrix manipulated state
+        void setManipulated(bool state) noexcept
+        {
+            manipulatedMatrix_ = state;
         }
 
         //- Use implicit formulation for coupled patches only
@@ -295,6 +304,9 @@ public:
 
         //- The value_type for the patch field
         typedef Type value_type;
+
+        //- The component type for patch field
+        typedef typename pTraits<Type>::cmptType cmptType;
 
         //- The internal field type associated with the patch field
         typedef DimensionedField<Type, volMesh> Internal;
@@ -454,15 +466,29 @@ public:
             const fvPatchFieldMapper&
         );
 
-        //- Construct as copy
-        fvPatchField(const fvPatchField<Type>&);
-
-        //- Construct as copy setting internal field reference
+        //- Copy construct onto a new patch with internal field reference
+        //- and specified value
         fvPatchField
         (
-            const fvPatchField<Type>&,
-            const DimensionedField<Type, volMesh>&
+            const fvPatchField<Type>& pfld,
+            const fvPatch& p,
+            const DimensionedField<Type, volMesh>& iF,
+            const Type& value
         );
+
+        //- Copy construct with internal field reference
+        fvPatchField
+        (
+            const fvPatchField<Type>& pfld,
+            const DimensionedField<Type, volMesh>& iF
+        );
+
+        //- Copy construct
+        fvPatchField(const fvPatchField<Type>& pfld)
+        :
+            fvPatchField<Type>(pfld, pfld.internalField())
+        {}
+
 
         //- Clone patch field with its own internal field reference
         virtual tmp<fvPatchField<Type>> clone() const
@@ -601,8 +627,11 @@ public:
             //- Return patch-normal gradient
             virtual tmp<Field<Type>> snGrad() const;
 
+            //- Retrieve patch-normal gradient [contiguous storage]
+            virtual void snGrad(UList<Type>& result) const;
+
             //- Return patch-normal gradient for coupled-patches
-            //  using the deltaCoeffs provided
+            //- using the deltaCoeffs provided
             virtual tmp<Field<Type>> snGrad
             (
                 const scalarField& deltaCoeffs
@@ -610,6 +639,37 @@ public:
             {
                 NotImplemented;
                 return *this;
+            }
+
+            //- Retrieve patch-normal gradient for coupled-patches
+            //- using the deltaCoeffs provided [contiguous storage]
+            virtual void snGrad
+            (
+                const scalarField& deltaCoeffs,
+                UList<Type>&
+            ) const
+            {
+                NotImplemented;
+            }
+
+            //- Return internal field next to patch
+            virtual tmp<Field<Type>> patchInternalField() const;
+
+            //- Retrieve internal field next to patch
+            //  \param [out] pfld The extracted patch field.
+            virtual void patchInternalField(UList<Type>& pfld) const;
+
+            //- Return patchField on the opposite patch of a coupled patch
+            virtual tmp<Field<Type>> patchNeighbourField() const
+            {
+                NotImplemented;
+                return *this;
+            }
+
+            //- Retrieve patchField on the opposite patch of a coupled patch
+            virtual void patchNeighbourField(UList<Type>&) const
+            {
+                NotImplemented;
             }
 
             //- Update the coefficients associated with the patch field
@@ -621,20 +681,6 @@ public:
             //  provided as the amount of geometric overlap for 'duplicate'
             //  patches. Sets Updated to true
             virtual void updateWeightedCoeffs(const scalarField& weights);
-
-            //- Return internal field next to patch
-            virtual tmp<Field<Type>> patchInternalField() const;
-
-            //- Extract internal field next to patch
-            // \param [out] pfld The extracted patch field.
-            virtual void patchInternalField(Field<Type>& pfld) const;
-
-            //- Return patchField on the opposite patch of a coupled patch
-            virtual tmp<Field<Type>> patchNeighbourField() const
-            {
-                NotImplemented;
-                return *this;
-            }
 
             //- Initialise the evaluation of the patch field
             virtual void initEvaluate
@@ -669,10 +715,10 @@ public:
             {}
 
             //- Return the matrix diagonal coefficients corresponding to the
-            //  evaluation of the value of this patchField with given weights
+            //- evaluation of the value of this patchField with given weights
             virtual tmp<Field<Type>> valueInternalCoeffs
             (
-                const tmp<Field<scalar>>&
+                const tmp<scalarField>&
             ) const
             {
                 NotImplemented;
@@ -680,10 +726,10 @@ public:
             }
 
             //- Return the matrix source coefficients corresponding to the
-            //  evaluation of the value of this patchField with given weights
+            //- evaluation of the value of this patchField with given weights
             virtual tmp<Field<Type>> valueBoundaryCoeffs
             (
-                const tmp<Field<scalar>>&
+                const tmp<scalarField>&
             ) const
             {
                 NotImplemented;
@@ -691,7 +737,7 @@ public:
             }
 
             //- Return the matrix diagonal coefficients corresponding to the
-            //  evaluation of the gradient of this patchField
+            //- evaluation of the gradient of this patchField
             virtual tmp<Field<Type>> gradientInternalCoeffs() const
             {
                 NotImplemented;
@@ -699,8 +745,8 @@ public:
             }
 
             //- Return the matrix diagonal coefficients corresponding to the
-            //  evaluation of the gradient of this coupled patchField
-            //  using the deltaCoeffs provided
+            //- evaluation of the gradient of this coupled patchField
+            //- using the deltaCoeffs provided
             virtual tmp<Field<Type>> gradientInternalCoeffs
             (
                 const scalarField& deltaCoeffs
@@ -711,7 +757,7 @@ public:
             }
 
             //- Return the matrix source coefficients corresponding to the
-            //  evaluation of the gradient of this patchField
+            //- evaluation of the gradient of this patchField
             virtual tmp<Field<Type>> gradientBoundaryCoeffs() const
             {
                 NotImplemented;
@@ -719,8 +765,8 @@ public:
             }
 
             //- Return the matrix source coefficients corresponding to the
-            //  evaluation of the gradient of this coupled patchField
-            //  using the deltaCoeffs provided
+            //- evaluation of the gradient of this coupled patchField
+            //- using the deltaCoeffs provided
             virtual tmp<Field<Type>> gradientBoundaryCoeffs
             (
                 const scalarField& deltaCoeffs
@@ -729,7 +775,6 @@ public:
                 NotImplemented;
                 return *this;
             }
-
 
             //- Manipulate matrix
             virtual void manipulateMatrix(fvMatrix<Type>& matrix);
@@ -748,6 +793,69 @@ public:
                 const label iMatrix,
                 const direction cmp
             );
+
+
+        // Contiguous storage
+
+            //- Retrieve the matrix diagonal coefficients corresponding to the
+            //- evaluation of the value of this patchField with given weights
+            virtual void valueInternalCoeffs
+            (
+                const tmp<Field<scalar>>&,
+                UList<Type>&
+            ) const
+            {
+                NotImplemented;
+            }
+
+            //- Retrieve the matrix source coefficients corresponding to the
+            //- evaluation of the value of this patchField with given weights
+            virtual void valueBoundaryCoeffs
+            (
+                const tmp<Field<scalar>>&,
+                UList<Type>&
+            ) const
+            {
+                NotImplemented;
+            }
+
+            //- Retrieve the matrix diagonal coefficients corresponding to the
+            //- evaluation of the gradient of this patchField
+            virtual void gradientInternalCoeffs(UList<Type>&) const
+            {
+                NotImplemented;
+            }
+
+            //- Retrieve the matrix diagonal coefficients corresponding to the
+            //- evaluation of the gradient of this coupled patchField
+            //- using the deltaCoeffs provided
+            virtual void gradientInternalCoeffs
+            (
+                const scalarField& deltaCoeffs,
+                UList<Type>&
+            ) const
+            {
+                NotImplemented;
+            }
+
+            //- Retrieve the matrix source coefficients corresponding to the
+            //- evaluation of the gradient of this patchField
+            virtual void gradientBoundaryCoeffs(UList<Type>&) const
+            {
+                NotImplemented;
+            }
+
+            //- Retrieve the matrix source coefficients corresponding to the
+            //- evaluation of the gradient of this coupled patchField
+            //- using the deltaCoeffs provided
+            virtual void gradientBoundaryCoeffs
+            (
+                const scalarField& deltaCoeffs,
+                UList<Type>&
+            ) const
+            {
+                NotImplemented;
+            }
 
 
     // Other

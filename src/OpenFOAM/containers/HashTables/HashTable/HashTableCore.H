@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2020 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -31,7 +31,6 @@ Description
     Template invariant parts of hash table implementation.
 
 SourceFiles
-    HashTableCoreI.H
     HashTableCore.C
 
 \*---------------------------------------------------------------------------*/
@@ -41,7 +40,6 @@ SourceFiles
 
 #include "stdFoam.H"
 #include "label.H"
-#include "uLabel.H"
 #include "className.H"
 #include "nullObject.H"
 
@@ -57,17 +55,19 @@ namespace Foam
 //- Bits that are independent of HashTable template parameters.
 struct HashTableCore
 {
-    //- Maximum allowable internal table size. Approximately labelMax/4
-    FOAM_EXPORT_DATA static const label maxTableSize;
+    //- Maximum allowable internal table size (must be a power of two!).
+    // - approximately (INT32_MAX/4) => 0x20000000
+    // - don't need an int64 version
+    static constexpr int32_t maxTableSize = (1 << (32-3));
 
     //- Return a canonical (power-of-two) of the requested size.
-    static label canonicalSize(const label requested_size);
+    static label canonicalSize(const label size) noexcept;
 
     //- Declare type-name (with debug switch)
     ClassName("HashTable");
 
     //- Default construct
-    HashTableCore() noexcept = default;
+    constexpr HashTableCore() noexcept = default;
 
     static_assert
     (
@@ -76,7 +76,9 @@ struct HashTableCore
     );
 
 
-    //- Factory class for creating a begin/end pair for any const iterator.
+    //- Factory class for creating a begin/end pair for any const iterator
+    //- type, normally associated with a HashTable.
+    //  Uses begin iterator and size for bookkeeping.
     template<class IteratorType, class TableType>
     class const_iterator_pair
     {
@@ -86,19 +88,27 @@ struct HashTableCore
     public:
 
         //- Default construct an empty pair
-        inline const_iterator_pair();
+        const_iterator_pair()
+        :
+            size_(0),
+            iter_()
+        {}
 
         //- Construct begin/end pair for table
-        inline const_iterator_pair(const TableType& tbl);
+        const_iterator_pair(const TableType& tbl)
+        :
+            size_(tbl.size()),
+            iter_(tbl.begin())
+        {}
 
         bool empty() const noexcept { return !size_; }
         label size() const noexcept { return size_; }
 
-        inline IteratorType begin() const;
-        inline IteratorType cbegin() const;
+        IteratorType begin() const noexcept { return iter_; }
+        IteratorType cbegin() const noexcept { return iter_; }
 
-        inline IteratorType end() const;
-        inline IteratorType cend() const;
+        IteratorType end() const { return IteratorType(); }
+        IteratorType cend() const { return IteratorType(); }
     };
 };
 
@@ -106,10 +116,6 @@ struct HashTableCore
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#include "HashTableCoreI.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

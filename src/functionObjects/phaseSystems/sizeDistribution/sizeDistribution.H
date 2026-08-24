@@ -33,51 +33,85 @@ Description
     balance modeling functionality of the reactingEulerFoam solvers. It can be
     applied to a specific cellZone or the entire domain.
 
-    Example of function object specification:
+Usage
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    box.all.numberDensity.volume.bubbles
+    sizeDistributionFO
     {
-        type sizeDistribution;
-        libs (reactingEulerFoamFunctionObjects);
-        writeControl    writeTime;
-        writeInterval   1;
-        log             true;
+        // Mandatory entries
+        type                sizeDistribution;
+        libs                (reactingEulerFoamFunctionObjects);
+        selectionMode       <word>;
+        functionType        <word>;
+        abszissaType        <word>;
+        populationBalance   <word>;
+
+        // Conditional entries
+
+            // when 'selectionMode' is 'cellZone'
+            cellZone            <word>;
+
+        // Optional entries
+        writeVolume         <bool>;
+        momentOrder         <label>;
+        normalize           <bool>;
+
+        // Inherited entries
         ...
-        functionType        numberDensity;
-        abszissaType        volume;
-        selectionMode       all;
-        populationBalanceModel   bubbles;
-        normalize           true;
     }
     \endverbatim
 
-Usage
+    where the entries mean:
     \table
-        Property        | Description           | Required    | Default value
-        type            | type name: sizeDistribution | yes |
-        functionType    | numberDensity, volumeDensity, numberConcentration,
-                          moments | yes |
-        abszissaType    | volume, diameter | yes |
-        momentOrder     | Write moment up to given order | no | 0
-        selectionMode | Evaluate for cellZone or entire mesh | yes |
-        cellZone      | Required if selectionMode is cellZone |   |
-        populationBalanceModel    | Respective populationBalanceModel | yes |
-        normalize | Normalization | no |
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: sizeDistribution        | word | yes  | -
+      libs     | Library name: reactingEulerFoamFunctionObjects | word | yes | -
+      selectionMode | Evaluate for cellZone or entire mesh | word | yes | -
+      functionType  | Name of the function type     | word | yes  | -
+      abszissaType  | Name of the abszissa type     | word | yes  | -
+      populationBalance | Name of the model         | word | yes  | -
+      momentOrder | Write the moment up to given order | label | no | 0
+      normalize | Flag to normalize the results     | bool | no | false
+      cellZone | Name of the cell zone | word | conditional | -
     \endtable
 
-See also
-    Foam::diameterModels::populationBalanceModel
-    Foam::functionObject
-    Foam::functionObjects::fvMeshFunctionObject
-    Foam::functionObjects::writeFile
+    Options for the \c selectionMode entry:
+    \verbatim
+      cellZone | Select the specified cell zone
+      all      | Select all the cells
+    \endverbatim
+
+    Options for the \c functionType entry:
+    \verbatim
+      numberDensity       | Calculates the number density function (NDF)
+      volumeDensity       | Calculates the volume density function (VDF)
+      numberConcentration | Calculates the number concentration
+      moments             | Calculates the moments of the distribution
+    \endverbatim
+
+    Options for the \c abszissaType entry:
+    \verbatim
+      diameter | Use particle diameter as abscissa
+      volume   | Use particle volume as abscissa
+    \endverbatim
+
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
+      - \link populationBalanceModel.H \endlink
+
+Note
+    The choice of \c abszissaType determines whether the distribution and
+    its moments are calculated with respect to particle diameter or particle
+    volume.
 
 SourceFiles
     sizeDistribution.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_sizeDistribution_H
-#define functionObjects_sizeDistribution_H
+#ifndef Foam_functionObjects_sizeDistribution_H
+#define Foam_functionObjects_sizeDistribution_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -104,10 +138,9 @@ class sizeDistribution
     public fvMeshFunctionObject,
     public writeFile
 {
-
 public:
 
-    // Public data types
+    // Public Enumerations
 
         //- Selection mode type enumeration
         enum selectionModeTypes
@@ -133,7 +166,7 @@ public:
         static const Enum<functionTypes> functionTypeNames_;
 
 
-        //- abszissa type enumeration
+        //- Abszissa type enumeration
         enum abszissaTypes
         {
             atDiameter,
@@ -146,7 +179,7 @@ public:
 
 protected:
 
-    // Protected data
+    // Protected Data
 
         //- Construction dictionary
         dictionary dict_;
@@ -223,7 +256,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         sizeDistribution
         (
             const word& name,
@@ -256,13 +289,15 @@ public:
             return refCast<const fvMesh>(obr_);
         }
 
-        //- Read from dictionary
+    // I-O
+
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write
+        //- Write the function-object results
         virtual bool write();
 };
 

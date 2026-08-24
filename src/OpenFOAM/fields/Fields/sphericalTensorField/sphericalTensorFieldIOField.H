@@ -39,7 +39,7 @@ namespace Foam
     typedef IOField<sphericalTensorField> sphericalTensorFieldIOField;
 
     //! Compact IO for a Field of sphericalTensorField
-    typedef CompactIOField<sphericalTensorField, sphericalTensor>
+    typedef CompactIOField<sphericalTensorField>
     sphericalTensorFieldCompactIOField;
 }
 

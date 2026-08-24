@@ -7,7 +7,7 @@
 #    \\/     M anipulation  |
 #------------------------------------------------------------------------------
 #     Copyright (C) 2011-2016 OpenFOAM Foundation
-#     Copyright (C) 2016-2022 OpenCFD Ltd.
+#     Copyright (C) 2016-2025 OpenCFD Ltd.
 #------------------------------------------------------------------------------
 # License
 #     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -19,7 +19,7 @@
 #     Start paraview with OpenFOAM libraries and reader modules.
 #
 # Note
-#     Combining -block, -vtk, -builtin options with -region option yields
+#     Combining -vtk/-builtin options with -region option yields
 #     undefined behaviour
 #
 #------------------------------------------------------------------------------
@@ -40,10 +40,10 @@ printHelp() {
 Usage: ${0##*/} [OPTION] [--] [PARAVIEW_OPTION]
 options:
   -block            Use blockMesh reader (.blockMesh extension)
-  -vtk              Use VTK builtin OpenFOAM reader (.foam extension)
+  -vtk              Use VTK builtin reader (.foam extension)
   -case <dir>       Specify alternative case directory, default is the cwd
   -region <name>    Specify alternative mesh region
-  -touch            Create the file (eg, .blockMesh, .OpenFOAM, .foam, ...)
+  -touch            Create the file (eg, .blockMesh, .foam, .OpenFOAM, ...)
   -touch-all        Create .blockMesh, .foam, .OpenFOAM files (for all regions)
 HELP_HEAD
 
@@ -52,8 +52,9 @@ then
 cat<<HELP_FULL
   -touch-proc       Same as '-touch' but for each processor
   -plugin-path=DIR  Define plugin directory (default: \$PV_PLUGIN_PATH)
-  --help            Display ParaView help
   -help-build       Display help for building reader module and exit
+  -help-paraview    Display ParaView help
+  --help            Display ParaView help
 HELP_FULL
 fi
 
@@ -61,7 +62,8 @@ cat<<HELP_TAIL_COMMON
   -help             Display short help and exit
   -help-full        Display full help and exit
 
-Start paraview with the OpenFOAM libraries and reader modules.
+Start paraview with the OpenFOAM libraries and reader modules,
+or with the builtin VTK reader.
 Note that paraview options begin with double dashes.
 
 Uses paraview=$(command -v paraview)
@@ -109,10 +111,20 @@ extension=OpenFOAM
 plugin=foamReader
 
 # Parse options
-unset regionName optTouch
+unset caseName regionName optTouch
 while [ "$#" -gt 0 ]
 do
     case "$1" in
+    (--)
+        shift
+        break   # Stop option parsing
+        ;;
+    (--help | -help-paraview)
+        exec paraview --help
+        echo "Error: could not exec paraview" 1>&2
+        exit 1  # This should not have happened
+        ;;
+
     -help-b*)   # Build help
         printBuildHelp
         exit 0
@@ -152,14 +164,21 @@ do
         extension=foam
         unset plugin
         ;;
+
+    -case=*)
+        caseName="${1#*=}"
+        ;;
     -case)
+        caseName="$2"
         [ "$#" -ge 2 ] || die "'$1' option requires an argument"
-        cd "$2" 2>/dev/null || die "directory does not exist: '$2'"
         shift
         ;;
+    -region=*)
+        regionName="${1#*=}"
+        ;;
     -region)
+        regionName="$2"
         [ "$#" -ge 2 ] || die "'$1' option requires an argument"
-        regionName=$2
         shift
         ;;
     -touch)
@@ -174,15 +193,7 @@ do
         optTouch=processor
         unset plugin
         ;;
-    --)
-        shift
-        break    # Stop here, treat balance as paraview options
-        ;;
-    --help)      # Emit paraview help directly
-        exec paraview "$@"
-        echo "Error: could not exec paraview" 1>&2
-        exit 1   # This should not have happened
-        ;;
+
     --*)
         break    # Stop here, treat _this_ and balance as paraview options
         ;;
@@ -193,6 +204,10 @@ do
     shift
 done
 
+if [ -n "$caseName" ]
+then
+    cd "$caseName" 2>/dev/null || die "directory does not exist: '$caseName'"
+fi
 
 pluginError="No supplementary ParaView/OpenFOAM reader modules"
 
@@ -281,41 +296,69 @@ done
 # Get a sensible caseName from the directory name
 caseName="${PWD##*/}"
 caseFile="$caseName.$extension"
-fvControls="system"
+systemDir="system"
 
 if [ -n "$regionName" ]
 then
-    [ -d "constant/$regionName" ] || {
-        echo "FATAL ERROR: Region $regionName does not exist" 1>&2
+    # Adjust locations and control file names
+    caseFile="$caseName{$regionName}.$extension"
+    systemDir="system/$regionName"
+
+    # Test general validity of region
+    requiredDir="constant"
+
+    case "$extension" in
+    (block | blockMesh) requiredDir="system" ;;
+    esac
+
+    [ -d "$requiredDir/$regionName" ] || {
+        exec 1>&2
+        echo
+        echo "Error: region '$regionName' may not exist (no $requiredDir/)"
+        echo
         exit 1
     }
-    caseFile="$caseName{$regionName}.$extension"
-    fvControls="$fvControls/$regionName"
 fi
 
 case "${optTouch:-false}" in
-all)
-    extension=OpenFOAM
+(all)
+    extension=blockMesh
     if [ -f system/blockMeshDict ] || [ -f constant/polyMesh/blockMeshDict ]
     then
-        touch "$caseName.blockMesh"
-        echo "Created '$caseName.blockMesh'" 1>&2
+        touch "$caseName.$extension"
+        echo "Created '$caseName.$extension'" 1>&2
     fi
-    touch "$caseName.$extension" "$caseName.foam"
-    echo "Created '$caseName.$extension' '$caseName.foam'" 1>&2
+
     # Discover probable regions
-    for region in constant/*
+    for regionName in system/*/blockMeshDict
     do
-        if [ -d "$region" ] && [ -d "$region/polyMesh" ]
+        if [ -f "$regionName" ]
         then
-            regionName="${region##*/}"
+            regionName="${regionName%/*}"   # w/o trailing "/blockMeshDict"
+            regionName="${regionName##*/}"  # w/o leading "constant/"
+            touch "$caseName{$regionName}.$extension"
+            echo "Created '$caseName{$regionName}.$extension'" 1>&2
+        fi
+    done
+
+    extension=OpenFOAM
+    touch "$caseName.foam" "$caseName.$extension"
+    echo "Created '$caseName.foam' '$caseName.$extension'" 1>&2
+
+    # Discover probable regions
+    for regionName in constant/*/polyMesh
+    do
+        if [ -d "$regionName" ]
+        then
+            regionName="${regionName%/*}"   # w/o trailing "/polyMesh"
+            regionName="${regionName##*/}"  # w/o leading "constant/"
             touch "$caseName{$regionName}.$extension"
             echo "Created '$caseName{$regionName}.$extension'" 1>&2
         fi
     done
     exit 0
     ;;
-proc*)
+(proc*)
     for i in processor*
     do
     (
@@ -325,7 +368,7 @@ proc*)
     echo "Created '$caseFile' for processor directories" 1>&2
     exit 0
     ;;
-true)
+(true)
     touch "$caseFile"
     echo "Created '$caseFile'" 1>&2
     exit 0
@@ -386,7 +429,10 @@ else
     case "$plugin" in
     (blockReader)
         blockMeshDict=system/blockMeshDict
-        if [ -f constant/polyMesh/blockMeshDict ]
+        if [ -n "$regionName" ]
+        then
+            blockMeshDict=system/"$regionName"/blockMeshDict
+        elif [ -f constant/polyMesh/blockMeshDict ]
         then
             blockMeshDict=constant/polyMesh/blockMeshDict
         fi
@@ -397,8 +443,8 @@ else
     (foamReader)
         hasFiles \
             system/controlDict \
-            "$fvControls/fvSchemes" \
-            "$fvControls/fvSolution" || warn=true
+            "$systemDir/fvSchemes" \
+            "$systemDir/fvSolution" || warn=true
         ;;
     esac
 

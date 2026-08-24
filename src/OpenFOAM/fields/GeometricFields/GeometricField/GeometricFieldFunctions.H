@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -225,40 +225,45 @@ cmptAv(const tmp<GeometricField<Type, PatchField, GeoMesh>>& tf1);
 template<class Type, template<class> class PatchField, class GeoMesh>          \
 dimensioned<ReturnType> Func                                                   \
 (                                                                              \
-    const GeometricField<Type, PatchField, GeoMesh>& f1                        \
+    const GeometricField<Type, PatchField, GeoMesh>& f1,                       \
+    const label comm = UPstream::worldComm                                     \
 );                                                                             \
                                                                                \
 template<class Type, template<class> class PatchField, class GeoMesh>          \
 dimensioned<ReturnType> Func                                                   \
 (                                                                              \
-    const tmp<GeometricField<Type, PatchField, GeoMesh>>& tf1                  \
+    const tmp<GeometricField<Type, PatchField, GeoMesh>>& tf1,                 \
+    const label comm = UPstream::worldComm                                     \
 );
 
 UNARY_REDUCTION_FUNCTION_WITH_BOUNDARY(Type, max, maxOp)
 UNARY_REDUCTION_FUNCTION_WITH_BOUNDARY(Type, min, minOp)
-UNARY_REDUCTION_FUNCTION_WITH_BOUNDARY(MinMax<Type>, minMax, minMaxOp)
-UNARY_REDUCTION_FUNCTION_WITH_BOUNDARY(scalarMinMax, minMaxMag, minMaxMagOp)
+UNARY_REDUCTION_FUNCTION_WITH_BOUNDARY(MinMax<Type>, minMax, plusOp)
+UNARY_REDUCTION_FUNCTION_WITH_BOUNDARY(scalarMinMax, minMaxMag, plusOp)
 
 #undef UNARY_REDUCTION_FUNCTION_WITH_BOUNDARY
 
 
-#define UNARY_REDUCTION_FUNCTION(ReturnType, Func, gFunc)                      \
+#define UNARY_REDUCTION_FUNCTION(ReturnType, Func)                             \
                                                                                \
+/*! \brief Forwards to Func on internalField */                                \
 template<class Type, template<class> class PatchField, class GeoMesh>          \
 dimensioned<ReturnType> Func                                                   \
 (                                                                              \
-    const GeometricField<Type, PatchField, GeoMesh>& f1                        \
+    const GeometricField<Type, PatchField, GeoMesh>& f1,                       \
+    const label comm = UPstream::worldComm                                     \
 );                                                                             \
                                                                                \
 template<class Type, template<class> class PatchField, class GeoMesh>          \
 dimensioned<ReturnType> Func                                                   \
 (                                                                              \
-    const tmp<GeometricField<Type, PatchField, GeoMesh>>& tf1                  \
+    const tmp<GeometricField<Type, PatchField, GeoMesh>>& tf1,                 \
+    const label comm = UPstream::worldComm                                     \
 );
 
-UNARY_REDUCTION_FUNCTION(Type, sum, gSum)
-UNARY_REDUCTION_FUNCTION(Type, average, gAverage)
-UNARY_REDUCTION_FUNCTION(typename typeOfMag<Type>::type, sumMag, gSumMag)
+UNARY_REDUCTION_FUNCTION(Type, sum)
+UNARY_REDUCTION_FUNCTION(Type, average)
+UNARY_REDUCTION_FUNCTION(typename typeOfMag<Type>::type, sumMag)
 
 #undef UNARY_REDUCTION_FUNCTION
 
@@ -282,7 +287,7 @@ void clamp
 (
     GeometricField<Type, PatchField, GeoMesh>& result,
     const GeometricField<Type, PatchField, GeoMesh>& f1,
-    const Foam::zero_one
+    Foam::zero_one
 );
 
 template<class Type, template<class> class PatchField, class GeoMesh>
@@ -290,7 +295,7 @@ tmp<GeometricField<Type, PatchField, GeoMesh>>
 clamp
 (
     const GeometricField<Type, PatchField, GeoMesh>& f1,
-    const Foam::zero_one
+    Foam::zero_one
 );
 
 template<class Type, template<class> class PatchField, class GeoMesh>
@@ -298,7 +303,7 @@ tmp<GeometricField<Type, PatchField, GeoMesh>>
 clamp
 (
     const tmp<GeometricField<Type, PatchField, GeoMesh>>& tf1,
-    const Foam::zero_one
+    Foam::zero_one
 );
 
 BINARY_TYPE_FUNCTION_FS(Type, Type, MinMax<Type>, clamp)

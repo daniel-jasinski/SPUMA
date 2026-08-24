@@ -293,7 +293,6 @@ void Foam::LduMatrix<Type, DType, LUType>::sumA
 
                 for (label i = start; i < end; i++)
                 {
-                    const label nbrCell = lcsrPtr[i];
                     val += dot(lowercsrPtr[i], localOne);
                 }
             }
@@ -304,7 +303,6 @@ void Foam::LduMatrix<Type, DType, LUType>::sumA
 
                 for (label i = start; i < end; i++)
                 {
-                    const label nbrCell = uPtr[i];
                     val += dot(upperPtr[i], localOne);
                 }
             }

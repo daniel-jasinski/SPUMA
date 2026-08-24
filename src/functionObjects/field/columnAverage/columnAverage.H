@@ -43,49 +43,41 @@ Description
     Operands:
     \table
       Operand           | Type               | Location
-      input             | vol\<Type\>Field   | $FOAM_CASE/\<time\>/\<inpField\>
+      input             | vol<Type>Field     | <time>/inputField
       output file       | -                  | -
-      output field      | vol\<Type\>Field   | $FOAM_CASE/\<time\>/\<outField\>
+      output field      | vol<Type>Field     | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    columnAverage1
+    columnAverageFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            columnAverage;
         libs            (fieldFunctionObjects);
+        patches         (<wordRes>);   // (<patch1> <patch2> ... <patchN>);
+        fields          (<wordList>);  // (<field1> <field2> ... <fieldN>);
 
-        // Mandatory entries (runtime modifiable)
-        patches         (<patch1> <patch2> ... <patchN>);
-        fields          (<field1> <field2> ... <fieldN>);
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: columnAverage           | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
-      patches      | Names of patches to collapse onto  | word |  yes  | -
-      fields       | Names of the operand fields        | word |  yes  | -
+      patches      | Names of patches to collapse onto  | wordRes  |  yes  | -
+      fields       | Names of the operand fields        | wordList |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::columnAverage
+      - \link functionObject.H \endlink
 
 SourceFiles
     columnAverage.C
@@ -93,8 +85,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_columnAverage_H
-#define functionObjects_columnAverage_H
+#ifndef Foam_functionObjects_columnAverage_H
+#define Foam_functionObjects_columnAverage_H
 
 #include "volFieldsFwd.H"
 #include "fvMeshFunctionObject.H"
@@ -105,6 +97,7 @@ SourceFiles
 namespace Foam
 {
 
+// Forward Declarations
 class globalIndex;
 class meshStructure;
 
@@ -127,6 +120,7 @@ class columnAverage
         //- Fields to collapse
         volFieldSelection fieldSet_;
 
+        //- Global addressing and mesh structure for column-based addressing
         mutable autoPtr<globalIndex> globalFaces_;
         mutable autoPtr<globalIndex> globalEdges_;
         mutable autoPtr<globalIndex> globalPoints_;
@@ -154,7 +148,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         columnAverage
         (
             const word& name,
@@ -175,13 +169,13 @@ public:
 
     // Member Functions
 
-        //- Read the settings
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the results
+        //- Write the function-object results
         virtual bool write();
 };
 

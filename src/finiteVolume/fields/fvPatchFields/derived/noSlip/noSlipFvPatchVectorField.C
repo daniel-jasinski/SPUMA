@@ -37,7 +37,8 @@ Foam::noSlipFvPatchVectorField::noSlipFvPatchVectorField
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    fixedValueFvPatchVectorField(p, iF, Zero)
+    // Field is zero
+    parent_bctype(p, iF, Zero)
 {}
 
 
@@ -48,7 +49,8 @@ Foam::noSlipFvPatchVectorField::noSlipFvPatchVectorField
     const dictionary& dict
 )
 :
-    fixedValueFvPatchVectorField(p, iF, Zero)
+    // Field is zero
+    parent_bctype(p, iF, Zero)
 {
     fvPatchFieldBase::readDict(dict);
 }
@@ -56,32 +58,25 @@ Foam::noSlipFvPatchVectorField::noSlipFvPatchVectorField
 
 Foam::noSlipFvPatchVectorField::noSlipFvPatchVectorField
 (
-    const noSlipFvPatchVectorField& ptf,
+    const noSlipFvPatchVectorField& pfld,
     const fvPatch& p,
     const DimensionedField<vector, volMesh>& iF,
-    const fvPatchFieldMapper& mapper
+    const fvPatchFieldMapper&
 )
 :
-    fixedValueFvPatchVectorField(p, iF, Zero)
+    // Field is zero. No mapping
+    parent_bctype(pfld, p, iF, Zero)
 {}
 
 
 Foam::noSlipFvPatchVectorField::noSlipFvPatchVectorField
 (
-    const noSlipFvPatchVectorField& mwvpvf
-)
-:
-    fixedValueFvPatchVectorField(mwvpvf)
-{}
-
-
-Foam::noSlipFvPatchVectorField::noSlipFvPatchVectorField
-(
-    const noSlipFvPatchVectorField& mwvpvf,
+    const noSlipFvPatchVectorField& pfld,
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    fixedValueFvPatchVectorField(mwvpvf, iF)
+    // Field is zero
+    parent_bctype(pfld, pfld.patch(), iF, Zero)
 {}
 
 
@@ -90,6 +85,7 @@ Foam::noSlipFvPatchVectorField::noSlipFvPatchVectorField
 void Foam::noSlipFvPatchVectorField::write(Ostream& os) const
 {
     fvPatchField<vector>::write(os);
+    // Without writeValueEntry() since the value == zero
 }
 
 

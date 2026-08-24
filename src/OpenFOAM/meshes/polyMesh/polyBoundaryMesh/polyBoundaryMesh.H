@@ -6,7 +6,8 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,12 +29,13 @@ Class
     Foam::polyBoundaryMesh
 
 Description
-    A polyBoundaryMesh is a polyPatch list with additional search methods
-    and registered IO.
+    A polyBoundaryMesh is a polyPatch list with registered IO,
+    a reference to the associated polyMesh,
+    with additional search methods etc.
 
 SourceFiles
     polyBoundaryMesh.C
-    polyBoundaryMeshTemplates.C
+    polyBoundaryMesh.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -74,6 +76,9 @@ class polyBoundaryMesh
 
         //- Demand-driven: list of patch ids per face.
         mutable autoPtr<labelList> patchIDPtr_;
+
+        //- Demand-driven: list of patch offset per face.
+        mutable autoPtr<labelList> patchOffsetPtr_;
 
         //- Demand-driven: list of patch ids per group
         mutable autoPtr<HashTable<labelList>> groupIDsPtr_;
@@ -212,6 +217,9 @@ public:
         //- The number of processorPolyPatch patches
         label nProcessorPatches() const;
 
+        //- The number of boundary faces before the first processor patch.
+        label nNonProcessorFaces() const;
+
         //- Return a list of patch names
         wordList names() const;
 
@@ -223,6 +231,9 @@ public:
 
         //- Return a list of patch start face indices
         labelList patchStarts() const;
+
+        //- Return a list of patch offset face indices
+        const labelList& patchOffsets() const;
 
         //- Return a list of patch sizes
         labelList patchSizes() const;
@@ -241,6 +252,11 @@ public:
         //  Same as polyMesh::nBoundaryFaces()
         label nFaces() const noexcept;
 
+        //- The number of boundary faces with patches that match the
+        //- given predicate.
+        template<class UnaryPredicate>
+        label nFaces_if(UnaryPredicate pred) const;
+
         //- The face range for all boundary faces
         //  Spans [nInternalFaces, nFaces) of the underlying mesh
         labelRange range() const noexcept;
@@ -251,35 +267,49 @@ public:
         labelRange range(const label patchi) const;
 
 
-        //- Return (sorted) patch indices for all matches.
-        //  Optionally matches patch groups.
-        //  A no-op (returns empty list) for an empty matcher
+        //- The (sorted) patch indices for all matches,
+        //- optionally matching patch groups.
+        //  \returns an empty list for an empty matcher
         labelList indices
         (
             const wordRe& matcher,
             const bool useGroups = true
         ) const;
 
-        //- Return (sorted) patch indices for all matches.
-        //  Optionally matches patch groups.
-        //  A no-op (returns empty list) for an empty matcher
+        //- The (sorted) patch indices for all matches,
+        //- optionally matching patch groups.
+        //  \returns an empty list for an empty matcher
         labelList indices
         (
             const wordRes& matcher,
-            const bool useGroups = true
+            const bool useGroups = true  //!< Match patch groups
         ) const;
 
-        //- Return (sorted) patch indices for all selected matches that
-        //- are not ignored.
-        //- The selection logic as per Foam::wordRes::filter.
-        //  Optionally matches patch groups.
-        //  A no-op (returns empty list) for an empty select matcher
+        //- The (sorted) patch indices: logic as per Foam::wordRes::filter,
+        //- optionally matching patch groups.
+        //
+        //  An empty \em allow accepts everything not in \em deny.
+        //  A literal \em allow match has higher priority than any \em deny.
+        //  A regex \em allow match has lower priority than any \em deny.
+        //
+        //  \returns identity list when allow/deny are both empty.
         labelList indices
         (
-            const wordRes& select,
-            const wordRes& ignore,
-            const bool useGroups = true
+            const wordRes& allow,
+            const wordRes& deny,
+            const bool useGroups = true  //!< Match patch groups
         ) const;
+
+        //- Return (sorted) patch indices for patches that match the
+        //- given polyPatch type (uses \c isA test).
+        //- Can be used as a direct alternative to findPatchIDs
+        template<class PatchType>
+        labelList indices_if() const;
+
+        //- Return (sorted) patch indices for patches that match the
+        //- given predicate. Can be used as an alternative to findPatchIDs
+        template<class UnaryPredicate>
+        labelList indices_if(UnaryPredicate pred) const;
 
         //- Return patch index for the first match, return -1 if not found
         //  A no-op (returns -1) for an empty key
@@ -293,8 +323,12 @@ public:
             const bool allowNotFound = true
         ) const;
 
-        //- Find patch indices for a given polyPatch type
-        template<class Type>
+        //- Find patch by name and return const pointer.
+        //- \returns nullptr on error or for an empty patchName
+        const polyPatch* cfindPatch(const word& patchName) const;
+
+        //- Find patch indices for a given polyPatch type (uses \c isA test).
+        template<class PatchType>
         labelHashSet findPatchIDs() const;
 
         //- Lookup mesh face index and return (patchi, patchFacei) tuple
@@ -427,7 +461,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "polyBoundaryMeshTemplates.C"
+    #include "polyBoundaryMesh.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -77,8 +77,7 @@ public:
     // Static Data Members
 
         //- The name associated with the zone-labels dictionary entry
-        //- ("pointLabels")
-        static const char * const labelsName;
+        static constexpr const char* labelsName() { return "pointLabels"; }
 
 
     //- Runtime type information
@@ -145,13 +144,23 @@ public:
             const pointZoneMesh& zm
         );
 
-        //- Construct empty with original zone information (name, index, groups)
-        //- and mesh reference. Optionally specify a new index.
+        //- Copy construct with new mesh reference.
         pointZone
         (
             const pointZone& originalZone,
-            const Foam::zero,
             const pointZoneMesh& zm,
+            //! The new index (optional. -1 retains the original value)
+            const label newIndex = -1
+        );
+
+        //- Construct empty with original zone information (name, index, groups)
+        //- and mesh reference.
+        pointZone
+        (
+            const pointZone& originalZone,
+            Foam::zero,
+            const pointZoneMesh& zm,
+            //! The new index (optional. -1 retains the original value)
             const label newIndex = -1
         );
 
@@ -160,7 +169,8 @@ public:
         pointZone
         (
             const pointZone& originalZone,
-            const Foam::zero,
+            Foam::zero,
+            //! The new index (-1 retains the original value)
             const label index,
             const pointZoneMesh& zm
         );
@@ -171,6 +181,7 @@ public:
         (
             const pointZone& originalZone,
             const labelUList& addr,
+            //! The new index (-1 retains the original value)
             const label index,
             const pointZoneMesh& zm
         );
@@ -181,22 +192,29 @@ public:
         (
             const pointZone& originalZone,
             labelList&& addr,
+            //! The new index (-1 retains the original value)
             const label index,
             const pointZoneMesh& zm
         );
 
 
         //- Construct and return a clone, resetting the zone mesh
-        virtual autoPtr<pointZone> clone(const pointZoneMesh& zm) const
-        {
-            return autoPtr<pointZone>::New(*this, *this, index(), zm);
-        }
-
-        //- Construct and return a clone, resetting the point list
-        //- and zone mesh
         virtual autoPtr<pointZone> clone
         (
             const pointZoneMesh& zm,
+            //! The new index (optional. -1 retains the original value)
+            const label newIndex = -1
+        ) const
+        {
+            return autoPtr<pointZone>::New(*this, zm, newIndex);
+        }
+
+        //- Construct and return a clone,
+        //- resetting the point list and zone mesh
+        virtual autoPtr<pointZone> clone
+        (
+            const pointZoneMesh& zm,
+            //! The new index (-1 retains the original value)
             const label index,
             const labelUList& addr
         ) const
@@ -224,32 +242,34 @@ public:
 
     // Member Functions
 
+        //- The maximum index the zone may contain == mesh nPoints()
+        label max_index() const noexcept;
+
         //- Return reference to the zone mesh
         const pointZoneMesh& zoneMesh() const noexcept { return zoneMesh_; }
 
         //- The addressing (point IDs) used for the zone
-        const labelList& addressing() const noexcept
+        using zone::addressing;
+
+        //- The local index of the given mesh point, -1 if not in the zone
+        label whichPoint(const label meshPointID) const
         {
-            return static_cast<const labelList&>(*this);
+            return zone::localID(meshPointID);
         }
 
-        //- Helper function to re-direct to zone::localID(...)
-        label whichPoint(const label globalPointID) const;
 
+    // Checks
 
-        //- Check zone definition. Return true if in error.
-        virtual bool checkDefinition(const bool report = false) const;
+        //- Check zone definition.
+        //  \return True if any errors.
+        virtual bool checkDefinition(const bool report = false) const
+        {
+            return zone::checkDefinition(max_index(), report);
+        }
 
         //- Check whether zone is synchronised across coupled boundaries.
         //  \return True if any errors.
         virtual bool checkParallelSync(const bool report = false) const;
-
-        //- Correct patch after moving points
-        virtual void movePoints(const pointField&)
-        {}
-
-        //- Write dictionary
-        virtual void writeDict(Ostream& os) const;
 
 
     // Assign addressing
@@ -276,10 +296,31 @@ public:
         void operator=(labelList&& addr);
 
 
+    // Mesh Changes
+
+        //- Nothing to correct after moving points
+        virtual void movePoints(const pointField&)
+        {}
+
+
     // I-O
+
+        //- Write (dictionary entries)
+        virtual void write(Ostream& os) const;
 
         //- Ostream Operator
         friend Ostream& operator<<(Ostream& os, const pointZone& zn);
+
+
+    // Housekeeping
+
+        //- Deprecated(2025-09) Write dictionary
+        //  \deprecated(2025-09) Write dictionary
+        FOAM_DEPRECATED_FOR(2025-09, "write() or operator<<")
+        void writeDict(Ostream& os) const
+        {
+            os.beginBlock(name()); write(os); os.endBlock();
+        }
 };
 
 

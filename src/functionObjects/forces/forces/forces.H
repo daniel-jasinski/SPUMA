@@ -49,17 +49,17 @@ Description
     \table
       Operand       | Type           | Location
       input         | -              | -
-      output file   | dat            | postProcessing/\<FO\>/\<time\>/\<file\>s
-      output field  | volVectorField | \<time\>/\<outField\>s
+      output file   | dat            | postProcessing/<FO>/<time>/files
+      output field  | volVectorField | <time>/outputFields
     \endtable
 
-    where \c \<file\>s:
+    where \c files:
     \verbatim
       force.dat        | Forces
       moment.dat       | Moments
     \endverbatim
 
-    where \c \<outField\>s:
+    where \c outputFields:
     \verbatim
       <namePrefix>:force   | Force field
       <namePrefix>:moment  | Moment field
@@ -371,7 +371,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         forces
         (
             const word& name,
@@ -402,9 +402,6 @@ public:
 
     // Member Functions
 
-        //- Read the dictionary
-        virtual bool read(const dictionary& dict);
-
         //- Calculate forces and moments
         virtual void calcForcesMoments();
 
@@ -414,10 +411,15 @@ public:
         //- Return the total moment
         virtual vector momentEff() const;
 
-        //- Execute the function object
+    //I-O
+
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary&);
+
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write to data files/fields and to streams
+        //- Write the function-object results
         virtual bool write();
 };
 

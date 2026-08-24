@@ -42,54 +42,39 @@ Description
     Operands:
     \table
       Operand      | Type                          | Location
-      input        | {vol,surface}\<Type\>Field(s) <!--
-               --> | $FOAM_CASE/\<time\>/\<inpField\>s
+      input        | {vol,surface}<Type>Field(s)   | <time>/inputFields
       output file  | -                             | -
-      output field | {vol,surface}\<Type\>Field    <!--
-               --> | $FOAM_CASE/\<time\>/\<outField\>
+      output field | {vol,surface}<Type>Field      | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    subtract1
+    subtractFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            subtract;
         libs            (fieldFunctionObjects);
+        fields          (<wordList>);  // (<field1> <field2> ... <fieldN>);
 
-        // Mandatory (inherited) entry (runtime modifiable)
-        fields          (<field1> <field2> ... <fieldN>);
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: subtract                | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       fields       | Names of the operand fields        | wordList |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldsExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func "subtract(<field1>, <field2>, ..., <fieldN>)"
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldsExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::subtract
+      - \link fieldsExpression.H \endlink
 
 SourceFiles
     subtract.C
@@ -97,8 +82,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_subtract_H
-#define functionObjects_subtract_H
+#ifndef Foam_functionObjects_subtract_H
+#define Foam_functionObjects_subtract_H
 
 #include "fieldsExpression.H"
 
@@ -130,6 +115,7 @@ class subtract
 
 public:
 
+    //- Grants fieldsExpression access to private and protected members
     friend class fieldsExpression;
 
 
@@ -139,7 +125,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         subtract
         (
             const word& name,

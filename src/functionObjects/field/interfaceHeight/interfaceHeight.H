@@ -41,66 +41,55 @@ Description
     \table
       Operand        | Type | Location
       input          | -    | -
-      output file 1  | dat  | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/height
-      output file 2  | dat  | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/position
+      output file 1  | dat  | postProcessing/<FO>/<time>/height
+      output file 2  | dat  | postProcessing/<FO>/<time>/position
       output field   | -    | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    interfaceHeight1
+    interfaceHeightFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            interfaceHeight;
         libs            (fieldFunctionObjects);
+        locations       (<vectorList>);  // ((0 0 0) (10 0 0) (20 0 0));
 
-        // Mandatory entries (runtime modifiable)
-        locations       ((0 0 0) (10 0 0) (20 0 0));
+        // Optional entries
+        alpha           <word>;  // alpha.water;
+        liquid          <bool>;
+        direction       <vector>;
+        interpolationScheme    <word>;
 
-        // Optional entries (runtime modifiable)
-        alpha           alpha.water;
-        liquid          true;
-        direction       (1 0 0);
-        interpolationScheme    cellPoint;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: interfaceHeight         | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       locations    | Locations to report the height at  | vectorList | yes | -
       alpha        | Name of alpha field                | word |  no   | alpha
-      liquid       | Flag if the alpha field that of the liquid | bool | no | true
+      liquid    | Flag if the alpha field that of the liquid | bool | no | true
       direction    | Direction of interface               | vector | no  | g
       interpolationScheme | Interpolation scheme        | word | no | cellPoint
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - Foam::functionObjects::logFile
-    - ExtendedCodeGuide::functionObjects::field::interfaceHeight
+      - \link functionObject.H \endlink
+      - \link logFiles.H \endlink
 
 SourceFiles
     interfaceHeight.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef interfaceHeight_H
-#define interfaceHeight_H
+#ifndef Foam_functionObjects_interfaceHeight_H
+#define Foam_functionObjects_interfaceHeight_H
 
 #include "fvMeshFunctionObject.H"
 #include "logFiles.H"
@@ -172,7 +161,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         interfaceHeight
         (
             const word& name,
@@ -203,17 +192,19 @@ public:
         }
 
 
-        //- Read
-        virtual bool read(const dictionary&);
+    // I-O
 
-        //- Execute
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
+
+        //- Execute the function-object operations
         virtual bool execute();
+
+        //- Write the function-object results
+        virtual bool write();
 
         //- Execute at the final time-loop
         virtual bool end();
-
-        //- Write
-        virtual bool write();
 };
 
 

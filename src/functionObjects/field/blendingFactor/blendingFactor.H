@@ -45,14 +45,14 @@ Description
     \table
       Operand       | Type           | Location
       input         | -              | -
-      output file   | dat   | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
-      output field  | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output file   | dat            | postProcessing/<FO>/<time>/file
+      output field  | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    blendingFactor1
+    blendingFactorFO
     {
         // Mandatory entries
         type            blendingFactor;
@@ -60,8 +60,8 @@ Usage
         field           <field>;
 
         // Optional entries
-        phi             phi;
-        tolerance       0.001;
+        phi             <word>;
+        tolerance       <scalar>;
 
         // Inherited entries
         ...
@@ -79,11 +79,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
+      - \link fieldExpression.H \endlink
+      - \link writeFile.H \endlink
 
 Note
   - The \c blendingFactor function object overwrites the \c DEShybrid:Factor
@@ -98,8 +95,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_blendingFactor_H
-#define functionObjects_blendingFactor_H
+#ifndef Foam_functionObjects_blendingFactor_H
+#define Foam_functionObjects_blendingFactor_H
 
 #include "fieldExpression.H"
 #include "writeFile.H"
@@ -164,7 +161,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         blendingFactor
         (
             const word& name,
@@ -185,10 +182,10 @@ public:
 
     // Member Functions
 
-        //- Read the blendingFactor data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Write the blendingFactor
+        //- Write the function-object results
         virtual bool write();
 };
 

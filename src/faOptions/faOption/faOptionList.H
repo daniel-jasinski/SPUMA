@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 ------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,10 +27,11 @@ Class
     Foam::fa::optionList
 
 Description
-    List of finite volume options
+    List of finite-area options
 
 SourceFile
-    optionList.C
+    faOptionList.cxx
+    faOptionList.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -76,6 +77,9 @@ protected:
         //- Reference to the mesh database
         const fvMesh& mesh_;
 
+        //- The finite-area mesh name
+        word areaName_;
+
         //- Time index to check that all defined sources have been applied
         label checkTimeIndex_;
 
@@ -101,13 +105,6 @@ protected:
             const dimensionSet& ds
         );
 
-        //- No copy construct
-        optionList(const optionList&) = delete;
-
-        //- No copy assignment
-        void operator=(const optionList&) = delete;
-
-
 public:
 
     //- Runtime type information
@@ -117,10 +114,27 @@ public:
     // Constructors
 
         //- Default construct from mesh
-        explicit optionList(const fvMesh& mesh);
+        explicit optionList
+        (
+            const fvMesh& mesh,
+            //! The expected finite-area mesh name
+            const word& defaultAreaName = word()
+        );
 
         //- Construct from mesh and dictionary
-        optionList(const fvMesh& mesh, const dictionary& dict);
+        optionList
+        (
+            const fvMesh& mesh,
+            const dictionary& dict,
+            //! The expected finite-area mesh name
+            const word& defaultAreaName = word()
+        );
+
+        //- No copy construct
+        optionList(const optionList&) = delete;
+
+        //- No copy assignment
+        void operator=(const optionList&) = delete;
 
 
     //- Destructor
@@ -128,6 +142,9 @@ public:
 
 
     // Member Functions
+
+        //- The finite-area mesh name
+        const word& areaName() const noexcept { return areaName_; }
 
         //- Reset the source list
         void reset(const dictionary& dict);
@@ -240,7 +257,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "faOptionListTemplates.C"
+    #include "faOptionList.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

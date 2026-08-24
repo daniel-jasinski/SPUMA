@@ -30,45 +30,43 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Creates a volume field with zero-gradient
-    boundary conditions from another volume field.
+    Creates a volume field with zero-gradient boundary conditions from another
+    volume field.
 
-    The result can be used, for example, to post-process near-wall
-    field values.
+    The result can be used, for example, to post-process near-wall field values.
 
     Operands:
     \table
       Operand        | Type                | Location
-      input          | vol\<Type\>Field    | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | vol<Type>Field      | <time>/inputField
       output file    | -                   | -
-      output field   | vol\<Type\>Field    | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | vol<Type>Field      | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    zeroGradient1
+    zeroGradientFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        zeroGradient;
         libs        (fieldFunctionObjects);
-
-        // Mandatory entries (runtime modifiable)
         fields      (<field1> ... <fieldN>); \\(U "(T|k|epsilon|omega)");
 
-        // Optional entries (runtime modifiable)
+        // Optional entries
         result      @@<name>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                           | Type | Req'd | Dflt
+      Property     | Description                           | Type | Reqd | Deflt
       type         | Type name: zeroGradient               | word |  yes  | -
       libs         | Library name: fieldFunctionObjects    | word |  yes  | -
       fields       | Name of the operand fields            | wordList | yes | -
@@ -76,9 +74,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
+      - \link functionObject.H \endlink
 
 Note
     - A list of fields can contain exact names or regular expressions.
@@ -89,19 +85,14 @@ Note
     i.e., only processor, empty, zeroGradient, symmetry patches.
     This check should also prevent processing fields multiple times.
 
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::zeroGradient
-
 SourceFiles
     zeroGradient.C
     zeroGradientTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_zeroGradient_H
-#define functionObjects_zeroGradient_H
+#ifndef Foam_functionObjects_zeroGradient_H
+#define Foam_functionObjects_zeroGradient_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFieldsFwd.H"
@@ -160,7 +151,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         zeroGradient
         (
             const word& name,
@@ -181,13 +172,13 @@ public:
 
     // Member Functions
 
-        //- Read the zeroGradient specification
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the zeroGradient fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the zeroGradient fields
+        //- Write the function-object results
         virtual bool write();
 };
 

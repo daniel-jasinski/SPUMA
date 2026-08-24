@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2021-2022 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,9 +35,9 @@ Author
     Hrvoje Jasak, Wikki Ltd.
 
 SourceFiles
-    faFieldDecomposer.C
-    fvFieldDecomposerCache.C
-    faFieldDecomposerTemplates.C
+    faFieldDecomposer.cxx
+    faFieldDecomposer.txx
+    fvFieldDecomposerCache.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -90,9 +90,9 @@ public:
                 );
 
 
-            // Member functions
+            // Member Functions
 
-                label size() const
+                label size() const noexcept
                 {
                     return directAddressing_.size();
                 }
@@ -102,7 +102,7 @@ public:
                     return sizeBeforeMapping_;
                 }
 
-                bool direct() const
+                bool direct() const noexcept
                 {
                     return true;
                 }
@@ -112,7 +112,7 @@ public:
                     return false;
                 }
 
-                const labelUList& directAddressing() const
+                const labelUList& directAddressing() const noexcept
                 {
                     return directAddressing_;
                 }
@@ -144,7 +144,7 @@ public:
 
             // Member Functions
 
-                label size() const
+                label size() const noexcept
                 {
                     return directAddressing_.size();
                 }
@@ -154,7 +154,7 @@ public:
                     return sizeBeforeMapping_;
                 }
 
-                bool direct() const
+                bool direct() const noexcept
                 {
                     return true;
                 }
@@ -164,7 +164,7 @@ public:
                     return false;
                 }
 
-                const labelUList& directAddressing() const
+                const labelUList& directAddressing() const noexcept
                 {
                     return directAddressing_;
                 }
@@ -192,7 +192,7 @@ public:
 
             // Member Functions
 
-                label size() const
+                label size() const noexcept
                 {
                     return addressing_.size();
                 }
@@ -202,7 +202,7 @@ public:
                     return sizeBeforeMapping_;
                 }
 
-                bool direct() const
+                bool direct() const noexcept
                 {
                     return false;
                 }
@@ -212,12 +212,12 @@ public:
                     return false;
                 }
 
-                const labelListList& addressing() const
+                const labelListList& addressing() const noexcept
                 {
                     return addressing_;
                 }
 
-                const scalarListList& weights() const
+                const scalarListList& weights() const noexcept
                 {
                     return weights_;
                 }
@@ -232,13 +232,13 @@ private:
         const faMesh& procMesh_;
 
         //- Reference to edge addressing
-        const labelList& edgeAddressing_;
+        const labelUList& edgeAddressing_;
 
         //- Reference to face addressing
-        const labelList& faceAddressing_;
+        const labelUList& faceAddressing_;
 
         //- Reference to boundary addressing
-        const labelList& boundaryAddressing_;
+        const labelUList& boundaryAddressing_;
 
         //- List of patch field decomposers
         PtrList<patchFieldDecomposer> patchFieldDecomposerPtrs_;
@@ -270,11 +270,11 @@ public:
         //- Construct without mappers, added later with reset()
         faFieldDecomposer
         (
-            const Foam::zero,
+            Foam::zero,
             const faMesh& procMesh,             // Target mesh
-            const labelList& edgeAddressing,
-            const labelList& faceAddressing,
-            const labelList& boundaryAddressing
+            const labelUList& edgeAddressing,
+            const labelUList& faceAddressing,
+            const labelUList& boundaryAddressing
         );
 
         //- Construct from components using information from the complete mesh
@@ -282,9 +282,9 @@ public:
         (
             const faMesh& completeMesh,         // Source mesh
             const faMesh& procMesh,             // Target mesh
-            const labelList& edgeAddressing,
-            const labelList& faceAddressing,
-            const labelList& boundaryAddressing
+            const labelUList& edgeAddressing,
+            const labelUList& faceAddressing,
+            const labelUList& boundaryAddressing
         );
 
         //- Construct from components without the complete mesh
@@ -292,15 +292,15 @@ public:
         (
             // Information about the complete mesh
             const label nTotalFaces,
-            const List<labelRange>& boundaryRanges,
+            const UList<labelRange>& boundaryRanges,
             const labelUList& edgeOwner,
             const labelUList& edgeNeigbour,
 
             // Addressing for processor mesh
             const faMesh& procMesh,             // Target mesh
-            const labelList& edgeAddressing,
-            const labelList& faceAddressing,
-            const labelList& boundaryAddressing
+            const labelUList& edgeAddressing,
+            const labelUList& faceAddressing,
+            const labelUList& boundaryAddressing
         );
 
 
@@ -311,7 +311,7 @@ public:
     // Member Functions
 
         //- True if no mappers have been allocated
-        bool empty() const;
+        bool empty() const noexcept;
 
         //- Remove all mappers
         void clear();
@@ -323,7 +323,7 @@ public:
         void reset
         (
             const label nTotalFaces,
-            const List<labelRange>& boundaryRanges,
+            const UList<labelRange>& boundaryRanges,
             const labelUList& edgeOwner,
             const labelUList& edgeNeigbour
         );
@@ -448,7 +448,7 @@ public:
         //- Supports reading/sending fields
         void readAllFields
         (
-            const boolList& haveMeshOnProc,
+            const boolUList& haveMeshOnProc,
             const faMeshSubset* subsetter,
             const faMesh& mesh,
             IOobjectList& objects
@@ -470,7 +470,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "faFieldDecomposerTemplates.C"
+    #include "faFieldDecomposer.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

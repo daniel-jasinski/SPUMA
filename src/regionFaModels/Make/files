@@ -46,6 +46,10 @@ liquidFilm/liquidFilmBaseNew.C
 
 liquidFilm/liquidFilmModel/liquidFilmModel.C
 liquidFilm/kinematicThinFilm/kinematicThinFilm.C
+liquidFilm/kinematicThinFilmIBM/kinematicThinFilmIBM.C
+liquidFilm/kinematicThinFilmIBM/regionFaIBM/regionFaIBM.cxx
+liquidFilm/kinematicThinFilmIBM/regionFaIBM/regionFaIBMList.cxx
+
 derivedFvPatchFields/filmShell/velocityFilmShellFvPatchVectorField.C
 
 functionObjects/setTimeStep/setTimeStepFaRegionsFunctionObject.C

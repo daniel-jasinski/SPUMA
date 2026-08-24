@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -37,6 +38,7 @@ Description
 #include "fvCFD.H"
 #include "fluidThermo.H"
 #include "turbulentFluidThermoModel.H"
+#include "thermalTurbulentFluidThermoModel.H"
 #include "simpleControl.H"
 #include "pressureControl.H"
 #include "fvOptions.H"
@@ -64,6 +66,7 @@ int main(int argc, char *argv[])
     #include "initContinuityErrs.H"
 
     turbulence->validate();
+    thermalTurbulence->validate();
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -87,6 +90,7 @@ int main(int argc, char *argv[])
         }
 
         turbulence->correct();
+        thermalTurbulence->correct();
 
         runTime.write();
 

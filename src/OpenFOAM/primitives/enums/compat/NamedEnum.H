@@ -39,7 +39,8 @@ See Also
     Foam::Enum
 
 SourceFiles
-    NamedEnum.C
+    NamedEnum.txx
+    NamedEnumI.H
 
 \*---------------------------------------------------------------------------*/
 
@@ -199,10 +200,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #include "NamedEnumI.H"
-
-#ifdef NoRepository
-    #include "NamedEnum.C"
-#endif
+#include "NamedEnum.txx"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

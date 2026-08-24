@@ -36,15 +36,13 @@ Description
     \table
       Operand      | Type                | Location
       input        | -                   | -
-      output file  | TBA                 <!--
-               --> | postProcessing/\<FO\>/\<time\>/\<file\>(s)
+      output file  | TBA                 | postProcessing/<FO>/<time>/<file>(s)
     \endtable
 
 Usage
     Example using \c system/controlDict.functions:
-
     \verbatim
-    foamReport1
+    foamReportFO
     {
         // Mandatory entries
         type            foamReport;
@@ -153,8 +151,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_foamReport_H
-#define functionObjects_foamReport_H
+#ifndef Foam_functionObjects_foamReport_H
+#define Foam_functionObjects_foamReport_H
 
 #include "stateFunctionObject.H"
 #include "writeFile.H"
@@ -235,7 +233,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         foamReport
         (
             const word& name,
@@ -250,13 +248,13 @@ public:
 
     // Member Functions
 
-        //- Read foamReport settings
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Execute foamReport
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write foamReport results
+        //- Write the function-object results
         virtual bool write();
 };
 

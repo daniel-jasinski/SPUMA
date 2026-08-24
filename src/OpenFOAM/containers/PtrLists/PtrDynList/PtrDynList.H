@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -76,8 +76,11 @@ public:
         //- Default construct
         inline constexpr PtrDynList() noexcept;
 
-        //- Construct with given capacity.
+        //- Construct with given initial capacity
         inline explicit PtrDynList(const label len);
+
+        //- Construct with given size and capacity
+        inline explicit PtrDynList(std::pair<label,label> sizing);
 
         //- Copy construct using 'clone()' method on each element
         inline PtrDynList(const PtrDynList<T, SizeMin>& list);
@@ -96,8 +99,8 @@ public:
         inline explicit PtrDynList(UList<T*>& list);
 
 
-    //- Destructor
-    ~PtrDynList() = default;
+    //- Destructor, sync allocated size before list destruction
+    ~PtrDynList() { PtrList<T>::setAddressableSize(capacity_); }
 
 
     // Member Functions
@@ -107,16 +110,28 @@ public:
         //- Size of the underlying storage.
         label capacity() const noexcept { return capacity_; }
 
+        //- Change the value for the list capacity directly (ADVANCED, UNSAFE)
+        //- Does not perform any memory management or resizing.
+        void setCapacity_unsafe(label len) noexcept { capacity_ = len; }
+
         //- Reserve allocation space for at least this size.
+        //  New entries are initialized to nullptr.
         inline void reserve(const label len);
 
+        //- Reserve allocation space for at least this size.
+        //- If allocation is required, uses the specified size
+        //- without any other resizing logic.
+        //  New entries are initialized to nullptr.
+        inline void reserve_exact(const label len);
+
         //- Alter the addressed list size.
-        inline void resize(const label newLen);
+        //  New entries are initialized to nullptr.
+        inline void resize(const label len);
 
         //- Set the addressed list to the given size,
         //- deleting all existing entries.
         //- Afterwards the list contains all \c nullptr entries.
-        inline void resize_null(const label newLen);
+        inline void resize_null(const label len);
 
         //- Clear the addressed list, i.e. set the size to zero.
         //  Allocated size does not change
@@ -128,13 +143,8 @@ public:
         //- Shrink the allocated space to the number of elements used.
         inline void shrink_to_fit();
 
-        //- Shrink the internal bookkeeping of the allocated space to the
-        //- number of addressed elements without affecting allocation.
-        //  \note when empty() it will delete any allocated memory.
-        inline void shrink_unsafe();
-
-        //- Calls shrink_to_fit()
-        void shrink() { shrink_to_fit(); }
+        //- Alias for shrink_to_fit()
+        void shrink() { this->shrink_to_fit(); }
 
 
     // Edit
@@ -228,14 +238,18 @@ public:
         //- Auto-sizes list as required.
         inline autoPtr<T> set(const label i, const tmp<T>& ptr);
 
-        //- Reorder elements. Reordering must be unique (ie, shuffle).
-        inline void reorder(const labelUList& oldToNew);
+
+    // Writing
+
+        //- Print pointer addresses to Ostream (debugging only).
+        //  Optionally print addresses within the upper (capacity) region
+        Ostream& printAddresses(Ostream& os, const bool full=false) const;
 
 
     // Member Operators
 
         //- Copy (clone) assignment
-        inline void operator=(const PtrList<T>& list);
+        inline void operator=(const UPtrList<T>& list);
 
         //- Copy (clone) assignment
         inline void operator=(const PtrDynList<T, SizeMin>& list);

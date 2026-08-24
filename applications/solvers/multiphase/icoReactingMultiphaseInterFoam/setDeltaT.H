@@ -50,7 +50,8 @@ if (adjustTimeStep)
             )
         );
 
-    scalar deltaTFact = Foam::min(Foam::min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
+    const scalar deltaTFact =
+        Foam::min(Foam::min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
 
     runTime.setDeltaT
     (
@@ -60,6 +61,7 @@ if (adjustTimeStep)
             maxDeltaT
         )
     );
+
     Info<< "deltaT = " <<  runTime.deltaTValue() << endl;
 }
 

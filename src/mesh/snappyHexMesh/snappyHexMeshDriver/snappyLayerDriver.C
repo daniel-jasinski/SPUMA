@@ -53,7 +53,7 @@ Description
 #include "PatchTools.H"
 #include "slipPointPatchFields.H"
 #include "fixedValuePointPatchFields.H"
-#include "zeroFixedValuePointPatchFields.H"
+#include "zeroValuePointPatchFields.H"
 #include "calculatedPointPatchFields.H"
 #include "cyclicSlipPointPatchFields.H"
 #include "fixedValueFvPatchFields.H"
@@ -1148,8 +1148,7 @@ Foam::snappyLayerDriver::makeLayerDisplacementField
         // >0 layers: fixedValue which gets adapted
         if (numLayers[patchi] == 0)
         {
-            patchFieldTypes[patchi] =
-                zeroFixedValuePointPatchVectorField::typeName;
+            patchFieldTypes[patchi] = zeroValuePointPatchVectorField::typeName;
         }
         else if (numLayers[patchi] > 0)
         {
@@ -1676,8 +1675,7 @@ void Foam::snappyLayerDriver::calculateLayerThickness
         GREAT               // null value
     );
 
-    //Info<< "calculateLayerThickness : min:" << gMin(thickness)
-    //    << " max:" << gMax(thickness) << endl;
+    //Info<< "calculateLayerThickness : " << gMinMax(thickness) << endl;
 
     // Print a bit
     {
@@ -3098,7 +3096,7 @@ void Foam::snappyLayerDriver::printLayerData
         label sumSize = pp.size();
 
         // Number of layers
-        const labelList& faceCells = pp.faceCells();
+        const labelUList& faceCells = pp.faceCells();
         label sumNLayers = 0;
         forAll(faceCells, i)
         {
@@ -3106,11 +3104,11 @@ void Foam::snappyLayerDriver::printLayerData
         }
 
         // Thickness
-        scalarField::subField patchWanted = pbm[patchi].patchSlice
+        const scalarField::subField patchWanted = pbm[patchi].patchSlice
         (
             faceWantedThickness
         );
-        scalarField::subField patchReal = pbm[patchi].patchSlice
+        const scalarField::subField patchReal = pbm[patchi].patchSlice
         (
             faceRealThickness
         );
@@ -3266,7 +3264,7 @@ bool Foam::snappyLayerDriver::writeLayerData
             {
                 label patchi = patchIDs[i];
                 const polyPatch& pp = pbm[patchi];
-                const labelList& faceCells = pp.faceCells();
+                const labelUList& faceCells = pp.faceCells();
                 scalarField pfld(faceCells.size());
                 forAll(faceCells, i)
                 {
@@ -5537,9 +5535,9 @@ void Foam::snappyLayerDriver::doLayers
                 if (numLayers[patchi] > 0)
                 {
                     const polyPatch& pp = mesh.boundaryMesh()[patchi];
-                    forAll(pp.faceCells(), i)
+                    for (const label celli : pp.faceCells())
                     {
-                        cellWeights[pp.faceCells()[i]] += numLayers[patchi];
+                        cellWeights[celli] += numLayers[patchi];
                     }
                 }
             }

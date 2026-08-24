@@ -34,9 +34,9 @@ Description
     \table
     Operand      | Type                                 | Location
     input        | Function object results              | Memory; <!--
-    --> $FOAM_CASE/\<time\>/uniform/functionObjects/functionObjectProperties
+    --> <time>/uniform/functionObjects/functionObjectProperties
     output file  | SVG                                  | <!--
-    --> $FOAM_CASE/postProcessing/<functionObject>/<time>/<functionObject>.svg
+    --> postProcessing/<functionObject>/<time>/<functionObject>.svg
     \endtable
 
 Usage
@@ -267,7 +267,7 @@ public:
     //- Runtime type information
     TypeName("graphFunctionObject");
 
-    //- Construct from Time and dictionary
+    //- Construct from name, Time and dictionary
     graphFunctionObject
     (
         const word& name,
@@ -281,10 +281,10 @@ public:
 
     // Member Functions
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write
+        //- Write the function-object results
         virtual bool write();
 };
 

@@ -13,7 +13,13 @@ volVectorField U
 );
 
 // Initialise the velocity internal field to zero
-U = dimensionedVector(U.dimensions(), Zero);
+// Note: explicitly bypass evaluation of contraint patch overrides
+//       (e.g. swirlFanVelocity might lookup phi,rho)
+//U = Zero;
+{
+    U.internalFieldRef() = Zero;
+    U.boundaryFieldRef() = Zero;
+}
 
 surfaceScalarField phi
 (

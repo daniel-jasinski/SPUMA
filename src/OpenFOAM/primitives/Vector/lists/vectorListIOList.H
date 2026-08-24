@@ -39,7 +39,7 @@ namespace Foam
     typedef IOList<vectorList> vectorListIOList;
 
     //! Compact IO for a List of vectorList
-    typedef CompactIOList<vectorList, vector> vectorListCompactIOList;
+    typedef CompactIOList<vectorList> vectorListCompactIOList;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

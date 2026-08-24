@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2019 OpenFOAM Foundation
-    Copyright (C) 2021-2023 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -64,50 +64,98 @@ Foam::tmp<Foam::volScalarField> Foam::functionObjects::comfort::magU() const
 }
 
 
+void Foam::functionObjects::comfort::initWallInfo() const
+{
+    if (wallInfoInit_) return;
+
+    const fvBoundaryMesh& patches = mesh_.boundary();
+    label wallCount = 0;
+    forAll(patches, patchi)
+    {
+        if (isType<wallFvPatch>(patches[patchi]))
+        {
+            ++wallCount;
+        }
+    }
+
+    wallArea_ = 0;
+    wallPatchIDs_.setSize(wallCount);
+
+    scalar localWallArea = 0;
+    label wallIndex = 0;
+    forAll(patches, patchi)
+    {
+        const fvPatch& p = patches[patchi];
+        if (isType<wallFvPatch>(p))
+        {
+            wallPatchIDs_[wallIndex++] = patchi;
+            localWallArea += sum(p.magSf());
+        }
+    }
+
+    wallArea_ = localWallArea;
+    reduce(wallArea_, sumOp<scalar>());
+
+    wallInfoInit_ = true;
+}
+
+
 Foam::dimensionedScalar Foam::functionObjects::comfort::Trad() const
 {
-    dimensionedScalar Trad(Trad_);
+    if (TradSet_)
+    {
+        if (!Tbounds.contains(Trad_.value()))
+        {
+            WarningInFunction
+                << "The calculated mean wall radiation temperature is out of\n"
+                << "the bounds specified in EN ISO 7730:2005\n"
+                << "Valid range is 10 degC < T < 40 degC\n"
+                << "The actual value is: " << (Trad_.value() - 273.15) << nl
+                << endl;
+        }
+        return Trad_;
+    }
+
 
     // The mean radiation is calculated by the mean wall temperatures
     // which are summed and divided by the area | only walls are taken into
     // account. This approach might be correct for a squared room but will
-    // defintely be inconsistent for complex room geometries. The norm does
+    // definitely be inconsistent for complex room geometries. The norm does
     // not provide any information about the calculation of this quantity.
-    if (!TradSet_)
+    const volScalarField::Boundary& TBf =
+        lookupObject<volScalarField>("T").boundaryField();
+
+
+    scalar TareaIntegral = 0;
+
+    forAll(wallPatchIDs_, wi)
     {
-        const volScalarField::Boundary& TBf =
-            lookupObject<volScalarField>("T").boundaryField();
-
-        scalar areaIntegral = 0;
-        scalar TareaIntegral = 0;
-
-        forAll(TBf, patchi)
-        {
-            const fvPatchScalarField& pT = TBf[patchi];
-            const fvPatch& pTBf = TBf[patchi].patch();
-            const scalarField& pSf = pTBf.magSf();
-
-            if (isType<wallFvPatch>(pTBf))
-            {
-                areaIntegral += gSum(pSf);
-                TareaIntegral += gSum(pSf*pT);
-            }
-        }
-
-        Trad.value() = TareaIntegral/areaIntegral;
+        const label patchi = wallPatchIDs_[wi];
+        const fvPatchScalarField& Tp = TBf[patchi];
+        const fvPatch& p = Tp.patch();
+        TareaIntegral += weightedSum(p.magSf(), Tp);
     }
 
-    // Bounds based on EN ISO 7730
-    if (!Tbounds.contains(Trad.value()))
+    reduce(TareaIntegral, sumOp<scalar>());
+
+    dimensionedScalar TradMean
+    (
+        dimTemperature,
+        TareaIntegral/(wallArea_ + VSMALL)
+    );
+
+
+    if (!Tbounds.contains(TradMean.value()))
     {
         WarningInFunction
-            << "The calculated mean wall radiation temperature is out of the\n"
-            << "bounds specified in EN ISO 7730:2005\n"
+            << "The calculated mean wall radiation temperature is out of\n"
+            << "the bounds specified in EN ISO 7730:2005\n"
             << "Valid range is 10 degC < T < 40 degC\n"
-            << "The actual value is: " << (Trad.value() - 273.15) << nl << endl;
+            << "The actual value is: " << (TradMean.value() - 273.15) << nl
+            << endl;
     }
 
-    return Trad;
+    return TradMean;
 }
 
 
@@ -118,7 +166,7 @@ Foam::tmp<Foam::volScalarField> Foam::functionObjects::comfort::pSat() const
     static const dimensionedScalar B(dimTemperature, 4030.183);
     static const dimensionedScalar C(dimTemperature, -38.15);
 
-    tmp<volScalarField> tpSat = volScalarField::New("pSat", mesh_, pSat_);
+    tmp<volScalarField> tpSat;
 
     // Calculate the saturation pressure if no user input is given
     if (pSat_.value() == 0)
@@ -127,6 +175,10 @@ Foam::tmp<Foam::volScalarField> Foam::functionObjects::comfort::pSat() const
 
         // Equation based on ISO 7730:2006
         tpSat = kPaToPa*exp(A - B/(T + C));
+    }
+    else
+    {
+        tpSat = volScalarField::New("pSat", mesh_, pSat_);
     }
 
     return tpSat;
@@ -142,59 +194,50 @@ Foam::tmp<Foam::volScalarField> Foam::functionObjects::comfort::Tcloth
     const dimensionedScalar& Trad
 )
 {
-    const dimensionedScalar factor1(dimTemperature, 308.85);
-
-    const dimensionedScalar factor2
+    static const dimensionedScalar factor1(dimTemperature, 308.85);
+    static const dimensionedScalar factor2
     (
         dimTemperature/metabolicRateSI.dimensions(),
         0.028
     );
-
-    const dimensionedScalar factor3
+    static const dimensionedScalar factor3
     (
         dimMass/pow3(dimTime)/pow4(dimTemperature),
         3.96e-8
     );
+    static const dimensionedScalar coeffHCf
+    (
+        hc.dimensions()/sqrt(dimVelocity), 12.1
+    );
+    static const dimensionedScalar coeffHCn
+    (
+        hc.dimensions()/pow025(dimTemperature), 2.38
+    );
+    const dimensionedScalar MminusW(metabolicRateSI - extWorkSI);
+    const dimensionedScalar Trad4(pow4(Trad));
 
     // Heat transfer coefficient based on forced convection [W/m^2/K]
-    const volScalarField hcForced
-    (
-        dimensionedScalar(hc.dimensions()/sqrt(dimVelocity), 12.1)
-       *sqrt(magU())
-    );
+    const volScalarField hcForced(coeffHCf*sqrt(magU()));
 
     // Tcl [K] (surface cloth temperature)
-    tmp<volScalarField> tTcl
-    (
-        volScalarField::New
-        (
-            "Tcl",
-            T.mesh(),
-            dimTemperature
-        )
-    );
-    volScalarField& Tcl = tTcl.ref();
-
-    // Initial guess
-    Tcl = T;
-
-    label i = 0;
-
+    auto tTcl = volScalarField::New("Tcl", mesh_, dimTemperature);
+    auto& Tcl = tTcl.ref();
+    Tcl = T;  // initial guess
     Tcl.storePrevIter();
 
+    // Heat transfer coefficient based on natural convection
+    auto thcNatural = volScalarField::New("hcNatural", mesh_, hc.dimensions());
+    auto& hcNatural = thcNatural.ref();
 
+    label iter = 0;
     // Iterative solving of equation (2)
     do
     {
-        Tcl = (Tcl + Tcl.prevIter())/2;
+        Tcl = 0.5*(Tcl + Tcl.prevIter());
         Tcl.storePrevIter();
 
         // Heat transfer coefficient based on natural convection
-        volScalarField hcNatural
-        (
-            dimensionedScalar(hc.dimensions()/pow025(dimTemperature), 2.38)
-           *pow025(mag(Tcl - T))
-        );
+        hcNatural = coeffHCn*pow025(mag(Tcl - T));
 
         // Set heat transfer coefficient based on equation (3)
         hc =
@@ -204,21 +247,21 @@ Foam::tmp<Foam::volScalarField> Foam::functionObjects::comfort::Tcloth
         // Calculate surface temperature based on equation (2)
         Tcl =
             factor1
-          - factor2*(metabolicRateSI - extWorkSI)
-          - Icl_*factor3*fcl_*(pow4(Tcl) - pow4(Trad))
+          - factor2*MminusW
+          - Icl_*factor3*fcl_*(pow4(Tcl) - Trad4)
           - Icl_*fcl_*hc*(Tcl - T);
 
         // Make sure that Tcl is in some physical limit (same range as we used
         // for the radiative estimation - based on ISO EN 7730:2005)
         Tcl.clamp_range(Tbounds);
 
-    } while (!converged(Tcl) && i++ < maxClothIter_);
+    } while (!converged(Tcl) && ++iter < maxClothIter_);
 
-    if (i == maxClothIter_)
+    if (iter == maxClothIter_)
     {
         WarningInFunction
-            << "The surface cloth temperature did not converge within " << i
-            << " iterations" << nl;
+            << "The surface cloth temperature 'Tcl' did not converge within "
+            << iter << " iterations" << nl;
     }
 
     return tTcl;
@@ -230,9 +273,16 @@ bool Foam::functionObjects::comfort::converged
     const volScalarField& phi
 ) const
 {
-    return
-        max(mag(phi.primitiveField() - phi.prevIter().primitiveField()))
-      < tolerance_;
+    const auto& curr = phi.primitiveField();
+    const auto& prev = phi.prevIter().primitiveField();
+    forAll(curr, i)
+    {
+        if (mag(curr[i] - prev[i]) >= tolerance_)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 
@@ -255,7 +305,9 @@ Foam::functionObjects::comfort::comfort
     Icl_("Icl", pow3(dimTime)*dimTemperature/dimMass, 0),
     fcl_("fcl", dimless, 0),
     tolerance_(1e-4),
+    wallArea_(0),
     maxClothIter_(100),
+    wallInfoInit_(false),
     TradSet_(false),
     meanVelocity_(false)
 {
@@ -267,41 +319,43 @@ Foam::functionObjects::comfort::comfort
 
 bool Foam::functionObjects::comfort::read(const dictionary& dict)
 {
-    if (fvMeshFunctionObject::read(dict))
+    if (!fvMeshFunctionObject::read(dict))
     {
-        clothing_.readIfPresent(dict);
-        metabolicRate_.readIfPresent(dict);
-        extWork_.readIfPresent(dict);
-        pSat_.readIfPresent(dict);
-        tolerance_ = dict.getOrDefault("tolerance", 1e-4);
-        maxClothIter_ = dict.getOrDefault("maxClothIter", 100);
-        meanVelocity_ = dict.getOrDefault<bool>("meanVelocity", false);
-
-        // Read relative humidity if provided and convert from % to fraction
-        if (dict.found(relHumidity_.name()))
-        {
-            relHumidity_.read(dict);
-            relHumidity_ /= 100;
-        }
-
-        // Read radiation temperature if provided
-        if (dict.found(Trad_.name()))
-        {
-            TradSet_ = true;
-            Trad_.read(dict);
-        }
-
-        Icl_ = dimensionedScalar(Icl_.dimensions(), 0.155)*clothing_;
-
-        fcl_.value() =
-            Icl_.value() <= 0.078
-          ? 1.0 + 1.290*Icl_.value()
-          : 1.05 + 0.645*Icl_.value();
-
-        return true;
+        return false;
     }
 
-    return false;
+    clothing_.readIfPresent(dict);
+    metabolicRate_.readIfPresent(dict);
+    extWork_.readIfPresent(dict);
+    pSat_.readIfPresent(dict);
+    tolerance_ = dict.getOrDefault("tolerance", 1e-4);
+    maxClothIter_ = dict.getOrDefault("maxClothIter", 100);
+    meanVelocity_ = dict.getOrDefault("meanVelocity", false);
+
+    // Read relative humidity if provided and convert from % to fraction
+    if (dict.found(relHumidity_.name()))
+    {
+        relHumidity_.read(dict);
+        relHumidity_ /= scalar(100);
+    }
+
+    // Read radiation temperature if provided
+    if (dict.found(Trad_.name()))
+    {
+        TradSet_ = true;
+        Trad_.read(dict);
+    }
+
+    Icl_ = dimensionedScalar(Icl_.dimensions(), 0.155)*clothing_;
+
+    fcl_.value() =
+        Icl_.value() <= 0.078
+      ? 1.0 + 1.290*Icl_.value()
+      : 1.05 + 0.645*Icl_.value();
+
+    initWallInfo();
+
+    return true;
 }
 
 
@@ -309,10 +363,11 @@ bool Foam::functionObjects::comfort::execute()
 {
     // Assign and build fields
     const dimensionedScalar Trad(this->Trad());
-    const volScalarField pSat(this->pSat());
+    const volScalarField pSatRH(this->pSat()*relHumidity_);
 
     const dimensionedScalar metabolicRateSI(58.15*metabolicRate_);
     const dimensionedScalar extWorkSI(58.15*extWork_);
+    const dimensionedScalar metaDiff(metabolicRateSI - extWorkSI);
 
     const auto& T = lookupObject<volScalarField>("T");
 
@@ -324,15 +379,16 @@ bool Foam::functionObjects::comfort::execute()
         (
             "hc",
             mesh_.time().timeName(),
-            mesh_
+            mesh_,
+            IOobject::NO_REGISTER
         ),
         mesh_,
-        dimensionedScalar(dimMass/pow3(dimTime)/dimTemperature, 0)
+        dimensionedScalar(dimMass/pow3(dimTime)/dimTemperature, Zero)
     );
 
     // Calculate the surface temperature of the cloth by an iterative
     // process using equation (2) from DIN EN ISO 7730 [degC]
-    const volScalarField Tcloth
+    const volScalarField TclothFld
     (
         this->Tcloth
         (
@@ -345,22 +401,22 @@ bool Foam::functionObjects::comfort::execute()
     );
 
     // Calculate the PMV quantity
-    const dimensionedScalar factor1(pow3(dimTime)/dimMass, 0.303);
-    const dimensionedScalar factor2
+    static const dimensionedScalar factor1(pow3(dimTime)/dimMass, 0.303);
+    static const dimensionedScalar factor2
     (
         dimless/metabolicRateSI.dimensions(),
         -0.036
     );
-    const dimensionedScalar factor3(factor1.dimensions(), 0.028);
-    const dimensionedScalar factor4(dimLength/dimTime, 3.05e-3);
-    const dimensionedScalar factor5(dimPressure, 5733);
-    const dimensionedScalar factor6(dimTime/dimLength, 6.99);
-    const dimensionedScalar factor8(metabolicRateSI.dimensions(), 58.15);
-    const dimensionedScalar factor9(dimless/dimPressure, 1.7e-5);
-    const dimensionedScalar factor10(dimPressure, 5867);
-    const dimensionedScalar factor11(dimless/dimTemperature, 0.0014);
-    const dimensionedScalar factor12(dimTemperature, 307.15);
-    const dimensionedScalar factor13
+    static const dimensionedScalar factor3(factor1.dimensions(), 0.028);
+    static const dimensionedScalar factor4(dimLength/dimTime, 3.05e-3);
+    static const dimensionedScalar factor5(dimPressure, 5733);
+    static const dimensionedScalar factor6(dimTime/dimLength, 6.99);
+    static const dimensionedScalar factor8(metabolicRateSI.dimensions(), 58.15);
+    static const dimensionedScalar factor9(dimless/dimPressure, 1.7e-5);
+    static const dimensionedScalar factor10(dimPressure, 5867);
+    static const dimensionedScalar factor11(dimless/dimTemperature, 0.0014);
+    static const dimensionedScalar factor12(dimTemperature, 307.15);
+    static const dimensionedScalar factor13
     (
         dimMass/pow3(dimTime)/pow4(dimTemperature),
         3.96e-8
@@ -370,8 +426,10 @@ bool Foam::functionObjects::comfort::execute()
     (
         // Special treatment of Term4
         // if metaRate - extWork < factor8, set to zero
-        (metabolicRateSI - extWorkSI).value() < factor8.value() ? 0 : 0.42
+        metaDiff.value() < factor8.value() ? 0 : 0.42
     );
+
+    const dimensionedScalar Trad4(pow4(Trad));
 
     Info<< "Calculating the predicted mean vote (PMV)" << endl;
 
@@ -381,30 +439,30 @@ bool Foam::functionObjects::comfort::execute()
             // Term1: Thermal sensation transfer coefficient
             (factor1*exp(factor2*metabolicRateSI) + factor3)
            *(
-                (metabolicRateSI - extWorkSI)
+                metaDiff
 
                 // Term2: Heat loss difference through skin
               - factor4
                *(
                     factor5
-                  - factor6*(metabolicRateSI - extWorkSI)
-                  - pSat*relHumidity_
+                  - factor6*metaDiff
+                  - pSatRH
                 )
 
                 // Term3: Heat loss through sweating
               - factor7*(metabolicRateSI - extWorkSI - factor8)
 
                 // Term4: Heat loss through latent respiration
-              - factor9*metabolicRateSI*(factor10 - pSat*relHumidity_)
+              - factor9*metabolicRateSI*(factor10 - pSatRH)
 
                 // Term5: Heat loss through dry respiration
               - factor11*metabolicRateSI*(factor12 - T)
 
                 // Term6: Heat loss through radiation
-              - factor13*fcl_*(pow4(Tcloth) - pow4(Trad))
+              - factor13*fcl_*(pow4(TclothFld) - Trad4)
 
                 // Term7: Heat loss through convection
-              - fcl_*hc*(Tcloth - T)
+              - fcl_*hc*(TclothFld - T)
             )
         );
 
@@ -417,10 +475,10 @@ bool Foam::functionObjects::comfort::execute()
 
     Info<< "Calculating the draught rating (DR)\n";
 
-    const dimensionedScalar Umin(dimVelocity, 0.05);
-    const dimensionedScalar Umax(dimVelocity, 0.5);
-    const dimensionedScalar pre(dimless, 0.37);
-    const dimensionedScalar C1(dimVelocity, 3.14);
+    static const dimensionedScalar Umin(dimVelocity, 0.05);
+    static const dimensionedScalar Umax(dimVelocity, 0.5);
+    static const dimensionedScalar pre(dimless, 0.37);
+    static const dimensionedScalar C1(dimVelocity, 3.14);
 
     // Limit the velocity field to the values given in EN ISO 7733
     volScalarField Umag(mag(lookupObject<volVectorField>("U")));
@@ -434,7 +492,8 @@ bool Foam::functionObjects::comfort::execute()
         (
             "TI",
             mesh_.time().timeName(),
-            mesh_
+            mesh_,
+            IOobject::NO_REGISTER
         ),
         mesh_,
         dimensionedScalar(dimless, Zero)
@@ -447,7 +506,7 @@ bool Foam::functionObjects::comfort::execute()
     }
 
     // For unit correctness
-    const dimensionedScalar correctUnit
+    static const dimensionedScalar correctUnit
     (
         dimensionSet(0, -1.62, 1.62, -1, 0, 0, 0),
         1

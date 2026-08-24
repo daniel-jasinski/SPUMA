@@ -6,7 +6,8 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -42,6 +43,7 @@ SourceFiles
 #define Foam_GeometricField_H
 
 #include "GeometricBoundaryField.H"
+#include "GeometricFieldExpression.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -81,6 +83,9 @@ public:
 
     // Public Typedefs
 
+        //- The template instance used for this GeometricField type
+        typedef GeometricField<Type, PatchField, GeoMesh> this_type;
+
         //- The mesh type for the GeometricField
         typedef typename GeoMesh::Mesh Mesh;
 
@@ -101,12 +106,6 @@ public:
 
 
 private:
-
-    // Private Typedefs
-
-        //- The GeometricField type
-        typedef GeometricField<Type, PatchField, GeoMesh> this_type;
-
 
     // Private Data
 
@@ -159,9 +158,9 @@ public:
     // Static Member Functions
 
         //- Return a null GeometricField (reference to a nullObject).
-        static const GeometricField<Type, PatchField, GeoMesh>& null() noexcept
+        static const this_type& null() noexcept
         {
-            return NullObjectRef<GeometricField<Type, PatchField, GeoMesh>>();
+            return NullObjectRef<this_type>();
         }
 
 
@@ -175,7 +174,9 @@ public:
             const IOobject& io,
             const Mesh& mesh,
             const dimensionSet& dims,
-            const word& patchFieldType = PatchField<Type>::calculatedType()
+            const word& patchFieldType = PatchField<Type>::calculatedType(),
+            const bool extraCapacity = FieldBase::unifiedGeometricField,
+            const bool isFlattened = false
         );
 
         //- Construct given IOobject, mesh, dimensions and patch types.
@@ -254,7 +255,7 @@ public:
             const PtrList<PatchField<Type>>& ptfl
         );
 
-        //- Move construct from internal field and a patch list to clone
+        //- Construct from internal field (tmp) and a patch list to clone
         GeometricField
         (
             const IOobject& io,
@@ -276,7 +277,7 @@ public:
             const PtrList<PatchField<Type>>& ptfl
         );
 
-        //- Copy construct from internal field, with specified patch type
+        //- Copy construct from primitive field, with specified patch type
         GeometricField
         (
             const IOobject& io,
@@ -286,7 +287,7 @@ public:
             const word& patchFieldType = PatchField<Type>::calculatedType()
         );
 
-        //- Move construct from internal field, with specified patch type
+        //- Move construct from primitive field, with specified patch type
         GeometricField
         (
             const IOobject& io,
@@ -296,7 +297,17 @@ public:
             const word& patchFieldType = PatchField<Type>::calculatedType()
         );
 
-        //- Copy construct from components
+        //- Construct from primitive field (tmp), with specified patch type
+        GeometricField
+        (
+            const IOobject& io,
+            const Mesh& mesh,
+            const dimensionSet& dims,
+            const tmp<Field<Type>>& tfield,
+            const word& patchFieldType = PatchField<Type>::calculatedType()
+        );
+
+        //- Copy construct from primitive field and a patch list to clone
         GeometricField
         (
             const IOobject& io,
@@ -306,7 +317,7 @@ public:
             const PtrList<PatchField<Type>>& ptfl
         );
 
-        //- Move construct from internal field and a patch list to clone
+        //- Move construct from primitive field and a patch list to clone
         GeometricField
         (
             const IOobject& io,
@@ -322,7 +333,7 @@ public:
             const IOobject& io,
             const Mesh& mesh,
             const dimensionSet& dims,
-            const tmp<Field<Type>>& tiField,
+            const tmp<Field<Type>>& tfield,
             const PtrList<PatchField<Type>>& ptfl
         );
 
@@ -508,6 +519,37 @@ public:
             const Mesh& mesh,
             const dimensionSet& dims,
             Field<Type>&& iField,
+            const word& patchFieldType = PatchField<Type>::calculatedType()
+        );
+
+        //- Return tmp field (NO_READ, NO_WRITE)
+        //- from name, mesh, dimensions, tmp of primitive field
+        //- and patch type.
+        //- [Takes current timeName from the mesh registry].
+        //  For LEGACY_REGISTER, registration is determined by
+        //  objectRegistry::is_cacheTemporaryObject().
+        static tmp<GeometricField<Type, PatchField, GeoMesh>> New
+        (
+            const word& name,
+            IOobjectOption::registerOption regOpt,
+            const Mesh& mesh,
+            const dimensionSet& dims,
+            const tmp<Field<Type>>& tfield,
+            const word& patchFieldType = PatchField<Type>::calculatedType()
+        );
+
+        //- Return tmp field (NO_READ, NO_WRITE)
+        //- from name, mesh, dimensions, tmp of primitive field
+        //- and patch type.
+        //- [Takes current timeName from the mesh registry].
+        //  Registration/persistence determined by
+        //  objectRegistry::is_cacheTemporaryObject().
+        static tmp<GeometricField<Type, PatchField, GeoMesh>> New
+        (
+            const word& name,
+            const Mesh& mesh,
+            const dimensionSet& dims,
+            const tmp<Field<Type>>& tfield,
             const word& patchFieldType = PatchField<Type>::calculatedType()
         );
 
@@ -794,6 +836,12 @@ public:
 
     // Member Functions
 
+        //- Return non-const reference to this field
+        this_type& constCast() const noexcept
+        {
+            return const_cast<this_type&>(*this);
+        }
+
         //- Return a const-reference to the dimensioned internal field.
         inline const Internal& internalField() const noexcept;
 
@@ -841,11 +889,11 @@ public:
         //  \note Should avoid using updateAccessTime = true within loops.
         Boundary& boundaryFieldRef(const bool updateAccessTime = true);
 
-        //- Return the time index of the field
-        inline label timeIndex() const noexcept;
+        //- The time index of the field
+        label timeIndex() const noexcept { return timeIndex_; }
 
         //- Write-access to the time index of the field
-        inline label& timeIndex() noexcept;
+        label& timeIndex() noexcept { return timeIndex_; }
 
         //- The number of old time fields stored
         label nOldTimes() const noexcept;
@@ -879,6 +927,14 @@ public:
         //  Is dummy for processor boundary conditions etc
         void correctLocalBoundaryConditions();
 
+        //- Evaluate boundary functions using the field storage:
+        //  - extends the internal field storage
+        //  - applies passed-in operator to fill in the slots
+        //  .
+        //  \returns The nominal geometric field size
+        template<class Cop>
+        label boundaryEvaluate(const Cop& cop);
+
         //- Does the field need a reference level for solution
         bool needReference() const;
 
@@ -906,8 +962,9 @@ public:
         //- otherwise the standard parameters by returning the field name
         word select(bool final) const;
 
-        //- Helper function to write the min and max to an Ostream
-        void writeMinMax(Ostream& os) const;
+        //- Helper function to write the min and max to an Ostream.
+        //  Uses the specified communicator for reductions
+        void writeMinMax(Ostream& os, label comm = UPstream::worldComm) const;
 
 
     // Member Function *this Operators
@@ -935,16 +992,24 @@ public:
         //- Impose lower (floor) clamp on the field values (in-place)
         void clamp_min(const Type& lower);
 
-        //- Impose upper (ceiling) clamp on the field values (in-place)
-        void clamp_max(const Type& upper);
-
         //- Impose lower (floor) clamp on the field values (in-place)
         //  No dimension checking
         void clamp_min(const dimensioned<Type>& lower);
 
+        //- Impose lower (floor) clamp on the field values (in-place)
+        //  No dimension checking
+        void clamp_min(const GeometricField<Type, PatchField, GeoMesh>& lower);
+
+        //- Impose upper (ceiling) clamp on the field values (in-place)
+        void clamp_max(const Type& upper);
+
         //- Impose upper (ceiling) clamp on the field values (in-place)
         //  No dimension checking
         void clamp_max(const dimensioned<Type>& upper);
+
+        //- Impose upper (ceiling) clamp on the field values (in-place)
+        //  No dimension checking
+        void clamp_max(const GeometricField<Type, PatchField, GeoMesh>& upper);
 
         //- Clamp field values (in-place) to the specified range.
         //  Does not check if range is valid or not. No dimension checking.
@@ -975,10 +1040,20 @@ public:
 
         void operator=(const GeometricField<Type, PatchField, GeoMesh>&);
         void operator=(const tmp<GeometricField<Type, PatchField, GeoMesh>>&);
-        void operator=(const dimensioned<Type>&);
+
+        //- Assign value (with dimension check)
+        void operator=(const dimensioned<Type>& dt);
+
+        //- Assign value zero (no dimension checks)
+        void operator=(Foam::zero);
 
         void operator==(const tmp<GeometricField<Type, PatchField, GeoMesh>>&);
+
+        //- Assign value (with dimension check). Force assign for boundary.
         void operator==(const dimensioned<Type>&);
+
+        //- Assign value zero (no dimension checks). Force assign for boundary.
+        void operator==(Foam::zero);
 
         void operator+=(const GeometricField<Type, PatchField, GeoMesh>&);
         void operator+=(const tmp<GeometricField<Type, PatchField, GeoMesh>>&);
@@ -1008,6 +1083,7 @@ public:
             const tmp<GeometricField<Type, PatchField, GeoMesh>>&
         ) = delete;
         bool operator!=(const dimensioned<Type>&) = delete;
+        bool operator!=(Foam::zero) = delete;
 
 
     // Write
@@ -1045,6 +1121,7 @@ public:
 
         //- Clamp field values (in-place) to the specified range.
         //  \deprecated(2023-01) prefer clamp_range() naming
+        FOAM_DEPRECATED_FOR(2023-01, "clamp_range() method")
         void clip(const dimensioned<MinMax<Type>>& range)
         {
             this->clamp_range(range);
@@ -1052,6 +1129,7 @@ public:
 
         //- Clamp field values (in-place) to the specified range.
         //  \deprecated(2023-01) prefer clamp_range() naming
+        FOAM_DEPRECATED_FOR(2023-01, "clamp_range() method")
         void clip(const dimensioned<Type>& lo, const dimensioned<Type>& hi)
         {
             this->clamp_range(lo.value(), hi.value());
@@ -1060,11 +1138,13 @@ public:
         //- Use minimum of the field and specified value. ie, clamp_max().
         //  This sets the \em ceiling on the field values
         //  \deprecated(2023-01) prefer clamp_max()
+        FOAM_DEPRECATED_STRICT(2023-01, "clamp_max() method")
         void min(const dimensioned<Type>& upper) { this->clamp_max(upper); }
 
         //- Use maximum of the field and specified value. ie, clamp_min().
         //  This sets the \em floor on the field values
         //  \deprecated(2023-01) prefer clamp_min()
+        FOAM_DEPRECATED_STRICT(2023-01, "clamp_min() method")
         void max(const dimensioned<Type>& lower) { this->clamp_min(lower); }
 
         //- Deprecated(2019-01) identical to clamp_range()
@@ -1074,6 +1154,79 @@ public:
         {
             return this->clamp_range(lo.value(), hi.value());
         }
+
+
+    // Expression templates
+
+        //- Have unique tag
+        using is_GeometricField = void;
+
+        //- Construct from IOobject and value expression. Supports
+        //  read_if_present
+        template<typename E>
+        GeometricField
+        (
+            const IOobject& io,
+            const Mesh& mesh,
+            const Expression::GeometricFieldExpression
+            <
+                E,
+                typename E::IntExpr,
+                typename E::UncoupledPatchExpr,
+                typename E::CoupledPatchExpr,
+                typename E::value_type
+            >& expr
+        );
+
+        //- Construct from name, mesh and value expression.
+        template<typename E>
+        GeometricField
+        (
+            const word& name,
+            const Mesh& mesh,
+            const Expression::GeometricFieldExpression
+            <
+                E,
+                typename E::IntExpr,
+                typename E::UncoupledPatchExpr,
+                typename E::CoupledPatchExpr,
+                typename E::value_type
+            >& expr
+        );
+
+        //- Wrap value as expression
+        typename Expression::GeometricFieldConstRefWrap
+        <
+            this_type
+        > expr() const;
+
+        //- Assign values from expression
+        template<typename E>
+        void operator=
+        (
+            const Expression::GeometricFieldExpression
+            <
+                E,
+                typename E::IntExpr,
+                typename E::UncoupledPatchExpr,
+                typename E::CoupledPatchExpr,
+                typename E::value_type
+            >& expr
+        );
+
+        //- Assign values from expression. Override asssignable.
+        template<typename E>
+        void operator==
+        (
+            const Expression::GeometricFieldExpression
+            <
+                E,
+                typename E::IntExpr,
+                typename E::UncoupledPatchExpr,
+                typename E::CoupledPatchExpr,
+                typename E::value_type
+            >& expr
+        );
 };
 
 
@@ -1084,12 +1237,11 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #include "GeometricFieldI.H"
+#include "GeometricFieldFunctions.H"
 
 #ifdef NoRepository
     #include "GeometricField.C"
 #endif
-
-#include "GeometricFieldFunctions.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

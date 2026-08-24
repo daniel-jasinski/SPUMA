@@ -120,11 +120,20 @@ public:
 
     // Member Operators
 
-        //- Copy assignment of entries
-        void operator=(const IOMap<T>& rhs);
-
         //- Copy or move assignment of entries
         using Map<T>::operator=;
+
+        //- Copy assignment of entries
+        void operator=(const IOMap<T>& rhs)
+        {
+            Map<T>::operator=(rhs);
+        }
+
+        //- Move assignment of entries
+        void operator=(IOMap<T>&& rhs)
+        {
+            Map<T>::operator=(std::move(static_cast<Map<T>&>(rhs)));
+        }
 };
 
 

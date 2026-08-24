@@ -21,15 +21,7 @@ cpptoo      = $(Ctoo)
 cxxtoo      = $(Ctoo)
 
 
-# Linking:
-# with or without rpath components on MacOS
-# - current default is with rpath unless explicitly disabled
-
-ifneq (,$(findstring ~rpath,$(WM_COMPILE_CONTROL)))
-    include $(DEFAULT_RULES)/link-c++
-
-else
-    include $(DEFAULT_RULES)/link-rpath-c++
-endif
+# MacOS linking (with or without rpath components)
+include $(ARCHITECTURE_RULES)/link-c++
 
 #------------------------------------------------------------------------------

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2013 OpenFOAM Foundation
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -80,7 +80,7 @@ Foam::TimePaths::TimePaths
     distributed_(distributed),
     rootPath_(rootPath),
     globalCaseName_(globalCaseName),
-    case_(caseName),
+    caseName_(caseName),
     system_(systemDirName),
     constant_(constantDirName)
 {
@@ -110,7 +110,7 @@ Foam::TimePaths::TimePaths
 {}
 
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
 
 Foam::instantList Foam::TimePaths::findTimes
 (
@@ -122,9 +122,76 @@ Foam::instantList Foam::TimePaths::findTimes
 }
 
 
-Foam::instantList Foam::TimePaths::times() const
+Foam::label Foam::TimePaths::findClosestTimeIndex
+(
+    const UList<instant>& timeDirs,
+    const scalar t,
+    const word& constantDirName
+)
 {
-    return findTimes(path(), constant());
+    const label nTimes = timeDirs.size();
+
+    label nearestIndex = -1;
+    scalar deltaT = GREAT;
+
+    for (label timei=0; timei < nTimes; ++timei)
+    {
+        if (timeDirs[timei].name() == constantDirName) continue;
+
+        const scalar diff = Foam::mag(timeDirs[timei].value() - t);
+        if (diff < deltaT)
+        {
+            deltaT = diff;
+            nearestIndex = timei;
+        }
+    }
+
+    return nearestIndex;
+}
+
+
+Foam::instant Foam::TimePaths::findClosestTime
+(
+    const UList<instant>& timeDirs,
+    const scalar t,
+    const word& constantDirName
+)
+{
+    const label nTimes = timeDirs.size();
+
+    if (nTimes == 0)
+    {
+        // Cannot really fail at this point, but for some safety...
+        return instant(0, constantDirName);
+    }
+    else if (nTimes == 1)
+    {
+        // Only one time (likely "constant") so return it
+        return timeDirs[0];
+    }
+    else if (t < timeDirs[1].value())
+    {
+        return timeDirs[1];
+    }
+    else if (t > timeDirs[nTimes-1].value())
+    {
+        return timeDirs[nTimes-1];
+    }
+
+    label nearestIndex = 0;  // Failsafe value
+    scalar deltaT = GREAT;
+
+    for (label timei=1; timei < nTimes; ++timei)
+    {
+        const scalar diff = Foam::mag(timeDirs[timei].value() - t);
+        if (diff < deltaT)
+        {
+            deltaT = diff;
+            nearestIndex = timei;
+        }
+    }
+
+    return timeDirs[nearestIndex];
 }
 
 
@@ -152,100 +219,76 @@ Foam::word Foam::TimePaths::findInstancePath
 }
 
 
-// Foam::word Foam::Time::findInstancePath
-// (
-//     const fileName& directory,
-//     const instant& t
-// ) const
-// {
-//     // Simplified version: use findTimes (readDir + sort).
-//     // The expensive bit is the readDir, not the sorting.
-//     // TBD: avoid calling findInstancePath from filePath.
-//
-//     instantList timeDirs = findTimes(directory, constant());
-//
-//     return findInstancePath(timeDirs, i);
-// }
-
-
-Foam::word Foam::TimePaths::findInstancePath(const instant& t) const
+Foam::word Foam::TimePaths::findInstancePath
+(
+    const fileName& directory,
+    const instant& t,
+    const word& constantDirName
+)
 {
-    // Simplified version: use findTimes (readDir + sort).
-    // The expensive bit is the readDir, not the sorting.
-    // TBD: avoid calling findInstancePath from filePath.
-
-    instantList timeDirs = findTimes(path(), constant());
+    // NB: uses fileHandler()
+    instantList timeDirs = findTimes(directory, constantDirName);
     return findInstancePath(timeDirs, t);
 }
 
 
-Foam::label Foam::TimePaths::findClosestTimeIndex
-(
-    const UList<instant>& timeDirs,
-    const scalar t,
-    const word& constantDirName
-)
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+Foam::instantList Foam::TimePaths::times() const
 {
-    const label nTimes = timeDirs.size();
+    // NB: uses fileHandler()
+    return findTimes(path(), constant());
+}
 
-    label nearestIndex = -1;
-    scalar deltaT = GREAT;
 
-    for (label timei=0; timei < nTimes; ++timei)
-    {
-        if (timeDirs[timei].name() == constantDirName) continue;
-
-        const scalar diff = mag(timeDirs[timei].value() - t);
-        if (diff < deltaT)
-        {
-            deltaT = diff;
-            nearestIndex = timei;
-        }
-    }
-
-    return nearestIndex;
+Foam::instantList Foam::TimePaths::times(IOobjectOption::Layout layout) const
+{
+    // NB: uses fileHandler()
+    return findTimes(path(layout), constant());
 }
 
 
 Foam::instant Foam::TimePaths::findClosestTime(const scalar t) const
 {
-    instantList timeDirs = findTimes(path(), constant());
+    // NB: uses fileHandler()
+    return findClosestTime
+    (
+        findTimes(path(), constant()),
+        t,
+        constant()
+    );
+}
 
-    const label nTimes = timeDirs.size();
 
-    if (nTimes == 0)
-    {
-        // Cannot really fail at this point, but for some safety...
-        return instant(0, constant());
-    }
-    else if (nTimes == 1)
-    {
-        // Only one time (likely "constant") so return it
-        return timeDirs.front();
-    }
-    else if (t < timeDirs[1].value())
-    {
-        return timeDirs[1];
-    }
-    else if (t > timeDirs.back().value())
-    {
-        return timeDirs.back();
-    }
+Foam::instant Foam::TimePaths::findClosestTime
+(
+    IOobjectOption::Layout layout,
+    const scalar t
+) const
+{
+    // NB: uses fileHandler()
+    return findClosestTime
+    (
+        findTimes(path(layout), constant()),
+        t,
+        constant()
+    );
+}
 
-    label nearestIndex = 0;  // Failsafe value
-    scalar deltaT = GREAT;
 
-    for (label timei=1; timei < nTimes; ++timei)
-    {
-        const scalar diff = mag(timeDirs[timei].value() - t);
-        if (diff < deltaT)
-        {
-            deltaT = diff;
-            nearestIndex = timei;
-        }
-    }
+Foam::word Foam::TimePaths::findInstancePath(const instant& t) const
+{
+    return findInstancePath(path(), t);
+}
 
-    return timeDirs[nearestIndex];
+
+Foam::word Foam::TimePaths::findInstancePath
+(
+    IOobjectOption::Layout layout,
+    const instant& t
+) const
+{
+    return findInstancePath(path(layout), t);
 }
 
 

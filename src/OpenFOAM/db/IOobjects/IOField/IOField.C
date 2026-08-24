@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -47,6 +47,38 @@ bool Foam::IOField<Type>::readIOcontents(bool readOnProc)
     }
 
     return false;
+}
+
+
+template<class T>
+Foam::label Foam::IOField<T>::readIOsize()
+{
+    label count(-1);
+
+    if (isReadRequired() || (isReadOptional() && headerOk()))
+    {
+        Istream& is = readStream(typeName);
+
+        token tok(is);
+
+        const bool quick = tok.isLabel();
+
+        if (quick)
+        {
+            // The majority of files will have lists with sizing info
+            count = tok.labelToken();
+        }
+        is.putBack(tok);
+
+        if (!quick)
+        {
+            List<T> list(is);
+            close();
+            count = list.size();
+        }
+    }
+
+    return count;
 }
 
 
@@ -168,6 +200,26 @@ Foam::IOFieldRef<Type>::IOFieldRef
 // * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
 
 template<class Type>
+Foam::label Foam::IOField<Type>::readContentsSize(const IOobject& io)
+{
+    IOobject rio(io, IOobjectOption::NO_REGISTER);
+    if (rio.readOpt() == IOobjectOption::READ_MODIFIED)
+    {
+        rio.readOpt(IOobjectOption::MUST_READ);
+    }
+    rio.resetHeader();
+
+    // Construct NO_READ, changing after construction
+    const auto rOpt = rio.readOpt(IOobjectOption::NO_READ);
+
+    IOField<Type> reader(rio);
+    reader.readOpt(rOpt);
+
+    return reader.readIOsize();
+}
+
+
+template<class Type>
 Foam::Field<Type> Foam::IOField<Type>::readContents(const IOobject& io)
 {
     IOobject rio(io, IOobjectOption::NO_REGISTER);
@@ -175,6 +227,7 @@ Foam::Field<Type> Foam::IOField<Type>::readContents(const IOobject& io)
     {
         rio.readOpt(IOobjectOption::MUST_READ);
     }
+    rio.resetHeader();
 
     IOField<Type> reader(rio);
 
@@ -219,15 +272,6 @@ bool Foam::IOFieldRef<Type>::writeData(Ostream& os) const
 {
     os << contentRef_.cref();
     return os.good();
-}
-
-
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-template<class Type>
-void Foam::IOField<Type>::operator=(const IOField<Type>& rhs)
-{
-    Field<Type>::operator=(rhs);
 }
 
 

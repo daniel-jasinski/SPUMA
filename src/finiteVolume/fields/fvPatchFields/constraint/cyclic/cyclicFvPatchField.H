@@ -83,16 +83,6 @@ class cyclicFvPatchField
         const cyclicFvPatch& cyclicPatch_;
 
 
-    // Private Member Functions
-
-        //- Return neighbour side field given internal fields
-        template<class Type2>
-        tmp<Field<Type2>> neighbourSideField
-        (
-            const Field<Type2>&
-        ) const;
-
-
 public:
 
 
@@ -170,7 +160,10 @@ public:
         // Evaluation functions
 
             //- Return neighbour coupled internal cell data
-            tmp<Field<Type>> patchNeighbourField() const;
+            virtual tmp<Field<Type>> patchNeighbourField() const;
+
+            //- Retrieve neighbour coupled internal cell data
+            virtual void patchNeighbourField(UList<Type>& pnf) const;
 
             //- Return reference to neighbour patchField
             const cyclicFvPatchField<Type>& neighbourPatchField() const;
@@ -216,7 +209,11 @@ public:
             //- Does the patch field perform the transformation
             virtual bool doTransform() const
             {
-                return (pTraits<Type>::rank && !cyclicPatch_.parallel());
+                return
+                (
+                    is_rotational_vectorspace_v<Type>
+                 && !cyclicPatch_.parallel()
+                );
             }
 
             //- Return face transformation tensor

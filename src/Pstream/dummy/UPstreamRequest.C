@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2023-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -68,22 +68,22 @@ void Foam::UPstream::cancelRequest(const label i) {}
 void Foam::UPstream::cancelRequest(UPstream::Request&) {}
 void Foam::UPstream::cancelRequests(UList<UPstream::Request>&) {}
 
-void Foam::UPstream::removeRequests(const label pos, label len) {}
+void Foam::UPstream::removeRequests(label pos, label len) {}
 
 void Foam::UPstream::freeRequest(UPstream::Request&) {}
 void Foam::UPstream::freeRequests(UList<UPstream::Request>&) {}
 
-void Foam::UPstream::waitRequests(const label pos, label len) {}
+void Foam::UPstream::waitRequests(label pos, label len) {}
 void Foam::UPstream::waitRequests(UList<UPstream::Request>&) {}
 
-bool Foam::UPstream::waitAnyRequest(const label pos, label len)
+bool Foam::UPstream::waitAnyRequest(label pos, label len)
 {
     return false;
 }
 
 bool Foam::UPstream::waitSomeRequests
 (
-    const label pos,
+    label pos,
     label len,
     DynamicList<int>* indices
 )
@@ -102,7 +102,7 @@ bool Foam::UPstream::waitSomeRequests
     return false;
 }
 
-Foam::label Foam::UPstream::waitAnyRequest(UList<UPstream::Request>&)
+int Foam::UPstream::waitAnyRequest(UList<UPstream::Request>&)
 {
     return -1;
 }
@@ -110,10 +110,13 @@ Foam::label Foam::UPstream::waitAnyRequest(UList<UPstream::Request>&)
 void Foam::UPstream::waitRequest(const label i) {}
 void Foam::UPstream::waitRequest(UPstream::Request&) {}
 
+bool Foam::UPstream::activeRequest(const label i) { return false; }
+bool Foam::UPstream::activeRequest(const UPstream::Request&) { return false; }
+
 bool Foam::UPstream::finishedRequest(const label i) { return true; }
 bool Foam::UPstream::finishedRequest(UPstream::Request&) { return true; }
 
-bool Foam::UPstream::finishedRequests(const label pos, label len)
+bool Foam::UPstream::finishedRequests(label pos, label len)
 {
     return true;
 }

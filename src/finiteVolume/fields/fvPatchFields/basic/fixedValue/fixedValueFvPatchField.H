@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2023-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -131,18 +131,29 @@ public:
             const fvPatchFieldMapper&
         );
 
-        //- Construct as copy
+        //- Construct onto a new patch with internal field reference
+        //- and specified value
         fixedValueFvPatchField
         (
-            const fixedValueFvPatchField<Type>&
+            const fixedValueFvPatchField<Type>& pfld,
+            const fvPatch& p,
+            const DimensionedField<Type, volMesh>& iF,
+            const Type& value
         );
 
-        //- Construct as copy setting internal field reference
+        //- Copy construct with internal field reference
         fixedValueFvPatchField
         (
-            const fixedValueFvPatchField<Type>&,
-            const DimensionedField<Type, volMesh>&
+            const fixedValueFvPatchField<Type>& pfld,
+            const DimensionedField<Type, volMesh>& iF
         );
+
+        //- Copy construct
+        fixedValueFvPatchField(const fixedValueFvPatchField<Type>& pfld)
+        :
+            fixedValueFvPatchField<Type>(pfld, pfld.internalField())
+        {}
+
 
         //- Return a clone
         virtual tmp<fvPatchField<Type>> clone() const
@@ -199,6 +210,7 @@ public:
 
     // Member Operators
 
+        // Disable assignment operators
         virtual void operator=(const UList<Type>&) {}
 
         virtual void operator=(const fvPatchField<Type>&) {}

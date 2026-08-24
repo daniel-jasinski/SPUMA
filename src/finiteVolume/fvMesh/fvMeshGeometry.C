@@ -51,7 +51,7 @@ void Foam::fvMesh::makeSf() const
             << abort(FatalError);
     }
 
-    SfPtr_ = new slicedSurfaceVectorField
+    SfPtr_ = std::make_unique<slicedSurfaceVectorField>
     (
         IOobject
         (
@@ -88,7 +88,7 @@ void Foam::fvMesh::makeMagSf() const
     // Note: Added stabilisation for faces with exactly zero area.
     // These should be caught on mesh checking but at least this stops
     // the code from producing Nans.
-    magSfPtr_ = new surfaceScalarField
+    magSfPtr_ = std::make_unique<surfaceScalarField>
     (
         IOobject
         (
@@ -102,6 +102,40 @@ void Foam::fvMesh::makeMagSf() const
         ),
         mag(Sf()) + dimensionedScalar("vs", dimArea, VSMALL)
     );
+}
+
+
+void Foam::fvMesh::makeUnitSf() const
+{
+    DebugInFunction << "Assembling unit normals" << endl;
+
+    // It is an error to attempt to recalculate
+    // if the pointer is already set
+    if (unitSfPtr_)
+    {
+        FatalErrorInFunction
+            << "unit normals already exist"
+            << abort(FatalError);
+    }
+
+    unitSfPtr_ = std::make_unique<surfaceVectorField>
+    (
+        IOobject
+        (
+            "unit(Sf)",
+            pointsInstance(),
+            meshSubDir,
+            *this,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE,
+            IOobject::NO_REGISTER
+        ),
+        *this,
+        dimless,
+        (this->Sf() / this->magSf())
+    );
+
+    unitSfPtr_.get()->oriented() = this->Sf().oriented();
 }
 
 
@@ -120,7 +154,7 @@ void Foam::fvMesh::makeC() const
 
     // Construct as slices. Only preserve processor (not e.g. cyclic)
 
-    CPtr_ = new slicedVolVectorField
+    CPtr_ = std::make_unique<slicedVolVectorField>
     (
         IOobject
         (
@@ -155,7 +189,7 @@ void Foam::fvMesh::makeCf() const
             << abort(FatalError);
     }
 
-    CfPtr_ = new slicedSurfaceVectorField
+    CfPtr_ = std::make_unique<slicedSurfaceVectorField>
     (
         IOobject
         (
@@ -183,7 +217,7 @@ const Foam::volScalarField::Internal& Foam::fvMesh::V() const
         DebugInFunction
             << "Constructing from primitiveMesh::cellVolumes()" << endl;
 
-        VPtr_ = new SlicedDimensionedField<scalar, volMesh>
+        VPtr_ = std::make_unique<SlicedDimensionedField<scalar, volMesh>>
         (
             IOobject
             (
@@ -236,7 +270,7 @@ const Foam::volScalarField::Internal& Foam::fvMesh::V00() const
     {
         DebugInFunction << "Constructing from V0" << endl;
 
-        V00Ptr_ = new DimensionedField<scalar, volMesh>
+        V00Ptr_ = std::make_unique<DimensionedField<scalar, volMesh>>
         (
             IOobject
             (
@@ -326,27 +360,14 @@ const Foam::surfaceScalarField& Foam::fvMesh::magSf() const
 }
 
 
-Foam::tmp<Foam::surfaceVectorField> Foam::fvMesh::unitSf() const
+const Foam::surfaceVectorField& Foam::fvMesh::unitSf() const
 {
-    auto tunitVectors = tmp<surfaceVectorField>::New
-    (
-        IOobject
-        (
-            "unit(Sf)",
-            pointsInstance(),
-            meshSubDir,
-            *this,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE,
-            IOobject::NO_REGISTER
-        ),
-        *this,
-        dimless,
-        (this->Sf() / this->magSf())
-    );
+    if (!unitSfPtr_)
+    {
+        makeUnitSf();
+    }
 
-    tunitVectors.ref().oriented() = this->Sf().oriented();
-    return tunitVectors;
+    return *unitSfPtr_;
 }
 
 
@@ -427,7 +448,7 @@ const Foam::surfaceScalarField& Foam::fvMesh::phi() const
     // mesh motion fluxes if the time has been incremented
     if (!time().subCycling() && phiPtr_->timeIndex() != time().timeIndex())
     {
-        (*phiPtr_) = dimensionedScalar(dimVolume/dimTime, Foam::zero{});
+        (*phiPtr_) = Zero;
     }
 
     phiPtr_->setOriented();

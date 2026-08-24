@@ -43,80 +43,57 @@ Description
 Usage
     A minimal example:
     \verbatim
-    surfaceFieldValuePatch1
+    surfaceFieldValuePatchFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            surfaceFieldValue;
         libs            (fieldFunctionObjects);
+        fields          <wordList>;  // (<field1> <field2> ... <fieldN>);
+        regionType      <word>;
+        operation       <word>;
 
-        // Mandatory entries (runtime modifiable)
-        fields          (<field1> <field2> ... <fieldN>);
-        operation       <operationType>;
-        regionType      patch;
-        name            <patch>;
-
-        // Optional entries (runtime modifiable)
+        // Optional entries
+        postOperation   <word>;
+        writeArea       <bool>;
+        empty-surface   <word>;  // default | warn | ignore | strict
         names           (<patch-name> <patch-regex>);
+        name            <patch>;
+        weightField     <word>;  // alpha1;
 
-        postOperation   none;
-        weightField     alpha1;
-        scaleFactor     1.0;
-        writeArea       false;
-        surfaceFormat   none;
+        // Conditional entries
 
-        // Optional (inherited) entries
+            // when regionType = sampledSurface
+            sampledSurfaceDict  <dict>;
+
+            // when writeFields = true
+            surfaceFormat   <word>;  // vtk | raw | none
+
+        // Inherited entries
         ...
     }
-
-    surfaceFieldValueFaceZone1
-    {
-        // Mandatory entries (unmodifiable)
-        type            surfaceFieldValue;
-        libs            (fieldFunctionObjects);
-
-        // Mandatory entries (runtime modifiable)
-        fields          (<field1> <field2> ... <fieldN>);
-        operation       <operationType>;
-        regionType      faceZone;
-        name            <faceZone>;
-
-        // Optional entries (runtime modifiable)
-        names           (<zone-name> <zone-regex>);
-
-        postOperation   none;
-        weightFields    (rho U);
-        scaleFactor     1.0;
-        writeArea       false;
-        surfaceFormat   none;
-        empty-surface   warn;  // default | warn | ignore | strict
-
-        // Optional (inherited) entries
-        ...
-    }
-    \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Reqd | Dflt
+      Property     | Description                        | Type | Reqd | Deflt
       type         | Type name: surfaceFieldValue       | word |  yes  | -
       libs         | Libraries: fieldFunctionObjects    | wordList |  yes  | -
       regionType   | Face regionType: see below         | word |  yes  | -
       fields       | Names of operand fields            | wordList | yes | -
       name         | Name of the regionType             | word |  yes  | -
-      names        | Extended selection                 | word/regex list | no | -
+      names        | Extended selection              | word/regex list | no | -
       operation    | Operation type: see below          | word |  yes  | -
       postOperation | Post-operation type: see below    | word |  no   | none
       weightField   | Name of field to apply weighting   | word |  maybe |
       weightFields  | Names of fields to apply weighting | wordList | maybe |
-      scaleFactor  | Output value scaling factor        | scalar |  no  | 1.0
       writeArea    | Write the surface area             | bool |  no   | false
       surfaceFormat | Output value format               | word <!--
                 --> | conditional on writeFields  | none
       empty-surface | Error handling for empty surfaces | enum | no | default
+      sampledSurfaceDict | Dict defining the sampledSurface | dict | no | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link fieldValue.H \endlink
+      - \link fieldValue.H \endlink
 
     Options for the \c regionType entry:
     \plaintable
@@ -161,8 +138,6 @@ Usage
        sqrt          | Component-wise \c sqrt() after normal operation
     \endplaintable
 
-    Usage by the \c postProcess utility is not available.
-
 Note
     - Some types (eg, patch or faceZone) support the selection of multiple
       entries, which can be specified as list of words or regular expressions
@@ -202,19 +177,14 @@ Note
     \f$ \rho \vec U \f$ or \f$ \vec U \f$ for weighting and
     \f$ \phi = conc \f$.
 
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldValues::fieldValue
-    - ExtendedCodeGuide::functionObjects::field::surfaceFieldValue
-
 SourceFiles
     surfaceFieldValue.C
     surfaceFieldValueTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_surfaceFieldValue_H
-#define functionObjects_surfaceFieldValue_H
+#ifndef Foam_functionObjects_surfaceFieldValue_H
+#define Foam_functionObjects_surfaceFieldValue_H
 
 #include "fieldValue.H"
 #include "Enum.H"
@@ -625,10 +595,10 @@ public:
         //- Return the output directory
         inline fileName outputDir() const;
 
-        //- Read from dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate and write
+        //- Write the function-object results
         virtual bool write();
 
         //- Update for changes of mesh

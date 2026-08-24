@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2023-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -221,9 +221,20 @@ Foam::tmp<Foam::labelField> Foam::pairGAMGAgglomeration::agglomerate
     auto tcoarseCellMap = tmp<labelField>::New(nFineCells, -1);
     auto& coarseCellMap = tcoarseCellMap.ref();
 
+    // Small tolerance to account for faces potentially having slightly
+    // different truncation error in their weights from run to run
+    // (e.g. due to offloading). If all the largest faces per cell are
+    // within this tolerance use the first one. This guarantees repeatability.
+    // Disabled on non-offload situations for now since makes comparison
+    // to previous versions harder. TBD.
+    #ifdef _OPENMP
+    const scalar tol = 1E-10;
+    #else
+    const scalar tol = 0;
+    #endif
+
     nCoarseCells = 0;
     label celli;
-
     for (label cellfi=0; cellfi<nFineCells; cellfi++)
     {
         // Change cell ordering depending on direction for this level
@@ -250,7 +261,7 @@ Foam::tmp<Foam::labelField> Foam::pairGAMGAgglomeration::agglomerate
                 (
                     coarseCellMap[upperAddr[facei]] < 0
                  && coarseCellMap[lowerAddr[facei]] < 0
-                 && faceWeights[facei] > maxFaceWeight
+                 && faceWeights[facei] > maxFaceWeight*(1.0 + tol)
                 )
                 {
                     // Match found. Pick up all the necessary data
@@ -282,7 +293,7 @@ Foam::tmp<Foam::labelField> Foam::pairGAMGAgglomeration::agglomerate
                 {
                     label facei = cellFaces[faceOs];
 
-                    if (faceWeights[facei] > clusterMaxFaceCoeff)
+                    if (faceWeights[facei] > clusterMaxFaceCoeff*(1.0 + tol))
                     {
                         clusterMatchFaceNo = facei;
                         clusterMaxFaceCoeff = faceWeights[facei];

@@ -30,6 +30,9 @@ Description
     Inline base-64 encoded binary output.
     Uses an output filter layer to write base-64 encoded content.
 
+SourceFiles
+    foamVtkBase64Formatter.cxx
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef Foam_vtk_base64Formatter_H

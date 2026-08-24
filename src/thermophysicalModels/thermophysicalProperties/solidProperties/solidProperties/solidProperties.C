@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2018-2020 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,6 +40,19 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
+Foam::solidProperties::solidProperties() noexcept
+:
+    rho_(0),
+    Cp_(0),
+    kappa_(0),
+    Hf_(0),
+    emissivity_(0),
+    W_(0),
+    nu_(0),
+    E_(0)
+{}
+
+
 Foam::solidProperties::solidProperties
 (
     scalar rho,
@@ -50,7 +63,7 @@ Foam::solidProperties::solidProperties
     scalar W,
     scalar nu,
     scalar E
-)
+) noexcept
 :
     rho_(rho),
     Cp_(Cp),
@@ -71,9 +84,76 @@ Foam::solidProperties::solidProperties(const dictionary& dict)
     Hf_(dict.get<scalar>("Hf")),
     emissivity_(dict.get<scalar>("emissivity")),
     W_(dict.get<scalar>("W")),
-    nu_(dict.getOrDefault<scalar>("nu", 0.0)),
-    E_(dict.getOrDefault<scalar>("E", 0.0))
-{}
+    nu_(0),
+    E_(0)
+{
+    // Mechanical properties: optional
+    dict.readIfPresent("nu", nu_);
+    dict.readIfPresent("E", E_);
+}
+
+
+Foam::solidProperties::solidProperties
+(
+    const dictionary& dict,
+    solidProperties::categories category
+)
+:
+    solidProperties()
+{
+    // Everyone gets density
+    rho_ = dict.get<scalar>("rho");
+
+    // Heat of formation, molecular weight
+    if (category == categories::REGULAR)
+    {
+        Hf_ = dict.get<scalar>("Hf");
+        W_ = dict.get<scalar>("W");
+    }
+    else
+    {
+        // Optional if thermal or mechanical only
+        dict.readIfPresent("Hf", Hf_);
+        dict.readIfPresent("W", W_);
+    }
+
+    // Thermal properties
+    if
+    (
+        (category == categories::REGULAR)
+     || (category & categories::THERMAL)
+    )
+    {
+        Cp_ = dict.get<scalar>("Cp");
+        kappa_ = dict.getCompat<scalar>("kappa", {{"K", 1612}});
+
+        // Also handle emissivity as mandatory
+        emissivity_ = dict.get<scalar>("emissivity");
+    }
+    else
+    {
+        // Optional if mechanical only
+        dict.readIfPresent("Cp", Cp_);
+        dict.readIfPresentCompat("kappa", {{"K", 1612}}, kappa_);
+        dict.readIfPresent("emissivity", emissivity_);
+    }
+
+    // Mechanical properties
+    if
+    (
+        (category != categories::REGULAR)
+     && (category & categories::MECHANICAL)
+    )
+    {
+        nu_ = dict.get<scalar>("nu");
+        E_ = dict.get<scalar>("E");
+    }
+    else
+    {
+        dict.readIfPresent("nu", nu_);
+        dict.readIfPresent("E", E_);
+    }
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

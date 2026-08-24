@@ -79,31 +79,28 @@ if (doLagrangian)
                 // but that combination does not work.
                 // So check the header and sync globally
 
-                const bool oldParRun = Pstream::parRun(false);
+                const bool oldParRun = UPstream::parRun(false);
                 fieldExists = fieldObject.typeHeaderOk<IOField<scalar>>(false);
-                Pstream::parRun(oldParRun);  // Restore parallel state
-                Pstream::reduceOr(fieldExists);
+                UPstream::parRun(oldParRun);   // Restore parallel state
+                UPstream::reduceOr(fieldExists, UPstream::worldComm);
             }
 
             bool wrote = false;
             do
             {
-                #undef  ensight_WRITE_CLOUD_FIELD
-                #define ensight_WRITE_CLOUD_FIELD(PrimitiveType)              \
+                #undef  doLocalWriteCode
+                #define doLocalWriteCode(Type)                                \
                                                                               \
-                if                                                               \
-                (                                                                \
-                    fieldType == IOField<PrimitiveType>::staticTypeName()         \
-                )                                                                \
+                if (fieldType == IOField<Type>::staticTypeName())             \
                 {                                                             \
                     autoPtr<ensightFile> os =                                 \
-                        ensCase.newCloudData<PrimitiveType>                   \
+                        ensCase.newCloudData<Type>                            \
                         (                                                     \
                             cloudName,                                        \
                             fieldName                                         \
                         );                                                    \
                                                                               \
-                    wrote = ensightOutput::readWriteCloudField<PrimitiveType> \
+                    wrote = ensightOutput::readWriteCloudField<Type>          \
                     (                                                         \
                         os.ref(),                                             \
                         fieldObject,                                          \
@@ -112,11 +109,12 @@ if (doLagrangian)
                     break;                                                    \
                 }
 
-                ensight_WRITE_CLOUD_FIELD(scalar);
-                ensight_WRITE_CLOUD_FIELD(vector);
+                doLocalWriteCode(scalar);
+                doLocalWriteCode(vector);
 
-                #undef ensight_WRITE_CLOUD_FIELD
-            } while (false);
+                #undef doLocalWriteCode
+            }
+            while (false);
 
             if (wrote)
             {

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2018 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -55,6 +55,12 @@ bool Foam::UPstream::init(int& argc, char**& argv, const bool needsThread)
 }
 
 
+bool Foam::UPstream::setSharedMemoryCommunicators()
+{
+    return false;
+}
+
+
 void Foam::UPstream::shutdown(int errNo)
 {}
 
@@ -66,7 +72,7 @@ void Foam::UPstream::exit(int errNo)
 }
 
 
-void Foam::UPstream::abort()
+void Foam::UPstream::abort(int errNo)
 {
     // No MPI - just abort
     std::abort();
@@ -77,18 +83,55 @@ void Foam::UPstream::abort()
 
 void Foam::UPstream::allocateCommunicatorComponents
 (
-    const label,
-    const label
+    const label parentIndex,
+    const label index
 )
 {}
 
 
-void Foam::UPstream::freeCommunicatorComponents(const label)
+void Foam::UPstream::dupCommunicatorComponents
+(
+    const label parentIndex,
+    const label index
+)
+{}
+
+void Foam::UPstream::splitCommunicatorComponents
+(
+    const label parentIndex,
+    const label index,
+    int colour,
+    const bool two_step
+)
 {}
 
 
-void Foam::UPstream::barrier(const label communicator, UPstream::Request* req)
+void Foam::UPstream::freeCommunicatorComponents(const label index)
 {}
+
+
+void Foam::UPstream::barrier(const int communicator, UPstream::Request* req)
+{}
+
+
+void Foam::UPstream::send_done
+(
+    const int toProc,
+    const int communicator,
+    const int tag
+)
+{}
+
+
+int Foam::UPstream::wait_done
+(
+    const int fromProc,
+    const int communicator,
+    const int tag
+)
+{
+    return -1;
+}
 
 
 std::pair<int,int64_t>
@@ -97,10 +140,10 @@ Foam::UPstream::probeMessage
     const UPstream::commsTypes commsType,
     const int fromProcNo,
     const int tag,
-    const label communicator
+    const int communicator
 )
 {
-    return std::pair<int,int64_t>(-1, 0);
+    return {-1, 0};
 }
 
 

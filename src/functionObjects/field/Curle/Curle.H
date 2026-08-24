@@ -55,69 +55,55 @@ Description
     Operands:
     \table
       Operand           | Type           | Location
-      input             | volScalarField | $FOAM_CASE/\<time\>/\<inpField\>
+      input             | volScalarField | <time>/inputField
       output file       | -              | -
-      output field      | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field      | volScalarField | <time>/outputField
     \endtable
-
-Note
-    Only the normal-pressure force is included in the force calculation.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    Curle1
+    CurleFO
     {
         type            Curle;
-        libs            ("libfieldFunctionObjects.so");
+        libs            (fieldFunctionObjects);
+        patches         (<wordRes>);      // (surface1 surface2);
+        c0              <scalar>;
+        input           <word>;           // point or surface
+        output          <word>;           // point or surface
+
+        // Optional entries
+        p               <word>;
+        observerPositions (<pointList>);  // ((x1 y1 z1)(x2 y2 z2) ... )
+        surface         <fileName>;       // inputSurface.obj
+        surfaceType     <word>;           // ensight, vtk, obj
+
+        // Inherited entries
         ...
-        patches         (surface1 surface2);
-        c0              330;
-
-
-        // Input - either point or surface
-
-        input           point;
-        observerPositions ((0 0 0)(1 0 0));
-
-        //input           surface;
-        //surface         "inputSurface.obj"
-
-
-        // Output - either point or surface
-        output          point;
-
-        //output          surface;
-        //surfaceType     ensight;
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: Curle                   | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       p            | Pressure field name                | word |  no   | p
-      patches      | Sound generation patch names       | wordList | yes | -
+      patches      | Sound generation patch names       | wordRes | yes | -
       c0           | Reference speed of sound           | scalar | yes | -
       input        | Input type                         | word | yes   | -
+      output       | Output type                        | word | yes   | -
       observerPositions | List of observer positions (x y z) | pointList | no |-
       surface      | Input surface file name            | word | no    | -
-      output       | Output type                        | word | yes   | -
       surfaceType  | Output surface type                | word | no    | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
+      - \link fieldExpression.H \endlink
+      - \link writeFile.H \endlink
 
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::Curle
+Note
+    Only the normal-pressure force is included in the force calculation.
 
 SourceFiles
     Curle.C
@@ -149,13 +135,17 @@ class Curle
     public fvMeshFunctionObject,
     public writeFile
 {
-    enum class modeType
-    {
-        point,
-        surface
-    };
+    // Private Enumerations
 
-    static const Enum<modeType> modeTypeNames_;
+        //- Options for the mode types
+        enum class modeType
+        {
+            point,
+            surface
+        };
+
+        //- Names for modeType
+        static const Enum<modeType> modeTypeNames_;
 
 
     // Private Data
@@ -190,7 +180,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         Curle
         (
             const word& name,
@@ -211,11 +201,13 @@ public:
 
     // Member Functions
 
-        //- Read the Curle data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
+        //- Execute the function-object operations
         virtual bool execute();
 
+        //- Write the function-object results
         virtual bool write();
 };
 

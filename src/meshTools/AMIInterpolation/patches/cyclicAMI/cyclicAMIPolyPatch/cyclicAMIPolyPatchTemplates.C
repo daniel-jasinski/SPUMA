@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2021-2024 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -53,13 +53,17 @@ Foam::tmp<Foam::Field<Type>> Foam::cyclicAMIPolyPatch::interpolate
     const UList<Type>& defaultValues
 ) const
 {
+    // Can rotate fields (vector and non-spherical tensors)
+    constexpr bool transform_supported = is_rotational_vectorspace_v<Type>;
+
+    [[maybe_unused]]
     autoPtr<coordSystem::cylindrical> cs;
 
     // Similar to doTransform.
-    // - could also check if !std::is_same<sphericalTensor, Type>:value
 
-    if (is_vectorspace<Type>::value)
+    if constexpr (transform_supported)
     {
+        // Only creates the co-ord system if using periodic AMI
         cs.reset(cylindricalCS());
     }
 
@@ -67,7 +71,8 @@ Foam::tmp<Foam::Field<Type>> Foam::cyclicAMIPolyPatch::interpolate
     {
         return interpolateUntransformed(fld, defaultValues);
     }
-    else
+
+    if constexpr (transform_supported)
     {
         const cyclicAMIPolyPatch& nbrPp = this->neighbPatch();
 
@@ -126,7 +131,7 @@ Foam::tmp<Foam::Field<Type>> Foam::cyclicAMIPolyPatch::interpolate
         const tensorField ownT(cs().R(this->faceCentres()));
 
         Field<Type> localDeflt(defaultValues.size());
-        if (defaultValues.size() == size())
+        if (defaultValues.size() != 0 && defaultValues.size() == size())
         {
             // Transform default values into cylindrical coords (using
             // *this faceCentres)
@@ -143,6 +148,15 @@ Foam::tmp<Foam::Field<Type>> Foam::cyclicAMIPolyPatch::interpolate
             ownT,
             interpolateUntransformed(localFld, localDeflt)
         );
+    }
+    else  // (!transform_supported)
+    {
+        FatalErrorInFunction
+            << "CODING ERROR??" << nl
+            << "calculated cylindrical coordinate system,"
+               " but does not appear to be a vector-space type" << endl
+            << Foam::abort(FatalError);
+        return nullptr;
     }
 }
 
@@ -163,27 +177,77 @@ void Foam::cyclicAMIPolyPatch::initInterpolateUntransformed
 (
     const Field<Type>& fld,
     labelRange& sendRequests,
-    PtrList<List<Type>>& sendBuffers,
     labelRange& recvRequests,
-    PtrList<List<Type>>& recvBuffers
+    PtrList<List<Type>>& sendBuffers,
+    PtrList<List<Type>>& recvBuffers,
+
+    labelRange& sendRequests1,
+    labelRange& recvRequests1,
+    PtrList<List<Type>>& sendBuffers1,
+    PtrList<List<Type>>& recvBuffers1
 ) const
 {
     const auto& AMI = (owner() ? this->AMI() : neighbPatch().AMI());
 
-    if (AMI.distributed())
+    if (AMI.distributed() && AMI.comm() != -1)
     {
-        const auto& map = (owner() ? AMI.tgtMap() : AMI.srcMap());
+        const auto& cache = AMI.cache();
 
-        // Insert send/receive requests (non-blocking)
-        map.send
-        (
-            fld,
-            sendRequests,
-            sendBuffers,
-            recvRequests,
-            recvBuffers,
-            3894+this->index()  // unique offset + patch index
-        );
+        if (cache.index0() == -1 && cache.index1() == -1)
+        {
+            // No caching
+
+            const auto& map = (owner() ? AMI.tgtMap() : AMI.srcMap());
+
+            // Insert send/receive requests (non-blocking)
+            map.send
+            (
+                fld,
+                sendRequests,
+                sendBuffers,
+                recvRequests,
+                recvBuffers,
+                3894+this->index()  // unique offset + patch index
+            );
+        }
+        else
+        {
+            // Caching is active
+
+            cache.setDirection(owner());
+
+            if (cache.index0() != -1)
+            {
+                const auto& map0 = cache.cTgtMapPtr0()();
+
+                // Insert send/receive requests (non-blocking)
+                map0.send
+                (
+                    fld,
+                    sendRequests,
+                    sendBuffers,
+                    recvRequests,
+                    recvBuffers,
+                    3894+this->index()  // unique offset + patch index
+                );
+            }
+
+            if (cache.index1() != -1)
+            {
+                const auto& map1 = cache.cTgtMapPtr1()();
+
+                // Insert send/receive requests (non-blocking)
+                map1.send
+                (
+                    fld,
+                    sendRequests1,
+                    sendBuffers1,
+                    recvRequests1,
+                    recvBuffers1,
+                    3895+this->index()  // unique offset + patch index
+                );
+            }
+        }
     }
 }
 
@@ -193,57 +257,70 @@ void Foam::cyclicAMIPolyPatch::initInterpolate
 (
     const Field<Type>& fld,
     labelRange& sendRequests,
-    PtrList<List<Type>>& sendBuffers,
     labelRange& recvRequests,
-    PtrList<List<Type>>& recvBuffers
+    PtrList<List<Type>>& sendBuffers,
+    PtrList<List<Type>>& recvBuffers,
+
+    labelRange& sendRequests1,
+    labelRange& recvRequests1,
+    PtrList<List<Type>>& sendBuffers1,
+    PtrList<List<Type>>& recvBuffers1
 ) const
 {
     const auto& AMI = (owner() ? this->AMI() : neighbPatch().AMI());
 
-    if (!AMI.distributed())
+    if (!AMI.distributed() || AMI.comm() == -1)
     {
         return;
     }
 
-    autoPtr<coordSystem::cylindrical> cs;
+    // Can rotate fields (vector and non-spherical tensors)
+    constexpr bool transform_supported = is_rotational_vectorspace_v<Type>;
 
-    if (is_vectorspace<Type>::value)
+    if constexpr (transform_supported)
     {
-        cs.reset(cylindricalCS());
-    }
+        // Only creates the co-ord system if using periodic AMI
+        // - convert to cylindrical coordinate system
+        auto cs = cylindricalCS();
 
-    if (!cs)
-    {
-        initInterpolateUntransformed
-        (
-            fld,
-            sendRequests,
-            sendBuffers,
-            recvRequests,
-            recvBuffers
-        );
-    }
-    else
-    {
-        const cyclicAMIPolyPatch& nbrPp = this->neighbPatch();
-
-        Field<Type> localFld(fld.size());
-
-        // Transform to cylindrical coords
+        if (cs)
         {
+            Field<Type> localFld(fld.size());
+            const cyclicAMIPolyPatch& nbrPp = this->neighbPatch();
             const tensorField nbrT(cs().R(nbrPp.faceCentres()));
             Foam::invTransform(localFld, nbrT, fld);
-        }
 
-        initInterpolateUntransformed
-        (
-            localFld,
-            sendRequests,
-            sendBuffers,
-            recvRequests,
-            recvBuffers
-        );
+            initInterpolateUntransformed
+            (
+                localFld,
+                sendRequests,
+                recvRequests,
+                sendBuffers,
+                recvBuffers,
+
+                sendRequests1,
+                recvRequests1,
+                sendBuffers1,
+                recvBuffers1
+            );
+
+            return;
+        }
     }
+
+    initInterpolateUntransformed
+    (
+        fld,
+        sendRequests,
+        recvRequests,
+        sendBuffers,
+        recvBuffers,
+
+        sendRequests1,
+        recvRequests1,
+        sendBuffers1,
+        recvBuffers1
+    );
 }
 
 
@@ -253,76 +330,179 @@ Foam::tmp<Foam::Field<Type>> Foam::cyclicAMIPolyPatch::interpolate
     const Field<Type>& localFld,
     const labelRange& requests,
     const PtrList<List<Type>>& recvBuffers,
+    const labelRange& requests1,
+    const PtrList<List<Type>>& recvBuffers1,
     const UList<Type>& defaultValues
 ) const
 {
-    const auto& AMI = (owner() ? this->AMI() : neighbPatch().AMI());
-    const auto& map = (owner() ? AMI.tgtMap() : AMI.srcMap());
-
-    Field<Type> work;
-    if (AMI.distributed())
-    {
-        // Receive (= copy) data from buffers into work. TBD: receive directly
-        // into slices of work.
-        map.receive
-        (
-            requests,
-            recvBuffers,
-            work,
-            3894+this->index()  // unique offset + patch index
-        );
-    }
-    const Field<Type>& fld = (AMI.distributed() ? work : localFld);
-
+    // Note: cannot be localFld.size() -> is set to null for distributed AMI
     auto tresult = tmp<Field<Type>>::New(this->size(), Zero);
 
-    // Note: tresult is optionally in transformed coord system
-    autoPtr<coordSystem::cylindrical> cs;
+    const auto& AMI = (owner() ? this->AMI() : neighbPatch().AMI());
 
-    if (is_vectorspace<Type>::value)
-    {
-        cs.reset(cylindricalCS());
-    }
+    const auto& cache = AMI.cache();
+    cache.setDirection(owner());
 
-    if (!cs)
+    Field<Type> work;
+    Field<Type> work1;
+    if (AMI.distributed())
     {
-        AMI.weightedSum
-        (
-            owner(),
-            fld,
-            tresult.ref(),
-            defaultValues
-        );
-    }
-    else
-    {
-        const tensorField ownT(cs().R(this->faceCentres()));
-
-        Field<Type> localDeflt(defaultValues.size());
-        if (defaultValues.size() == size())
+        if (AMI.comm() == -1)
         {
-            // Transform default values into cylindrical coords (using
-            // *this faceCentres)
-            // We get in UList (why? Copied from cyclicAMI). Convert to
-            // Field so we can use transformField routines.
-            const SubField<Type> defaultSubFld(defaultValues);
-            const Field<Type>& defaultFld(defaultSubFld);
-            Foam::invTransform(localDeflt, ownT, defaultFld);
+            return tresult;
         }
 
+        if (cache.index0() == -1 && cache.index1() == -1)
+        {
+            // No caching
+            const auto& map = (owner() ? AMI.tgtMap() : AMI.srcMap());
+
+            // Receive (= copy) data from buffers into work. TBD: receive
+            // directly into slices of work.
+            map.receive
+            (
+                requests,
+                recvBuffers,
+                work,
+                3894+this->index()  // unique offset + patch index
+            );
+        }
+        else
+        {
+            // Using AMI cache
+
+            if (cache.index0() != -1)
+            {
+                cache.cTgtMapPtr0()().receive
+                (
+                    requests,
+                    recvBuffers,
+                    work,
+                    3894+this->index()  // unique offset + patch index
+                );
+            }
+
+            if (cache.index1() != -1)
+            {
+                cache.cTgtMapPtr1()().receive
+                (
+                    requests1,
+                    recvBuffers1,
+                    work1,
+                    3895+this->index()  // unique offset + patch index
+                );
+            }
+        }
+    }
+
+    const Field<Type>& fld = (AMI.distributed() ? work : localFld);
+    const Field<Type>& fld1 = (AMI.distributed() ? work1 : localFld);
+
+    // Rotate fields (vector and non-spherical tensors)
+    constexpr bool transform_supported = is_rotational_vectorspace_v<Type>;
+
+    // Rotate fields (vector and non-spherical tensors) for periodic AMI
+    tensorField ownTransform;
+    Field<Type> localDeflt;
+
+    if constexpr (transform_supported)
+    {
+        // Only creates the co-ord system if using periodic AMI
+        // - convert to cylindrical coordinate system
+        auto cs = cylindricalCS();
+
+        if (cs)
+        {
+            ownTransform = cs().R(this->faceCentres());
+            localDeflt = defaultValues;
+
+            if (defaultValues.size() == size())
+            {
+                // Transform default values into cylindrical coords (using
+                // *this faceCentres)
+                // We get in UList (why? Copied from cyclicAMI). Convert to
+                // Field so we can use transformField routines.
+                const SubField<Type> defaultSubFld(defaultValues);
+                const Field<Type>& defaultFld(defaultSubFld);
+                Foam::invTransform(localDeflt, ownTransform, defaultFld);
+            }
+        }
+    }
+
+    const auto& localDefaultValues =
+        localDeflt.size() ? localDeflt : defaultValues;
+
+    if (cache.index0() == -1 && cache.index1() == -1)
+    {
+        // No caching
         AMI.weightedSum
         (
             owner(),
             fld,
             tresult.ref(),
-            localDeflt
+            localDefaultValues
         );
 
         // Transform back
-        Foam::transform(tresult.ref(), ownT, tresult());
-    }
+        if (ownTransform.size())
+        {
+            Foam::transform(tresult.ref(), ownTransform, tresult());
+        }
 
-    return tresult;
+        return tresult;
+    }
+    else
+    {
+        if (cache.index0() != -1)
+        {
+            AMIInterpolation::weightedSum
+            (
+                AMI.lowWeightCorrection(),
+                cache.cSrcAddress0(),
+                cache.cSrcWeights0(),
+                cache.cSrcWeightsSum0(),
+                fld,
+                multiplyWeightedOp<Type, plusEqOp<Type>>(plusEqOp<Type>()),
+                tresult.ref(),
+                localDefaultValues
+            );
+
+            if (ownTransform.size())
+            {
+                Foam::transform(tresult.ref(), ownTransform, tresult());
+            }
+
+            // Assuming cache weight is zero when index1 is inactive (==-1)
+            tresult.ref() *= (1 - cache.weight());
+        }
+
+        if (cache.index1() != -1)
+        {
+            auto tresult1 = tmp<Field<Type>>::New(this->size(), Zero);
+
+            AMIInterpolation::weightedSum
+            (
+                AMI.lowWeightCorrection(),
+                cache.cSrcAddress1(),
+                cache.cSrcWeights1(),
+                cache.cSrcWeightsSum1(),
+                fld1,
+                multiplyWeightedOp<Type, plusEqOp<Type>>(plusEqOp<Type>()),
+                tresult1.ref(),
+                localDefaultValues
+            );
+
+            if (ownTransform.size())
+            {
+                Foam::transform(tresult1.ref(), ownTransform, tresult1());
+            }
+
+            tresult1.ref() *= cache.weight();
+            tresult.ref() += tresult1();
+        }
+
+        return tresult;
+    }
 }
 
 
@@ -338,9 +518,15 @@ void Foam::cyclicAMIPolyPatch::interpolate
     //- Commented out for now since called with non-primitives (e.g. wallPoint
     //  from FaceCellWave) - missing Foam::transform, Foam::invTransform
     /*
+     *
+    // Rotate fields (vector and non-spherical tensors)
+    constexpr bool transform_supported = is_rotational_vectorspace_v<Type>;
+
+    [[maybe_unused]]
     autoPtr<coordSystem::cylindrical> cs;
 
-    if (is_vectorspace<Type>::value)
+    // Rotate fields (vector and non-spherical tensors)
+    if constexpr (transform_supported)
     {
         cs.reset(cylindricalCS());
     }

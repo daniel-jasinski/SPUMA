@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2024 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -115,52 +115,52 @@ class primitiveMesh
         // Shapes
 
             //- Cell shapes
-            mutable cellShapeList* cellShapesPtr_;
+            mutable std::unique_ptr<cellShapeList> cellShapesPtr_;
 
             //- Edges
-            mutable edgeList* edgesPtr_;
+            mutable std::unique_ptr<edgeList> edgesPtr_;
 
 
         // Connectivity
 
             //- Cell-cells
-            mutable labelListList* ccPtr_;
+            mutable std::unique_ptr<labelListList> ccPtr_;
 
             //- Edge-cells
-            mutable labelListList* ecPtr_;
+            mutable std::unique_ptr<labelListList> ecPtr_;
 
             //- Point-cells
-            mutable labelListList* pcPtr_;
+            mutable std::unique_ptr<labelListList> pcPtr_;
 
             //- Cell-faces
-            mutable cellList* cfPtr_;
+            mutable std::unique_ptr<cellList> cfPtr_;
 
             //- cell-face start
-            mutable labelList* cellFaceStartPtr_;
+            mutable std::unique_ptr<labelList> cellFaceStartPtr_;
 
             //- face index using cell face start
-            mutable labelList* facePtr_;
+            mutable std::unique_ptr<labelList> facePtr_;
 
             //- Edge-faces
-            mutable labelListList* efPtr_;
+            mutable std::unique_ptr<labelListList> efPtr_;
 
             //- Point-faces
-            mutable labelListList* pfPtr_;
+            mutable std::unique_ptr<labelListList> pfPtr_;
 
             //- Cell-edges
-            mutable labelListList* cePtr_;
+            mutable std::unique_ptr<labelListList> cePtr_;
 
             //- Face-edges
-            mutable labelListList* fePtr_;
+            mutable std::unique_ptr<labelListList> fePtr_;
 
             //- Point-edges
-            mutable labelListList* pePtr_;
+            mutable std::unique_ptr<labelListList> pePtr_;
 
             //- Point-points
-            mutable labelListList* ppPtr_;
+            mutable std::unique_ptr<labelListList> ppPtr_;
 
             //- Cell-points
-            mutable labelListList* cpPtr_;
+            mutable std::unique_ptr<labelListList> cpPtr_;
 
 
         // On-the-fly edge addressing storage
@@ -175,16 +175,16 @@ class primitiveMesh
         // Geometric data
 
             //- Cell centres
-            mutable vectorField* cellCentresPtr_;
+            mutable std::unique_ptr<vectorField> cellCentresPtr_;
 
             //- Face centres
-            mutable vectorField* faceCentresPtr_;
+            mutable std::unique_ptr<vectorField> faceCentresPtr_;
 
             //- Cell volumes
-            mutable scalarField* cellVolumesPtr_;
+            mutable std::unique_ptr<scalarField> cellVolumesPtr_;
 
             //- Face areas
-            mutable vectorField* faceAreasPtr_;
+            mutable std::unique_ptr<vectorField> faceAreasPtr_;
 
 
     // Private Member Functions

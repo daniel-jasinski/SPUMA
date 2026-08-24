@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -142,12 +142,23 @@ public:
             const pointPatchFieldMapper&
         );
 
-        //- Construct as copy setting internal field reference
+        //- Copy construct onto patch with internal field reference
+        //- and specified value
         valuePointPatchField
         (
-            const valuePointPatchField<Type>&,
-            const DimensionedField<Type, pointMesh>&
+            const valuePointPatchField<Type>& pfld,
+            const pointPatch& p,
+            const DimensionedField<Type, pointMesh>& iF,
+            const Type& value
         );
+
+        //- Copy construct with internal field reference
+        valuePointPatchField
+        (
+            const valuePointPatchField<Type>& pfld,
+            const DimensionedField<Type, pointMesh>& iF
+        );
+
 
         //- Return a clone
         virtual autoPtr<pointPatchField<Type>> clone() const
@@ -167,10 +178,19 @@ public:
 
     // Member Functions
 
+        // Attributes
+
+            //- True: this patch field is altered by assignment by default.
+            virtual bool assignable() const
+            {
+                return true;
+            }
+
+
         // Access
 
-            //- Return size
-            label size() const
+            //- Return the field size
+            label size() const noexcept
             {
                 return Field<Type>::size();
             }

@@ -40,7 +40,7 @@ Description
     but caution should be exercised before attempting large operations.
 
 SourceFiles
-    faMeshReconstructor.C
+    faMeshReconstructor.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -217,10 +217,10 @@ public:
         static void writeAddressing
         (
             const IOobject& io,
-            const labelList& faBoundaryProcAddr,
-            const labelList& faFaceProcAddr,
-            const labelList& faPointProcAddr,
-            const labelList& faEdgeProcAddr
+            const labelUList& faBoundaryProcAddr,
+            const labelUList& faFaceProcAddr,
+            const labelUList& faPointProcAddr,
+            const labelUList& faEdgeProcAddr
         );
 
         //- Write proc addressing at the polyMesh faceInstances time

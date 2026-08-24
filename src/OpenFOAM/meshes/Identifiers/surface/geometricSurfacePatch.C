@@ -33,15 +33,15 @@ License
 
 Foam::geometricSurfacePatch::geometricSurfacePatch()
 :
-    geometricSurfacePatch(0)
+    name_("patch"),
+    index_(0)
 {}
 
 
 Foam::geometricSurfacePatch::geometricSurfacePatch(const label index)
 :
     name_("patch"),
-    index_(index),
-    geometricType_()
+    index_(index)
 {}
 
 
@@ -52,8 +52,7 @@ Foam::geometricSurfacePatch::geometricSurfacePatch
 )
 :
     name_(name),
-    index_(index),
-    geometricType_()
+    index_(index)
 {}
 
 

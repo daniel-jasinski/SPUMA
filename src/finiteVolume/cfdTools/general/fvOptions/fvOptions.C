@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -41,29 +41,33 @@ namespace Foam
 }
 
 
-// * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
 
-Foam::IOobject Foam::fv::options::createIOobject
-(
-    const fvMesh& mesh
-) const
+namespace
 {
+
+// Create IO object if dictionary is present
+Foam::IOobject createIOobject
+(
+    const Foam::fvMesh& mesh,
+    const Foam::word& baseName  // eg, fvOptions
+)
+{
+    using namespace Foam;
+
     IOobject io
     (
-        typeName,
+        baseName,
         mesh.time().constant(),
-        mesh,
-        IOobject::MUST_READ,
-        IOobject::NO_WRITE
+        mesh.thisDb(),
+        IOobjectOption::MUST_READ,
+        IOobjectOption::NO_WRITE,
+        IOobjectOption::REGISTER
     );
 
     if (io.typeHeaderOk<IOdictionary>(true))
     {
-        Info<< "Creating finite volume options from "
-            << io.instance()/io.name() << nl
-            << endl;
-
-        io.readOpt(IOobject::MUST_READ_IF_MODIFIED);
+        io.readOpt(IOobjectOption::READ_MODIFIED);
     }
     else
     {
@@ -72,37 +76,53 @@ Foam::IOobject Foam::fv::options::createIOobject
 
         if (io.typeHeaderOk<IOdictionary>(true))
         {
-            Info<< "Creating finite volume options from "
-                << io.instance()/io.name() << nl
-                << endl;
-
-            io.readOpt(IOobject::MUST_READ_IF_MODIFIED);
+            io.readOpt(IOobjectOption::READ_MODIFIED);
         }
         else
         {
-            io.readOpt(IOobject::NO_READ);
+            io.readOpt(IOobjectOption::NO_READ);
         }
+    }
+
+    if (io.isAnyRead())
+    {
+        Info<< "Creating finite-volume options from "
+            << io.instance()/io.name() << nl
+            << endl;
     }
 
     return io;
 }
+
+} // End anonymous namespace
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::fv::options::options
 (
+    const fvMesh& mesh,
+    const IOobject& io
+)
+:
+    IOdictionary(io),
+    fv::optionList(mesh, *this)
+{}
+
+
+Foam::fv::options::options
+(
     const fvMesh& mesh
 )
 :
-    IOdictionary(createIOobject(mesh)),
-    optionList(mesh, *this)
+    IOdictionary(createIOobject(mesh, typeName)),
+    fv::optionList(mesh, *this)
 {}
 
 
 Foam::fv::options& Foam::fv::options::New(const fvMesh& mesh)
 {
-    auto* ptr = mesh.thisDb().getObjectPtr<options>(typeName);
+    auto* ptr = mesh.thisDb().getObjectPtr<fv::options>(typeName);
 
     if (!ptr)
     {
@@ -110,7 +130,7 @@ Foam::fv::options& Foam::fv::options::New(const fvMesh& mesh)
             << "Constructing " << typeName
             << " for region " << mesh.name() << nl;
 
-        ptr = new options(mesh);
+        ptr = new fv::options(mesh);
         regIOobject::store(ptr);
     }
 
@@ -122,7 +142,7 @@ bool Foam::fv::options::read()
 {
     if (IOdictionary::regIOobject::read())
     {
-        optionList::read(*this);
+        fv::optionList::read(*this);
         return true;
     }
 

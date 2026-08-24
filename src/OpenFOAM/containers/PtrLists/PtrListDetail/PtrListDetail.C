@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -99,11 +99,10 @@ Foam::label Foam::Detail::PtrListDetail<T>::find_next_not(label pos) const
 template<class T>
 void Foam::Detail::PtrListDetail<T>::free()
 {
-    List<T*>& ptrs = *this;
-    const label len = ptrs.size();
-
     // Presume they were allocated from front to back...
-    for (label i = len - 1; i >= 0; --i)
+    List<T*>& ptrs = *this;
+
+    for (auto i = this->size()-1; i >= 0; --i)
     {
         delete ptrs[i];
         ptrs[i] = nullptr;

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2022 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -482,23 +482,27 @@ inline void Foam::bitSet::fill(const bool val)
 {
     if (empty())
     {
-        return;  // Trivial case
+        return;
     }
-
-    const label nblocks = num_blocks(size());
-
-    // Fill value for complete blocks
-    const unsigned int blockval = (val ? ~0u : 0u);
-
-    for (label blocki=0; blocki < nblocks; ++blocki)
+    else if (val)
     {
-        blocks_[blocki] = blockval;
-    }
-
-    if (val)
-    {
+        std::fill_n(blocks_.data(), num_blocks(), ~0u);
         clear_trailing_bits();
     }
+    else
+    {
+        // or: PackedList<1>::reset();
+        // or: blocks_ = 0u;
+        std::fill_n(blocks_.data(), num_blocks(), 0u);
+    }
+}
+
+
+inline bool Foam::bitSet::test_set(const label i, const bool val)
+{
+    bool old = test(i);
+    PackedList<1>::set(i, val);
+    return old;
 }
 
 

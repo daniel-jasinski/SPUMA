@@ -43,57 +43,49 @@ Description
     \table
       Operand         | Type              | Location
       input           | -                 | -
-      output file     | dat | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
-      output field    | volScalarField    | $FOAM_CASE/\<time\>/\<outField\>
+      output file     | dat               | postProcessing/<FO>/<time>/file
+      output field    | volScalarField    | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    DESModelRegions1
+    DESModelRegionsFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        DESModelRegions;
         libs        (fieldFunctionObjects);
 
-        // Optional entries (runtime modifiable)
-        result      DESField;
+        // Optional entries
+        result      <word>;  // DESField;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: DESModelRegions         | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       result       | Name of DES indicator field        | word |  no   | \<FO\>
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 Note
     \c DESModelRegions function object can only be executed for DES simulations.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::DESModelRegions
 
 SourceFiles
     DESModelRegions.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_DESModelRegions_H
-#define functionObjects_DESModelRegions_H
+#ifndef Foam_functionObjects_DESModelRegions_H
+#define Foam_functionObjects_DESModelRegions_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -138,7 +130,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         DESModelRegions
         (
             const word& name,
@@ -159,13 +151,13 @@ public:
 
     // Member Functions
 
-        //- Read the DESModelRegions data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Calculate the DESModelRegions and write
+        //- Write the function-object results
         virtual bool write();
 };
 

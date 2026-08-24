@@ -31,7 +31,7 @@ Description
     A Tensor of label (integer) values
 
 SourceFiles
-    labelTensor.C
+    labelTensor.cxx
 
 \*---------------------------------------------------------------------------*/
 

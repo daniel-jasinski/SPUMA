@@ -152,7 +152,7 @@ Description
 
                 if
                 (
-                    !cleanupPatches.found(patchName)
+                    !cleanupPatches.contains(patchName)
                  || returnReduceOr(oldPatches[patchi].size())
                 )
                 {
@@ -188,8 +188,9 @@ Description
 
         // Cleanup empty merged point zones
         {
-            PtrList<pointZone>& zones = mesh.pointZones();
-            mesh.pointZones().clearAddressing();
+            auto& zmesh = mesh.pointZones();
+            zmesh.clearAddressing();
+            PtrList<pointZone>& zones = zmesh;
 
             wordHashSet removedZones(2*zones.size());
 
@@ -198,12 +199,11 @@ Description
             {
                 if
                 (
-                    !cleanupPointZones.found(zones[zonei].name())
+                    !cleanupPointZones.contains(zones[zonei].name())
                  || returnReduceOr(zones[zonei].size())
                 )
                 {
                     zones.set(nZones, zones.release(zonei));
-                    zones[nZones].index() = nZones;  // re-index
                     ++nZones;
                 }
                 else
@@ -212,6 +212,7 @@ Description
                 }
             }
             zones.resize(nZones);
+            zmesh.reindex();
 
             if (removedZones.size())
             {
@@ -223,8 +224,9 @@ Description
 
         // Cleanup empty merged face zones
         {
-            PtrList<faceZone>& zones = mesh.faceZones();
-            mesh.faceZones().clearAddressing();
+            auto& zmesh = mesh.faceZones();
+            zmesh.clearAddressing();
+            PtrList<faceZone>& zones = zmesh;
 
             wordHashSet removedZones(2*zones.size());
 
@@ -233,12 +235,11 @@ Description
             {
                 if
                 (
-                    !cleanupFaceZones.found(zones[zonei].name())
+                    !cleanupFaceZones.contains(zones[zonei].name())
                  || returnReduceOr(zones[zonei].size())
                 )
                 {
                     zones.set(nZones, zones.release(zonei));
-                    zones[nZones].index() = nZones;  // re-index
                     ++nZones;
                 }
                 else
@@ -247,6 +248,7 @@ Description
                 }
             }
             zones.resize(nZones);
+            zmesh.reindex();
 
             if (removedZones.size())
             {

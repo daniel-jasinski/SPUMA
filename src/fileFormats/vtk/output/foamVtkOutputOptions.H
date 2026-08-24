@@ -35,7 +35,7 @@ Description
     not possible with an enum.
 
 SourceFiles
-    foamVtkOutputOptions.C
+    foamVtkOutputOptions.cxx
     foamVtkOutputOptionsI.H
 
 \*---------------------------------------------------------------------------*/
@@ -44,7 +44,6 @@ SourceFiles
 #define Foam_vtk_outputOptions_H
 
 #include "foamVtkOutput.H"
-#include "word.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -80,15 +79,15 @@ public:
     // Constructors
 
         //- Default construct - XML insitu ASCII format with default precision
-        inline outputOptions();
+        inline outputOptions() noexcept;
 
         //- Construct with specified format and default (ASCII) precision
         //
         //  \note This constructor should remain non-explicit.
-        inline outputOptions(enum vtk::formatType fmtType);
+        inline outputOptions(vtk::formatType fmtType) noexcept;
 
         //- Construct with specified format and (ASCII) write precision
-        inline outputOptions(enum vtk::formatType fmtType, unsigned prec);
+        inline outputOptions(vtk::formatType fmtType, unsigned prec) noexcept;
 
 
     // Selectors
@@ -105,13 +104,16 @@ public:
         inline vtk::formatType fmt() const noexcept;
 
         //- The file extension (legacy or xml) for the given content-type
-        inline word ext(vtk::fileTag contentType) const;
+        inline const word& ext(vtk::fileTag contentType) const;
 
         //- True if writer uses legacy file format
         inline bool legacy() const noexcept;
 
         //- True if writer uses XML file format (non-legacy)
         inline bool xml() const noexcept;
+
+        //- True if HDF file format was requested [ADVANCED USAGE]
+        inline bool is_hdf() const noexcept;
 
         //- True if output format uses an append mode
         inline bool append() const noexcept;
@@ -133,26 +135,25 @@ public:
         //  In XML inline mode, this switches between ASCII and base64.
         //  In legacy mode, this switches between ASCII and binary.
         //  \return outputOptions for chaining
-        outputOptions& ascii(bool on);
+        outputOptions& ascii(bool on) noexcept;
 
         //- Toggle append mode on/off.
         //  \return outputOptions for chaining
-        outputOptions& append(bool on);
+        outputOptions& append(bool on) noexcept;
 
         //- Toggle legacy mode on/off.
         //  \return outputOptions for chaining
-        outputOptions& legacy(bool on);
+        outputOptions& legacy(bool on) noexcept;
 
         //- Set the write precision to be used for new ASCII formatters
         //  \return outputOptions for chaining
-        outputOptions& precision(unsigned prec);
+        outputOptions& precision(unsigned prec) noexcept;
 
 
     // Other
 
         //- A text description about the output option selected
-        string description() const;
-
+        std::string description() const;
 };
 
 

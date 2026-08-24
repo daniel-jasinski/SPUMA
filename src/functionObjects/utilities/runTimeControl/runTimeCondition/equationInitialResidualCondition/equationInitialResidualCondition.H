@@ -36,8 +36,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_runTimeControls_equationInitialResidualCondition_H
-#define functionObjects_runTimeControls_equationInitialResidualCondition_H
+#ifndef Foam_functionObjects_runTimeControls_equationInitialResidualCondition_H
+#define Foam_functionObjects_runTimeControls_equationInitialResidualCondition_H
 
 #include "runTimeCondition.H"
 #include "solverFieldSelection.H"

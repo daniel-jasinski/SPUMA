@@ -36,24 +36,22 @@ Description
     Operands:
     \table
       Operand          | Type                 | Location
-      input  | {surfaceScalar,volVector}Field | $FOAM_CASE/\<time\>/\<inpField\>
+      input  | {surfaceScalar,volVector}Field | <time>/inputField
       output file      | -                    | -
-      output field     | volScalarField       | $FOAM_CASE/\<time\>/\<outField\>
+      output field     | volScalarField       | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    div1
+    divFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            div;
         libs            (fieldFunctionObjects);
 
-        // Mandatory (inherited) entry (runtime modifiable)
-        field           \<field\>;
-
         // Inherited entries
+        field           <word>;
         ...
     }
     \endverbatim
@@ -67,14 +65,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-     - \link zoneSubSet.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func "div(\<field\>)"
-    \endverbatim
+      - \link fieldExpression.H \endlink
+      - \link zoneSubSet.H \endlink
 
 Note
   - To execute \c div function object on an input \<field\>, a numerical scheme
@@ -82,20 +74,14 @@ Note
   - Optionally the user can specify \c cellZones to create a sub-mesh for the
     \c div calculation.
 
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::fieldExpression
-    - ExtendedCodeGuide::functionObjects::field::div
-
 SourceFiles
     div.C
     divTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_div_H
-#define functionObjects_div_H
+#ifndef Foam_functionObjects_div_H
+#define Foam_functionObjects_div_H
 
 #include "fieldExpression.H"
 
@@ -137,7 +123,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         div
         (
             const word& name,
@@ -158,7 +144,7 @@ public:
 
     // Member Functions
 
-        //- Write the result field
+        //- Write the function-object results
         virtual bool write();
 };
 

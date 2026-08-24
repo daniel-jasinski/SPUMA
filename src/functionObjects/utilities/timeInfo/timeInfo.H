@@ -31,43 +31,46 @@ Description
     Writes the run time (time-step), cpuTime and clockTime -
     optionally with cpuTime and clockTime change for each time step.
 
-    Example of function object specification:
+Usage
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    time
+    timeInfoFO
     {
+        // Mandatory entries
         type            timeInfo;
         libs            (utilityFunctionObjects);
 
-        writeControl    timeStep;
-        writeInterval   1;
+        // Optional entries
+        perTimeStep     <bool>;
 
-        perTimeStep     no;
+        // Inherited entries
+        ...
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property      | Description                         | Required | Default
-        type          | Type name: timeInfo                 | yes |
-        writeToFile   | Write information to file           | no  | yes
-        perTimeStep   | Write value per interval/step       | no  | no
+      Property     | Description                          | Type | Reqd | Deflt
+      type         | Type name: timeActivatedFileUpdate   | word | yes  | -
+      libs         | Library name: utilityFunctionObjects | word | yes  | -
+      perTimeStep   | Write value per interval/step       | bool | no   | false
     \endtable
 
+    The inherited entries are elaborated in:
+      - \link timeFunctionObject.H \endlink
+      - \link writeFile.H \endlink
+
+Note
     The initial per-step value is likely to be inaccurate and should
     mostly be ignored.
-
-See also
-    Foam::functionObject
-    Foam::timeFunctionObject
-    Foam::functionObjects::writeFile
 
 SourceFiles
     timeInfo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_timeInfo_H
-#define functionObjects_timeInfo_H
+#ifndef Foam_functionObjects_timeInfo_H
+#define Foam_functionObjects_timeInfo_H
 
 #include "timeFunctionObject.H"
 #include "writeFile.H"
@@ -122,7 +125,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         timeInfo
         (
             const word& name,
@@ -137,13 +140,13 @@ public:
 
     // Member Functions
 
-        //- Read the controls
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute, does nothing
+        //- Execute the function-object operations (no-op)
         virtual bool execute();
 
-        //- Write the timeInfo
+        //- Write the function-object results
         virtual bool write();
 };
 

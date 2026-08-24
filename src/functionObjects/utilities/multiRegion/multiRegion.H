@@ -67,16 +67,16 @@ Usage
       regions    | List of region names                 | wordList | no  | all
     \endtable
 
-See also
-  - Foam::functionObject
+    The inherited entries are elaborated in:
+      - \link timeFunctionObject.H \endlink
 
 SourceFiles
     multiRegion.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_multiRegion_H
-#define functionObjects_multiRegion_H
+#ifndef Foam_functionObjects_multiRegion_H
+#define Foam_functionObjects_multiRegion_H
 
 #include "timeFunctionObject.H"
 
@@ -120,7 +120,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         multiRegion
         (
             const word& name,
@@ -135,13 +135,13 @@ public:
 
     // Member Functions
 
-        //- Read the controls
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations (no-op)
         virtual bool execute();
 
-        //- Write the multiRegion
+        //- Write the function-object results
         virtual bool write();
 };
 

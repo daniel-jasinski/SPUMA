@@ -33,27 +33,33 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    viewFactorHeatFlux1
+    viewFactorHeatFluxFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        viewFactorHeatFlux;
         libs        (utilityFunctionObjects);
 
-        // Optional entries (runtime modifiable)
-        qr          qr;
+        // Optional entries
+        qr          <word>;
+
+        // Inherited entries
+        ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: viewFactorHeatFlux      | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
+      globalFaceFaces | Face addressing data        | labelListIOList | yes | -
+      F            | View factors data              | scalarListIOList | yes | -
       qr           | Name of radiation heat flux field  | word |  no   | qr
     \endtable
 
-See also
-- Foam::radiation::viewFactor
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 SourceFiles
     fvMeshFunctionObject.C
@@ -121,7 +127,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         viewFactorHeatFlux
         (
             const word& name,
@@ -152,13 +158,14 @@ public:
 
     // Member Functions
 
-        //- Read the viewFactorHeatFlux data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- No-op - all operations performed during the call to write()
+        //- Execute the function-object operations (no-op)
+        //  All operations performed during the call to write()
         virtual bool execute();
 
-        //- Write the viewFactorHeatFlux per patch
+        //- Write the function-object results (per patch)
         virtual bool write();
 
         //- Update for changes of mesh

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2021,2024 OpenCFD Ltd.
+    Copyright (C) 2021,2024-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -405,7 +405,7 @@ bool Foam::hexMeshSmootherMotionSolver::relax
 
 
         // Synchronise convergence
-        reduce(complete, andOp<bool>());
+        UPstream::reduceAnd(complete);
 
         // Synchronise relaxation levels
         syncTools::syncPointList
@@ -455,7 +455,7 @@ Foam::labelList Foam::hexMeshSmootherMotionSolver::countZeroOrPos
     const labelList& elems
 ) const
 {
-    labelList n(size, 0);
+    labelList n(size, Zero);
     for (const label elem : elems)
     {
         if (elem >= 0)
@@ -463,8 +463,8 @@ Foam::labelList Foam::hexMeshSmootherMotionSolver::countZeroOrPos
             n[elem]++;
         }
     }
-    Pstream::listCombineGather(n, plusEqOp<label>());
-    Pstream::broadcast(n);
+
+    Pstream::listReduce(n, sumOp<label>());
     return n;
 }
 
@@ -752,9 +752,9 @@ hexMeshSmootherMotionSolver
     pointSmoother_(pointSmoother::New(mesh, coeffDict())),
     nPointSmootherIter_
     (
-        readLabel(coeffDict().lookup("nPointSmootherIter"))
+        coeffDict().get<label>("nPointSmootherIter")
     ),
-    relaxationFactors_(coeffDict().lookup("relaxationFactors")),
+    relaxationFactors_(coeffDict().get<scalarList>("relaxationFactors")),
     relaxationLevel_(mesh.nPoints(), 0),
     relaxedPoints_(mesh.points()),
     //surfacesDict_(coeffDict().subDict("geometry")),
@@ -885,9 +885,9 @@ hexMeshSmootherMotionSolver
     //),
     nPointSmootherIter_
     (
-        readLabel(coeffDict().lookup("nPointSmootherIter"))
+        coeffDict().get<label>("nPointSmootherIter")
     ),
-    relaxationFactors_(coeffDict().lookup("relaxationFactors")),
+    relaxationFactors_(coeffDict().get<scalarList>("relaxationFactors")),
     relaxationLevel_(mesh.nPoints(), 0),
     relaxedPoints_(mesh.points()),
     //surfacesDict_(coeffDict().subDict("geometry")),

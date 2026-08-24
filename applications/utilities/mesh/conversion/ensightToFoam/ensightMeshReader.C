@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022-2024 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -313,7 +313,7 @@ bool Foam::fileFormats::ensightMeshReader::readGoldPart
                 {
                     setHandedness(model, verts, points);
                 }
-                cellFaces = cellShape(model, verts).faces();
+                cellFaces = model.faces(verts);
             }
         }
         else if (keyword == "pyramid5")
@@ -347,7 +347,7 @@ bool Foam::fileFormats::ensightMeshReader::readGoldPart
                 {
                     setHandedness(model, verts, points);
                 }
-                cellFaces = cellShape(model, verts).faces();
+                cellFaces = model.faces(verts);
             }
         }
         else if (keyword == "penta6")
@@ -381,7 +381,7 @@ bool Foam::fileFormats::ensightMeshReader::readGoldPart
                 {
                     setHandedness(model, verts, points);
                 }
-                cellFaces = cellShape(model, verts).faces();
+                cellFaces = model.faces(verts);
             }
         }
         else if (keyword == "hexa8")
@@ -415,7 +415,7 @@ bool Foam::fileFormats::ensightMeshReader::readGoldPart
                 {
                     setHandedness(model, verts, points);
                 }
-                cellFaces = cellShape(model, verts).faces();
+                cellFaces = model.faces(verts);
             }
         }
         else if (keyword == "nfaced")
@@ -645,7 +645,7 @@ bool Foam::fileFormats::ensightMeshReader::readGeometry
 
 
     // Parse all
-    SubStrings<string> split;
+    SubStrings split;
 
     while (is.good())
     {

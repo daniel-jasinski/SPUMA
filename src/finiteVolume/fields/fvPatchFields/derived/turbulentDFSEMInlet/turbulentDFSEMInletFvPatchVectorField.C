@@ -372,7 +372,7 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::initialiseEddies()
             }
             // else eddy on remote processor
 
-            reduce(search, andOp<bool>());
+            UPstream::reduceAnd(search);
         }
 
 
@@ -895,8 +895,7 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::updateCoeffs()
         // (PCR:p. 522)
         const vector UBulk
         (
-            gSum(UMean()*patch().magSf())
-           /(gSum(patch().magSf()) + ROOTVSMALL)
+            gWeightedAverage(patch().magSf(), UMean())
         );
 
         // Move eddies using bulk velocity
@@ -963,6 +962,8 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::updateCoeffs()
 
         if (debugLevel())
         {
+            auto limits = gMinMax(*this);
+
             Info<< "Magnitude of bulk velocity: " << UBulk << endl;
 
             Info<< "Number of eddies: "
@@ -970,7 +971,7 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::updateCoeffs()
                 << endl;
 
             Info<< "Patch:" << patch().patch().name()
-                << " min/max(U):" << gMin(U) << ", " << gMax(U)
+                << " min/max(U):" << limits.min() << ", " << limits.max()
                 << endl;
 
             if (db().time().writeTime())

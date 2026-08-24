@@ -101,12 +101,19 @@ Description
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #endif
 #pragma clang diagnostic ignored "-Wbitwise-instead-of-logical"
+#pragma clang diagnostic ignored "-Wdeprecated-builtins"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 #include <vector>
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/AABB_tree.h>
+#if defined(CGAL_VERSION_NR) && (CGAL_VERSION_NR < 1060011000)
 #include <CGAL/AABB_traits.h>
 #include <CGAL/AABB_triangle_primitive.h>
+#else
+#include <CGAL/AABB_traits_3.h>
+#include <CGAL/AABB_triangle_primitive_3.h>
+#endif
 #include <CGAL/Surface_mesh.h>
 
 typedef CGAL::Simple_cartesian<double> K;
@@ -116,8 +123,13 @@ typedef K::Triangle_3 Triangle;
 typedef K::Segment_3 Segment;
 
 typedef std::vector<Triangle>::iterator Iterator;
+#if defined(CGAL_VERSION_NR) && (CGAL_VERSION_NR < 1060011000)
 typedef CGAL::AABB_triangle_primitive<K, Iterator> Primitive;
 typedef CGAL::AABB_traits<K, Primitive> AABB_triangle_traits;
+#else
+typedef CGAL::AABB_triangle_primitive_3<K, Iterator> Primitive;
+typedef CGAL::AABB_traits_3<K, Primitive> AABB_triangle_traits;
+#endif
 typedef CGAL::AABB_tree<AABB_triangle_traits> Tree;
 
 // Used boost::optional prior to CGAL-6.0
@@ -159,7 +171,7 @@ triSurface triangulate
         const polyPatch& patch = bMesh[patchI];
         const pointField& points = patch.points();
 
-        label nTriTotal = 0;
+        //label nTriTotal = 0;
 
         forAll(patch, patchFaceI)
         {
@@ -177,7 +189,7 @@ triSurface triangulate
 
                 triangles.append(labelledTri(f[0], f[1], f[2], newPatchI));
 
-                nTriTotal++;
+                //nTriTotal++;
 
                 triSurfaceToAgglom[localTriFaceI++] = globalNumbering.toGlobal
                 (
@@ -692,11 +704,11 @@ int main(int argc, char *argv[])
 
     labelListList visibleFaceFaces(nCoarseFaces);
 
-    label nViewFactors = 0;
+    //label nViewFactors = 0;
     forAll(nVisibleFaceFaces, faceI)
     {
         visibleFaceFaces[faceI].setSize(nVisibleFaceFaces[faceI]);
-        nViewFactors += nVisibleFaceFaces[faceI];
+        //nViewFactors += nVisibleFaceFaces[faceI];
     }
 
     // - Construct compact numbering

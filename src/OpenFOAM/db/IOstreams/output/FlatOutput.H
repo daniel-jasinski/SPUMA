@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2020 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -32,8 +32,8 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef FlatOutput_H
-#define FlatOutput_H
+#ifndef Foam_FlatOutput_H
+#define Foam_FlatOutput_H
 
 #include "Ostream.H"
 
@@ -134,8 +134,8 @@ public:
 
     // Constructors
 
-        //- Construct from component
-        explicit OutputAdaptor(const Container& obj)
+        //- Construct from const reference
+        explicit OutputAdaptor(const Container& obj) noexcept
         :
             values(obj)
         {}
@@ -151,30 +151,22 @@ public:
         //        No special handling for newline separators.
         inline Ostream& write(Ostream& os) const
         {
-            bool started = false;
+            [[maybe_unused]] bool started = false;
 
-            // In c++17, can use constexpr if
-
-            if (Delimiters::open)
+            if constexpr (Delimiters::open)  // Not nul char
             {
-                os  << Delimiters::open;
+                os << Delimiters::open;
             }
             for (const auto& item : values)
             {
-                if (started)
+                if constexpr (Delimiters::separator)  // Not nul char
                 {
-                    if (Delimiters::separator)
-                    {
-                        os  << Delimiters::separator;
-                    }
-                }
-                else
-                {
+                    if (started) os << Delimiters::separator;
                     started = true;
                 }
-                os  << item;
+                os << item;
             }
-            if (Delimiters::close)
+            if constexpr (Delimiters::close)  // Not nul char
             {
                 os << Delimiters::close;
             }

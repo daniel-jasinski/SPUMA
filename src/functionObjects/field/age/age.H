@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2018-2021 OpenFOAM Foundation
-    Copyright (C) 2021 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -47,7 +47,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    age1
+    ageFO
     {
         // Mandatory entries
         type            age;
@@ -81,7 +81,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
+      - \link functionObject.H \endlink
 
 See also
   - Foam::functionObjects::comfort
@@ -91,8 +91,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_age_H
-#define functionObjects_age_H
+#ifndef Foam_functionObjects_age_H
+#define Foam_functionObjects_age_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFields.H"
@@ -123,6 +123,12 @@ class age
         //- Name of field from which schemes are taken
         word schemesField_;
 
+        //- Name of the divergence scheme
+        word divScheme_;
+
+        //- Name of the Laplacian scheme
+        word laplacianScheme_;
+
         //- Convergence tolerance
         scalar tolerance_;
 
@@ -131,6 +137,9 @@ class age
 
         //- Flag to turn on/off the diffusion term
         bool diffusion_;
+
+        //- Flag that indicates if flux is mass-based or volume-based
+        bool isCompressible_;
 
 
     // Private Member Functions
@@ -150,7 +159,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         age
         (
             const word& name,
@@ -165,13 +174,13 @@ public:
 
     // Member Functions
 
-        //- Read the data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write
+        //- Write the function-object results
         virtual bool write();
 };
 

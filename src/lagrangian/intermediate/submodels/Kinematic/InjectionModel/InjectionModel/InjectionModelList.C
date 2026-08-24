@@ -163,7 +163,7 @@ Foam::scalar Foam::InjectionModelList<CloudType>::averageParcelMass()
         massTotal += mt;
     }
 
-    return mass/massTotal;
+    return mass/stabilise(massTotal, SMALL);
 }
 
 

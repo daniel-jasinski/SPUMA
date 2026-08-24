@@ -1,4 +1,5 @@
 #!/bin/sh
+original_pwd="$PWD"     # Directory when called
 cd "${0%/*}" || exit    # Run from this directory
 [ -d "$WM_PROJECT_DIR" ] || {
     echo "Error (${0##*/}) : no \$WM_PROJECT_DIR found"
@@ -7,41 +8,105 @@ cd "${0%/*}" || exit    # Run from this directory
     exit 1
 }
 
-usage() {
-    exec 1>&2
-    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
-    cat<<USAGE
+printHelp() {
+    cat<<HELP_USAGE
 
-usage: ${0##*/} [OPTION] [dir1 .. dirN]
+Usage: ${0##*/} [OPTION] [dir1 .. dirN]
 options:
   -config name      use alternative doxygen config
   -dir    name      process given directory name directly
-  -online           use links to the Github repositories instead of the
+                    (can be used multiple times)
+  -online           use links to the git repositories instead of the
                     local source code
   -help
 
 Run doxygen on OpenFOAM sources, or on specified directories only.
 
-USAGE
+HELP_USAGE
+    exit 0  # A clean exit
+}
+
+# Report error and exit
+die()
+{
+    exec 1>&2
+    echo
+    echo "Error encountered:"
+    while [ "$#" -ge 1 ]; do echo "    $1"; shift; done
+    echo
+    echo "See '${0##*/} -help' for usage"
+    echo
     exit 1
 }
 
-
 # -----------------------------------------------------------------------------
 
-defineURL() {
-    export FOAM_BASE_REPO="https://develop.openfoam.com/Development/openfoam"
+defineURL()
+{
+    export FOAM_BASE_REPO="https://gitlab.com/openfoam/core/openfoam"
 
     case "$WM_PROJECT_VERSION" in
-    v[1-9][.0-9]*)
+    (v[1-9][.0-9]*)
         FOAM_REPO_TAG="$WM_PROJECT-$WM_PROJECT_VERSION"
         ;;
-    *)
+    (*)
         FOAM_REPO_TAG="master"
         ;;
     esac
 
     export FOAM_ONLINE_REPO="$FOAM_BASE_REPO/blob/${FOAM_REPO_TAG}"
+}
+
+
+# Resolve the config name
+resolveConfig()
+{
+    local fileName="$1"
+    local testName
+
+    configName="$2"
+    if [ -f "$fileName" ]
+    then
+        echo "$fileName"
+        return 0
+    elif [ -n "${fileName}" ]
+    then
+        # No such file. Try some common alternatives
+        for testName in "$fileName" ".$fileName" "-$fileName"
+        do
+            testName="Doxyfile$testName"
+            if [ -f "Doxyfile$ending" ]
+            then
+                echo "$testName"
+                return 0
+            fi
+        done
+    fi
+    return 1  # Not resolved
+}
+
+
+# Resolve the directory name.
+# Uses original_pwd for any relative directories
+resolveDir()
+{
+    local dirName="$1"
+
+    if [ -d "$dirName" ]
+    then
+        echo "$dirName"
+        return 0
+    elif [ -n "${dirName}" -a "${dirName}" = "${dirName#/}" ]
+    then
+        # Adjust relative name
+        dirName="${original_pwd}/${dirName}"
+        if [ -d "$dirName" ]
+        then
+            echo "$dirName"
+            return 0
+        fi
+    fi
+    return 1  # Not resolved
 }
 
 
@@ -52,55 +117,57 @@ while [ "$#" -gt 0 ]
 do
     case "$1" in
     -h | -help*)
-        usage
+        printHelp
         ;;
     -config)
-        configName="$2"
-        [ -f "$configName" ] || {
-            # No such file. Try some common alternatives
-            for ending in $configName ".$configName" "-$configName"
-            do
-                if [ -f "Doxyfile$ending" ]
-                then
-                    configName="Doxyfile$ending"
-                    break
-                fi
-            done
-        }
-        [ -f "$configName" ] || {
-            echo "Could not resolve Doxyfile config: $configName" 1>&2
-            exit 1
-        }
+        arg="${2}"
+        name=$(resolveConfig "$arg")
+        if [ "$?" -eq 0 ]
+        then
+            configName="$name"
+        else
+            die "Could not resolve Doxyfile config: '$arg'"
+        fi
         shift
         ;;
-    -dir)
-        shift
-        if [ -d "$1" ]
+    -dir=*)
+        arg="${1#*=}"
+        name=$(resolveDir "$arg")
+        if [ "$?" -eq 0 ]
         then
-            dirNames="$dirNames $1"
+            dirNames="$dirNames $name"
         else
-            echo "Could not resolve input directory: $1" 1>&2
-            exit 1
+            die "Could not resolve input directory: '$arg'"
         fi
+        ;;
+    -dir)
+        arg="${2}"
+        name=$(resolveDir "$arg")
+        if [ "$?" -eq 0 ]
+        then
+            dirNames="$dirNames $name"
+        else
+            die "Could not resolve input directory: '$arg'"
+        fi
+        shift
         ;;
     -online)
         defineURL
         ;;
-    -*)
-        usage "unknown option: '$1'"
-        ;;
 
-    *)  # dirName
-        if [ -d "$1" ]
+    (-*) die "unknown option: '$1'" ;;
+
+    (*) # Directory name
+        arg="${1}"
+        name=$(resolveDir "$arg")
+        if [ "$?" -eq 0 ]
         then
-            dirNames="$dirNames $1"
+            dirNames="$dirNames $name"
         else
-            echo "Could not resolve input directory: $1" 1>&2
+            die "Could not resolve input directory: '$arg'"
         fi
         ;;
-    *)
-        usage "unknown option/argument: '$1'"
-        ;;
+    ## (*) die "unknown option/argument: '$1'"
     esac
     shift
 done
@@ -111,18 +178,18 @@ done
 rm -rf latex man
 
 # Remove html directory in background
-mv html html-stagedRemove$$ 2>/dev/null
-rm -rf html-stagedRemove$$ 2>/dev/null &
+mv html "html-stagedRemove$$" 2>/dev/null
+rm -rf "html-stagedRemove$$" 2>/dev/null &
 
 # Ensure that created files are readable by everyone
 umask 22
 
 if [ -n "$dirNames" ]
 then
-    (
-        cat ${configName:-Doxyfile}
-        echo "INPUT = $dirNames"
-    ) | doxygen -
+(
+   cat "${configName:-Doxyfile}"
+   echo "INPUT = $dirNames"
+) | doxygen -
 else
     doxygen $configName
 fi

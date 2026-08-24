@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -104,7 +104,7 @@ class cyclicAMIFvPatchField
             //- Send buffers
             mutable PtrList<List<Type>> sendBufs_;
 
-            //- Receive buffers_
+            //- Receive buffers
             mutable PtrList<List<Type>> recvBufs_;
 
             //- Scalar send buffers
@@ -112,6 +112,28 @@ class cyclicAMIFvPatchField
 
             //- Scalar receive buffers
             mutable PtrList<List<solveScalar>> scalarRecvBufs_;
+
+
+            // Only used for AMI caching
+
+                //- Current range of send requests (non-blocking)
+                mutable labelRange sendRequests1_;
+
+                //- Current range of recv requests (non-blocking)
+                mutable labelRange recvRequests1_;
+
+                //- Send buffers
+                mutable PtrList<List<Type>> sendBufs1_;
+
+                //- Receive buffers_
+                mutable PtrList<List<Type>> recvBufs1_;
+
+                //- Scalar send buffers
+                mutable PtrList<List<solveScalar>> scalarSendBufs1_;
+
+                //- Scalar receive buffers
+                mutable PtrList<List<solveScalar>> scalarRecvBufs1_;
+
 
             //- Neighbour coupled internal cell data
             mutable autoPtr<Field<Type>> patchNeighbourFieldPtr_;
@@ -134,18 +156,14 @@ class cyclicAMIFvPatchField
         virtual bool all_ready() const;
 
         //- Use neighbour field caching
-        static bool cacheNeighbourField();
+        bool cacheNeighbourField() const;
 
         //- Return neighbour coupled internal cell data
-        tmp<Field<Type>> patchNeighbourField(const Field<Type>&) const;
+        tmp<Field<Type>> getNeighbourField(const UList<Type>&) const;
 
-        //- Return neighbour side field given internal fields
-        template<class Type2>
-        tmp<Field<Type2>> neighbourSideField
-        (
-            const Field<Type2>&
-        ) const;
-
+        //- Return neighbour coupled internal cell data (cached or extracted),
+        //- with optional check that AMI.comm() is valid.
+        tmp<Field<Type>> getPatchNeighbourField(bool checkCommunicator) const;
 
         //- Return new matrix coeffs
         tmp<Field<scalar>> coeffs
@@ -244,6 +262,9 @@ public:
         //- Return neighbour coupled internal cell data
         virtual tmp<Field<Type>> patchNeighbourField() const;
 
+        //- Retrieve neighbour coupled internal cell data
+        virtual void patchNeighbourField(UList<Type>& pnf) const;
+
         //- Return reference to neighbour patchField
         const cyclicAMIFvPatchField<Type>& neighbourPatchField() const;
 
@@ -340,7 +361,11 @@ public:
             //- Does the patch field perform the transformation
             virtual bool doTransform() const
             {
-                return (pTraits<Type>::rank && !cyclicAMIPatch_.parallel());
+                return
+                (
+                    is_rotational_vectorspace_v<Type>
+                 && !cyclicAMIPatch_.parallel()
+                );
             }
 
             //- Return face transformation tensor

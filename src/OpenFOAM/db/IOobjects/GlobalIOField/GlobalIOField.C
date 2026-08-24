@@ -132,6 +132,7 @@ Foam::Field<Type> Foam::GlobalIOField<Type>::readContents(const IOobject& io)
     {
         rio.readOpt(IOobjectOption::MUST_READ);
     }
+    rio.resetHeader();
 
     // The object is global
     rio.globalObject(true);
@@ -175,15 +176,6 @@ bool Foam::GlobalIOField<Type>::writeData(Ostream& os) const
 {
     os << static_cast<const Field<Type>&>(*this);
     return os.good();
-}
-
-
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-template<class Type>
-void Foam::GlobalIOField<Type>::operator=(const GlobalIOField<Type>& rhs)
-{
-    Field<Type>::operator=(rhs);
 }
 
 

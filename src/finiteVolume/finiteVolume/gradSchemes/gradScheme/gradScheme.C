@@ -96,7 +96,7 @@ Foam::fv::gradScheme<Type>::grad
     GradFieldType* pgGrad =
         mesh().objectRegistry::template getObjectPtr<GradFieldType>(name);
 
-    if (!this->mesh().cache(name) || this->mesh().changing())
+    if (!this->mesh().cache(name) || this->mesh().topoChanging())
     {
         // Delete any old occurrences to avoid double registration
         if (pgGrad && pgGrad->ownedByRegistry())
@@ -119,17 +119,14 @@ Foam::fv::gradScheme<Type>::grad
     }
     else
     {
-        if (pgGrad->upToDate(vsf))
+        if (pgGrad->upToDate(vsf) && this->mesh().upToDatePoints(*pgGrad))
         {
             solution::cachePrintMessage("Reusing", name, vsf);
         }
         else
         {
             solution::cachePrintMessage("Updating", name, vsf);
-            delete pgGrad;
-
-            pgGrad = calcGrad(vsf, name).ptr();
-            regIOobject::store(pgGrad);
+            calcGrad(*pgGrad, vsf);
         }
     }
 
@@ -177,6 +174,25 @@ Foam::fv::gradScheme<Type>::grad
     tmp<GradFieldType> tgrad = grad(tvsf());
     tvsf.clear();
     return tgrad;
+}
+
+
+template<class Type>
+void Foam::fv::gradScheme<Type>::calcGrad
+(
+    GeometricField
+    <
+        typename outerProduct<vector, Type>::type,
+        fvPatchField,
+        volMesh
+    >& result,
+    const GeometricField<Type, fvPatchField, volMesh>& vsf
+) const
+{
+    DebugPout<< "gradScheme<Type>::calcGrad on " << vsf.name()
+        << " into " << result.name() << endl;
+
+    result = calcGrad(vsf, result.name());
 }
 
 

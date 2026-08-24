@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2013-2015 OpenFOAM Foundation
-    Copyright (C) 2022-2023 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,7 +40,8 @@ SourceFiles
 #define Foam_PstreamGlobals_H
 
 #include "DynamicList.H"
-#include "UPstream.H"  // For UPstream::Request
+#include "FixedList.H"
+// UPstream, UPstream::Request, UPstream::Window, ...
 #include "openfoam_mpi.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -49,6 +50,8 @@ namespace Foam
 {
 namespace PstreamGlobals
 {
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 // Track if MPI_Comm_free is needed for communicator index in MPICommunicators_
 extern DynamicList<bool> pendingMPIFree_;
@@ -60,56 +63,172 @@ extern DynamicList<MPI_Comm> MPICommunicators_;
 //- Outstanding non-blocking operations.
 extern DynamicList<MPI_Request> outstandingRequests_;
 
+// The fundamental count for each UPstream::dataTypes entry
+typedef Foam::FixedList<int, 17> DataTypeCountLookupTable;
 
-// * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
+//- Fundamental count for each valid UPstream::dataTypes entry
+//- Indexed by UPstream::dataTypes enum
+extern DataTypeCountLookupTable dataTypesCount_;
 
-//- Fatal if comm is outside the allocated range
-void checkCommunicator(const label comm, const label toProcNo);
+// For UPstream::dataTypes lookup, includes space for last 'invalid' entry
+typedef Foam::FixedList<MPI_Datatype, 17> DataTypeLookupTable;
+
+//- MPI data types corresponding to fundamental and OpenFOAM types.
+//- Indexed by UPstream::dataTypes enum
+extern DataTypeLookupTable MPIdataTypes_;
+
+// For UPstream::opCodes lookup, includes space for last 'invalid' entry
+typedef Foam::FixedList<MPI_Op, 13> OpCodesLookupTable;
+
+//- MPI operation types, indexed by UPstream::opCodes enum
+extern OpCodesLookupTable MPIopCodes_;
 
 
-//- Reset UPstream::Request to null and/or the index of the outstanding
-//- request to -1.
-//  Does not affect the stack of outstanding requests.
-inline void reset_request
-(
-    UPstream::Request* requestPtr,
-    label* requestIdx = nullptr
-)
+
+// * * * * * * * * * * * * * * * Communicators * * * * * * * * * * * * * * * //
+
+//- Initialize bookkeeping for MPI communicator index
+void initCommunicator(const label index);
+
+//- Fatal if communicator is outside the allocated range
+inline void checkCommunicator(int comm, int rank)
 {
-    if (requestPtr) *requestPtr = UPstream::Request(MPI_REQUEST_NULL);
-    if (requestIdx) *requestIdx = -1;
+    if (FOAM_UNLIKELY(comm < 0 || comm >= MPICommunicators_.size()))
+    {
+        FatalErrorInFunction
+            << "rank:" << rank << " : illegal communicator "
+            << comm << nl
+            << "Communicator should be within range [0,"
+            << MPICommunicators_.size()
+            << ')' << Foam::abort(FatalError);
+    }
+}
+
+//- True if warn communicator is active and not equal to given communicator
+inline bool warnCommunicator(int comm) noexcept
+{
+    return (UPstream::warnComm >= 0 && comm != UPstream::warnComm);
+}
+
+
+// * * * * * * * * * * * * * * * * Data Types  * * * * * * * * * * * * * * * //
+
+//- Create mapping into MPIdataTypes_ and define user data types
+void initDataTypes();
+
+//- Free any user data types
+void deinitDataTypes();
+
+//- Debugging only: check if data type mappings are non-null
+bool checkDataTypes();
+
+//- Debugging only: print data type names (all or just user-defined)
+void printDataTypes(bool all = false);
+
+//- Lookup of dataTypes enumeration as an MPI_Datatype
+inline MPI_Datatype getDataType(UPstream::dataTypes id)
+{
+    return MPIdataTypes_[static_cast<int>(id)];
+}
+
+//- Fatal if data type is not valid
+inline void checkDataType(UPstream::dataTypes id)
+{
+    if (id == UPstream::dataTypes::invalid)
+    {
+        FatalErrorInFunction
+            << "Invalid data type"
+            << Foam::abort(FatalError);
+    }
+}
+
+//- Return MPI internal name for specified MPI_Datatype
+std::string dataType_name(MPI_Datatype datatype);
+
+//- Return MPI internal name for dataTypes enumeration
+inline std::string dataType_name(UPstream::dataTypes id)
+{
+    return dataType_name(MPIdataTypes_[static_cast<int>(id)]);
+}
+
+
+// * * * * * * * * * * * * * * * * Op Codes  * * * * * * * * * * * * * * * * //
+
+//- Create mapping into MPIopCodes_
+void initOpCodes();
+
+//- Free any user-defined op codes
+void deinitOpCodes();
+
+//- Debugging only: check if op code mappings are non-null
+bool checkOpCodes();
+
+//- Lookup of opCodes enumeration as an MPI_Op
+inline MPI_Op getOpCode(UPstream::opCodes id)
+{
+    return MPIopCodes_[static_cast<int>(id)];
+}
+
+//- Fatal if opcode is not valid
+inline void checkOpCode(UPstream::opCodes id)
+{
+    if (id == UPstream::opCodes::invalid)
+    {
+        FatalErrorInFunction
+            << "Invalid operation code"
+            << Foam::abort(FatalError);
+    }
+}
+
+
+// * * * * * * * * * * * * * * * * Requests  * * * * * * * * * * * * * * * * //
+
+//- Reset UPstream::Request to MPI_REQUEST_NULL
+//  Does not affect the stack of outstanding requests
+inline void reset_request(UPstream::Request* req) noexcept
+{
+    if (req) *req = UPstream::Request(MPI_REQUEST_NULL);
 }
 
 
 //- Transcribe MPI_Request to UPstream::Request
 //- (does not affect the stack of outstanding requests)
 //- or else push onto list of outstanding requests
-//- and (optionally) record its location
 inline void push_request
 (
     MPI_Request request,
-    UPstream::Request* requestPtr = nullptr,
-    label* requestIdx = nullptr
+    UPstream::Request* req = nullptr
 )
 {
-    if (requestPtr)
+    if (req)
     {
         // Transcribe as UPstream::Request
-        *requestPtr = UPstream::Request(request);
-
-        // Not on stack of outstanding requests
-        if (requestIdx) *requestIdx = -1;
+        *req = UPstream::Request(request);
     }
-    else
+    else if (MPI_REQUEST_NULL != request)
     {
-        if (requestIdx)
-        {
-            // Its index into outstanding requests
-            *requestIdx = PstreamGlobals::outstandingRequests_.size();
-        }
-
+        // Push onto list of requests
         PstreamGlobals::outstandingRequests_.push_back(request);
     }
+}
+
+
+// * * * * * * * * * * * * * * Convenience Methods * * * * * * * * * * * * * //
+
+//- Broadcast a single int64 value.
+//
+//  Ensures consistent data types. Used within the following:
+//  - UIPBstream::bufferIPCrecv()
+//  - UOPBstream::bufferIPCsend()
+//  - UOPBstream::send(Foam::zero, ...)
+
+inline bool broadcast_int64(int64_t& value, int comm, int root = 0)
+{
+    return
+    (
+        MPI_SUCCESS
+     == MPI_Bcast(&value, 1, MPI_INT64_T, root, MPICommunicators_[comm])
+    );
 }
 
 

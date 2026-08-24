@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2021 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -36,7 +36,7 @@ Description
 
 SourceFiles
     VectorSpaceI.H
-    VectorSpace.C
+    VectorSpace.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -94,6 +94,9 @@ public:
 
     //- Magnitude type
     typedef Cmpt magType;
+
+    //- The type to represent the size of a VectorSpace
+    typedef direction size_type;
 
 
     // Static Constants
@@ -162,7 +165,7 @@ public:
     // Constructors
 
         //- Construct initialized to zero
-        FOAM_DEVICE inline VectorSpace(const Foam::zero);
+        FOAM_DEVICE inline VectorSpace(Foam::zero);
 
         //- Copy construct
         FOAM_DEVICE inline VectorSpace(const VectorSpace<Form, Cmpt, Ncmpts>& vs);
@@ -178,10 +181,7 @@ public:
     // Member Functions
 
         //- The number of elements in the VectorSpace = Ncmpts.
-        static constexpr direction size() noexcept
-        {
-            return Ncmpts;
-        }
+        static constexpr direction size() noexcept { return Ncmpts; }
 
         FOAM_DEVICE inline const Cmpt& component(const direction) const;
         FOAM_DEVICE inline Cmpt& component(const direction);
@@ -190,10 +190,13 @@ public:
         FOAM_DEVICE inline void replace(const direction, const Cmpt&);
 
         //- Return const pointer to the first data element
-        inline const Cmpt* cdata() const noexcept;
+        const Cmpt* cdata() const noexcept { return v_; }
 
         //- Return pointer to the first data element
-        inline Cmpt* data() noexcept;
+        Cmpt* data() noexcept { return v_; }
+
+        //- Assign all components to given value
+        inline void fill(const Cmpt& s);
 
         //- Return a VectorSpace with all elements = s
         inline static Form uniform(const Cmpt& s);
@@ -211,7 +214,11 @@ public:
         FOAM_DEVICE inline void operator+=(const VectorSpace<Form, Cmpt, Ncmpts>&);
         FOAM_DEVICE inline void operator-=(const VectorSpace<Form, Cmpt, Ncmpts>&);
 
-        FOAM_DEVICE inline void operator=(const Foam::zero);
+        //- Copy assign from a VectorSpace with the same size
+        template<class Form2, class Cmpt2>
+        inline void operator=(const VectorSpace<Form2, Cmpt2, Ncmpts>&);
+
+        FOAM_DEVICE inline void operator=(Foam::zero);
         FOAM_DEVICE inline void operator*=(const scalar);
         FOAM_DEVICE inline void operator/=(const scalar);
 
@@ -225,28 +232,25 @@ public:
         typedef const Cmpt* const_iterator;
 
 
-    // Random access iterator (non-const)
+    // Random access iterators (const and non-const)
 
-        //- Return an iterator to begin of VectorSpace
-        inline iterator begin() noexcept;
+        //- Return an iterator (pointer) to begin of VectorSpace
+        FOAM_DEVICE iterator begin() noexcept { return v_; }
 
-        //- Return an iterator to end of VectorSpace
-        inline iterator end() noexcept;
+        //- Return const_iterator (const pointer) to begin of VectorSpace
+        FOAM_DEVICE const_iterator begin() const noexcept { return v_; }
 
+        //- Return const_iterator (const pointer) to begin of VectorSpace
+        FOAM_DEVICE const_iterator cbegin() const noexcept { return v_; }
 
-    // Random access iterator (const)
+        //- Return an iterator (pointer) to end of VectorSpace
+        iterator end() noexcept { return (v_ + Ncmpts); }
 
-        //- Return const_iterator to begin of VectorSpace
-        inline const_iterator cbegin() const noexcept;
+        //- Return const_iterator (const pointer) to end of VectorSpace
+        const_iterator end() const noexcept { return (v_ + Ncmpts); }
 
-        //- Return const_iterator to end of VectorSpace
-        inline const_iterator cend() const noexcept;
-
-        //- Return const_iterator to begin of VectorSpace
-        inline const_iterator begin() const noexcept;
-
-        //- Return const_iterator to end of VectorSpace
-        inline const_iterator end() const noexcept;
+        //- Return const_iterator (const pointer) to end of VectorSpace
+        const_iterator cend() const noexcept { return (v_ + Ncmpts); }
 
 
     // IOstream Operators
@@ -280,7 +284,7 @@ word name(const VectorSpace<Form, Cmpt, Ncmpts>& vs);
 #include "VectorSpaceI.H"
 
 #ifdef NoRepository
-    #include "VectorSpace.C"
+    #include "VectorSpace.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

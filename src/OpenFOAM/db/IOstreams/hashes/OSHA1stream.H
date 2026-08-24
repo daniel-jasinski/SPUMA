@@ -166,9 +166,9 @@ public:
 
         //- Add (unquoted) string contents.
         //  Ensures that SHA1 of C-string or C++-string content are identical.
-        virtual Ostream& write(const std::string& str) override
+        virtual Ostream& write(const std::string& s) override
         {
-            return writeQuoted(str, false);  // Unquoted!
+            return writeQuoted(s.data(), s.size(), false);  // Unquoted!
         }
 
 
@@ -176,10 +176,7 @@ public:
 
         //- Deprecated(2017-07) clear the SHA1 calculation
         //  \deprecated(2017-07) - use reset() method
-        void rewind()
-        {
-            stream_.sha1().clear();
-        }
+        void rewind() { stream_.reset(); }
 
 
     // Additional constructors and methods (as per v2012 and earlier)

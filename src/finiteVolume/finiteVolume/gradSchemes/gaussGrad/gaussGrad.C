@@ -152,6 +152,81 @@ Foam::fv::gaussGrad<Type>::calcGrad
 
 
 template<class Type>
+void Foam::fv::gaussGrad<Type>::calcGrad
+(
+    GeometricField
+    <
+        typename outerProduct<vector, Type>::type,
+        fvPatchField,
+        volMesh
+    >& gGrad,
+    const GeometricField<Type, fvPatchField, volMesh>& vsf
+) const
+{
+    typedef typename outerProduct<vector, Type>::type GradType;
+
+    DebugPout<< "gaussGrad<Type>::calcGrad on " << vsf.name()
+        << " into " << gGrad.name() << endl;
+
+    const fvMesh& mesh = vsf.mesh();
+    const labelUList& owner = mesh.owner();
+    const labelUList& neighbour = mesh.neighbour();
+    const vectorField& Sf = mesh.Sf();
+
+    const auto tssf(tinterpScheme_().interpolate(vsf));
+    const auto& ssf = tssf();
+
+    gGrad = dimensioned<GradType>(vsf.dimensions()/dimLength, Zero);
+
+    Field<GradType>& igGrad = gGrad;
+    const Field<Type>& issf = ssf;
+
+    foamExecutor exec;
+    auto igGradPtr = igGrad.begin();
+    
+    {
+        const auto SfPtr = Sf.cbegin();
+        const auto issfPtr = issf.cbegin();
+        const auto ownerPtr = owner.cbegin();
+        const auto neighbourPtr = neighbour.cbegin();
+        auto Lambda = [=](label facei)
+        {
+            const GradType Sfssf = SfPtr[facei]*issfPtr[facei];
+            foamAtomic::AtomicAdd(igGradPtr[ownerPtr[facei]], Sfssf);
+            foamAtomic::AtomicAdd(igGradPtr[neighbourPtr[facei]], - Sfssf);
+        };
+        exec.parallelFor(Lambda,owner.size());
+    }
+
+    forAll(mesh.boundary(), patchi)
+    {
+        const labelUList& pFaceCells =
+            mesh.boundary()[patchi].faceCells();
+
+        const vectorField& pSf = mesh.Sf().boundaryField()[patchi];
+
+        const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
+
+        const auto pSfPtr = pSf.cbegin();
+        const auto pssfPtr = pssf.cbegin();
+        const auto pFaceCellsPtr = pFaceCells.cbegin();
+
+        auto Lambda = [=](label facei)
+        {
+            foamAtomic::AtomicAdd(igGradPtr[pFaceCellsPtr[facei]], pSfPtr[facei]*pssfPtr[facei]);
+        };
+        exec.parallelFor(Lambda, mesh.boundary()[patchi].size());
+    }
+
+    igGrad /= mesh.V();
+
+    gGrad.correctBoundaryConditions();
+
+    correctBoundaryConditions(vsf, gGrad);
+}
+
+
+template<class Type>
 void Foam::fv::gaussGrad<Type>::correctBoundaryConditions
 (
     const GeometricField<Type, fvPatchField, volMesh>& vsf,

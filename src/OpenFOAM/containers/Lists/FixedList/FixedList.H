@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -44,17 +44,14 @@ SourceFiles
 #include "label.H"
 #include "uLabel.H"
 #include "zero.H"
-#include "contiguous.H"
 #include "stdFoam.H"
 #include "nullObject.H"
 #include "Hash.H"
-#include "ListPolicy.H"
+#include "contiguous.H"
+#include "ListPolicy.H"  // Also includes "contiguous"
 #include "autoPtr.H"
 
-// <algorithm> already included by stdFoam.H
-#include <iterator>
 #include <limits>
-#include <type_traits>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -157,7 +154,7 @@ public:
         inline explicit FixedList(const T& val);
 
         //- Construct and initialize all entries to zero
-        inline explicit FixedList(const Foam::zero);
+        inline explicit FixedList(Foam::zero);
 
         //- Copy construct
         inline FixedList(const FixedList<T, N>& list);
@@ -330,7 +327,7 @@ public:
         inline void fill(const T& val);
 
         //- Assign all entries to zero
-        inline void fill(const Foam::zero);
+        inline void fill(Foam::zero);
 
         //- Move element to the first position.
         void moveFirst(const label i);
@@ -352,10 +349,10 @@ public:
     // Member Operators
 
         //- Return element of FixedList
-        inline T& operator[](const label i);
+        FOAM_DEVICE inline T& operator[](const label i);
 
         //- Return element of constant FixedList
-        inline const T& operator[](const label i) const;
+        FOAM_DEVICE inline const T& operator[](const label i) const;
 
         //- Assignment to UList operator. Takes linear time
         inline void operator=(const UList<T>& list);
@@ -367,7 +364,7 @@ public:
         inline void operator=(const T& val);
 
         //- Assign all entries to zero. fill()
-        inline void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
         //- Copy assignment
         inline void operator=(const FixedList<T, N>& list);
@@ -384,6 +381,10 @@ public:
         //- Return an iterator to end traversing the FixedList
         inline iterator end() noexcept;
 
+        //- Return iterator at offset i from begin,
+        //- clamped to [0,N] range
+        inline iterator begin(const int i) noexcept;
+
 
     // Random access iterator (const)
 
@@ -398,6 +399,14 @@ public:
 
         //- Return const_iterator to end traversing the constant FixedList
         inline const_iterator end() const noexcept;
+
+        //- Return const_iterator at offset i from begin,
+        //- clamped to [0,N] range
+        inline const_iterator cbegin(const int i) const noexcept;
+
+        //- Return const_iterator at offset i from begin,
+        //- clamped to [0,N] range
+        inline const_iterator begin(const int i) const noexcept;
 
 
     // Reverse iterator (non-const)
@@ -497,17 +506,19 @@ public:
                 unsigned seed=0
             ) const
             {
-                if (is_contiguous<T>::value)
+                if constexpr (is_contiguous_v<T>)
                 {
                     return Foam::Hasher(obj.cdata(), obj.size_bytes(), seed);
                 }
-
-                Foam::Hash<T> op;
-                for (const T& val : obj)
+                else
                 {
-                    seed = op(val, seed);
+                    Foam::Hash<T> op;
+                    for (const T& val : obj)
+                    {
+                        seed = op(val, seed);
+                    }
+                    return seed;
                 }
-                return seed;
             }
         };
 
@@ -580,11 +591,11 @@ Istream& operator>>(Istream& is, FixedList<T, N>& list)
 
 
 //- Write List to Ostream, as per FixedList::writeList() with default length.
-//  The default short-length is given by Detail::ListPolicy::short_length
+//  The default short-length is given by Foam::ListPolicy::short_length
 template<class T, unsigned N>
 Ostream& operator<<(Ostream& os, const FixedList<T, N>& list)
 {
-    return list.writeList(os, Detail::ListPolicy::short_length<T>::value);
+    return list.writeList(os, Foam::ListPolicy::short_length<T>::value);
 }
 
 

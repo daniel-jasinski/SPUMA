@@ -99,11 +99,13 @@ Usage
     The inherited entries are elaborated in:
      - \link interRegionHeatTransfer.H \endlink
 
-See also
-  - Foam::fv::interRegionHeatTransferModel
-  - Foam::fv::tabulatedHeatTransfer
-  - Foam::fv::tabulatedNTUHeatTransfer
-  - Foam::fv::constantHeatTransfer
+Notes
+  - With v2512, the denominator of the Reynolds number calculation has been
+    changed from 'mut' to 'muEff'. For fully turbulent regions, there should be
+    no significant difference as mut >> mu, thus muEff ~ mut. However, in
+    porous/laminar regions, this change prevents the Reynolds number from
+    blowing up due to very low turbulent viscosity. Instead, the classical
+    laminar Reynolds number is now used in such regions.
 
 SourceFiles
     variableHeatTransfer.C

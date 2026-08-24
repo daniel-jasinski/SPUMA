@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -75,8 +75,7 @@ public:
     // Static Data Members
 
         //- The name associated with the zone-labels dictionary entry
-        //- ("cellLabels")
-        static const char * const labelsName;
+        static constexpr const char* labelsName() { return "cellLabels"; }
 
 
     //- Runtime type information
@@ -143,13 +142,23 @@ public:
             const cellZoneMesh& zm
         );
 
-        //- Construct empty with original zone information (name, index, groups)
-        //- and mesh reference. Optionally specify a new index.
+        //- Copy construct with new mesh reference.
         cellZone
         (
             const cellZone& originalZone,
-            const Foam::zero,
             const cellZoneMesh& zm,
+            //! The new index (optional. -1 retains the original value)
+            const label newIndex = -1
+        );
+
+        //- Construct empty with original zone information (name, index, groups)
+        //- and mesh reference.
+        cellZone
+        (
+            const cellZone& originalZone,
+            Foam::zero,
+            const cellZoneMesh& zm,
+            //! The new index (optional. -1 retains the original value)
             const label newIndex = -1
         );
 
@@ -158,7 +167,8 @@ public:
         cellZone
         (
             const cellZone& originalZone,
-            const Foam::zero,
+            Foam::zero,
+            //! The new index (-1 retains the original value)
             const label index,
             const cellZoneMesh& zm
         );
@@ -169,6 +179,7 @@ public:
         (
             const cellZone& originalZone,
             const labelUList& addr,
+            //! The new index (-1 retains the original value)
             const label index,
             const cellZoneMesh& zm
         );
@@ -179,15 +190,21 @@ public:
         (
             const cellZone& originalZone,
             labelList&& addr,
+            //! The new index (-1 retains the original value)
             const label index,
             const cellZoneMesh& zm
         );
 
 
         //- Construct and return a clone, resetting the zone mesh
-        virtual autoPtr<cellZone> clone(const cellZoneMesh& zm) const
+        virtual autoPtr<cellZone> clone
+        (
+            const cellZoneMesh& zm,
+            //! The new index (optional. -1 retains the original value)
+            const label newIndex = -1
+        ) const
         {
-            return autoPtr<cellZone>::New(*this, *this, index(), zm);
+            return autoPtr<cellZone>::New(*this, zm, newIndex);
         }
 
         //- Construct and return a clone,
@@ -195,6 +212,7 @@ public:
         virtual autoPtr<cellZone> clone
         (
             const labelUList& addr,
+            //! The new index (-1 retains the original value)
             const label index,
             const cellZoneMesh& zm
         ) const
@@ -222,21 +240,30 @@ public:
 
     // Member Functions
 
+        //- The maximum index the zone may contain == mesh nCells()
+        label max_index() const noexcept;
+
         //- Return reference to the zone mesh
         const cellZoneMesh& zoneMesh() const noexcept { return zoneMesh_; }
 
         //- The addressing (cell IDs) used for the zone
-        const labelList& addressing() const noexcept
+        using zone::addressing;
+
+        //- The local index of the given mesh cell, -1 if not in the zone
+        label whichCell(const label meshCellID) const
         {
-            return static_cast<const labelList&>(*this);
+            return zone::localID(meshCellID);
         }
 
-        //- Helper function to re-direct to zone::localID(...)
-        label whichCell(const label globalCellID) const;
 
+    // Checks
 
-        //- Check zone definition. Return true if in error.
-        virtual bool checkDefinition(const bool report = false) const;
+        //- Check zone definition.
+        //  \return True if any errors.
+        virtual bool checkDefinition(const bool report = false) const
+        {
+            return zone::checkDefinition(max_index(), report);
+        }
 
         //- Check whether zone is synchronised across coupled boundaries.
         //  \return True if any errors.
@@ -244,9 +271,6 @@ public:
         {
             return false;
         }
-
-        //- Write dictionary
-        virtual void writeDict(Ostream& os) const;
 
 
     // Assign addressing
@@ -275,8 +299,22 @@ public:
 
     // I-O
 
+        //- Write (dictionary entries)
+        virtual void write(Ostream& os) const;
+
         //- Ostream Operator
         friend Ostream& operator<<(Ostream& os, const cellZone& zn);
+
+
+    // Housekeeping
+
+        //- Deprecated(2025-09) Write dictionary
+        //  \deprecated(2025-09) Write dictionary
+        FOAM_DEPRECATED_FOR(2025-09, "write() or operator<<")
+        void writeDict(Ostream& os) const
+        {
+            os.beginBlock(name()); write(os); os.endBlock();
+        }
 };
 
 

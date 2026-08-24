@@ -112,6 +112,7 @@ searchableSurfaces/searchableSurfacesQueries/searchableSurfacesQueries.C
 searchableSurfaces/searchableSurfaceWithGaps/searchableSurfaceWithGaps.C
 searchableSurfaces/subTriSurfaceMesh/subTriSurfaceMesh.C
 searchableSurfaces/triSurfaceMesh/triSurfaceMesh.C
+searchableSurfaces/triSurfaceMesh/smoothTriSurfaceMesh.C
 
 coordSet/coordSet.C
 
@@ -128,8 +129,8 @@ $(setWriters)/gnuplot/gnuplotCoordSetWriter.C
 $(setWriters)/nastran/nastranCoordSetWriter.C
 $(setWriters)/null/nullCoordSetWriter.C
 $(setWriters)/raw/rawCoordSetWriter.C
-$(setWriters)/vtk/foamVtkCoordSetWriter.C
-$(setWriters)/vtk/vtkCoordSetWriter.C
+$(setWriters)/vtk/foamVtkCoordSetWriter.cxx
+$(setWriters)/vtk/vtkCoordSetWriter.cxx
 $(setWriters)/xmgrace/xmgraceCoordSetWriter.C
 
 graph/curve.C
@@ -280,6 +281,7 @@ processorLOD/faceBox/faceBox.C
 AMI=AMIInterpolation
 $(AMI)/AMIInterpolation/AMIInterpolation.C
 $(AMI)/AMIInterpolation/AMIInterpolationNew.C
+$(AMI)/AMIInterpolation/AMICache.C
 $(AMI)/AMIInterpolation/advancingFrontAMI/advancingFrontAMI.C
 $(AMI)/AMIInterpolation/advancingFrontAMI/advancingFrontAMIParallelOps.C
 $(AMI)/AMIInterpolation/faceAreaWeightAMI/faceAreaWeightAMI.C
@@ -343,14 +345,15 @@ meshStructure/meshStructure.C
 coupling/externalFileCoupler.C
 
 vtk = output/vtk
-$(vtk)/mesh/foamVtkInternalMeshWriter.C
-$(vtk)/patch/foamVtkPatchMeshWriter.C
-$(vtk)/topoSet/foamVtkWriteTopoSet.C
-$(vtk)/topoSet/foamVtkWriteFaceSet.C
-$(vtk)/topoSet/foamVtkWritePointSet.C
-$(vtk)/topoSet/foamVtkWriteCellSetFaces.C
+$(vtk)/mesh/foamVtkInternalMeshWriter.cxx
+$(vtk)/patch/foamVtkPatchMeshWriter.cxx
+$(vtk)/topoSet/foamVtkWriteTopoSet.cxx
+$(vtk)/topoSet/foamVtkWriteFaceSet.cxx
+$(vtk)/topoSet/foamVtkWritePointSet.cxx
+$(vtk)/topoSet/foamVtkWriteCellSetFaces.cxx
 
-regionModel/regionProperties/regionProperties.C
+regionModel/regionProperties/regionProperties.cxx
+regionModel/regionProperties/regionModelProperties.cxx
 
 tetOverlapVolume/tetOverlapVolume.C
 

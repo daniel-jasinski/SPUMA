@@ -50,10 +50,10 @@ Which will reveal content resembling the following:
 ```
 [submodule "avalanche"]
     path = modules/avalanche
-    url = https://develop.openfoam.com/Community/avalanche.git
+    url = https://gitlab.com/openfoam/community/avalanche.git
 [submodule "cfmesh"]
     path = modules/cfmesh
-    url = https://develop.openfoam.com/Community/integration-cfmesh.git
+    url = https://gitlab.com/openfoam/community/cfmesh.git
 ...
 ```
 

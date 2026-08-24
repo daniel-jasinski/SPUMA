@@ -27,11 +27,10 @@ Class
     Foam::heatTransferCoeffModels::ReynoldsAnalogy
 
 Description
-    Heat transfer coefficient calculation based on Reynolds Analogy,
-    which is used to relate turbulent momentum and heat transfer.
+    Heat transfer coefficient calculation based on Reynolds Analogy, which is
+    used to relate turbulent momentum and heat transfer.
 
-    The heat transfer coefficient is derived
-    from the skin friction coefficient:
+    The heat transfer coefficient is derived from the skin friction coefficient:
 
     \f[
         C_f = \frac{\tau_w}{0.5 \rho_{ref} |U|^2}
@@ -56,7 +55,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    heatTransferCoeff1
+    heatTransferCoeffFO
     {
         // Inherited entries
         ...
@@ -195,7 +194,7 @@ public:
 
     // Member Functions
 
-        //- Read from dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 };
 

@@ -1949,13 +1949,13 @@ Foam::autoPtr<Foam::mapDistributePolyMesh> Foam::fvMeshDistribute::distribute
     // Note that this is not necessary for redistributePar since that already
     // checks for it. However other use (e.g. mesh generators) might not.
     const wordList pointZoneNames(mergeWordList(mesh_.pointZones().names()));
-    reorderZones<pointZone>(pointZoneNames, mesh_.pointZones());
+    reorderZones(pointZoneNames, mesh_.pointZones());
 
     const wordList faceZoneNames(mergeWordList(mesh_.faceZones().names()));
-    reorderZones<faceZone>(faceZoneNames, mesh_.faceZones());
+    reorderZones(faceZoneNames, mesh_.faceZones());
 
     const wordList cellZoneNames(mergeWordList(mesh_.cellZones().names()));
-    reorderZones<cellZone>(cellZoneNames, mesh_.cellZones());
+    reorderZones(cellZoneNames, mesh_.cellZones());
 
 
     // Local environment of all boundary faces

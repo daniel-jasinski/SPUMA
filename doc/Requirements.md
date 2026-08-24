@@ -207,14 +207,14 @@ at any later stage _without_ recompiling OpenFOAM itself.
 
 <!-- OpenFOAM -->
 
-[link openfoam-readme]: https://develop.openfoam.com/Development/openfoam/blob/develop/README.md
-[link openfoam-build]: https://develop.openfoam.com/Development/openfoam/blob/develop/doc/Build.md
-[link openfoam-require]: https://develop.openfoam.com/Development/openfoam/blob/develop/doc/Requirements.md
-[link third-readme]: https://develop.openfoam.com/Development/ThirdParty-common/blob/develop/README.md
-[link third-build]: https://develop.openfoam.com/Development/ThirdParty-common/blob/develop/BUILD.md
-[link third-require]: https://develop.openfoam.com/Development/ThirdParty-common/blob/develop/Requirements.md
+[link openfoam-readme]: https://gitlab.com/openfoam/core/openfoam/blob/develop/README.md
+[link openfoam-build]: https://gitlab.com/openfoam/core/openfoam/blob/develop/doc/Build.md
+[link openfoam-require]: https://gitlab.com/openfoam/core/openfoam/blob/develop/doc/Requirements.md
+[link third-readme]: https://gitlab.com/openfoam/core/thirdparty-common/blob/develop/README.md
+[link third-build]: https://gitlab.com/openfoam/core/thirdparty-common/blob/develop/BUILD.md
+[link third-require]: https://gitlab.com/openfoam/core/thirdparty-common/blob/develop/Requirements.md
 
-[wiki-config]: https://develop.openfoam.com/Development/openfoam/-/wikis/configuring
+[wiki-config]: https://gitlab.com/openfoam/core/openfoam/-/wikis/configuring
 
 ---
-Copyright 2019-2023 OpenCFD Ltd
+Copyright 2019-2025 OpenCFD Ltd

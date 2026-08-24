@@ -48,12 +48,8 @@ if (adjustTimeStep)
     scalar maxDeltaTFluid = maxCo/(CoNum + SMALL);
     scalar maxDeltaTSolid = maxDi/(DiNum + SMALL);
 
-    scalar deltaTFluid =
-        Foam::min
-        (
-            Foam::min(maxDeltaTFluid, 1.0 + 0.1*maxDeltaTFluid),
-            1.2
-        );
+    const scalar deltaTFluid =
+        Foam::min(Foam::min(maxDeltaTFluid, 1.0 + 0.1*maxDeltaTFluid), 1.2);
 
     runTime.setDeltaT
     (

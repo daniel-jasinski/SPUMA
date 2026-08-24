@@ -64,31 +64,28 @@ Description
     \table
       Operand           | Type              | Location
       input             | -                 | -
-      output file       | -                 <!--
-                    --> | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<files\>
+      output file       | -                 | postProcessing/<FO>/<time>/files
       output field      | -                 | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    regionSizeDistribution1
+    regionSizeDistributionFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            regionSizeDistribution;
         libs            (fieldFunctionObjects);
+        field           <word>;
+        patches         (<wordList>);      // (patch1 patch2 ...);
+        fields          (<wordList>);      // (field1 field2 ...);
+        threshold       <scalar>;
+        maxDiameter     <scalar>;
+        nBins           <label>;
+        setFormat       <word>;           // csv, raw, xmgrace, gnuplot
 
-        // Mandatory entries (runtime modifiable)
-        field           alpha;
-        patches         (inlet);
-        fields          (p U);
-        threshold       0.4;
-        maxDiameter     5e-5;
-        nBins           100;
-        setFormat       gnuplot;
-
-        // Optional entries (runtime modifiable)
-        minDiameter     0.0;
+        // Optional entries
+        minDiameter     <scalar>;
         coordinateSystem
         {
             origin  (0 0 0);
@@ -103,7 +100,9 @@ Usage
         // Optional downstream iso-plane bins
         isoPlanes       true;
 
-            // Mandatory entries if isoPlanes=true   (runtime modifiable)
+        // Conditional entries
+
+            // when 'isoPlanes' is 'true'
             // Plane normal and point definition
             origin          (1e-4 0 5e-4);
             direction       (1 0 1);
@@ -118,14 +117,14 @@ Usage
             // Number of iso-plane bins
             nDownstreamBins 20;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: regionSizeDistribution  | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       field        | Phase field to interrogate         | word |  yes  | -
@@ -152,16 +151,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::regionSizeDistribution
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 SourceFiles
     regionSizeDistribution.C
@@ -185,6 +176,7 @@ SourceFiles
 namespace Foam
 {
 
+// Forward Declarations
 class regionSplit;
 
 namespace functionObjects
@@ -324,13 +316,13 @@ public:
 
     // Member Functions
 
-        //- Read the regionSizeDistribution data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Do nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Calculate the regionSizeDistribution and write
+        //- Write the function-object results
         virtual bool write();
 };
 

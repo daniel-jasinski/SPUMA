@@ -33,19 +33,35 @@ Description
     Simple (simplistic) mpi-profiling.
 
 Usage
-    Example of function object specification:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    profiling
+    profilingFO
     {
-        type  parProfiling;
-        libs  (utilityFunctionObjects);
+        // Mandatory entries
+        type                parProfiling;
+        libs                (utilityFunctionObjects);
 
+        // Optional entries
+        detail              <int>;  // 0;
+
+        // Inherited entries
         // Report stats on exit only (instead of every time step)
         executeControl  onEnd;
         writeControl    none;
-        detail          0;
+        ...
     }
     \endverbatim
+
+    where the entries mean:
+    \table
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: parProfiling            | word | yes  | -
+      libs     | Library name: utilityFunctionObjects | word | yes | -
+      detail   | The reporting level                | int  | no   | 0
+    \endtable
+
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
 
 SourceFiles
     parProfiling.C
@@ -65,7 +81,7 @@ namespace functionObjects
 {
 
 /*---------------------------------------------------------------------------*\
-                  Class parProfiling Declaration
+                        Class parProfiling Declaration
 \*---------------------------------------------------------------------------*/
 
 class parProfiling
@@ -95,7 +111,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary. Enables profilingPstream
+        //- Construct from name, Time and dictionary. Enables profilingPstream
         parProfiling
         (
             const word& name,
@@ -113,10 +129,10 @@ public:
         //- Report the current profiling information
         void report();
 
-        //- Report
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Do nothing
+        //- Write the function-object results (no-op)
         virtual bool write();
 
         //- Disables profilingPstream

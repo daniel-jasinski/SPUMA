@@ -31,8 +31,8 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Computes the second invariant of
-    the velocity gradient tensor \f$[s^{-2}]\f$.
+    Computes the second invariant of the velocity gradient tensor
+    \f$[s^{-2}]\f$.
 
     \f[
         \vec Q = \frac{1}{2}
@@ -48,54 +48,42 @@ Description
     Operands:
     \table
       Operand        | Type           | Location
-      input          | volVectorField | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | volVectorField | <time>/inputField
       output file    | -              | -
-      output field   | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    Q1
+    QFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        Q;
         libs        (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: Q                       | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func Q
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::Q
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     Q.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_Q_H
-#define functionObjects_Q_H
+#ifndef Foam_functionObjects_Q_H
+#define Foam_functionObjects_Q_H
 
 #include "fieldExpression.H"
 
@@ -128,7 +116,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         Q
         (
             const word& name,

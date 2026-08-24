@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2022 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -78,6 +78,12 @@ inline Foam::label Foam::vtk::vtuSizing::nCellsPoly() const noexcept
 }
 
 
+inline Foam::label Foam::vtk::vtuSizing::nFacesPoly() const noexcept
+{
+    return nFacesPoly_;
+}
+
+
 inline Foam::label Foam::vtk::vtuSizing::nVertPoly() const noexcept
 {
     return nVertPoly_;
@@ -111,48 +117,6 @@ inline Foam::label Foam::vtk::vtuSizing::nFieldCells() const noexcept
 inline Foam::label Foam::vtk::vtuSizing::nFieldPoints() const noexcept
 {
     return (nPoints_ + nAddPoints_);
-}
-
-
-inline Foam::label Foam::vtk::vtuSizing::sizeLegacy() const
-{
-    return sizeOf(contentType::LEGACY, slotType::CELLS);
-}
-
-
-inline Foam::label Foam::vtk::vtuSizing::sizeLegacy
-(
-    const enum slotType slot
-) const
-{
-    return sizeOf(contentType::LEGACY, slot);
-}
-
-
-inline Foam::label Foam::vtk::vtuSizing::sizeXml
-(
-    const enum slotType slot
-) const
-{
-    return sizeOf(contentType::XML, slot);
-}
-
-
-inline Foam::label Foam::vtk::vtuSizing::sizeInternal1
-(
-    const enum slotType slot
-) const
-{
-    return sizeOf(contentType::INTERNAL1, slot);
-}
-
-
-inline Foam::label Foam::vtk::vtuSizing::sizeInternal2
-(
-    const enum slotType slot
-) const
-{
-    return sizeOf(contentType::INTERNAL2, slot);
 }
 
 

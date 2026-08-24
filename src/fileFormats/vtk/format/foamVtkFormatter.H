@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2022 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,8 +33,9 @@ Description
     By default uses single-quoting for XML attributes.
 
 SourceFiles
-    foamVtkFormatter.C
-    foamVtkFormatterTemplates.C
+    foamVtkFormatter.cxx
+    foamVtkFormatter.txx
+    foamVtkFormatterI.H
 
 \*---------------------------------------------------------------------------*/
 
@@ -60,6 +61,7 @@ namespace Foam
 namespace vtk
 {
 
+// Forward Declarations
 class outputOptions;
 
 /*---------------------------------------------------------------------------*\
@@ -116,9 +118,6 @@ protected:
         //  \return formatter for chaining
         inline formatter& xmlAttr();
 
-        //- No-op XML comment loop (for templating code).
-        inline void xmlCommentLoop();
-
         //- Loop/output XML comments
         template<class... Args>
         inline void xmlCommentLoop(const std::string& text, Args&&... args);
@@ -167,7 +166,7 @@ public:
         virtual const char* encoding() const = 0;
 
         //- Change quoting char for XML attributes (default: SINGLE_QUOTE)
-        void quoting(const quoteChar quote);
+        void quoting(quoteChar quote) noexcept;
 
         //- Increase the append data offset by numbytes and sizeof(uint64_t).
         //  The additional (uint64_t) size information is consistent with
@@ -563,7 +562,7 @@ inline uint64_t sizeofData(label count)
 #include "foamVtkFormatterI.H"
 
 #ifdef NoRepository
-    #include "foamVtkFormatterTemplates.C"
+    #include "foamVtkFormatter.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

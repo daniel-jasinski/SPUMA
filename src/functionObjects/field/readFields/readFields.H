@@ -37,36 +37,35 @@ Description
     Operands:
     \table
       Operand        | Type             | Location
-      input          | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | vol<Type>Field   | <time>/inputField
       output file    | -                | -
-      output field   | vol\<Type\>Field | Mesh database
+      output field   | vol<Type>Field   | Mesh database
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    readFields1
+    readFieldsFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        readFields;
         libs        (fieldFunctionObjects);
+        fields      (<wordList>);  // (<field1> <field2> ... <fieldN>);
 
-        // Mandatory entries (runtime modifiable)
-        fields      (<field1> <field2> ... <fieldN>);
+        // Optional entries
+        readOnStart <bool>;;
 
-        // Optional entries (runtime unmodifiable)
-        readOnStart true;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: readFields              | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       fields       | Names of the operand fields        | wordList |  yes  | -
@@ -74,14 +73,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::readFields
+      - \link functionObject.H \endlink
 
 SourceFiles
     readFields.C
@@ -89,8 +81,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_readFields_H
-#define functionObjects_readFields_H
+#ifndef Foam_functionObjects_readFields_H
+#define Foam_functionObjects_readFields_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFieldsFwd.H"
@@ -163,13 +155,13 @@ public:
 
     // Member Functions
 
-        //- Read the set of fields from dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Read the fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Do nothing
+        //- Write the function-object results
         virtual bool write();
 };
 

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2014 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -104,7 +104,7 @@ public:
         FOAM_DEVICE inline constexpr complex() noexcept;
 
         //- Construct zero-initialized from zero class
-        FOAM_DEVICE inline constexpr complex(const Foam::zero) noexcept;
+        FOAM_DEVICE inline constexpr complex(Foam::zero) noexcept;
 
         //- Construct from real component
         FOAM_DEVICE inline explicit constexpr complex(const scalar r) noexcept;
@@ -165,7 +165,7 @@ public:
 
 
         //- Assign zero
-        inline void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
         //- Assign scalar (imag = zero)
         inline void operator=(const scalar s);
@@ -290,10 +290,7 @@ public:
     // Constructors
 
         //- Copy construct from primitive
-        explicit pTraits(const complex& val) noexcept
-        :
-            p_(val)
-        {}
+        explicit pTraits(const complex& val) noexcept : p_(val) {}
 
 
         //- Read construct from Istream
@@ -322,22 +319,16 @@ namespace Detail
     //- The 'conjugate' of non-complex returns itself (pass-through)
     //- it does not return a complex!
     template<class T>
-    typename std::enable_if
-    <
-        !std::is_same<complex, T>::value,
-        const T&
-    >::type conj(const T& val)
+    std::enable_if_t<!std::is_same_v<complex, T>, const T&>
+    conj(const T& val)
     {
         return val;
     }
 
     //- The conjugate of a complex number
     template<class T>
-    typename std::enable_if
-    <
-        std::is_same<complex, T>::value,
-        complex
-    >::type conj(const T& val)
+    std::enable_if_t<std::is_same_v<complex, T>, complex>
+    conj(const T& val)
     {
         return val.conjugate();
     }

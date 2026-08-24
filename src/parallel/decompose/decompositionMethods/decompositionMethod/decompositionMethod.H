@@ -105,6 +105,7 @@ protected:
         //  \return the coefficients dictionary found. If nothing was found,
         //  return the enclosing dictionary or
         //  dictionary::null (depending on the select parameter).
+        FOAM_NO_DANGLING_REFERENCE
         static const dictionary& findCoeffsDict
         (
             const dictionary& dict,
@@ -124,6 +125,7 @@ protected:
         //  \return the coefficients dictionary found. If nothing was found,
         //  return the top-level (non-region) dictionary or
         //  dictionary::null (depending on the select parameter).
+        FOAM_NO_DANGLING_REFERENCE
         const dictionary& findCoeffsDict
         (
             const word& coeffsName,
@@ -220,6 +222,14 @@ public:
         label nDomains() const noexcept
         {
             return nDomains_;
+        }
+
+        //- Set number of domains. Return old value
+        label nDomains(const label n)
+        {
+            const label oldNum = nDomains_;
+            nDomains_ = n;
+            return oldNum;
         }
 
         //- True if the method is purely geometric,

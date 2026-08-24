@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2021-2022 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -52,15 +52,16 @@ Foam::fa::limitVelocity::limitVelocity
     const word& name,
     const word& modelType,
     const dictionary& dict,
-    const fvMesh& mesh
+    const fvMesh& mesh,
+    const word& defaultAreaName
 )
 :
-    faceSetOption(name, modelType, dict, mesh),
+    fa::faceSetOption(name, modelType, dict, mesh, defaultAreaName),
     UName_(coeffs_.getOrDefault<word>("U", "U")),
     max_(coeffs_.get<scalar>("max"))
 {
-    fieldNames_.setSize(1, UName_);
-    applied_.setSize(1, false);
+    fieldNames_.resize(1, UName_);
+    applied_.resize(1, false);
 }
 
 

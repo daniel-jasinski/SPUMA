@@ -116,6 +116,7 @@ Foam::List<Type> Foam::GlobalIOList<Type>::readContents(const IOobject& io)
     {
         rio.readOpt(IOobjectOption::MUST_READ);
     }
+    rio.resetHeader();
 
     // The object is global
     rio.globalObject(true);
@@ -159,15 +160,6 @@ bool Foam::GlobalIOList<Type>::writeData(Ostream& os) const
 {
     os << static_cast<const List<Type>&>(*this);
     return os.good();
-}
-
-
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-template<class Type>
-void Foam::GlobalIOList<Type>::operator=(const GlobalIOList<Type>& rhs)
-{
-    List<Type>::operator=(rhs);
 }
 
 

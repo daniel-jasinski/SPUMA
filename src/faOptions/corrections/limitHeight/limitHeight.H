@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -69,8 +69,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef fa_limitHeight_H
-#define fa_limitHeight_H
+#ifndef Foam_fa_limitHeight_H
+#define Foam_fa_limitHeight_H
 
 #include "faceSetOption.H"
 
@@ -87,7 +87,7 @@ namespace fa
 
 class limitHeight
 :
-    public faceSetOption
+    public fa::faceSetOption
 {
 protected:
 
@@ -98,15 +98,6 @@ protected:
 
         //- Maximum height [m]
         scalar max_;
-
-
-    // Protected Member Functions
-
-        //- No copy construct
-        limitHeight(const limitHeight&) = delete;
-
-        //- No copy assignment
-        void operator=(const limitHeight&) = delete;
 
 
 public:
@@ -123,8 +114,16 @@ public:
             const word& name,
             const word& modelType,
             const dictionary& dict,
-            const fvMesh& mesh
+            const fvMesh& mesh,
+            //! The expected finite-area mesh name
+            const word& defaultAreaName = word()
         );
+
+        //- No copy construct
+        limitHeight(const limitHeight&) = delete;
+
+        //- No copy assignment
+        void operator=(const limitHeight&) = delete;
 
 
     //- Destructor

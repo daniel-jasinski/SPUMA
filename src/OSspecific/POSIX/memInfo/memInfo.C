@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,6 +33,32 @@ License
 #include <cstdlib>
 #include <fstream>
 #include <string>
+
+// Future?
+// - with sysctl(...)
+//
+// #ifdef __APPLE__
+// #include <sys/types.h>
+// #include <sys/sysctl.h>
+// #endif
+
+
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+
+static int is_supported(-1);
+
+bool Foam::memInfo::supported()
+{
+    if (is_supported < 0)
+    {
+        // This is Linux-specific!
+        std::ifstream is("/proc/meminfo");
+        is_supported = is.good();
+    }
+
+    return is_supported;
+}
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -65,6 +91,8 @@ void Foam::memInfo::populate()
 {
     std::string line;
 
+    // This is all Linux-specific!
+
     // "/proc/meminfo"
     // ===========================
     // MemTotal:       65879268 kB
@@ -73,9 +101,13 @@ void Foam::memInfo::populate()
     // Buffers:            2116 kB
     // ...
     // Stop parsing when known keys have been extracted
-    {
-        std::ifstream is("/proc/meminfo");
 
+    if
+    (
+        std::ifstream is("/proc/meminfo");
+        is.good()
+    )
+    {
         for
         (
             unsigned nkeys = 1;
@@ -89,17 +121,34 @@ void Foam::memInfo::populate()
                 continue;
             }
 
-            const std::string key(line.substr(0, delim));
+            // Compare initial part of line to "Key"
+            #undef  isKeyEqual
+            #define isKeyEqual(Key) (!line.compare(0, delim, Key))
 
-            // std::stol() skips whitespace before using as many digits as
-            // possible. So just need to skip over the ':' and let stol do
-            // the rest
+            // std::stol() and std::strtol()
+            // both skip whitespace before using as many digits as possible.
+            // So just skip over the ':' and let those do the rest
 
-            if (key == "MemFree")
+            const char * value = (line.data() + (delim+1));
+            char *endptr = nullptr;
+
+            #undef  parseValue
+            #define parseValue (std::strtol(value, &endptr, 10))
+            // Could also check for 'kB' etc ending
+
+
+            // ------------------
+            // Extract key: value
+            // ------------------
+
+            if (isKeyEqual("MemFree"))
             {
-                free_ = std::stol(line.substr(delim+1));
+                free_ = parseValue;
                 --nkeys;
             }
+
+            #undef isKeyEqual
+            #undef parseValue
         }
     }
 
@@ -115,9 +164,12 @@ void Foam::memInfo::populate()
     // Stop parsing when known keys have been extracted
 
     // These units are kibi-btyes (1024)
-    {
+    if
+    (
         std::ifstream is("/proc/" + std::to_string(Foam::pid()) + "/status");
-
+        is.good()
+    )
+    {
         for
         (
             unsigned nkeys = 3;
@@ -131,27 +183,44 @@ void Foam::memInfo::populate()
                 continue;
             }
 
-            const std::string key(line.substr(0, delim));
+            // Compare initial part of line to "Key"
+            #undef  isKeyEqual
+            #define isKeyEqual(Key) (!line.compare(0, delim, Key))
 
-            // std::stoi() skips whitespace before using as many digits as
-            // possible. So just need to skip over the ':' and let stoi do
-            // the rest
+            // std::stol() and std::strtol()
+            // both skip whitespace before using as many digits as possible.
+            // So just skip over the ':' and let those do the rest
 
-            if (key == "VmPeak")
+            const char * value = (line.data() + (delim+1));
+            char *endptr = nullptr;
+
+            #undef  parseValue
+            #define parseValue (std::strtol(value, &endptr, 10))
+            // Could also check for 'kB' etc ending
+
+
+            // ------------------
+            // Extract key: value
+            // ------------------
+
+            if (isKeyEqual("VmPeak"))
             {
-                peak_ = std::stol(line.substr(delim+1));
+                peak_ = parseValue;
                 --nkeys;
             }
-            else if (key == "VmSize")
+            else if (isKeyEqual("VmSize"))
             {
-                size_ = std::stol(line.substr(delim+1));
+                size_ = parseValue;
                 --nkeys;
             }
-            else if (key == "VmRSS")
+            else if (isKeyEqual("VmRSS"))
             {
-                rss_ = std::stol(line.substr(delim+1));
+                rss_ = parseValue;
                 --nkeys;
             }
+
+            #undef isKeyEqual
+            #undef parseValue
         }
     }
 }

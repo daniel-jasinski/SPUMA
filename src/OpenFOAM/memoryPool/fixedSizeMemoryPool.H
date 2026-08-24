@@ -41,7 +41,7 @@ SourceFiles
 #define fixed_Size_Memory_Pool_Executor_H
 
 #include <iostream>
-#include "MemoryPool.H"
+#include "MemoryPoolBase.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -53,7 +53,7 @@ namespace Foam
 \*---------------------------------------------------------------------------*/
 
 class fixedSizeMemoryPool:
-    public MemoryPool
+    public Spuma::MemoryPool
 {
 
 private:

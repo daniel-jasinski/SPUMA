@@ -38,9 +38,8 @@ SourceFiles
 #ifndef Foam_device_errors_H
 #define Foam_device_errors_H
 
-
-#define deviceFatalErrorInFunction(msg...) \
-        printf("\nDEVICE ERROR: "##msg); \
+#define fatalErrorInKernelFunction(msg, ...)                               \
+        printf("\nError in kernel function: \n" msg "\n", ##__VA_ARGS__);  \
         assert(0);
 
 #endif

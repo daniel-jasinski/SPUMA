@@ -139,8 +139,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_ensightCloudWriteObject_H
-#define functionObjects_ensightCloudWriteObject_H
+#ifndef Foam_functionObjects_ensightCloudWriteObject_H
+#define Foam_functionObjects_ensightCloudWriteObject_H
 
 #include "fvMeshFunctionObject.H"
 #include "ensightCase.H"
@@ -228,7 +228,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         ensightCloudWriteObject
         (
             const word& name,

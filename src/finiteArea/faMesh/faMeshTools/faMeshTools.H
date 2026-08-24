@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022-2024 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,10 +30,10 @@ Description
     A collection of tools for operating on an faMesh.
 
 SourceFiles
-    faMeshTools.C
-    faMeshToolsChecks.C
-    faMeshToolsProcAddr.C
-    faMeshToolsTemplates.C
+    faMeshTools.cxx
+    faMeshTools.txx
+    faMeshToolsChecks.cxx
+    faMeshToolsProcAddr.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -70,15 +70,15 @@ class faMeshTools
     //  Requires:
     //  - all processors to have all patches (and in same order).
     //  - io.instance() set to facesInstance
-    static autoPtr<faMesh> loadOrCreateMeshImpl
+    static autoPtr<faMesh> loadOrCreateMesh_impl
     (
-        const IOobject& io,
+        const word& areaName,
+        const IOobject& io,  // Describes the base polyMesh
         refPtr<fileOperation>* readHandlerPtr,  // Can be nullptr
         const polyMesh& pMesh,
         const bool decompose,  // Only used if readHandlerPtr == nullptr
         const bool verbose = false
     );
-
 
 
 public:
@@ -99,6 +99,8 @@ public:
     //         if not present
     static autoPtr<faMesh> newMesh
     (
+        //! The area region
+        const word& areaName,
         //! The IOobject describes the base polyMesh
         const IOobject& io,
         const polyMesh& pMesh,
@@ -106,12 +108,38 @@ public:
         const bool verbose = false
     );
 
+    //- Read mesh or create dummy mesh (0 faces, >0 patches).
+    //  Works in two modes according to masterOnlyReading:
+    //  true : create a dummy mesh for all procs
+    //  false: checks locally for mesh directories and only creates dummy mesh
+    //         if not present
+    static inline autoPtr<faMesh> newMesh
+    (
+        //! The IOobject describes the base polyMesh
+        const IOobject& io,
+        const polyMesh& pMesh,
+        const bool masterOnlyReading,
+        const bool verbose = false
+    )
+    {
+        return faMeshTools::newMesh
+        (
+            word::null,  // == defaultRegion
+            io,
+            pMesh,
+            masterOnlyReading,
+            verbose
+        );
+    }
+
     // Read mesh if available. Otherwise create empty mesh with same non-proc
     // patches as proc0 mesh. Requires:
     //  - all processors to have all patches (and in same order).
     //  - io.instance() set to facesInstance
     static autoPtr<faMesh> loadOrCreateMesh
     (
+        //! The area region
+        const word& areaName,
         //! The IOobject describes the base polyMesh
         const IOobject& io,
         const polyMesh& pMesh,
@@ -123,8 +151,33 @@ public:
     // patches as proc0 mesh. Requires:
     //  - all processors to have all patches (and in same order).
     //  - io.instance() set to facesInstance
+    static inline autoPtr<faMesh> loadOrCreateMesh
+    (
+        //! The IOobject describes the base polyMesh
+        const IOobject& io,
+        const polyMesh& pMesh,
+        const bool decompose,
+        const bool verbose = false
+    )
+    {
+        return faMeshTools::loadOrCreateMesh
+        (
+            word::null,  // == defaultRegion
+            io,
+            pMesh,
+            decompose,
+            verbose
+        );
+    }
+
+    // Read mesh if available. Otherwise create empty mesh with same non-proc
+    // patches as proc0 mesh. Requires:
+    //  - all processors to have all patches (and in same order).
+    //  - io.instance() set to facesInstance
     static autoPtr<faMesh> loadOrCreateMesh
     (
+        //! The area region
+        const word& areaName,
         //! The IOobject describes the base polyMesh
         const IOobject& io,
         const polyMesh& pMesh,
@@ -133,21 +186,39 @@ public:
         const bool verbose = false
     );
 
+    // Read mesh if available. Otherwise create empty mesh with same non-proc
+    // patches as proc0 mesh. Requires:
+    //  - all processors to have all patches (and in same order).
+    //  - io.instance() set to facesInstance
+    static inline autoPtr<faMesh> loadOrCreateMesh
+    (
+        //! The IOobject describes the base polyMesh
+        const IOobject& io,
+        const polyMesh& pMesh,
+        //! Non-null reference if a mesh exists on given processor
+        refPtr<fileOperation>& readHandler,
+        const bool verbose = false
+    )
+    {
+        return faMeshTools::loadOrCreateMesh
+        (
+            word::null,  // == defaultRegion
+            io,
+            pMesh,
+            readHandler,
+            verbose
+        );
+    }
+
 
     //- Read decompose/reconstruct addressing
     static mapDistributePolyMesh readProcAddressing
     (
         const faMesh& mesh,
-        const autoPtr<faMesh>& baseMeshPtr
+        const faMesh* baseMeshPtr
     );
 
     //- Write decompose/reconstruct addressing
-    //
-    //  \param mesh
-    //  \param faDistMap
-    //  \param decompose  running in decompose vs reconstruct mode
-    //  \param writeHandler file handler
-    //  \param procMesh   (optional) processor mesh in reconstruct mode
     //
     //  \note Since the faMesh holds a reference to a polyMesh,
     //  in reconstruct mode it will refer to the base mesh, but
@@ -157,8 +228,11 @@ public:
     (
         const faMesh& mesh,
         const mapDistributePolyMesh& faDistMap,
+        //! running in decompose vs reconstruct mode
         const bool decompose,
+        //! The output file handler
         refPtr<fileOperation>& writeHandler,
+        //! optional processor mesh in reconstruct mode
         const faMesh* procMesh = nullptr
     );
 
@@ -178,6 +252,16 @@ public:
         const faMesh& mesh,
         const int verbose = 1
     );
+
+
+    // Housekeeping
+
+        //- Read decompose/reconstruct addressing
+        static mapDistributePolyMesh readProcAddressing
+        (
+            const faMesh& procMesh,
+            const autoPtr<faMesh>& baseMeshPtr
+        );
 };
 
 
@@ -188,7 +272,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "faMeshToolsTemplates.C"
+    #include "faMeshTools.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

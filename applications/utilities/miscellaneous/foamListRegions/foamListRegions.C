@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2020 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,7 +30,8 @@ Group
     grpPostProcessingUtilities
 
 Description
-    List regions from constant/regionProperties.
+    List volume regions from constant/regionProperties
+    or area regions from constant/finite-area/regionProperties
 
 Usage
     \b foamListRegions [OPTION]
@@ -45,6 +46,9 @@ Note
 #include "Time.H"
 #include "regionProperties.H"
 
+// Same as faMesh::prefix() but without additional linkage
+constexpr const char* const faMeshPrefix = "finite-area";
+
 using namespace Foam;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -53,7 +57,8 @@ int main(int argc, char *argv[])
 {
     argList::addNote
     (
-        "List regions from constant/regionProperties"
+        "List volume regions from constant/regionProperties,\n"
+        "or area regions from constant/finite-area/regionProperties"
     );
 
     argList::noBanner();
@@ -62,11 +67,54 @@ int main(int argc, char *argv[])
     argList::noFunctionObjects();  // Never use function objects
     // No profiling since there is no time loop
 
+    argList::addBoolOption
+    (
+        "finite-area",
+        "List constant/finite-area/regionProperties (if available)"
+    );
+
+    argList::addBoolOption
+    (
+        "optional",
+        "A missing regionProperties is not treated as an error"
+    );
+
+    argList::addDryRunOption
+    (
+        "Make reading optional and add verbosity"
+    );
+    argList::addVerboseOption("Additional verbosity");
+
     // Arguments are optional (non-mandatory)
     argList::noMandatoryArgs();
     argList::addArgument("regionType ... regionType");
 
     #include "setRootCase.H"
+
+    const bool dryRun = args.dryRun();
+    int optVerbose = args.verbose();
+
+    if (dryRun && !optVerbose)
+    {
+        ++optVerbose;
+    }
+
+    // File is optional, not an error
+    const bool isOptional = args.found("optional");
+
+    // Use finite-area regions
+    const bool doFiniteArea = args.found("finite-area");
+
+    // The number of optional region filters to apply
+    const label nFilters = (args.size()-1);
+
+    IOobjectOption::readOption readOpt(IOobjectOption::MUST_READ);
+
+    if (dryRun || isOptional || doFiniteArea)
+    {
+        // The finite-area regionProperties are also considered optional
+        readOpt = IOobjectOption::READ_IF_PRESENT;
+    }
 
     // Silent version of "createTime.H", without libraries
     Time runTime
@@ -77,30 +125,74 @@ int main(int argc, char *argv[])
         false   // no enableLibs
     );
 
-    regionProperties rp(runTime);
+    regionProperties regionProps;
+    if (doFiniteArea)
+    {
+        regionProps = regionProperties(runTime, faMeshPrefix, readOpt);
+    }
+    else
+    {
+        regionProps = regionProperties(runTime, readOpt);
+    }
+
+    // Some reporting...
+    if (regionProps.empty())
+    {
+        if (doFiniteArea)
+        {
+            InfoErr<< "No finite-area region types" << nl;
+        }
+        else if (isOptional)
+        {
+            InfoErr<< "No region types" << nl;
+        }
+    }
+    else if (optVerbose)
+    {
+        InfoErr << "Have " << regionProps.size();
+
+        if (doFiniteArea)
+        {
+            InfoErr<< " finite-area";
+        }
+        InfoErr
+            << " region types, "
+            << regionProps.count() << " regions" << nl << nl;
+    }
+
 
     // We now handle checking args and general sanity etc.
-    wordList regionTypes;
 
-    if (args.size() > 1)
+    DynamicList<word> regionTypes;
+
+    if (isOptional && regionProps.empty())
     {
-        regionTypes.resize(args.size()-1);
+        // Nothing to do...
+    }
+    else if (nFilters > 0)
+    {
+        // Apply region filters
 
-        // No duplicates
+        regionTypes.reserve_exact
+        (
+            Foam::min(nFilters, regionProps.size())
+        );
+
+        // No duplicates, and no duplicate warnings
         wordHashSet uniq;
 
-        label nTypes = 0;
         for (label argi = 1; argi < args.size(); ++argi)
         {
-            regionTypes[nTypes] = args[argi];
-
-            const word& regType = regionTypes[nTypes];
+            word regType(args[argi]);
 
             if (uniq.insert(regType))
             {
-                if (rp.found(regType))
+                if (regionProps.contains(regType))
                 {
-                    ++nTypes;
+                    if (!regionTypes.contains(regType))
+                    {
+                        regionTypes.push_back(std::move(regType));
+                    }
                 }
                 else
                 {
@@ -108,22 +200,22 @@ int main(int argc, char *argv[])
                 }
             }
         }
-
-        regionTypes.resize(nTypes);
     }
     else
     {
-        regionTypes = rp.sortedToc();
+        // Take all regions
+        regionTypes = regionProps.sortedToc();
     }
 
 
     for (const word& regionType : regionTypes)
     {
-        const wordList& regionNames = rp[regionType];
-
-        for (const word& regionName : regionNames)
+        if (const auto iter = regionProps.cfind(regionType); iter.good())
         {
-            Info<< regionName << nl;
+            for (const word& regionName : iter.val())
+            {
+                Info<< regionName << nl;
+            }
         }
     }
 

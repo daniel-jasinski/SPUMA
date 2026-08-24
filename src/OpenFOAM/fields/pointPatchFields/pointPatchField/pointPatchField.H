@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -98,16 +98,6 @@ protected:
         //  Useful when initially constructed without a dictionary
         virtual void readDict(const dictionary& dict);
 
-        //- Set updated state
-        void setUpdated(bool state) noexcept
-        {
-            updated_ = state;
-        }
-
-        //- Set matrix manipulated state. Currently a no-op for pointPatchField.
-        void setManipulated(bool state) noexcept
-        {}
-
 
 public:
 
@@ -160,10 +150,22 @@ public:
             return Foam::fieldTypes::zeroGradientType;
         }
 
+        //- The type name for \c zeroValue patch fields
+        static const word& zeroValueType() noexcept
+        {
+            return Foam::fieldTypes::zeroValueType;
+        }
+
 
     // Member Functions
 
     // Attributes
+
+        //- True if the value of the patch field is altered by assignment
+        virtual bool assignable() const
+        {
+            return false;
+        }
 
         //- True if the patch field fixes a value
         virtual bool fixesValue() const
@@ -207,6 +209,12 @@ public:
             return patchType_;
         }
 
+        //- True if the type does not correspond to the constraint type
+        virtual bool constraintOverride() const
+        {
+            return !patchType_.empty() && patchType_ != type();
+        }
+
 
     // Solution
 
@@ -216,12 +224,23 @@ public:
             return updated_;
         }
 
+        //- Set updated state
+        void setUpdated(bool state) noexcept
+        {
+            updated_ = state;
+        }
+
         //- True if the matrix has already been manipulated.
-        //- Currently ignored (always false) for pointPatchField
+        //- Currently always false for pointPatchField
         bool manipulatedMatrix() const noexcept
         {
             return false;
         }
+
+        //- Set matrix manipulated state.
+        //- Currently a no-op for pointPatchField.
+        void setManipulated(bool state) noexcept
+        {}
 
 
     // Check
@@ -249,6 +268,9 @@ public:
 
         //- The value_type for the patch field
         typedef Type value_type;
+
+        //- The component type for patch field
+        typedef typename pTraits<Type>::cmptType cmptType;
 
         //- The internal field type associated with the patch field
         typedef DimensionedField<Type, pointMesh> Internal;
@@ -335,15 +357,28 @@ public:
             const pointPatchFieldMapper&
         );
 
-        //- Construct as copy
-        pointPatchField(const pointPatchField<Type>&);
-
-        //- Construct as copy setting internal field reference
+        //- Copy construct onto a new patch with (unused) value
         pointPatchField
         (
-            const pointPatchField<Type>&,
-            const DimensionedField<Type, pointMesh>&
+            const pointPatchField<Type>& pfld,
+            const pointPatch& p,
+            const DimensionedField<Type, pointMesh>& iF,
+            const Type& value  /* (unused) */
         );
+
+        //- Copy construct with internal field reference
+        pointPatchField
+        (
+            const pointPatchField<Type>& pfld,
+            const DimensionedField<Type, pointMesh>& iF
+        );
+
+        //- Copy construct
+        pointPatchField(const pointPatchField<Type>& pfld)
+        :
+            pointPatchField(pfld, pfld.internalField())
+        {}
+
 
         //- Clone patch field with its own internal field reference
         virtual autoPtr<pointPatchField<Type>> clone() const = 0;
@@ -439,7 +474,7 @@ public:
     // Access
 
         //- Return the patch size
-        label size() const
+        label size() const noexcept
         {
             return patch().size();
         }
@@ -463,14 +498,14 @@ public:
             // \param internalData The internal field to extract from
             // \param addressing Addressing (mesh-points) into internal field
             // \param [out] pfld The extracted patch field.
-            //     It is always resized according to the patch size(),
+            //     Should normally be sized according to the patch size(),
             //     which can be smaller than the addressing size
             template<class Type1>
             void patchInternalField
             (
                 const UList<Type1>& internalData,
                 const labelUList& addressing,
-                Field<Type1>& pfld
+                UList<Type1>& pfld
             ) const;
 
             //- Return field created from selected internal field values
@@ -478,7 +513,8 @@ public:
             // \param internalData The internal field to extract from
             // \param addressing Addressing (mesh-points) into internal field
             template<class Type1>
-            tmp<Field<Type1>> patchInternalField
+            [[nodiscard]] tmp<Field<Type1>>
+            patchInternalField
             (
                 const UList<Type1>& internalData,
                 const labelUList& addressing
@@ -487,7 +523,8 @@ public:
             //- Return field created from appropriate internal field values
             //- given internal field reference
             template<class Type1>
-            tmp<Field<Type1>> patchInternalField
+            [[nodiscard]] tmp<Field<Type1>>
+            patchInternalField
             (
                 const UList<Type1>& internalData
             ) const;
@@ -572,22 +609,19 @@ public:
             const Pstream::commsTypes commsType = Pstream::commsTypes::buffered
         );
 
-            //- Initialise the evaluation of the patch field after a local
-            //  operation
-            virtual void initEvaluateLocal
-            (
-                const Pstream::commsTypes commsType =
-                    Pstream::commsTypes::buffered
-            )
-            {}
+        //- Initialise the evaluation of the patch field after a local operation
+        virtual void initEvaluateLocal
+        (
+            const Pstream::commsTypes commsType = Pstream::commsTypes::buffered
+        )
+        {}
 
-            //- Evaluate the patch field after a local operation (e.g. *=)
-            virtual void evaluateLocal
-            (
-                const Pstream::commsTypes commsType =
-                    Pstream::commsTypes::buffered
-            )
-            {}
+        //- Evaluate the patch field after a local operation (e.g. *=)
+        virtual void evaluateLocal
+        (
+            const Pstream::commsTypes commsType = Pstream::commsTypes::buffered
+        )
+        {}
 
 
     // Other

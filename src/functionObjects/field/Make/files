@@ -107,7 +107,11 @@ multiply/multiply.C
 turbulenceFields/turbulenceFields.C
 yPlus/yPlus.C
 wallShearStress/wallShearStress.C
-wallHeatFlux/wallHeatFlux.C
+wallHeatFlux/wallHeatFlux.cxx
+wallHeatFlux/wallHeatFluxModels/wallHeatFluxModel/wallHeatFluxModel.cxx
+wallHeatFlux/wallHeatFluxModels/wallHeatFluxModel/wallHeatFluxModelNew.cxx
+wallHeatFlux/wallHeatFluxModels/wall/wallHeatFlux_wall.cxx
+wallHeatFlux/wallHeatFluxModels/gauge/wallHeatFlux_gauge.cxx
 
 writeCellCentres/writeCellCentres.C
 writeCellVolumes/writeCellVolumes.C
@@ -153,5 +157,7 @@ resolutionIndex/resolutionIndexModels/CelikEtaIndex/CelikEtaIndex.C
 
 age/age.C
 comfort/comfort.C
+
+fieldStatistics/fieldStatistics.cxx
 
 LIB = $(FOAM_LIBBIN)/libfieldFunctionObjects

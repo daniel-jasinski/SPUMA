@@ -44,46 +44,38 @@ Description
     \table
       Operand        | Type | Location
       input          | -    | -
-      output file    | dat  | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
+      output file    | dat  | postProcessing/<FO>/<time>/file
       output field   | -    | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    reactionSensitivityAnalysis1
+    reactionSensitivityAnalysisFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            reactionSensitivityAnalysis;
         libs            (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property  | Description                             | Type | Req'd | Dflt
+      Property  | Description                             | Type | Reqd  | Deflt
       type      | Type name: reactionSensitivityAnalysis  | word |  yes  | -
       libs      | Library name: fieldFunctionObjects      | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 Note
     - Function object only applicable to single cell cases.
     - Needs a \c chemistryModel chosen.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::reactionsSensitivityAnalysis
 
 SourceFiles
     reactionsSensitivityAnalysis.C
@@ -182,7 +174,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         reactionsSensitivityAnalysis
         (
             const word& name,
@@ -206,13 +198,13 @@ public:
 
     // Member Functions
 
-        //- Read the reactionsSensitivityAnalysis data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Calculate the reactionsSensitivityAnalysis and write
+        //- Write the function-object results
         virtual bool write();
 };
 

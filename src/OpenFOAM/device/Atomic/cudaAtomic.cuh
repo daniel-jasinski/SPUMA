@@ -57,76 +57,83 @@ struct cudaAtomic
     template<class T>
     struct atomicPlusEqOp
     {
-        FOAM_DEVICE void operator()(T& x, const T& y) const
+        void operator()(T& x, const T& y) const
         {
-#ifdef __CUDA_ARCH__
-            atomicAdd(&x,y);
-#endif
+            atomicAdd(&x, y);
         }
     };
-
-    FOAM_DEVICE static void _backendAtomicAdd(solveScalar& x, const solveScalar& y)
-    {
-#ifdef __CUDA_ARCH__
-        atomicAdd(&x,y);
-#endif
-    }
-
-    FOAM_DEVICE static void _backendAtomicAdd(label& x, const label& y)
-    {
-#ifdef __CUDA_ARCH__
-        atomicAdd(&x,y);
-#endif
-    }
-
-    FOAM_DEVICE static void  _backendAtomicMax(solveScalar& x, const solveScalar& y)
-    {
-#ifdef __CUDA_ARCH__
-        cuda::cudaAtomicMax(&x,y);
-#endif
-    }
-
-    FOAM_DEVICE static void  _backendAtomicMax(label& x, const label& y)
-    {
-#ifdef __CUDA_ARCH__
-        atomicMax(&x,y);
-#endif
-    }
 
     template<class T>
     struct atomicMaxEqOp
     {
-        FOAM_DEVICE void operator()(T& x, const T& y) const
+        void operator()(T& x, const T& y) const
         {
-            _backendAtomicMax(x,y);
+            _backendAtomicMax(x, y);
         }
     };
-
-    FOAM_DEVICE static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
-    {
-#ifdef __CUDA_ARCH__
-        cuda::cudaAtomicMin(&x,y);
-#endif
-    }
-
-    FOAM_DEVICE static void  _backendAtomicMin(label& x, const label& y)
-    {
-#ifdef __CUDA_ARCH__
-        atomicMin(&x,y);
-#endif
-    }
 
     template<class T>
     struct atomicMinEqOp
     {
-        FOAM_DEVICE void operator()(T& x, const T& y) const
+        void operator()(T& x, const T& y) const
         {
-            _backendAtomicMin(x,y);
+            _backendAtomicMin(x, y);
         }
     };
 
+    static void _backendAtomicAdd(scalar& x, const scalar& y)
+    {
+        atomicAdd(&x, y);
+    }
+
+#ifdef WM_SPDP
+    static void _backendAtomicAdd(solveScalar& x, const solveScalar& y)
+    {
+        atomicAdd(&x, y);
+    }
+#endif
+
+    static void _backendAtomicAdd(label& x, const label& y)
+    {
+        atomicAdd(&x, y);
+    }
+
+    static void  _backendAtomicMax(scalar& x, const scalar& y)
+    {
+        cuda::cudaAtomicMax(&x, y);
+    }
+
+#ifdef WM_SPDP
+    static void  _backendAtomicMax(solveScalar& x, const solveScalar& y)
+    {
+        cuda::cudaAtomicMax(&x, y);
+    }
+#endif
+
+    static void  _backendAtomicMax(label& x, const label& y)
+    {
+        atomicMax(&x, y);
+    }
+
+    static void  _backendAtomicMin(scalar& x, const scalar& y)
+    {
+        cuda::cudaAtomicMin(&x, y);
+    }
+
+#ifdef WM_SPDP
+    static void  _backendAtomicMin(solveScalar& x, const solveScalar& y)
+    {
+        cuda::cudaAtomicMin(&x, y);
+    }
+#endif
+
+    static void  _backendAtomicMin(label& x, const label& y)
+    {
+        atomicMin(&x, y);
+    }
+
     template<class Form, class Cmpt, direction Ncmpts>
-    FOAM_DEVICE static void _backendAtomicAdd
+    static void _backendAtomicAdd
     (
         VectorSpace<Form, Cmpt, Ncmpts>& vs1,
         const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -136,7 +143,7 @@ struct cudaAtomic
     }
 
     template<class Form, class Cmpt, direction Ncmpts>
-    FOAM_DEVICE static void _backendAtomicMax
+    static void _backendAtomicMax
     (
         VectorSpace<Form, Cmpt, Ncmpts>& vs1,
         const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -146,7 +153,7 @@ struct cudaAtomic
     }
 
     template<class Form, class Cmpt, direction Ncmpts>
-    FOAM_DEVICE static void _backendAtomicMin
+    static void _backendAtomicMin
     (
         VectorSpace<Form, Cmpt, Ncmpts>& vs1,
         const VectorSpace<Form, Cmpt, Ncmpts>& vs2
@@ -155,18 +162,14 @@ struct cudaAtomic
         VectorSpaceOps<Ncmpts,0>::eqOp(vs1, vs2, atomicMinEqOp<Cmpt>());
     }
 
-    FOAM_DEVICE static label _backendAtomicCAS
+    static label _backendAtomicCAS
     (
         label& x,
         const label& compare,
         const label& y
     )
     {
-#ifdef __CUDA_ARCH__
-        return atomicCAS(&x,compare,y);
-#else
-        return x;
-#endif
+        return atomicCAS(&x, compare, y);
     }
 };
 

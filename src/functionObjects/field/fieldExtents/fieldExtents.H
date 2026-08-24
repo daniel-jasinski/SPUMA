@@ -39,35 +39,33 @@ Description
     \table
       Operand        | Type | Location
       input          | -    | -
-      output file    | dat  | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
+      output file    | dat  | postProcessing/<FO>/<time>/file
       output field   | -    | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    fieldExtents1
+    fieldExtentsFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type                fieldExtents;
         libs                (fieldFunctionObjects);
+        fields              (<wordList>);  // (<field1> <field2> ... <fieldN>);
+        threshold           <scalar>;
 
-        // Mandatory entries (runtime modifiable)
-        fields              (<field1> <field2> ... <fieldN>);
-        threshold           0.5;
+        // Optional entries
+        internalField       <bool>;
+        referencePosition   <vector>;  // (0 0 0);
 
-        // Optional entries (runtime modifiable)
-        internalField       true;
-        referencePosition   (0 0 0);
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: fieldExtents            | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       threshold    | Value to identify extents boundary | scalar | yes | -
@@ -78,20 +76,12 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 Note
     For non-scalar fields, the magnitude of the field is employed and compared
     to the value of \c threshold.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::fieldExtents
 
 SourceFiles
     fieldExtents.C
@@ -171,7 +161,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         fieldExtents
         (
             const word& name,
@@ -192,13 +182,13 @@ public:
 
     // Member Functions
 
-        //- Read the field extents data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the fieldExtents
+        //- Write the function-object results
         virtual bool write();
 };
 

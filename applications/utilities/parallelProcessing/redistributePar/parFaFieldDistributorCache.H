@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,7 +30,7 @@ Description
     Simple container to manage read/write, redistribute finiteArea fields.
 
 SourceFiles
-    parFaFieldDistributorCache.C
+    parFaFieldDistributorCache.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -71,6 +71,20 @@ class parFaFieldDistributorCache
 
     // Private Member Functions
 
+        //- Read distributed fields
+        template<class BoolListType>
+        void readImpl
+        (
+            const Time& baseRunTime,
+            const fileName& proc0CaseName,
+            const bool decompose,  // i.e. read from undecomposed case
+
+            const BoolListType& areaMeshOnProc,
+            refPtr<fileOperation>& readHandler,
+            const fileName& areaMeshInstance,
+            faMesh& mesh
+        );
+
         //- Redistribute and write fields of given type (file-scope use)
         template<class GeoField>
         static void redistributeAndWrite
@@ -102,9 +116,24 @@ public:
         (
             const Time& baseRunTime,
             const fileName& proc0CaseName,
-            const bool decompose,  // i.e. read from undecomposed case
+            //! read from undecomposed case?
+            const bool decompose,
+            //! Existence of the processor-local mesh (bitset)
+            const bitSet& areaMeshOnProc,
+            refPtr<fileOperation>& readHandler,
+            const fileName& areaMeshInstance,
+            faMesh& mesh
+        );
 
-            const boolList& areaMeshOnProc,
+        //- Read distributed fields
+        void read
+        (
+            const Time& baseRunTime,
+            const fileName& proc0CaseName,
+            //! read from undecomposed case?
+            const bool decompose,
+            //! Existence of the processor-local mesh (bool list)
+            const boolUList& areaMeshOnProc,
             refPtr<fileOperation>& readHandler,
             const fileName& areaMeshInstance,
             faMesh& mesh

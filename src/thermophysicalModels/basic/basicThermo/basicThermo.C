@@ -123,6 +123,20 @@ Foam::word Foam::basicThermo::makeThermoName
     const wordList*& cmptHeaderPtr
 )
 {
+    word thermoTypeStr = thermoTypeDict.get<word>("type");
+
+#if defined(have_cuda) || defined(have_hip)
+    if (thermoTypeDict.getOrDefault<bool>("device", true))
+    {
+        if (!thermoTypeStr.empty()) 
+        {
+            Info << "Selecting device version of : "<< thermoTypeStr << nl;
+            thermoTypeStr[0] = std::toupper(static_cast<unsigned char>(thermoTypeStr[0]));
+            thermoTypeStr = "device" + thermoTypeStr;
+        }
+    }
+#endif
+    
     if (thermoTypeDict.found("properties"))
     {
         if (cmptHeaderPtr)
@@ -132,7 +146,7 @@ Foam::word Foam::basicThermo::makeThermoName
 
         return word
         (
-            thermoTypeDict.get<word>("type") + '<'
+            thermoTypeStr + '<'
           + thermoTypeDict.get<word>("mixture") + '<'
           + thermoTypeDict.get<word>("properties") + ','
           + thermoTypeDict.get<word>("energy") + ">>"
@@ -147,7 +161,7 @@ Foam::word Foam::basicThermo::makeThermoName
 
         return word
         (
-            thermoTypeDict.get<word>("type") + '<'
+            thermoTypeStr + '<'
           + thermoTypeDict.get<word>("mixture") + '<'
           + thermoTypeDict.get<word>("transport") + '<'
           + thermoTypeDict.get<word>("thermo") + '<'
@@ -590,7 +604,7 @@ Foam::wordList Foam::basicThermo::splitThermoName
     // Splits things like
     // "hePsiThermo<pureMixture<const<hConst<perfectGas<specie>>,enthalpy>>>"
 
-    const auto parsed = stringOps::splitAny<std::string>(thermoName, " ,<>");
+    const auto parsed = stringOps::splitAny(thermoName, " ,<>");
     const int nParsed(parsed.size());
 
     wordList cmpts;

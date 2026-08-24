@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -29,7 +29,13 @@ Class
     Foam::Field
 
 Description
-    Generic templated field type.
+    Generic templated field type that is much like a Foam::List
+    except that it is expected to hold numerical content
+    (not generic elements such as strings etc).
+
+    In addition to methods specific to numerical fields
+    (e.g., clamp, min, max, transpose, ...), it also has a reference
+    counter that is used by Foam::tmp handling.
 
 SourceFiles
     FieldFunctions.H
@@ -51,6 +57,7 @@ SourceFiles
 #include "direction.H"
 #include "labelList.H"
 #include "keyType.H"
+#include "ops.H"
 #include "scalarList.H"
 #include "VectorSpace.H"
 #include "IOobjectOption.H"
@@ -100,6 +107,42 @@ public:
         //- Permit read construct from a larger size.
         //  Mostly required for things like column mesh, for example.
         static bool allowConstructFromLargerSize;
+
+        //- GeometricField with extra capacity for flattened boundary fields.
+        //- Uses opt-switch "unifiedGeometricField"
+        //  FOAM_EXPORT_DATA: accessed from template code instantiated in
+        //  downstream DLLs (cross-DLL data reads need dllimport on Windows)
+        FOAM_EXPORT_DATA static bool unifiedGeometricField;
+
+        //- Local boundary field consistency checks.
+        //- Uses opt-switch "localBoundaryConsistency"
+        FOAM_EXPORT_DATA static int localBoundaryConsistency_;
+
+        //- Tolerance for local boundary field consistency checks.
+        //- Uses opt-switch "localBoundaryConsistency::tolerance"
+        FOAM_EXPORT_DATA static scalar localBoundaryTolerance_;
+
+
+    // Static Member Functions
+
+        //- Warn about keyword changes for local boundary consistency checks.
+        //  The supplied dictionary corresponds to the optimisationSwitches
+        static void warnLocalBoundaryConsistencyCompat(const dictionary&);
+
+        //- Get flag for local boundary consistency checks.
+        static int localBoundaryConsistency() noexcept
+        {
+            return localBoundaryConsistency_;
+        }
+
+        //- Set flag for local boundary consistency checks.
+        //  \return the previous value
+        static int localBoundaryConsistency(int val) noexcept
+        {
+            int old(localBoundaryConsistency_);
+            localBoundaryConsistency_ = val;
+            return old;
+        }
 
 
     // Constructors
@@ -159,16 +202,16 @@ public:
         //inline Field(const label len, const Type& val, poolSwitch usePool = false);
 
         //- Construct given size and initial values of zero
-        inline Field(const label len, const Foam::zero);
+        inline Field(const label len, Foam::zero);
 
         //- Construct with length=1, copying the value as the only content
-        inline Field(const Foam::one, const Type& val);
+        inline Field(Foam::one, const Type& val);
 
         //- Construct with length=1, moving the value as the only content
-        inline Field(const Foam::one, Type&& val);
+        inline Field(Foam::one, Type&& val);
 
         //- Construct with length=1, initializing content to zero
-        inline Field(const Foam::one, const Foam::zero);
+        inline Field(Foam::one, Foam::zero);
 
         //- Copy construct
         inline Field(const Field<Type>& fld);
@@ -290,7 +333,7 @@ public:
         //- and assign its contents to this. The behaviour largely as
         //- described in assign():
         //  - For MUST_READ and key not found: FatalIOError.
-        //  - For LAZY_READ and key not found: initialise field with Zero.
+        //  - For LAZY_READ and key not found: initialise field with zero.
         //  - For NO_READ and key not found: simply size the field.
         //  .
         Field
@@ -456,8 +499,14 @@ public:
         //- Impose lower (floor) clamp on the field values (in-place)
         void clamp_min(const Type& lower);
 
+        //- Impose lower (floor) clamp on the field values (in-place)
+        void clamp_min(const UList<Type>& lower);
+
         //- Impose upper (ceiling) clamp on the field values (in-place)
         void clamp_max(const Type& upper);
+
+        //- Impose upper (ceiling) clamp on the field values (in-place)
+        void clamp_max(const UList<Type>& upper);
 
         //- Clamp field values (in-place) to the specified range.
         //  Does not check if range is valid or not.
@@ -516,7 +565,7 @@ public:
         inline void operator=(const Type& val);
 
         //- Assign entries to zero
-        inline void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
         template<class Form, class Cmpt, direction nCmpt>
         void operator=(const VectorSpace<Form,Cmpt,nCmpt>&);
@@ -550,6 +599,23 @@ public:
 
         friend Ostream& operator<< <Type>
         (Ostream&, const tmp<Field<Type>>&);
+
+
+    // Expression templates
+
+        //- Construct from value expression
+        template<typename E>
+        explicit Field(const Expression::ListExpression<E>& expr)
+        {
+            expr.evaluate(*this);
+        }
+
+        //- Assign values from expression
+        template<typename E>
+        void operator=(const Expression::ListExpression<E>& expr)
+        {
+            expr.evaluate(*this);
+        }
 };
 
 

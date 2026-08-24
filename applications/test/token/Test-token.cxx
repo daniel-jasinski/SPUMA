@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -43,6 +43,29 @@ Description
 
 using namespace Foam;
 
+const char yesno[2] = { 'n', 'y' };
+
+void printIntegralTest(const token& tok)
+{
+    Info<< "Test: " << tok.info() << nl
+        << "  is  int32 = " << yesno[tok.is_int32()]
+        << ", int64 = " << yesno[tok.is_int64()]
+        << ", uint32 = " << yesno[tok.is_uint32()]
+        << ", uint64 = " << yesno[tok.is_uint64()]
+        << nl;
+}
+
+
+void printFloatTest(const token& tok)
+{
+    Info<< "Test: " << tok.info() << nl
+        << "  is  float = " << yesno[tok.isFloat()]
+        << ", double = " << yesno[tok.isDouble()]
+        << ", number = " << yesno[tok.isNumber()]
+        << nl;
+}
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 //  Main program:
 
@@ -55,6 +78,23 @@ int main(int argc, char *argv[])
 
     token tok1;
     Info<< "default construct: " << tok1.info() << endl;
+
+    tok1 = label(100);
+    Info<< "assign label: " << tok1.info() << endl;
+
+    tok1 = int64_t(100);
+    Info<< "assign int64: " << tok1.info() << endl;
+
+    tok1 = int32_t(100);
+    Info<< "assign int32: " << tok1.info() << endl;
+
+    {
+        tok1.int64Token(int64_t(INT32_MIN)-1);
+        Info<< "set int64Token: " << tok1.info() << endl;
+
+        printIntegralTest(tok1);
+        printFloatTest(tok1);
+    }
 
     tok1 = double(3.14159);
     Info<< "assign double: " << tok1.info() << endl;
@@ -134,50 +174,51 @@ int main(int argc, char *argv[])
         Info<< "resized: "
             << ctok1.info() << nl << ctok1 << endl;
 
+        // Using isA<> on compoundToken()
+        if
+        (
+            const auto* listptr
+          = ctok1.compoundToken().isA<scalarList>()
+        )
         {
-            // Using isA<> on compoundToken()
-            const auto* listptr = ctok1.compoundToken().isA<scalarList>();
-            if (listptr)
-            {
-                // sneaky, SubField bypasses const!
-                scalarField::subField fld(*listptr);
-                fld *= 5;
+            // sneaky, SubField bypasses const!
+            scalarField::subField fld(*listptr);
+            fld *= 5;
 
-                Info<< "multiplied List<scalar>: "
-                    << ctok1.info() << nl << ctok1 << endl;
-            }
+            Info<< "multiplied List<scalar>: "
+                << ctok1.info() << nl << ctok1 << endl;
         }
 
+        // Using isCompound<...> - combined check
+        if
+        (
+            const auto* listptr
+          = ctok1.isCompound<scalarList>()
+        )
         {
-            // Using isCompound<...> - combined check
+            scalarField::subField fld(*listptr);
+            fld /= 2;
 
-            const auto* listptr = ctok1.isCompound<scalarList>();
-            if (listptr)
-            {
-                scalarField::subField fld(*listptr);
-                fld /= 2;
-
-                Info<< "divided List<scalar>: "
-                    << ctok1.info() << nl << ctok1 << endl;
-            }
+            Info<< "divided List<scalar>: "
+                << ctok1.info() << nl << ctok1 << endl;
         }
 
+        // Using isCompound<...> - combined check
+        if
+        (
+            const auto* listptr
+          = ctok1.isCompound<labelList>()
+        )
         {
-            // Using isCompound<...> - combined check
+            labelField::subField fld(*listptr);
+            fld /= 2;
 
-            const auto* listptr = ctok1.isCompound<labelList>();
-            if (listptr)
-            {
-                labelField::subField fld(*listptr);
-                fld /= 2;
-
-                Info<< "divided List<label>: "
-                    << ctok1.info() << nl << ctok1 << endl;
-            }
-            else
-            {
-                Info<< "compound is not List<label>" << nl;
-            }
+            Info<< "divided List<label>: "
+                << ctok1.info() << nl << ctok1 << endl;
+        }
+        else
+        {
+            Info<< "compound is not List<label>" << nl;
         }
 
         Info<< "Before fill_zero: " << ctok1 << endl;
@@ -248,13 +289,14 @@ int main(int argc, char *argv[])
 
         token tok;
 
+        if (auto v = obuf.view(); !v.empty())
         {
-            auto v = obuf.view();
-            if (!v.empty())
-            {
-                tok = string(v.data(), v.size());
-                tok.setType(token::tokenType::CHAR_DATA);
-            }
+            tok = string(v.data(), v.size());
+            tok.setType(token::tokenType::CHAR_DATA);
+        }
+        else
+        {
+            tok = token();
         }
 
         Info<< "tok: " << tok.name() << nl << nl;
@@ -274,13 +316,14 @@ int main(int argc, char *argv[])
 
         obuf.endBlock();
 
+        if (auto v = obuf.view(); !v.empty())
         {
-            auto v = obuf.view();
-            if (!v.empty())
-            {
-                tok = string(v.data(), v.size());
-                tok.setType(token::tokenType::CHAR_DATA);
-            }
+            tok = string(v.data(), v.size());
+            tok.setType(token::tokenType::CHAR_DATA);
+        }
+        else
+        {
+            tok = token();
         }
 
         // Output like xml:
@@ -349,10 +392,11 @@ int main(int argc, char *argv[])
         {
             typedef List<scalar> ListType;
 
-            auto* inputDataPtr =
-                const_cast<ListType*>(entry0.stream().findCompound<ListType>());
-
-            if (inputDataPtr)
+            if
+            (
+                auto* inputDataPtr
+              = const_cast<ListType*>(entry0.stream().findCompound<ListType>())
+            )
             {
                 Info<< "found input data" << nl;
                 Info<< entry0 << nl;

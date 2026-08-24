@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -77,7 +77,7 @@ bool Foam::cellCellStencils::trackingInverseDistance::markBoundaries
     forAll(pbm, patchi)
     {
         const fvPatch& fvp = pbm[patchi];
-        const labelList& fc = fvp.faceCells();
+        const labelUList& fc = fvp.faceCells();
 
         if (!fvPatch::constraintType(fvp.type()))
         {
@@ -112,7 +112,7 @@ bool Foam::cellCellStencils::trackingInverseDistance::markBoundaries
     forAll(pbm, patchi)
     {
         const fvPatch& fvp = pbm[patchi];
-        const labelList& fc = fvp.faceCells();
+        const labelUList& fc = fvp.faceCells();
 
         if (isA<oversetFvPatch>(fvp))
         {
@@ -519,7 +519,7 @@ Foam::cellCellStencils::trackingInverseDistance::trackingInverseDistance
     {
         nCellsPerZone[zoneID[celli]]++;
     }
-    Pstream::listCombineReduce(nCellsPerZone, plusEqOp<label>());
+    Pstream::listReduce(nCellsPerZone, sumOp<label>());
 
     meshParts_.setSize(nZones);
     forAll(meshParts_, zonei)
@@ -1059,8 +1059,9 @@ bool Foam::cellCellStencils::trackingInverseDistance::update()
     oversetFvMeshBase::correctBoundaryConditions
     <
         volScalarField,
-        oversetFvPatchField<scalar>
-    >(cellInterpolationWeight_.boundaryFieldRef(), false);
+        oversetFvPatchField<scalar>,
+        false
+    >(cellInterpolationWeight_.boundaryFieldRef());
 
 
     if ((debug & 2) && mesh_.time().writeTime())

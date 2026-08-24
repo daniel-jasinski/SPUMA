@@ -80,8 +80,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef fieldAverageItem_H
-#define fieldAverageItem_H
+#ifndef Foam_functionObjects_fieldAverageItem_H
+#define Foam_functionObjects_fieldAverageItem_H
 
 #include "Enum.H"
 #include "Switch.H"

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -483,6 +483,26 @@ const Foam::fileName& Foam::IOobject::globalCaseName() const noexcept
 }
 
 
+const Foam::fileName&
+Foam::IOobject::caseName(IOobjectOption::Layout layout) const noexcept
+{
+    return time().caseName(layout);
+}
+
+
+Foam::scalar Foam::IOobject::instanceValue() const
+{
+    scalar val(0);
+
+    // Only makes sense for a relative instance (word type)
+    if (Foam::readScalar(instance_, val))
+    {
+        return val;
+    }
+    return 0;
+}
+
+
 Foam::fileName Foam::IOobject::path() const
 {
     if (file_isOutsideCase(instance()))
@@ -490,6 +510,7 @@ Foam::fileName Foam::IOobject::path() const
         return instance();
     }
 
+    // == time().path()/instance()/db_.dbDir()/local();
     return rootPath()/caseName()/instance()/db_.dbDir()/local();
 }
 
@@ -501,7 +522,20 @@ Foam::fileName Foam::IOobject::globalPath() const
         return instance();
     }
 
+    // == time().globalPath()/instance()/db_.dbDir()/local();
     return rootPath()/globalCaseName()/instance()/db_.dbDir()/local();
+}
+
+
+Foam::fileName Foam::IOobject::path(IOobjectOption::Layout layout) const
+{
+    if (file_isOutsideCase(instance()))
+    {
+        return instance();
+    }
+
+    // == time().path(layout)/instance()/db_.dbDir()/local();
+    return rootPath()/caseName(layout)/instance()/db_.dbDir()/local();
 }
 
 
@@ -524,6 +558,29 @@ Foam::fileName Foam::IOobject::globalPath
 {
     // Note: can only be called with relative instance since is word type
     return rootPath()/globalCaseName()/instance/db_.dbDir()/local;
+}
+
+
+Foam::fileName Foam::IOobject::path
+(
+    IOobjectOption::Layout layout,
+    const word& instance,
+    const fileName& local
+) const
+{
+    // Note: can only be called with relative instance since is word type
+    return rootPath()/caseName(layout)/instance/db_.dbDir()/local;
+}
+
+
+Foam::fileName Foam::IOobject::objectPath
+(
+    IOobjectOption::Layout layout,
+    const word& instance
+) const
+{
+    // Note: can only be called with relative instance since is word type
+    return rootPath()/caseName(layout)/instance/db_.dbDir()/local()/name();
 }
 
 

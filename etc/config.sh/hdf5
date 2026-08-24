@@ -5,7 +5,7 @@
 #   \\  /    A nd           | www.openfoam.com
 #    \\/     M anipulation  |
 #------------------------------------------------------------------------------
-#     Copyright (C) 2024 OpenCFD Ltd.
+#     Copyright (C) 2024-2025 OpenCFD Ltd.
 #------------------------------------------------------------------------------
 # License
 #     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -24,11 +24,14 @@
 #       1. use hdf5-system
 #       2. and provide full path for HDF5_ARCH_PATH
 #
+# Note
+#     The installation should have an MPI-specific path.
+#
 #------------------------------------------------------------------------------
 # USER EDITABLE PART: Changes made here may be lost with the next upgrade
 
-hdf5_version=hdf5-1.14.4.3
-export HDF5_ARCH_PATH="$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$hdf5_version"
+hdf5_version=hdf5-1.14.6
+export HDF5_ARCH_PATH="$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$hdf5_version/$FOAM_MPI"
 
 # END OF (NORMAL) USER EDITABLE PART
 #------------------------------------------------------------------------------
@@ -41,7 +44,7 @@ if command -v _foamAddLibAuto >/dev/null
 then
     # Normal sourcing (not makeHDF5)
 
-    _foamAddLibAuto $HDF5_ARCH_PATH
+    _foamAddLibAuto "$HDF5_ARCH_PATH"
 
     unset hdf5_version
 
@@ -56,6 +59,5 @@ then
 
     unset hdf5_version output
 fi
-
 
 #------------------------------------------------------------------------------

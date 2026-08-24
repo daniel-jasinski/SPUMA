@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,9 +29,14 @@ License
 #include "bitSet.H"
 #include "HashSet.H"
 #include "List.H"
-#include "labelRange.H"
 
 // * * * * * * * * * * * * * * * * * BitOps  * * * * * * * * * * * * * * * * //
+
+unsigned int Foam::BitOps::count(const bitSet& bitset, const bool on)
+{
+    return bitset.count(on);
+}
+
 
 // See bitSet::setMany for original implementation
 void Foam::BitOps::set(List<bool>& bools, const labelUList& locations)

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2014 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -36,7 +36,7 @@ FOAM_DEVICE inline constexpr Foam::complex::complex() noexcept
 {}
 
 
-FOAM_DEVICE inline constexpr Foam::complex::complex(const Foam::zero) noexcept
+FOAM_DEVICE inline constexpr Foam::complex::complex(Foam::zero) noexcept
 :
     re(0),
     im(0)
@@ -99,7 +99,7 @@ inline Foam::scalar Foam::complex::cmptSum() const noexcept
 
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
-inline void Foam::complex::operator=(const Foam::zero)
+inline void Foam::complex::operator=(Foam::zero)
 {
     re = 0;
     im = 0;
@@ -632,7 +632,7 @@ FOAM_DEVICE inline complex pow(const complex& x, const complex& y)
 
 powFuncs(int)
 powFuncs(long)
-#if defined(__APPLE__) && WM_LABEL_SIZE == 64
+#if (WM_LABEL_SIZE == 64) && (defined(__APPLE__) || defined(_WIN32))
 powFuncs(int64_t)
 #endif
 powFuncs(float)

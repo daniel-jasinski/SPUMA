@@ -54,24 +54,6 @@ class EddyDiffusivity
     public BasicTurbulenceModel
 {
 
-protected:
-
-    // Protected data
-
-        // Model coefficients
-
-            dimensionedScalar Prt_;
-
-        // Fields
-
-            volScalarField alphat_;
-
-
-    // Protected Member Functions
-
-        virtual void correctNut();
-
-
 public:
 
     typedef typename BasicTurbulenceModel::alphaField alphaField;
@@ -101,52 +83,6 @@ public:
 
     // Member Functions
 
-        //- Re-read model coefficients if they have changed
-        virtual bool read();
-
-        //- Return the turbulent thermal diffusivity for enthalpy [kg/m/s]
-        virtual tmp<volScalarField> alphat() const
-        {
-            return alphat_;
-        }
-
-        //- Return the turbulent thermal diffusivity for enthalpy for a patch
-        //  [kg/m/s]
-        virtual tmp<scalarField> alphat(const label patchi) const
-        {
-            return alphat()().boundaryField()[patchi];
-        }
-
-        //- Return the effective turbulent thermal diffusivity for temperature
-        //  [J/m/s/K]
-        virtual tmp<volScalarField> kappaEff() const
-        {
-            return this->transport_.kappaEff(alphat());
-        }
-
-        //- Return the effective turbulent thermal diffusivity for temperature
-        //  [J/m/s/K]
-        virtual tmp<scalarField> kappaEff(const label patchi) const
-        {
-            return this->transport_.kappaEff(alphat(patchi), patchi);
-        }
-
-        //- Return the effective turbulent thermal diffusivity for enthalpy
-        //  [kg/m/s]
-        virtual tmp<volScalarField> alphaEff() const
-        {
-            return this->transport_.alphaEff(alphat());
-        }
-
-        //- Return the effective turbulent thermal diffusivity for enthalpy
-        //  for a patch [kg/m/s]
-        virtual tmp<scalarField> alphaEff(const label patchi) const
-        {
-            return this->transport_.alphaEff(alphat(patchi), patchi);
-        }
-
-        //- Correct the turbulence thermal diffusivity for energy transport
-        virtual void correctEnergyTransport();
 };
 
 

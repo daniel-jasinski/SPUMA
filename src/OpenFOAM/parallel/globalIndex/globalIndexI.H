@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,6 +27,65 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "ListOps.H"
+
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+
+inline Foam::labelRange
+Foam::globalIndex::range_impl(label proci) const noexcept
+{
+    if
+    (
+        const auto len = (offsets_.size() - 1);
+        (len > 0 && proci >= 0 && proci < len)
+    )
+    {
+        const auto* off = offsets_.cdata();
+        return { off[proci], (off[proci+1] - off[proci]) };
+    }
+    else
+    {
+        return {};
+    }
+}
+
+
+inline Foam::OffsetRange<Foam::label>
+Foam::globalIndex::slice_impl(label proci) const noexcept
+{
+    if
+    (
+        const auto len = (offsets_.size() - 1);
+        (len > 0 && proci >= 0 && proci < len)
+    )
+    {
+        const auto* off = offsets_.cdata();
+        return { off[proci], (off[proci+1] - off[proci]), off[len] };
+    }
+    else
+    {
+        return {};
+    }
+}
+
+
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+
+inline void Foam::globalIndex::checkOverflowAndExit
+(
+    const label idx,
+    const label prevOffset,
+    const label count
+)
+{
+    if (prevOffset >= 0 && count >= 0)
+    {
+        if (label next = (prevOffset + count); next < prevOffset)
+        {
+            reportOverflowAndExit(idx, prevOffset, count);
+        }
+    }
+}
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -58,7 +117,7 @@ inline Foam::globalIndex::globalIndex
 
 inline Foam::globalIndex::globalIndex
 (
-    const globalIndex::gatherNone,
+    globalIndex::gatherNone,
     const labelUList& localSizes
 )
 {
@@ -68,7 +127,7 @@ inline Foam::globalIndex::globalIndex
 
 inline Foam::globalIndex::globalIndex
 (
-    const label localSize,
+    label localSize,
     const label comm,
     const bool parallel
 )
@@ -79,9 +138,9 @@ inline Foam::globalIndex::globalIndex
 
 inline Foam::globalIndex::globalIndex
 (
-    const globalIndex::gatherNone,
-    const label localSize,
-    const label /* comm (ignored) */
+    globalIndex::gatherNone,
+    label localSize,
+    int communicator  /* unused: (not applicable) */
 )
 :
     offsets_(2)
@@ -93,8 +152,8 @@ inline Foam::globalIndex::globalIndex
 
 inline Foam::globalIndex::globalIndex
 (
-    const globalIndex::gatherOnly,
-    const label localSize,
+    globalIndex::gatherOnly,
+    label localSize,
     const label comm
 )
 {
@@ -105,20 +164,14 @@ inline Foam::globalIndex::globalIndex
 
 inline Foam::globalIndex::globalIndex
 (
-    const globalIndex::gatherNonLocal,
-    const label localSize,
+    globalIndex::gatherNonLocal,
+    label localSize,
     const label comm
 )
 {
     // one-sided: non-master sizes only
-    reset
-    (
-        UPstream::listGatherValues
-        (
-            (UPstream::master(comm) ? label(0) : localSize),
-            comm
-        )
-    );
+    if (UPstream::master(comm)) localSize = 0;
+    reset(UPstream::listGatherValues(localSize, comm));
 }
 
 
@@ -175,12 +228,6 @@ inline Foam::label Foam::globalIndex::totalSize() const noexcept
 }
 
 
-inline Foam::label Foam::globalIndex::size() const
-{
-    return totalSize();
-}
-
-
 inline Foam::labelList Foam::globalIndex::sizes() const
 {
     return localSizes();
@@ -229,11 +276,14 @@ inline void Foam::globalIndex::clear()
 
 inline const Foam::labelUList Foam::globalIndex::localStarts() const
 {
-    const label len = (offsets_.size() - 1);
-
-    if (len < 1) return labelUList::null();
-
-    return labelList::subList(offsets_, len);
+    if (const label len = (offsets_.size() - 1); len > 0)
+    {
+        return labelList::subList(offsets_, len);
+    }
+    else
+    {
+        return labelUList::null();
+    }
 }
 
 
@@ -286,15 +336,29 @@ inline Foam::label Foam::globalIndex::maxNonLocalSize() const
 }
 
 
-inline Foam::labelRange Foam::globalIndex::range(const label proci) const
+inline Foam::labelRange Foam::globalIndex::range(label proci) const noexcept
 {
-    return labelRange(offsets_[proci], offsets_[proci+1] - offsets_[proci]);
+    return range_impl(proci);
 }
 
 
 inline Foam::labelRange Foam::globalIndex::range() const
 {
-    return range(UPstream::myProcNo(UPstream::worldComm));
+    return range_impl(UPstream::myProcNo(UPstream::worldComm));
+}
+
+
+inline Foam::OffsetRange<Foam::label>
+Foam::globalIndex::slice(label proci) const noexcept
+{
+    return slice_impl(proci);
+}
+
+
+inline Foam::OffsetRange<Foam::label>
+Foam::globalIndex::slice() const
+{
+    return slice_impl(UPstream::myProcNo(UPstream::worldComm));
 }
 
 
@@ -360,17 +424,13 @@ inline void Foam::globalIndex::inplaceToGlobal
     labelUList& labels
 ) const
 {
-    const label off = offsets_[proci];
-
-    for (label& val : labels)
+    if (const auto beg = offsets_[proci]; beg)
     {
-        val += off;
+        for (auto& val : labels)
+        {
+            val += beg;
+        }
     }
-
-    // or
-    //std::for_each(labels.begin(), labels.end(),
-    //    [=](label& val) { val += off; }
-    // );
 }
 
 
@@ -519,9 +579,9 @@ inline Foam::label Foam::globalIndex::whichProcID
 
 inline void Foam::globalIndex::reset
 (
-    const globalIndex::gatherNone,
-    const label localSize,
-    const label /* comm (ignored) */
+    globalIndex::gatherNone,
+    label localSize,
+    int communicator  /* unused: (not applicable) */
 )
 {
     offsets_.resize_nocopy(2);
@@ -532,8 +592,8 @@ inline void Foam::globalIndex::reset
 
 inline void Foam::globalIndex::reset
 (
-    const globalIndex::gatherOnly,
-    const label localSize,
+    globalIndex::gatherOnly,
+    label localSize,
     const label comm
 )
 {
@@ -544,20 +604,14 @@ inline void Foam::globalIndex::reset
 
 inline void Foam::globalIndex::reset
 (
-    const globalIndex::gatherNonLocal,
-    const label localSize,
+    globalIndex::gatherNonLocal,
+    label localSize,
     const label comm
 )
 {
     // one-sided: non-master sizes only
-    reset
-    (
-        UPstream::listGatherValues
-        (
-            (UPstream::master(comm) ? label(0) : localSize),
-            comm
-        )
-    );
+    if (UPstream::master(comm)) localSize = 0;
+    reset(UPstream::listGatherValues(localSize, comm));
 }
 
 

@@ -47,7 +47,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    heatTransferCoeff1
+    heatTransferCoeffFO
     {
         // Inherited entries
         ...
@@ -155,7 +155,7 @@ public:
 
     // Member Functions
 
-        //- Read from dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 };
 

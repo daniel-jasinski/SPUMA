@@ -30,29 +30,49 @@ Group
     grpLagrangianFunctionObjects
 
 Description
-    This functionObject writes a cloud position and in ASCII.
+    This functionObject writes cloud positions in ASCII.
 
-    Example of function object specification:
+Usage
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    cloudWrite1
+    cloudWriteFO
     {
+        // Mandatory entries
         type            dataCloud;
         libs            (lagrangianFunctionObjects);
-        writeControl    writeTime;
-        writeInterval   1;
-        cloud           myCloud;
-        field           d;
+        field           <word>;
+
+        // Conditional entries
+
+            // Option-1
+            cloud           <word>;
+
+            // Option-2
+            clouds          (<wordRes>);
+
+        // Optional entries
+        selection       <dictionary>;
+        directory       <fileName>;
+        width           <int>;
+        precision       <unsigned>;
+
+        // Inherited entries
+        ...
     }
     \endverbatim
 
-    \heading Basic Usage
+    where the entries mean:
     \table
-        Property     | Description                      | Required | Default
-        type         | Type name: dataCloud             | yes |
-        clouds       | List of clouds (name or regex)   | no  |
-        cloud        | Cloud name                       | no  |
-        field        | Name of the field                | yes |
-        selection    | Parcel selection control         | no  | empty-dict
+      Property  | Description                      | Type | Reqd | Deflt
+      type      | Type name: dataCloud             | word | yes  | -
+      libs      | Library name: lagrangianFunctionObjects | word | yes  | -
+      field     | Name of cloud field to write     | word | yes  | -
+      cloud     | Name of cloud to process         | word | conditional | -
+      clouds    | Names of clouds to process       | wordRes | conditional | -
+      selection | Parcel selection control         | no   | empty-dict
+      directory | The output directory name        | no   | postProcessing/NAME
+      width     | Padding width for file name      | no   | 8
+      precision | The write precision              | no   | same as IOstream
     \endtable
 
     \heading Output Options
@@ -63,6 +83,10 @@ Description
         width        | Padding width for file name      | no  | 8
         writeControl | Output control                   | recommended | timeStep
     \endtable
+
+    The inherited entries are elaborated in:
+      - \link regionFunctionObject.H \endlink
+      - \link parcelSelectionDetail.H \endlink
 
 Note
     See Foam::functionObjects::vtkCloud and Foam::Detail::parcelSelection
@@ -80,8 +104,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_dataCloud_H
-#define functionObjects_dataCloud_H
+#ifndef Foam_functionObjects_dataCloud_H
+#define Foam_functionObjects_dataCloud_H
 
 #include "fvMeshFunctionObject.H"
 #include "parcelSelectionDetail.H"
@@ -196,7 +220,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         dataCloud
         (
             const word& name,
@@ -211,13 +235,13 @@ public:
 
     // Member Functions
 
-        //- Read the dataCloud specification
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations, currently does nothing
         virtual bool execute();
 
-        //- Write fields
+        //- Write the function-object results
         virtual bool write();
 };
 

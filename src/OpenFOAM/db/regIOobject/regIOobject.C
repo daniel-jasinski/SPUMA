@@ -208,7 +208,7 @@ bool Foam::regIOobject::checkIn()
                     << "Failed to register: " << name() << ' '
                     << objectRelPath()
                     << " : the name already exists in the registry" << nl
-                    << "Contents:" << db().sortedToc() << endl
+                    << "Contents:" << flatOutput(db().sortedToc()) << endl
                     << abort(FatalError);
             }
             else
@@ -281,10 +281,7 @@ void Foam::regIOobject::addWatch()
     const bool masterOnly
     (
         global()
-     && (
-            IOobject::fileModificationChecking == IOobject::timeStampMaster
-         || IOobject::fileModificationChecking == IOobject::inotifyMaster
-        )
+     && IOobject::fileModificationChecking_masterOnly()
     );
 
     // if (debug)

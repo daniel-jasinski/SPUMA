@@ -85,7 +85,7 @@ tmp<scalarField> atmNutkWallFunctionFvPatchScalarField::calcNut() const
     }
     #endif
 
-    const labelList& faceCells = patch().faceCells();
+    const labelUList& faceCells = patch().faceCells();
     const auto faceCellsPtr = faceCells.cbegin();
     const auto kPtr = k.cbegin();
     const auto yPtr = y.cbegin();

@@ -39,7 +39,7 @@ namespace Foam
     typedef IOList<cell> cellIOList;
 
     //! Compact IO for a List of cell
-    typedef CompactIOList<cell, label> cellCompactIOList;
+    typedef CompactIOList<cell> cellCompactIOList;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

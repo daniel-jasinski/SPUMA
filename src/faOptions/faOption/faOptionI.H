@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2021 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 ------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,31 +27,7 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-inline const Foam::word& Foam::fa::option::name() const noexcept
-{
-    return name_;
-}
-
-
-inline const Foam::fvMesh& Foam::fa::option::mesh() const noexcept
-{
-    return mesh_;
-}
-
-
-inline const Foam::dictionary& Foam::fa::option::coeffs() const noexcept
-{
-    return coeffs_;
-}
-
-
-inline bool Foam::fa::option::active() const noexcept
-{
-    return active_;
-}
-
-
-inline bool Foam::fa::option::active(const bool on) noexcept
+inline bool Foam::fa::option::active(bool on) noexcept
 {
     bool old(active_);
     active_ = on;
@@ -65,17 +41,11 @@ inline void Foam::fa::option::setApplied(const label fieldi)
 }
 
 
-inline const Foam::word& Foam::fa::option::regionName() const noexcept
-{
-    return regionName_;
-}
-
-
 inline const Foam::faMesh& Foam::fa::option::regionMesh() const
 {
     if (!regionMeshPtr_)
     {
-        regionMeshPtr_.reset(new faMesh(mesh_));
+        regionMeshPtr_.reset(new faMesh(areaName_, mesh_));
     }
     return *regionMeshPtr_;
 }
@@ -88,6 +58,20 @@ inline const Foam::volSurfaceMapping& Foam::fa::option::vsm() const
         vsmPtr_.reset(new volSurfaceMapping(this->regionMesh()));
     }
     return *vsmPtr_;
+}
+
+
+inline Foam::word
+Foam::fa::option::suffixed(const char* base) const
+{
+    return word(base + suffixHint_);
+}
+
+
+inline Foam::word
+Foam::fa::option::suffixed(const std::string& base) const
+{
+    return word(base + suffixHint_);
 }
 
 

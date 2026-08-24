@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2014-2022 OpenCFD Ltd.
+    Copyright (C) 2014-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -73,44 +73,31 @@ void Foam::oversetFvMeshBase::scaleConnection
     }
 }
 
-template<class GeoField, class PatchType>
+template<class GeoField, class PatchType, bool TypeOnly>
 void Foam::oversetFvMeshBase::correctBoundaryConditions
 (
-    typename GeoField::Boundary& bfld,
-    const bool typeOnly
+    typename GeoField::Boundary& bfld
 )
 {
-    // Alternative (C++14)
-    //
-    // bfld.evaluate_if
-    // (
-    //     [typeOnly](const auto& pfld) -> bool
-    //     {
-    //         return (typeOnly == bool(isA<PatchType>(pfld)));
-    //     },
-    //     UPstream::defaultCommsType
-    // );
-
-    const UPstream::commsTypes commsType = UPstream::defaultCommsType;
-    const label startOfRequests = UPstream::nRequests();
-
-    for (auto& pfld : bfld)
+    if constexpr (TypeOnly)
     {
-        if (typeOnly == bool(isA<PatchType>(pfld)))
-        {
-            pfld.initEvaluate(commsType);
-        }
-    }
-
-    // Wait for outstanding requests (non-blocking)
-    UPstream::waitRequests(startOfRequests);
-
-    for (auto& pfld : bfld)
+        bfld.evaluate_if
+        (
+            [](const auto& pfld)
+            {
+                return (bool(isA<PatchType>(pfld)));
+            }
+        );
+     }
+    else
     {
-        if (typeOnly == bool(isA<PatchType>(pfld)))
-        {
-            pfld.evaluate(commsType);
-        }
+        bfld.evaluate_if
+        (
+            [](const auto& pfld)
+            {
+                return (!bool(isA<PatchType>(pfld)));
+            }
+        );
     }
 }
 
@@ -367,10 +354,8 @@ void Foam::oversetFvMeshBase::addInterpolation
 
         // 1c. Adapt field for additional interfaceFields (note: solver uses
         //     GeometricField::scalarInterfaces() to get hold of interfaces)
-        typedef GeometricField<Type, fvPatchField, volMesh> GeoField;
 
-        typename GeoField::Boundary& bfld =
-            const_cast<GeoField&>(m.psi()).boundaryFieldRef();
+        auto& bfld = m.psi().constCast().boundaryFieldRef();
 
         bfld.setSize(interfaces.size());
 
@@ -717,8 +702,7 @@ Foam::SolverPerformance<Type> Foam::oversetFvMeshBase::solveOverset
 {
     typedef GeometricField<Type, fvPatchField, volMesh> GeoField;
     // Check we're running with bcs that can handle implicit matrix manipulation
-    typename GeoField::Boundary& bpsi =
-        const_cast<GeoField&>(m.psi()).boundaryFieldRef();
+    auto& bpsi = m.psi().constCast().boundaryFieldRef();
 
     bool hasOverset = false;
     forAll(bpsi, patchi)
@@ -769,11 +753,12 @@ Foam::SolverPerformance<Type> Foam::oversetFvMeshBase::solveOverset
             dimensionedScalar(dimless, Zero)
         );
         scale.ref().field() = norm;
-        correctBoundaryConditions
+        oversetFvMeshBase::correctBoundaryConditions
         <
             volScalarField,
-            oversetFvPatchField<scalar>
-        >(scale.boundaryFieldRef(), false);
+            oversetFvPatchField<scalar>,
+            false
+        >(scale.boundaryFieldRef());
         scale.write();
 
         if (debug)
@@ -805,11 +790,12 @@ Foam::SolverPerformance<Type> Foam::oversetFvMeshBase::solveOverset
     m.boundaryManipulate(bpsi);
 
     // Swap psi values so added patches have patchNeighbourField
-    correctBoundaryConditions<GeoField, calculatedProcessorFvPatchField<Type>>
-    (
-        bpsi,
+    oversetFvMeshBase::correctBoundaryConditions
+    <
+        GeoField,
+        calculatedProcessorFvPatchField<Type>,
         true
-    );
+    >(bpsi);
 
     // Use lower level solver
     //SolverPerformance<Type> s(dynamicMotionSolverFvMesh::solve(m, dict));
@@ -834,8 +820,7 @@ Foam::SolverPerformance<Type> Foam::oversetFvMeshBase::solveOverset
     const labelList& own = mesh_.faceOwner();
     const labelList& nei = mesh_.faceNeighbour();
 
-    auto& psi =
-        const_cast<GeometricField<Type, fvPatchField, volMesh>&>(m.psi());
+    auto& psi = m.psi().constCast();
 
     // Mirror hole cell values next to calculated cells
     for (label facei = 0; facei < mesh_.nInternalFaces(); facei++)
@@ -997,32 +982,8 @@ void Foam::oversetFvMeshBase::write
 template<class GeoField>
 void Foam::oversetFvMeshBase::correctCoupledBoundaryConditions(GeoField& fld)
 {
-    auto& bfld = fld.boundaryFieldRef();
-
-    const UPstream::commsTypes commsType = UPstream::defaultCommsType;
-
-    const label startOfRequests = UPstream::nRequests();
-
-    for (auto& pfld : bfld)
-    {
-        if (pfld.coupled())
-        {
-            //Pout<< "initEval of " << pfld.patch().name() << endl;
-            pfld.initEvaluate(commsType);
-        }
-    }
-
-    // Wait for outstanding requests (non-blocking)
-    UPstream::waitRequests(startOfRequests);
-
-    for (auto& pfld : bfld)
-    {
-        if (pfld.coupled())
-        {
-            //Pout<< "eval of " << pfld.patch().name() << endl;
-            pfld.evaluate(commsType);
-        }
-    }
+    // Evaluate all coupled fields
+    fld.boundaryFieldRef().template evaluateCoupled<void>();
 }
 
 
@@ -1034,13 +995,13 @@ void Foam::oversetFvMeshBase::checkCoupledBC(const GeoField& fld)
     GeoField fldCorr(fld.name()+"_correct", fld);
     correctCoupledBoundaryConditions(fldCorr);
 
-    const typename GeoField::Boundary& bfld = fld.boundaryField();
-    const typename GeoField::Boundary& bfldCorr = fldCorr.boundaryField();
+    const auto& bfld = fld.boundaryField();
+    const auto& bfldCorr = fldCorr.boundaryField();
 
     forAll(bfld, patchi)
     {
-        const typename GeoField::Patch& pfld = bfld[patchi];
-        const typename GeoField::Patch& pfldCorr = bfldCorr[patchi];
+        const auto& pfld = bfld[patchi];
+        const auto& pfldCorr = bfldCorr[patchi];
 
         Pout<< "Patch:" << pfld.patch().name() << endl;
 

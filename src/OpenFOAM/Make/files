@@ -34,7 +34,7 @@ $(fileOps)/collatedFileOperation/OFstreamCollator.C
 $(DEVICE_SOURCE)
 device/deviceInit/deviceInit.C
 pool = memoryPool
-$(pool)/MemoryPool.C
+$(pool)/MemoryPoolBase.C
 $(pool)/fixedSizeMemoryPool.C
 $(pool)/dummyMemoryPool.C
 $(UMPIRE_SOURCE)
@@ -43,14 +43,13 @@ parallel/processorTopology/processorTopology.C
 
 bools = primitives/bools
 $(bools)/bool/bool.C
-$(bools)/Switch/Switch.C
+$(bools)/Switch/Switch.cxx
 $(bools)/lists/boolList.C
 
 chars = primitives/chars
 $(chars)/char/char.C
 $(chars)/wchar/wchar.C
 $(chars)/lists/charList.C
-$(chars)/lists/charUList.C
 
 primitives/direction/directionIO.C
 
@@ -70,42 +69,36 @@ $(ints)/int32/int32IO.C
 $(ints)/int64/int64.C
 $(ints)/int64/int64IO.C
 $(ints)/label/label.C
-$(ints)/lists/labelLists.C
-$(ints)/lists/labelIOList.C
-$(ints)/lists/labelListIOList.C
+$(ints)/lists/labelLists.cxx
 
-primitives/Scalar/doubleScalar/doubleScalar.C
-primitives/Scalar/floatScalar/floatScalar.C
-primitives/Scalar/scalar/scalar.C
-primitives/Scalar/lists/scalarList.C
-primitives/Scalar/lists/scalarIOList.C
-primitives/Scalar/lists/scalarListIOList.C
+primitives/Scalar/doubleScalar/doubleScalar.cxx
+primitives/Scalar/floatScalar/floatScalar.cxx
+primitives/Scalar/scalar/scalar.cxx
+primitives/Scalar/lists/scalarLists.cxx
 
-primitives/DiagTensor/diagTensor/diagTensor.C
-primitives/SphericalTensor/sphericalTensor/sphericalTensor.C
-primitives/SphericalTensor/labelSphericalTensor/labelSphericalTensor.C
-primitives/SymmTensor/labelSymmTensor/labelSymmTensor.C
-primitives/SymmTensor/symmTensor/symmTensor.C
+primitives/DiagTensor/floats/diagTensor.cxx
 
-primitives/Tensor/floats/floatTensors.C
-primitives/Tensor/floats/tensor.C
-primitives/Tensor/ints/labelTensor.C
-primitives/Tensor/lists/sphericalTensorList.C
-primitives/Tensor/lists/symmTensorList.C
-primitives/Tensor/lists/tensorList.C
+primitives/SphericalTensor/floats/sphericalTensor.cxx
+primitives/SphericalTensor/floats/sphericalTensor2D.cxx
+primitives/SphericalTensor/ints/labelSphericalTensor.cxx
 
-primitives/Vector/complex/complexVector.C
-primitives/Vector/floats/floatVectors.C
-primitives/Vector/ints/labelVector.C
-primitives/Vector/lists/vectorList.C
-primitives/Vector/lists/vectorIOList.C
-primitives/Vector/lists/vectorListIOList.C
+primitives/SymmTensor/floats/symmTensor.cxx
+primitives/SymmTensor/floats/symmTensor2D.cxx
+primitives/SymmTensor/ints/labelSymmTensor.cxx
 
-primitives/Tensor2D/tensor2D/tensor2D.C
-primitives/SphericalTensor2D/sphericalTensor2D/sphericalTensor2D.C
-primitives/SymmTensor2D/symmTensor2D/symmTensor2D.C
-primitives/Vector2D/floats/vector2D.C
-primitives/Vector2D/ints/labelVector2D.C
+primitives/Tensor/floats/floatTensors.cxx
+primitives/Tensor/floats/floatTensors2D.cxx
+primitives/Tensor/floats/tensor.cxx
+primitives/Tensor/floats/tensor2D.cxx
+primitives/Tensor/ints/labelTensor.cxx
+primitives/Tensor/lists/tensorLists.cxx
+
+primitives/Vector/complex/complexVector.cxx
+primitives/Vector/floats/floatVectors.cxx
+primitives/Vector/floats/floatVectors2D.cxx
+primitives/Vector/ints/labelVector.cxx
+primitives/Vector/ints/labelVector2D.cxx
+primitives/Vector/lists/vectorLists.cxx
 
 primitives/complex/complex.C
 primitives/globalIndexAndTransform/globalIndexAndTransform.C
@@ -166,14 +159,15 @@ $(strings)/keyType/keyType.C
 $(strings)/regex/regExpCxx.C
 $(strings)/wordRe/wordRe.C
 $(strings)/wordRes/wordRes.C
-$(strings)/lists/CStringList.C
-$(strings)/lists/hashedWordList.C
+$(strings)/lists/CStringList.cxx
+$(strings)/lists/hashedWordList.cxx
 $(strings)/parsing/parsing.C
 $(strings)/parsing/genericRagelLemonDriver.C
-$(strings)/stringOps/stringOps.C
-$(strings)/stringOps/stringOpsEvaluate.C
-$(strings)/stringOps/stringOpsSort.C
-$(strings)/stringOps/stringOpsSplit.C
+$(strings)/stringOps/stringOps.cxx
+$(strings)/stringOps/stringOpsEvaluate.cxx
+$(strings)/stringOps/stringOpsSort.cxx
+$(strings)/stringOps/stringOpsSplit.cxx
+$(strings)/stringOps/stringOpsSubstr.cxx
 
 expr = expressions
 $(expr)/exprEntry/expressionEntry.C
@@ -225,13 +219,12 @@ $(sha1)/SHA1Digest.C
 primitives/random/Random/Random.C
 
 ranges = primitives/ranges
-$(ranges)/IntRange/IntRanges.C
-$(ranges)/labelRange/labelRange.C
-$(ranges)/labelRange/labelRanges.C
-$(ranges)/scalarRange/scalarRange.C
-$(ranges)/scalarRange/scalarRanges.C
-$(ranges)/sliceRange/sliceRange.C
-$(ranges)/tableBounds/tableBounds.C
+$(ranges)/labelRange/labelRange.cxx
+$(ranges)/labelRange/labelRanges.cxx
+$(ranges)/scalarRange/scalarRange.cxx
+$(ranges)/scalarRange/scalarRanges.cxx
+$(ranges)/sliceRange/sliceRange.cxx
+$(ranges)/tableBounds/tableBounds.cxx
 
 spatialVectorAlgebra = primitives/spatialVectorAlgebra
 $(spatialVectorAlgebra)/SpatialVector/spatialVector/spatialVector.C
@@ -279,9 +272,6 @@ $(hashes)/base64Layer.C
 gzstream = $(Streams)/gzstream
 $(gzstream)/gzstream.C
 
-memstream = $(Streams)/memory
-$(memstream)/SpanStreams.C
-
 Fstreams = $(Streams)/Fstreams
 $(Fstreams)/IFstream.C
 $(Fstreams)/OFstream.C
@@ -291,9 +281,6 @@ $(Fstreams)/masterOFstream.C
 Tstreams = $(Streams)/Tstreams
 $(Tstreams)/ITstream.C
 $(Tstreams)/OTstream.C
-
-StringStreams = $(Streams)/StringStreams
-$(StringStreams)/StringStream.C
 
 Pstreams = $(Streams)/Pstreams
 /* $(Pstreams)/UPstream.C in global.C */
@@ -460,6 +447,7 @@ $(lduMatrix)/smoothers/symGaussSeidel/symGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/nonBlockingGaussSeidel/nonBlockingGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/twoStageGaussSeidel/twoStageGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/twoStageSymGaussSeidel/twoStageSymGaussSeidelSmoother.C
+$(lduMatrix)/smoothers/multicolorGaussSeidel/multicolorGaussSeidelSmoother.C
 $(lduMatrix)/smoothers/DIC/DICSmoother.C
 $(lduMatrix)/smoothers/aDIC/aDICSmoother.C
 $(lduMatrix)/smoothers/FDIC/FDICSmoother.C
@@ -607,7 +595,7 @@ meshes/Identifiers/surface/geometricSurfacePatch.C
 meshes/Identifiers/surface/surfZoneIdentifier.C
 meshes/Identifiers/zone/zoneIdentifier.C
 
-meshes/MeshObject/meshObject.C
+meshes/MeshObject/meshObject.cxx
 
 polyMesh = meshes/polyMesh
 
@@ -768,9 +756,8 @@ $(derivedPointPatches)/wall/wallPointPatch.C
 pointBoundaryMesh = $(pointMesh)/pointBoundaryMesh
 $(pointBoundaryMesh)/pointBoundaryMesh.C
 
-meshes/boundBox/boundBox.C
-
-meshes/treeBoundBox/treeBoundBox.C
+meshes/boundBox/boundBox.cxx
+meshes/treeBoundBox/treeBoundBox.cxx
 
 meshTools = meshes/meshTools
 $(meshTools)/matchPoints.C
@@ -826,6 +813,7 @@ $(basicPointPatchFields)/coupled/coupledPointPatchFields.C
 $(basicPointPatchFields)/value/valuePointPatchFields.C
 $(basicPointPatchFields)/fixedValue/fixedValuePointPatchFields.C
 $(basicPointPatchFields)/zeroGradient/zeroGradientPointPatchFields.C
+$(basicPointPatchFields)/zeroValue/zeroValuePointPatchFields.C
 
 constraintPointPatchFields = $(pointPatchFields)/constraint
 $(constraintPointPatchFields)/cyclic/cyclicPointPatchFields.C
@@ -848,6 +836,9 @@ fields/GeometricFields/pointFields/pointFields.C
 
 meshes/bandCompression/bandCompression.C
 meshes/preservePatchTypes/preservePatchTypes.C
+
+meshes/graphColoring/graphColoring/graphColoring.C
+meshes/graphColoring/randomizedGraphColoring/randomizedGraphColoring.C
 
 interpolations = interpolations
 interpolation = $(interpolations)/interpolation
@@ -874,7 +865,7 @@ algorithms/dynamicIndexedOctree/dynamicIndexedOctreeBase.C
 algorithms/dynamicIndexedOctree/dynamicTreeDataPoint.C
 
 parallel/commSchedule/commSchedule.C
-parallel/globalIndex/globalIndex.C
+parallel/globalIndex/globalIndex.cxx
 
 meshes/meshState/meshState.C
 

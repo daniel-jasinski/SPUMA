@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2017 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -45,14 +45,6 @@ static const unsigned char base64Chars[64] =
 //! \endcond
 
 
-// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
-
-std::size_t Foam::base64Layer::encodedLength(std::size_t n)
-{
-    return 4 * ((n / 3) + (n % 3 ? 1 : 0));
-}
-
-
 // * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * * //
 
 inline unsigned char Foam::base64Layer::encode0() const noexcept
@@ -80,9 +72,10 @@ inline unsigned char Foam::base64Layer::encode3() const noexcept
 }
 
 
-void Foam::base64Layer::add(char c)
+inline void Foam::base64Layer::add_char(char c)
 {
     group_[groupLen_++] = static_cast<unsigned char>(c);
+
     if (groupLen_ == 3)
     {
         unsigned char out[4];
@@ -95,19 +88,23 @@ void Foam::base64Layer::add(char c)
 
         groupLen_ = 0;
     }
+}
 
-    dirty_ = true;
+
+// * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
+
+void Foam::base64Layer::add(char c)
+{
+    add_char(c);
 }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::base64Layer::base64Layer(std::ostream& os)
+Foam::base64Layer::base64Layer(std::ostream& os) noexcept
 :
     os_(os),
-    group_(),
-    groupLen_(0),
-    dirty_(false)
+    groupLen_(0)
 {}
 
 
@@ -125,54 +122,53 @@ void Foam::base64Layer::write(const char* s, std::streamsize n)
 {
     for (std::streamsize i=0; i < n; ++i)
     {
-        add(s[i]);
+        add_char(s[i]);
     }
 }
 
 
-void Foam::base64Layer::reset()
+void Foam::base64Layer::reset() noexcept
 {
     groupLen_ = 0;
-    dirty_ = false;
 }
 
 
 bool Foam::base64Layer::close()
 {
-    if (!dirty_)
-    {
-        return false;
-    }
+    bool had_pending = false;
 
     unsigned char out[4];
     if (groupLen_ == 1)
     {
+        had_pending = true;
         group_[1] = 0;
 
         out[0] = encode0();
         out[1] = encode1();
         out[2] = '=';
         out[3] = '=';
-        os_.write(reinterpret_cast<char*>(out), 4);
     }
     else if (groupLen_ == 2)
     {
+        had_pending = true;
         group_[2] = 0;
 
         out[0] = encode0();
         out[1] = encode1();
         out[2] = encode2();
         out[3] = '=';
-        os_.write(reinterpret_cast<char*>(out), 4);
     }
 
     // group-length == 0 (no content)
     // group-length == 3 is not possible, already reset in add()
-
     groupLen_ = 0;
-    dirty_ = false;
 
-    return true;
+    if (had_pending)
+    {
+        os_.write(reinterpret_cast<char*>(out), 4);
+    }
+
+    return had_pending;
 }
 
 

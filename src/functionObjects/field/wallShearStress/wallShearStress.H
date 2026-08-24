@@ -48,31 +48,31 @@ Description
     \table
       Operand        | Type              | Location
       input          | -                 | -
-      output file    | dat | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<field\>
-      output field   | volVectorField (only boundaryField) <!--
-                 --> | $FOAM_CASE/\<time\>/\<outField\>
+      output file    | dat               | postProcessing/<FO>/<time>/field
+      output field   | volVectorField (only boundaryField) | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    wallShearStress1
+    wallShearStressFO
     {
-        // Mandatory entries (unmodifiable)
-        type        wallShearStress;
-        libs        (fieldFunctionObjects);
-
-        // Optional entries (runtime modifiable)
-        patches     (<patch1> ... <patchN>); // (wall1 "(wall2|wall3)");
+        // Mandatory entries
+        type            wallShearStress;
+        libs            (fieldFunctionObjects);
 
         // Optional entries
-        writeFields     true;
+        patches         (<patch1> ... <patchN>); // (wall1 "(wall2|wall3)");
+        writeFields     <bool>;
+
+        // Inherited entries
+        ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                           | Type | Req'd | Dflt
+      Property     | Description                           | Type | Reqd | Deflt
       type         | Type name: wallShearStress            | word |  yes  | -
       libs         | Library name: fieldFunctionObjects    | word |  yes  | -
       patches    | Names of operand patches   | wordRes | no | all wall patches
@@ -80,25 +80,14 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        <solver> -postProcess -func wallShearStress
-    \endverbatim
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 Note
     The \c writeFields flag currently defaults to \c true
     (for consistency with previous versions that did not have that flag)
     but this is subject to change in the near future for consistency
     with other function objects.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::wallShearStress
 
 SourceFiles
     wallShearStress.C
@@ -163,7 +152,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         wallShearStress
         (
             const word& name,
@@ -184,14 +173,13 @@ public:
 
     // Member Functions
 
-        //- Read the wallShearStress data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the wall shear-stress
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Report min/max and log to file,
-        //- write the wall shear-stress volume field.
+        //- Write the function-object results
         virtual bool write();
 };
 

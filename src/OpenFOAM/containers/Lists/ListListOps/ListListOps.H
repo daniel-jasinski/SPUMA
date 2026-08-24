@@ -113,6 +113,11 @@ struct offsetOp
 
 namespace ListListOps
 {
+
+    //- Check if all sub-lists use memory pool
+    template<class T, class AccessOp>
+    bool subUsePool(const UList<T>& lists, AccessOp aop = accessOp<T>());
+
     //- Return the sizes of the sub-lists
     template<class T, class AccessOp>
     labelList subSizes(const UList<T>& lists, AccessOp aop = accessOp<T>());

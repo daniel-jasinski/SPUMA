@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2020-2024 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -50,25 +50,16 @@ namespace Foam
 {
 
 // Forward Declarations
-template<class T, class BaseType> class CompactIOField;
+template<class T> class CompactIOField;
 
-template<class T, class BaseType> Istream& operator>>
-(
-    Istream&,
-    CompactIOField<T, BaseType>&
-);
-
-template<class T, class BaseType> Ostream& operator<<
-(
-    Ostream&,
-    const CompactIOField<T, BaseType>&
-);
+template<class T> Istream& operator>>(Istream&, CompactIOField<T>&);
+template<class T> Ostream& operator<<(Ostream&, const CompactIOField<T>&);
 
 /*---------------------------------------------------------------------------*\
                         Class CompactIOField Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class T, class BaseType>
+template<class T>
 class CompactIOField
 :
     public regIOobject,
@@ -81,7 +72,17 @@ class CompactIOField
         //  Return true if read (only accurate when readOnProc == true).
         bool readIOcontents(bool readOnProc = true);
 
+        //- Read the content size.
+        //  Return the size if read, -1 otherwise
+        label readIOsize(bool readOnProc = true);
+
+        //- Has too many elements in it?
+        bool overflows() const;
+
 public:
+
+    //- The underlying content type
+    typedef Field<T> content_type;
 
     //- Runtime type information
     TypeName("FieldField");
@@ -92,7 +93,7 @@ public:
         //- Default copy construct
         CompactIOField(const CompactIOField&) = default;
 
-        //- Construct from IOobject
+        //- Construct from IOobject. Will be zero size if not read.
         explicit CompactIOField(const IOobject& io);
 
         //- Construct from IOobject, with local processor conditional reading
@@ -111,29 +112,55 @@ public:
         CompactIOField(const IOobject& io, Field<T>&& content);
 
 
+    // Factory Methods
+
+        //- Read and return content size, -1 if not read.
+        //  The IOobject is never registered
+        static label readContentsSize(const IOobject& io);
+
+        //- Read and return contents. The IOobject is never registered
+        static Field<T> readContents(const IOobject& io);
+
+
     //- Destructor
     virtual ~CompactIOField() = default;
 
 
     // Member Functions
 
-        //- Write using stream options
+        //- Read as offsets/packed-values and transcribe into *this
+        Istream& readCompact(Istream& is);
+
+        //- Write as offsets/packed-values
+        Ostream& writeCompact(Ostream& os) const;
+
+        //- Write using stream options. Checks for overflow in binary
         virtual bool writeObject
         (
             IOstreamOption streamOpt,
             const bool writeOnProc
         ) const;
 
+        //- Write as plain or compact content (depends on stream format)
         virtual bool writeData(Ostream& os) const;
 
 
     // Member Operators
 
-        //- Copy assignment of entries
-        void operator=(const CompactIOField<T, BaseType>& rhs);
-
         //- Copy or move assignment of entries
         using Field<T>::operator=;
+
+        //- Copy assignment of entries
+        void operator=(const CompactIOField<T>& rhs)
+        {
+            Field<T>::operator=(rhs);
+        }
+
+        //- Move assignment of entries
+        void operator=(CompactIOField<T>&& rhs)
+        {
+            Field<T>::operator=(std::move(static_cast<Field<T>&>(rhs)));
+        }
 };
 
 

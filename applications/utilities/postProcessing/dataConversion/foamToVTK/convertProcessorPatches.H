@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -23,10 +23,7 @@ Description
 {
     using reportFields = foamToVtkReportFields;
 
-    const label nVolFields =
-    (
-        objects.count(stringListOps::foundOp<word>(fieldTypes::volume))
-    );
+    const label nVolFields = objects.count(Foam::fieldTypes::is_volume);
 
     reportFields::volume(Info, objects);
 
@@ -74,16 +71,18 @@ Description
     List<wordList> procPatchNames(UPstream::nProcs());
     procPatchNames[UPstream::myProcNo()].resize(patchIds.size());
 
+    labelList selectedPatchId(1);
+
     for (const label patchId : patchIds)
     {
         const polyPatch& pp = patches[patchId];
+        selectedPatchId[0] = pp.index();
 
         auto writer = autoPtr<vtk::patchWriter>::New
         (
             meshProxy.mesh(),
-            labelList(one{}, pp.index()),
+            selectedPatchId,
             writeOpts,
-            nearCellValue,
             (
                 vtmOutputBase
               / subDirNaming(UPstream::myProcNo())
@@ -91,6 +90,11 @@ Description
             ),
             false  // This MUST be non-parallel (serial only)
         );
+
+        if (nearCellValue)
+        {
+            writer->useCellValue(nearCellValue);
+        }
 
         procPatchNames[UPstream::myProcNo()][nPatchWriters] = pp.name();
 
@@ -107,7 +111,7 @@ Description
 
     // CellData
     {
-        for (vtk::patchWriter& writer : patchWriters)
+        for (auto& writer : patchWriters)
         {
             // Optionally with patchID, procID, neighID fields
             // - use UPstream::parRun() not writer.parallel() !!
@@ -145,7 +149,7 @@ Description
         internalWriter->close();
     }
 
-    for (vtk::patchWriter& writer : patchWriters)
+    for (auto& writer : patchWriters)
     {
         writer.close();
     }
@@ -187,7 +191,7 @@ Description
                     ++n;
                 }
 
-                vtmBoundaries.append_vtp
+                vtmBoundaries.append_poly
                 (
                     patchName,
                     dirName/patchName

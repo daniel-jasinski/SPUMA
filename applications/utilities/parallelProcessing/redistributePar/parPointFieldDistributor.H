@@ -46,8 +46,8 @@ Description
     Runs in parallel. Redistributes from srcMesh to tgtMesh.
 
 SourceFiles
-    parPointFieldDistributor.C
-    parPointFieldDistributorTemplates.C
+    parPointFieldDistributor.cxx
+    parPointFieldDistributor.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -266,7 +266,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-#   include "parPointFieldDistributorTemplates.C"
+#   include "parPointFieldDistributor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

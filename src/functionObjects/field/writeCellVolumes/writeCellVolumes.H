@@ -38,50 +38,40 @@ Description
       Operand        | Type           | Location
       input          | -              | -
       output file    | -              | -
-      output field   | volScalarField | $FOAM_CASE/\<time\>/V
+      output field   | volScalarField | <time>/V
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    writeCellVolumes
+    writeCellVolumesFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        writeCellVolumes;
         libs        (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property   | Description                        | Type | Req'd | Dflt
+      Property   | Description                        | Type | Reqd  | Deflt
       type       | Type name: writeCellVolumes        | word |  yes  | -
       libs       | Library name: fieldFunctionObjects | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func writeCellVolumes
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::writeCellVolumes
+      - \link functionObject.H \endlink
 
 SourceFiles
     writeCellVolumes.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_writeCellVolumes_H
-#define functionObjects_writeCellVolumes_H
+#ifndef Foam_functionObjects_writeCellVolumes_H
+#define Foam_functionObjects_writeCellVolumes_H
 
 #include "fvMeshFunctionObject.H"
 
@@ -108,7 +98,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         writeCellVolumes
         (
             const word& name,
@@ -129,13 +119,13 @@ public:
 
     // Member Functions
 
-        //- Read the cell-volume data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Do nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the cell-volume fields
+        //- Write the function-object results
         virtual bool write();
 };
 

@@ -737,15 +737,18 @@ Foam::word Foam::Time::findInstance
     const bool constant_fallback
 ) const
 {
-    // Note: name can empty (ie, search for directory only)
+    // Note: name can be empty (ie, search for directory only)
     IOobject startIO(name, timeName(), directory, *this, rOpt);
+
+    // Searching starts based on the current output time
+    scalar startValue = timeOutputValue();
 
     IOobject io
     (
         fileHandler().findInstance
         (
             startIO,
-            timeOutputValue(),
+            startValue,
             stopInstance,
             constant_fallback
         )

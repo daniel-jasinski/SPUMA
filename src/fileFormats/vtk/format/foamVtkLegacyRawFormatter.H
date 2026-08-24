@@ -33,7 +33,7 @@ Description
     This format should never be used for OpenFOAM with 64-bit label sizes.
 
 SourceFiles
-    foamVtkLegacyRawFormatter.C
+    foamVtkLegacyRawFormatter.cxx
 
 \*---------------------------------------------------------------------------*/
 

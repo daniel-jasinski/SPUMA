@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
     Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -75,9 +76,31 @@ Foam::fvsPatchField<Type>::fvsPatchField
 )
 :
     fvsPatchFieldBase(p),
-    Field<Type>(p.size()),
+    Field<Type>(),
     internalField_(iF)
-{}
+{
+    if
+    (
+        !isNull(iF) &&
+        (
+            (internalField_.capacity() ==
+            internalField_.mesh().nBoundaryFaces() + internalField_.size()) &&
+            internalField_.isFlattened()
+        )
+    )
+    {
+        UList<Type>::shallowCopy
+        (
+            const_cast<Type*>(internalField_.begin() + internalField_.size() + p.offset()),
+            p.size(),
+            true
+        );
+    }
+    else
+    {
+        this->resize(p.size());
+    }
+}
 
 
 template<class Type>
@@ -155,23 +178,29 @@ Foam::fvsPatchField<Type>::fvsPatchField
 
 
 template<class Type>
-Foam::fvsPatchField<Type>::fvsPatchField(const fvsPatchField<Type>& ptf)
+Foam::fvsPatchField<Type>::fvsPatchField
+(
+    const fvsPatchField<Type>& pfld,
+    const fvPatch& p,
+    const DimensionedField<Type, surfaceMesh>& iF,
+    const Type& value
+)
 :
-    fvsPatchFieldBase(ptf),
-    Field<Type>(ptf),
-    internalField_(ptf.internalField_)
+    fvsPatchFieldBase(pfld, p),
+    Field<Type>(p.size(), value),
+    internalField_(iF)
 {}
 
 
 template<class Type>
 Foam::fvsPatchField<Type>::fvsPatchField
 (
-    const fvsPatchField<Type>& ptf,
+    const fvsPatchField<Type>& pfld,
     const DimensionedField<Type, surfaceMesh>& iF
 )
 :
-    fvsPatchFieldBase(ptf),
-    Field<Type>(ptf),
+    fvsPatchFieldBase(pfld),
+    Field<Type>(pfld),
     internalField_(iF)
 {}
 

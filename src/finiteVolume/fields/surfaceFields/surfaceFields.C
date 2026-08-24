@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2022 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -78,106 +78,11 @@ defineTemplateDebugSwitchWithName
 );
 
 
-template<> scalar surfaceScalarField::Boundary::tolerance
-(
-    debug::floatOptimisationSwitch("surfaceScalarField::Boundary::tolerance", 0)
-);
-template<> scalar surfaceVectorField::Boundary::tolerance
-(
-    debug::floatOptimisationSwitch("surfaceVectorField::Boundary::tolerance", 0)
-);
-template<> scalar surfaceSphericalTensorField::Boundary::tolerance
-(
-    debug::floatOptimisationSwitch
-    (
-        "surfaceSphericalTensorField::Boundary::tolerance",
-        0
-    )
-);
-template<> scalar surfaceSymmTensorField::Boundary::tolerance
-(
-    debug::floatOptimisationSwitch
-    (
-        "surfaceSymmTensorField::Boundary::tolerance",
-        0
-    )
-);
-template<> scalar surfaceTensorField::Boundary::tolerance
-(
-    debug::floatOptimisationSwitch("surfaceTensorField::Boundary::tolerance", 0)
-);
-
-
-// Local-ops consistency enforcing
-
-template<> int surfaceScalarField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "surfaceScalarField::Boundary::localConsistency",
-    int,
-    Foam::surfaceScalarField::Boundary::localConsistency
-);
-
-template<> int surfaceVectorField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "surfaceVectorField::Boundary::localConsistency",
-    int,
-    Foam::surfaceVectorField::Boundary::localConsistency
-);
-
-template<> int surfaceSphericalTensorField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "surfaceSphericalTensorField::Boundary::localConsistency",
-    int,
-    Foam::surfaceSphericalTensorField::Boundary::localConsistency
-);
-
-template<> int surfaceSymmTensorField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "surfaceSymmTensorField::Boundary::localConsistency",
-    int,
-    Foam::surfaceSymmTensorField::Boundary::localConsistency
-);
-
-template<> int surfaceTensorField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "surfaceTensorField::Boundary::localConsistency",
-    int,
-    Foam::surfaceTensorField::Boundary::localConsistency
-);
-
-
-#define defineBoundaryAccessors(Type)                                         \
-    defineTemplateDebugLevelFunction(Type);                                   \
-    template<> int& Type::localConsistencyRef()                               \
-    { return Type::localConsistency; }
-
-defineBoundaryAccessors(surfaceScalarField::Boundary);
-defineBoundaryAccessors(surfaceVectorField::Boundary);
-defineBoundaryAccessors(surfaceSphericalTensorField::Boundary);
-defineBoundaryAccessors(surfaceSymmTensorField::Boundary);
-defineBoundaryAccessors(surfaceTensorField::Boundary);
-
-#undef defineBoundaryAccessors
+defineTemplateDebugLevelFunction(surfaceScalarField::Boundary);
+defineTemplateDebugLevelFunction(surfaceVectorField::Boundary);
+defineTemplateDebugLevelFunction(surfaceSphericalTensorField::Boundary);
+defineTemplateDebugLevelFunction(surfaceSymmTensorField::Boundary);
+defineTemplateDebugLevelFunction(surfaceTensorField::Boundary);
 
 } // End namespace Foam
 
@@ -207,4 +112,16 @@ const Foam::wordList Foam::fieldTypes::surface
 });
 
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
+
+bool Foam::fieldTypes::is_surface(const word& clsName)
+{
+    return
+    (
+        clsName.starts_with("surface") && clsName.ends_with("Field")
+     && Foam::fieldTypes::surface.contains(clsName)
+    );
+}
+
+
+// ************************************************************************* //

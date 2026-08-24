@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -115,6 +115,12 @@ inline Foam::scalar Foam::face::mag(const UList<point>& p) const
 }
 
 
+inline Foam::scalar Foam::face::magSqr(const UList<point>& p) const
+{
+    return ::Foam::magSqr(areaNormal(p));
+}
+
+
 inline Foam::Pair<Foam::point>
 Foam::face::box(const UList<point>& pts) const
 {
@@ -127,6 +133,25 @@ Foam::face::box(const UList<point>& pts) const
     }
 
     return bb;
+}
+
+
+inline Foam::point
+Foam::face::average(const UList<point>& points) const
+{
+    // Note: use double precision to avoid overflows when summing
+    doubleVector avg(Zero);
+
+    if (const auto n = size(); n)
+    {
+        for (const auto pointi : *this)
+        {
+            avg += points[pointi];
+        }
+        avg /= n;
+    }
+
+    return avg;
 }
 
 
@@ -245,7 +270,7 @@ inline void Foam::face::operator+=(const label vertexOffset)
 {
     if (vertexOffset)
     {
-        for (label& vrt : static_cast<labelList&>(*this))
+        for (auto& vrt : static_cast<labelList&>(*this))
         {
             vrt += vertexOffset;
         }

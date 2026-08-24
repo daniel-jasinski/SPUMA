@@ -20,5 +20,6 @@ $(constraints)/geometric/geometricConstraint.C
 $(constraints)/singleProcessorFaceSets/singleProcessorFaceSetsConstraint.C
 $(constraints)/refinementHistory/refinementHistoryConstraint.C
 
+decompositionAgglomeration/decompositionGAMGAgglomeration.C
 
 LIB = $(FOAM_LIBBIN)/libdecompositionMethods

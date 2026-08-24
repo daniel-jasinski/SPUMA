@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2018 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,8 +40,8 @@ Note
     must be decided at construction time.
 
 SourceFiles
-    lagrangianWriter.C
-    lagrangianWriterTemplates.C
+    foamVtkLagrangianWriter.cxx
+    foamVtkLagrangianWriter.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -80,14 +80,17 @@ class lagrangianWriter
         //- The cloud name
         const word cloudName_;
 
-        //- The number of field points for the current Piece
-        label numberOfPoints_;
+        //- Slab addressing for field points of the current Piece
+        OffsetRange<label> pointSlab_;
 
         //- Write as CellData (verts) instead of as PointData.
         const bool useVerts_;
 
 
     // Private Member Functions
+
+        //- Total number of field points for the current Piece
+        label nTotalPoints() const noexcept { return pointSlab_.total(); }
 
         //- The cloud directory for the current cloud name.
         fileName cloudDir() const;
@@ -97,14 +100,6 @@ class lagrangianWriter
 
         //- Write vertex (cells)
         void writeVerts();
-
-
-        //- No copy construct
-        lagrangianWriter(const lagrangianWriter&) = delete;
-
-        //- No copy assignment
-        void operator=(const lagrangianWriter&) = delete;
-
 
 protected:
 
@@ -131,6 +126,15 @@ protected:
 
 public:
 
+    // Generated Methods
+
+        //- No copy construct
+        lagrangianWriter(const lagrangianWriter&) = delete;
+
+        //- No copy assignment
+        void operator=(const lagrangianWriter&) = delete;
+
+
     // Constructors
 
         //- Construct from components (default format INLINE_BASE64)
@@ -151,7 +155,7 @@ public:
             const fvMesh& mesh,
             const word& cloudName,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
         //- Construct from components and open the file for writing.
@@ -162,7 +166,7 @@ public:
             const word& cloudName,
             const vtk::outputOptions opts,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
 
@@ -229,7 +233,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "foamVtkLagrangianWriterTemplates.C"
+    #include "foamVtkLagrangianWriter.txx"
 #endif
 
 

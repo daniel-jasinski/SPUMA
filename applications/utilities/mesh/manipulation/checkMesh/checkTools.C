@@ -123,7 +123,7 @@ void Foam::printMeshStats(const polyMesh& mesh, const bool allTopology)
     {
         // Number of global patches and min-max range of total patches
         Info<< mesh.boundaryMesh().nNonProcessor() << ' '
-            << returnReduce(labelMinMax(nPatches), minMaxOp<label>()) << nl;
+            << returnReduce(labelMinMax(nPatches), sumOp<labelMinMax>{}) << nl;
     }
     else
     {
@@ -294,7 +294,7 @@ void Foam::mergeAndWrite
     forAll(pbm, patchi)
     {
         const polyPatch& pp = pbm[patchi];
-        const labelList& fc = pp.faceCells();
+        const labelUList& fc = pp.faceCells();
         forAll(fc, i)
         {
             bndInSet[pp.start()+i-mesh.nInternalFaces()] = isInSet[fc[i]];
@@ -319,7 +319,7 @@ void Foam::mergeAndWrite
     forAll(pbm, patchi)
     {
         const polyPatch& pp = pbm[patchi];
-        const labelList& fc = pp.faceCells();
+        const labelUList& fc = pp.faceCells();
         if (pp.coupled())
         {
             forAll(fc, i)

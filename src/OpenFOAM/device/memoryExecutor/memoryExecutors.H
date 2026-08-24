@@ -41,9 +41,11 @@ SourceFiles
 #include "cpuMemoryExecutor.H"
 #ifdef have_cuda
     #include "cudaMemoryExecutor.cuh"
-#elif have_hip
+#endif
+#ifdef have_hip
     #include "hipMemoryExecutor.hpp"
-#elif have_sycl
+#endif
+#ifdef have_sycl
     #include "syclMemoryExecutor.H"
 #endif
 

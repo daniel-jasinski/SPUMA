@@ -100,7 +100,7 @@ public:
     // Constructors
 
         //- Construct initialized to zero
-        FOAM_DEVICE inline SphericalTensor(const Foam::zero);
+        FOAM_DEVICE inline SphericalTensor(Foam::zero);
 
         //- Construct given VectorSpace
         template<class Cmpt2>

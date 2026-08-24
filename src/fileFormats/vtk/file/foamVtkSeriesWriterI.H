@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2022 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,6 +25,14 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+inline Foam::vtk::seriesWriter::seriesWriter() noexcept
+:
+    extType_(endingType::SERIES)
+{}
+
+
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 inline bool Foam::vtk::seriesWriter::empty() const noexcept
@@ -36,6 +44,20 @@ inline bool Foam::vtk::seriesWriter::empty() const noexcept
 inline Foam::label Foam::vtk::seriesWriter::size() const noexcept
 {
     return entries_.size();
+}
+
+
+inline bool Foam::vtk::seriesWriter::json() const noexcept
+{
+    return (extType_ == endingType::JSON);
+}
+
+
+inline bool Foam::vtk::seriesWriter::json(bool on) noexcept
+{
+    bool old(extType_ == endingType::JSON);
+    extType_ = (on ? endingType::JSON : endingType::SERIES);
+    return old;
 }
 
 
@@ -89,12 +111,6 @@ inline bool Foam::vtk::seriesWriter::append
 inline void Foam::vtk::seriesWriter::print(Ostream& os) const
 {
     seriesWriter::print(os, entries_);
-}
-
-
-inline void Foam::vtk::seriesWriter::write(const fileName& seriesName) const
-{
-    seriesWriter::write(seriesName, entries_);
 }
 
 

@@ -100,18 +100,28 @@ public:
             const faPatchFieldMapper&
         );
 
-        //- Construct as copy
+        //- Copy construct onto new patch with specified value
         fixedValueFaePatchField
         (
-            const fixedValueFaePatchField<Type>&
+            const fixedValueFaePatchField<Type>& pfld,
+            const faPatch& p,
+            const DimensionedField<Type, edgeMesh>& iF,
+            const Type& value
         );
 
         //- Construct as copy setting internal field reference
         fixedValueFaePatchField
         (
-            const fixedValueFaePatchField<Type>&,
-            const DimensionedField<Type, edgeMesh>&
+            const fixedValueFaePatchField<Type>& pfld,
+            const DimensionedField<Type, edgeMesh>& iF
         );
+
+        //- Construct as copy
+        fixedValueFaePatchField(const fixedValueFaePatchField<Type>& pfld)
+        :
+            fixedValueFaePatchField<Type>(pfld, pfld.internalField())
+        {}
+
 
         //- Return clone
         virtual tmp<faePatchField<Type>> clone() const

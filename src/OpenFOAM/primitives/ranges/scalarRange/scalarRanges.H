@@ -33,7 +33,7 @@ SeeAlso
     Foam::predicates::scalars
 
 SourceFiles
-    scalarRanges.C
+    scalarRanges.cxx
     scalarRangesI.H
 
 \*---------------------------------------------------------------------------*/

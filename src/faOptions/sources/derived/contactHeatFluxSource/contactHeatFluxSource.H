@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,10 +40,12 @@ Usage
     {
         // Mandatory entries (unmodifiable)
         type                contactHeatFluxSource;
+
+        // Optional entries (unmodifiable)
         Tprimary            <TprimaryFieldName>;
 
         // Optional entries (runtime modifiable)
-        T                   <Tname>;
+        Ts                  <TshellName>;
         thicknessLayers     (<layer1> <layer2> ... <layerN>);
 
         // Conditional optional entries (runtime modifiable)
@@ -60,16 +62,30 @@ Usage
     \table
       Property  | Description                       | Type  | Reqd | Dflt
       type      | Type name: contactHeatFluxSource  | word  | yes  | -
-      Tprimary  | Name of primary temperature field | word  | yes  | -
-      T         | Name of operand temperature field | word  | no   | T
+      Ts        | Name of shell temperature field   | word  | no   | Ts(suffix)
+      Tprimary  | Name of primary temperature field | word  | no   | T
       thicknessLayers | List of thicknesses of layers | scalarList | no | -
       kappaLayers | List of conductivities of layers | scalarList | cndtnl | -
+    \endtable
+
+    Fields/variables used:
+    \table
+      Property  | Description               | Type   | Deflt
+      Ts        | Temperature               | shell  | Ts(suffix)
+      Tprimary  | Temperature               | volume | T
     \endtable
 
     The inherited entries are elaborated in:
      - \link faOption.H \endlink
      - \link faceSetOption.H \endlink
      - \link temperatureCoupledBase.H \endlink
+
+    \b Naming changes from 2506 and earlier:
+    \table
+      Keyword  | Description               | Keyword (old) | Deflt (old)
+      Ts       | Temperature (shell)       | T   | T
+    \endtable
+    If \c Ts is missing, the keyword \c T is still accepted.
 
 SourceFiles
     contactHeatFluxSource.C
@@ -79,10 +95,8 @@ SourceFiles
 #ifndef Foam_fa_contactHeatFluxSource_H
 #define Foam_fa_contactHeatFluxSource_H
 
-#include "faOption.H"
-#include "Function1.H"
-#include "PtrList.H"
 #include "areaFields.H"
+#include "PtrList.H"
 #include "faceSetOption.H"
 #include "temperatureCoupledBase.H"
 
@@ -126,13 +140,13 @@ class contactHeatFluxSource
 
     // Private Data
 
-        //- Name of temperature field
+        //- Name of shell temperature field (default: "T")
         word TName_;
 
-        //- Name of primary temperature field
-        word TprimaryName_;
+        //- Name of volume temperature field (default: "T")
+        const word TprimaryName_;
 
-        //- Primary region temperature
+        //- Primary (volume) region temperature
         const volScalarField& Tprimary_;
 
         //- Thickness of layers
@@ -171,7 +185,9 @@ public:
             const word& sourceName,
             const word& modelType,
             const dictionary& dict,
-            const fvMesh& mesh
+            const fvMesh& mesh,
+            //! The expected finite-area mesh name
+            const word& defaultAreaName = word()
         );
 
         //- No copy construct

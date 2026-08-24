@@ -30,25 +30,24 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Normalises an input field with a chosen norm,
-    and outputs a new normalised field.
+    Normalises an input field with a chosen norm, and outputs a new normalised
+    field.
 
     Operands:
     \table
-      Operand      | Type                       | Location
-      input        | {vol,surface,polySurface}\<Type\>Field <!--
-                   -->                          | \<case\>/\<time\>/\<inpField\>
-      output file  | -                          | -
-      output field | {vol,surface,polySurface}\<Type\>Field <!--
-                   -->                          | \<case\>/\<time\>/\<outField\>
+      Operand  | Type                               | Location
+      input    | {vol,surface,polySurface}TypeField | <time>/inputField
+      output file  | -                              | -
+      output field | {vol,surface,polySurface}TypeField | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    norm1
+    normFO
     {
         // Mandatory entries
         type            norm;
@@ -97,7 +96,6 @@ Usage
     \endverbatim
 
     The inherited entries are elaborated in:
-      - \link functionObject.H \endlink
       - \link fieldExpression.H \endlink
       - \link Function1.H \endlink
 
@@ -150,8 +148,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_norm_H
-#define functionObjects_norm_H
+#ifndef Foam_functionObjects_norm_H
+#define Foam_functionObjects_norm_H
 
 #include "fieldExpression.H"
 #include "Function1.H"
@@ -268,8 +266,8 @@ public:
 
     // Member Functions
 
-        //- Read the dictionary data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 };
 
 

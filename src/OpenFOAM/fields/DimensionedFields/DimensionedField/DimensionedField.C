@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -77,10 +77,10 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(io),
-    Field<Type>(field),
+    DynamicField<Type>(field),
     mesh_(mesh),
     dimensions_(dims),
-    oriented_()
+    isFlattened_(false)
 {
     checkFieldSize();
 }
@@ -96,9 +96,10 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(io),
-    Field<Type>(std::move(field)),
+    DynamicField<Type>(std::move(field)),
     mesh_(mesh),
-    dimensions_(dims)
+    dimensions_(dims),
+    isFlattened_(false)
 {
     checkFieldSize();
 }
@@ -114,9 +115,10 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(io),
-    Field<Type>(std::move(field)),
+    DynamicField<Type>(std::move(field)),
     mesh_(mesh),
-    dimensions_(dims)
+    dimensions_(dims),
+    isFlattened_(false)
 {
     checkFieldSize();
 }
@@ -132,10 +134,10 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(io),
-    Field<Type>(tfield.constCast(), tfield.movable()),
+    DynamicField<Type>(tfield.constCast(), tfield.movable()),
     mesh_(mesh),
     dimensions_(dims),
-    oriented_()
+    isFlattened_(false)
 {
     tfield.clear();
     checkFieldSize();
@@ -148,14 +150,25 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     const IOobject& io,
     const Mesh& mesh,
     const dimensionSet& dims,
-    const bool checkIOFlags
+    const bool checkIOFlags,
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
     regIOobject(io),
-    Field<Type>(GeoMesh::size(mesh)),
+    DynamicField<Type>
+    (
+        // (size,capacity)
+        std::pair<label,label>
+        (
+            GeoMesh::size(mesh),
+            GeoMesh::size(mesh)
+          + (extraCapacity ? GeoMesh::boundary_size(mesh) : label(0))
+        )
+    ),
     mesh_(mesh),
     dimensions_(dims),
-    oriented_()
+    isFlattened_(isFlattened)
 {
     if (checkIOFlags)
     {
@@ -171,18 +184,30 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     const Mesh& mesh,
     const Type& value,
     const dimensionSet& dims,
-    const bool checkIOFlags
+    const bool checkIOFlags,
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
     regIOobject(io),
-    Field<Type>(GeoMesh::size(mesh), value),
+    DynamicField<Type>
+    (
+        // (size,capacity)
+        std::pair<label,label>
+        (
+            GeoMesh::size(mesh),
+            GeoMesh::size(mesh)
+          + (extraCapacity ? GeoMesh::boundary_size(mesh) : label(0))
+        )
+    ),
     mesh_(mesh),
     dimensions_(dims),
-    oriented_()
+    isFlattened_(isFlattened)
 {
-    if (checkIOFlags)
+    if (!checkIOFlags || !readIfPresent())
     {
-        readIfPresent();
+        // Set default value (if not read)
+        this->field() = value;
     }
 }
 
@@ -193,7 +218,9 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
     const IOobject& io,
     const Mesh& mesh,
     const dimensioned<Type>& dt,
-    const bool checkIOFlags
+    const bool checkIOFlags,
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
     DimensionedField<Type, GeoMesh>
@@ -202,7 +229,9 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
         mesh,
         dt.value(),
         dt.dimensions(),
-        checkIOFlags
+        checkIOFlags,
+        extraCapacity,
+        isFlattened
     )
 {}
 
@@ -214,10 +243,11 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(df),
-    Field<Type>(df),
+    DynamicField<Type>(df),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -239,10 +269,11 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(df, reuse),
-    Field<Type>(df, reuse),
+    DynamicField<Type>(df, reuse),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -266,10 +297,11 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(io),
-    Field<Type>(df),
+    DynamicField<Type>(df),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -293,10 +325,11 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(io, df),
-    Field<Type>(df, reuse),
+    DynamicField<Type>(df, reuse),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -321,10 +354,11 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(newName, df, newName != df.name()),
-    Field<Type>(df),
+    DynamicField<Type>(df),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -348,10 +382,11 @@ Foam::DimensionedField<Type, GeoMesh>::DimensionedField
 )
 :
     regIOobject(newName, df, true),
-    Field<Type>(df, reuse),
+    DynamicField<Type>(df, reuse),
     mesh_(df.mesh_),
     dimensions_(df.dimensions_),
-    oriented_(df.oriented_)
+    oriented_(df.oriented_),
+    isFlattened_(df.isFlattened_)
 {}
 
 
@@ -424,7 +459,7 @@ void Foam::DimensionedField<Type, GeoMesh>::replace
     >& df
 )
 {
-    Field<Type>::replace(d, df);
+    DynamicField<Type>::replace(d, df);
 }
 
 
@@ -464,14 +499,17 @@ Foam::DimensionedField<Type, GeoMesh>::T() const
 
 
 template<class Type, class GeoMesh>
-Foam::dimensioned<Type> Foam::DimensionedField<Type, GeoMesh>::average() const
+Foam::dimensioned<Type> Foam::DimensionedField<Type, GeoMesh>::average
+(
+    const label comm
+) const
 {
     return
         dimensioned<Type>
         (
             this->name() + ".average()",
             this->dimensions(),
-            gAverage(field())
+            gAverage(this->field(), comm)
         );
 }
 
@@ -479,7 +517,8 @@ Foam::dimensioned<Type> Foam::DimensionedField<Type, GeoMesh>::average() const
 template<class Type, class GeoMesh>
 Foam::dimensioned<Type> Foam::DimensionedField<Type, GeoMesh>::weightedAverage
 (
-    const DimensionedField<scalar, GeoMesh>& weightField
+    const DimensionedField<scalar, GeoMesh>& weights,
+    const label comm
 ) const
 {
     return
@@ -487,7 +526,7 @@ Foam::dimensioned<Type> Foam::DimensionedField<Type, GeoMesh>::weightedAverage
         (
             this->name() + ".weightedAverage(weights)",
             this->dimensions(),
-            gSum(weightField*field())/gSum(weightField)
+            gWeightedAverage(weights.field(), this->field(), comm)
         );
 }
 
@@ -495,11 +534,12 @@ Foam::dimensioned<Type> Foam::DimensionedField<Type, GeoMesh>::weightedAverage
 template<class Type, class GeoMesh>
 Foam::dimensioned<Type> Foam::DimensionedField<Type, GeoMesh>::weightedAverage
 (
-    const tmp<DimensionedField<scalar, GeoMesh>>& tweightField
+    const tmp<DimensionedField<scalar, GeoMesh>>& tweights,
+    const label comm
 ) const
 {
-    dimensioned<Type> result = weightedAverage(tweightField());
-    tweightField.clear();
+    dimensioned<Type> result = this->weightedAverage(tweights(), comm);
+    tweights.clear();
     return result;
 }
 
@@ -521,7 +561,7 @@ void Foam::DimensionedField<Type, GeoMesh>::operator=
 
     dimensions_ = df.dimensions();
     oriented_ = df.oriented();
-    Field<Type>::operator=(df);
+    DynamicField<Type>::operator=(df);
 }
 
 
@@ -554,7 +594,14 @@ void Foam::DimensionedField<Type, GeoMesh>::operator=
 )
 {
     dimensions_ = dt.dimensions();
-    Field<Type>::operator=(dt.value());
+    DynamicField<Type>::operator=(dt.value());
+}
+
+
+template<class Type, class GeoMesh>
+void Foam::DimensionedField<Type, GeoMesh>::operator=(Foam::zero)
+{
+    DynamicField<Type>::operator=(Foam::zero{});
 }
 
 
@@ -570,7 +617,7 @@ void Foam::DimensionedField<Type, GeoMesh>::operator op                        \
                                                                                \
     dimensions_ op df.dimensions();                                            \
     oriented_ op df.oriented();                                                \
-    Field<Type>::operator op(df);                                              \
+    DynamicField<Type>::operator op(df);                                       \
 }                                                                              \
                                                                                \
 template<class Type, class GeoMesh>                                            \
@@ -590,7 +637,7 @@ void Foam::DimensionedField<Type, GeoMesh>::operator op                        \
 )                                                                              \
 {                                                                              \
     dimensions_ op dt.dimensions();                                            \
-    Field<Type>::operator op(dt.value());                                      \
+    DynamicField<Type>::operator op(dt.value());                               \
 }
 
 COMPUTED_ASSIGNMENT(Type, +=)

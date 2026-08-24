@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2019-2024 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -295,6 +295,9 @@ public:
 
             word fieldName_;
             const LduMatrix<Type, DType, LUType>& matrix_;
+
+            //- Dictionary of solution controls
+            dictionary controlDict_;
 
 
     public:

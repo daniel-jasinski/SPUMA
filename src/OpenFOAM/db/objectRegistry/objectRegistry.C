@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2019 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -302,7 +302,7 @@ bool Foam::objectRegistry::checkIn(regIOobject* io) const
     {
         Pout<< "objectRegistry::checkIn : "
             << name() << " : checking in " << io->name()
-            << " of type " << io->type()
+            << " type=" << io->type()
             << endl;
     }
 
@@ -365,7 +365,8 @@ bool Foam::objectRegistry::checkOut(regIOobject* io) const
         {
             Pout<< "objectRegistry::checkOut : "
                 << name() << " : checking out " << io->name()
-                << " of type " << io->type()
+                << " type=" << io->type()
+                << " owned=" << io->ownedByRegistry()
                 << endl;
         }
 
@@ -513,9 +514,11 @@ const Foam::regIOobject* Foam::objectRegistry::cfindIOobject
     const bool recursive
 ) const
 {
-    const_iterator iter = cfind(name);
-
-    if (iter.good())
+    if (name.empty())
+    {
+        return nullptr;
+    }
+    else if (auto iter = cfind(name); iter.good())
     {
         return iter.val();
     }
@@ -591,8 +594,8 @@ bool Foam::objectRegistry::writeObject
 
             Pout<< "objectRegistry::write() : "
                 << name() << " : Considering writing object "
-                << iter.key() << " of type "
-                << obj.type() << " with writeOpt "
+                << iter.key() << " type="
+                << obj.type() << " writeOpt="
                 << static_cast<int>(obj.writeOpt())
                 << " to file " << obj.objectRelPath() << endl;
         }

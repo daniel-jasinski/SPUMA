@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2020-2021 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -176,6 +176,12 @@ protected:
 
         //- Reference density needed for incompressible calculations
         scalar rhoRef_;
+
+        //- Wall film-surface friction field
+        mutable autoPtr<areaScalarField> CwPtr_;
+
+        //- Darcy-Weisbach model field
+        mutable autoPtr<areaScalarField> dwfPtr_;
 
 
 public:

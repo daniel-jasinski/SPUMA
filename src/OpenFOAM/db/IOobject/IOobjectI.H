@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,6 +26,16 @@ License
 \*---------------------------------------------------------------------------*/
 
 // * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+
+inline bool Foam::IOobject::fileModificationChecking_masterOnly() noexcept
+{
+    return
+    (
+        IOobject::fileModificationChecking == fileCheckTypes::timeStampMaster
+     || IOobject::fileModificationChecking == fileCheckTypes::inotifyMaster
+    );
+}
+
 
 template<class StringType>
 inline Foam::word Foam::IOobject::groupName
@@ -261,10 +271,23 @@ inline bool Foam::IOobject::hasHeaderClass() const noexcept
 }
 
 
+inline bool Foam::IOobject::isHeaderClass(const word& expectedType) const
+{
+    return (expectedType.empty() || (expectedType == headerClassName_));
+}
+
+
 template<class Type>
 inline bool Foam::IOobject::isHeaderClass() const
 {
-    return (Type::staticTypeName() == headerClassName_);
+    if constexpr (std::is_void_v<Type>)
+    {
+        return true;
+    }
+    else
+    {
+        return (Type::staticTypeName() == headerClassName_);
+    }
 }
 
 
@@ -288,6 +311,12 @@ inline const Foam::fileName& Foam::IOobject::local() const noexcept
 }
 
 
+inline Foam::fileName& Foam::IOobject::local() noexcept
+{
+    return local_;
+}
+
+
 inline Foam::fileName Foam::IOobject::objectPath() const
 {
     return path()/name();
@@ -297,6 +326,33 @@ inline Foam::fileName Foam::IOobject::objectPath() const
 inline Foam::fileName Foam::IOobject::globalObjectPath() const
 {
     return globalPath()/name();
+}
+
+
+inline Foam::fileName Foam::IOobject::objectPath
+(
+    IOobjectOption::Layout layout
+) const
+{
+    return path(layout)/name();
+}
+
+
+inline Foam::fileName Foam::IOobject::objectPath
+(
+    const word& instance
+) const
+{
+    return objectPath(IOobjectOption::Layout::regular, instance);
+}
+
+
+inline Foam::fileName Foam::IOobject::globalObjectPath
+(
+    const word& instance
+) const
+{
+    return objectPath(IOobjectOption::Layout::global, instance);
 }
 
 

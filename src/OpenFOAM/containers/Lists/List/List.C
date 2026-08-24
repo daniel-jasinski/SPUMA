@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -29,40 +29,49 @@ License
 
 #include "List.H"
 #include "FixedList.H"
-#include "PtrList.H"
-#include "contiguous.H"
+#include "UPtrList.H"
 
-// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
-//TODO memoryPool
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+// Only a limited number of internal size checks.
+// Caller knows what they are doing.
 template<class T>
-void Foam::List<T>::doResize(const label len)
+void Foam::List<T>::resize_copy(label count, const label len)
 {
-    if (len == this->size_)
+    if (this->size_ == len)
     {
-        return;
+        // no-op
     }
-
-    if (len > 0)
+    else if (FOAM_LIKELY(len > 0))
     {
         // With sign-check to avoid spurious -Walloc-size-larger-than
-        const label overlap = min(this->size_, len);
 
-        if (overlap > 0)
+        T* old = this->v_;
+        // const label oldLen = this->size_;
+
+        // The count truncated by the new length?
+        count = std::min(count, len);
+
+        // Extra safety, probably not necessary:
+        // The count truncated by the old length?
+        // // count = std::min(count, oldLen);
+
+        if (count > 0)
         {
             // Recover overlapping content when resizing
-            T* old = this->v_;
+
             this->size_ = len;
 #ifndef SYCL_DEVICE_ONLY
             if (this->usePool_)
             {
                 this->v_ = static_cast<T*>
                     (
-                        MemoryPool::getInstance()->allocate(len*sizeof(T))
+                        Spuma::MemoryPool::getInstance()->allocate(len*sizeof(T))
                     );
 
-                MemoryPool::getInstance()->memCopy(this->v_,old,overlap*sizeof(T));
+                Spuma::MemoryPool::getInstance()->memCopy(this->v_,old,count*sizeof(T));
 
-                MemoryPool::getInstance()->free(old);
+                Spuma::MemoryPool::getInstance()->free(old);
             }
             else
 #endif
@@ -70,9 +79,9 @@ void Foam::List<T>::doResize(const label len)
                 this->v_ = new T[len];
 
                 // Can dispatch with
-                // - std::execution::parallel_unsequenced_policy
-                // - std::execution::unsequenced_policy
-                std::move(old, (old + overlap), this->v_);
+                // - std::execution::par_unseq
+                // - std::execution::unseq
+                std::move(old, (old + count), this->v_);
 
                 delete[] old;
             };
@@ -83,7 +92,7 @@ void Foam::List<T>::doResize(const label len)
 #ifndef SYCL_DEVICE_ONLY
             if (this->usePool_)
             {
-                MemoryPool::getInstance()->free(this->v_);
+                Spuma::MemoryPool::getInstance()->free(this->v_);
             }
             else
 #endif
@@ -98,8 +107,19 @@ void Foam::List<T>::doResize(const label len)
             {
                 this->v_ = static_cast<T*>
                     (
-                        MemoryPool::getInstance()->allocate(len*sizeof(T))
+                        Spuma::MemoryPool::getInstance()->allocate(len*sizeof(T))
                     );
+                // mimimc placement new
+                // default-initialize memory
+                // use it just for ranges type T
+                if constexpr(Foam::is_range<T>::value && !Foam::is_vectorspace<T>::value)
+                {
+                    const T* value = new T;
+                    Spuma::MemoryPool::getInstance()->memSet(this->v_,value,sizeof(T),len*sizeof(T));
+
+                    // delete temporary object
+                    delete value;
+                }
             }
             else
 #endif
@@ -112,7 +132,7 @@ void Foam::List<T>::doResize(const label len)
     {
         // Or only #ifdef FULLDEBUG
 #ifndef SYCL_DEVICE_ONLY
-        if (len < 0)
+        if (FOAM_UNLIKELY(len < 0))
         {
             FatalErrorInFunction
                 << "bad size " << len
@@ -136,11 +156,10 @@ Foam::List<T>::List(const poolSwitch usePool)
 template<class T>
 Foam::List<T>::List(const label len, poolSwitch usePool)
 :
-    UList<T>(nullptr, len, usePool)
+    UList<T>(nullptr, 0, usePool)
 {
-    //Info << "alloc use pool : "<< usePool << nl;
 #ifndef SYCL_DEVICE_ONLY
-    if (len < 0)
+    if (FOAM_UNLIKELY(len < 0))
     {
         FatalErrorInFunction
             << "bad size " << len
@@ -148,18 +167,21 @@ Foam::List<T>::List(const label len, poolSwitch usePool)
     }
 #endif
 
-    doAlloc();
+    if (len > 0)
+    {
+        // resize_nocopy()
+        doAlloc(len);
+    }
 }
 
 
 template<class T>
 Foam::List<T>::List(const label len, const T& val, poolSwitch usePool)
 :
-    UList<T>(nullptr, len, usePool)
+    UList<T>(nullptr, 0, usePool)
 {
-    //Info << "alloc use pool : "<< usePool << nl;
 #ifndef SYCL_DEVICE_ONLY
-    if (len < 0)
+    if (FOAM_UNLIKELY(len < 0))
     {
         FatalErrorInFunction
             << "bad size " << len
@@ -167,21 +189,22 @@ Foam::List<T>::List(const label len, const T& val, poolSwitch usePool)
     }
 #endif
 
-    if (len)
+    if (len > 0)
     {
-        doAlloc();
+        // resize_fill()
+        doAlloc(len);
         UList<T>::operator=(val);
     }
 }
 
 
 template<class T>
-Foam::List<T>::List(const label len, const Foam::zero, poolSwitch usePool)
+Foam::List<T>::List(const label len, Foam::zero, poolSwitch usePool)
 :
-    UList<T>(nullptr, len, usePool)
+    UList<T>(nullptr, 0, usePool)
 {
 #ifndef SYCL_DEVICE_ONLY
-    if (len < 0)
+    if (FOAM_UNLIKELY(len < 0))
     {
         FatalErrorInFunction
             << "bad size " << len
@@ -189,49 +212,50 @@ Foam::List<T>::List(const label len, const Foam::zero, poolSwitch usePool)
     }
 #endif
 
-    if (len)
+    if (len > 0)
     {
-        doAlloc();
+        // resize_fill()
+        doAlloc(len);
         UList<T>::operator=(Foam::zero{});
     }
 }
 
 
 template<class T>
-Foam::List<T>::List(const Foam::one, const T& val)
+Foam::List<T>::List(Foam::one, const T& val)
 :
-    UList<T>(new T[1], 1)
+    UList<T>(ListPolicy::allocate<T>(1), 1)
 {
     this->v_[0] = val;
 }
 
 
 template<class T>
-Foam::List<T>::List(const Foam::one, T&& val)
+Foam::List<T>::List(Foam::one, T&& val)
 :
-    UList<T>(new T[1], 1)
+    UList<T>(ListPolicy::allocate<T>(1), 1)
 {
     this->v_[0] = std::move(val);
 }
 
 
 template<class T>
-Foam::List<T>::List(const Foam::one, const Foam::zero)
+Foam::List<T>::List(Foam::one, Foam::zero)
 :
-    UList<T>(new T[1], 1)
+    UList<T>(ListPolicy::allocate<T>(1), 1)
 {
-    this->v_[0] = Zero;
+    this->v_[0] = Foam::zero{};
 }
 
 
 template<class T>
 Foam::List<T>::List(const UList<T>& list)
 :
-    UList<T>(nullptr, list.size_, list.usePool())
+    UList<T>(nullptr, 0, list.usePool())
 {
-    if (this->size_ > 0)
+    if (!list.empty())
     {
-        doAlloc();
+        doAlloc(list.size());
         UList<T>::deepCopy(list);
     }
 }
@@ -240,11 +264,11 @@ Foam::List<T>::List(const UList<T>& list)
 template<class T>
 Foam::List<T>::List(const List<T>& list)
 :
-    UList<T>(nullptr, list.size_, list.usePool())
+    UList<T>(nullptr, 0, list.usePool())
 {
-    if (this->size_ > 0)
+    if (!list.empty())
     {
-        doAlloc();
+        doAlloc(list.size());
         UList<T>::deepCopy(list);
     }
 }
@@ -253,20 +277,19 @@ Foam::List<T>::List(const List<T>& list)
 template<class T>
 Foam::List<T>::List(List<T>& list, bool reuse)
 :
-    UList<T>(nullptr, list.size_, list.usePool())
+    UList<T>(nullptr, 0, list.usePool())
 {
     if (reuse)
     {
         // Steal content
         this->v_ = list.v_;
+        this->size_ = list.size_;
         list.v_ = nullptr;
         list.size_ = 0;
-        return;
     }
-
-    if (this->size_)
+    else if (!list.empty())
     {
-        doAlloc();
+        doAlloc(list.size());
         UList<T>::deepCopy(list);
     }
 }
@@ -275,10 +298,13 @@ Foam::List<T>::List(List<T>& list, bool reuse)
 template<class T>
 Foam::List<T>::List(const UList<T>& list, const labelUList& indices)
 :
-    UList<T>(nullptr, indices.size())
+    UList<T>(nullptr,0,list.usePool())
 {
-    doAlloc();
-    copyList(list, indices);  // <- deepCopy()
+    if (!indices.empty())
+    {
+        doAlloc(indices.size());
+        copyList(list, indices);  // <- deepCopy()
+    }
 }
 
 
@@ -290,10 +316,13 @@ Foam::List<T>::List
     const FixedList<label,N>& indices
 )
 :
-    UList<T>(nullptr, indices.size())
+    UList<T>(nullptr,0,list.usePool())
 {
-    doAlloc();
-    copyList(list, indices);  // <- deepCopy()
+    // if (!FixedList::empty()) is always true
+    {
+        doAlloc(indices.size());
+        copyList(list, indices);  // <- deepCopy()
+    }
 }
 
 
@@ -306,12 +335,15 @@ Foam::List<T>::List(const FixedList<T, N>& list)
 
 //TODO memoryPool
 template<class T>
-Foam::List<T>::List(const PtrList<T>& list)
+Foam::List<T>::List(const UPtrList<T>& list)
 :
-    UList<T>(nullptr, list.size())
+    UList<T>()
 {
-    doAlloc();
-    copyList(list);
+    if (!list.empty())
+    {
+        doAlloc(list.size());
+        copyList(list);
+    }
 }
 
 
@@ -319,11 +351,11 @@ template<class T>
 template<class Addr>
 Foam::List<T>::List(const IndirectListBase<T, Addr>& list)
 :
-    UList<T>(nullptr, list.size())
+    UList<T>()
 {
-    if (this->size_ > 0)
+    if (!list.empty())
     {
-        doAlloc();
+        doAlloc(list.size());
         UList<T>::deepCopy(list);
     }
 }
@@ -337,20 +369,10 @@ Foam::List<T>::List(std::initializer_list<T> list)
 
 
 template<class T>
-Foam::List<T>::List(List<T>&& list) noexcept
-:
-    UList<T>(list.data(), list.size(),list.usePool())
-{
-    list.size_ = 0;
-    list.v_ = nullptr;
-}
-
-
-template<class T>
 template<int SizeMin>
 Foam::List<T>::List(DynamicList<T, SizeMin>&& list)
 :
-    UList<T>()
+    UList<T>(nullptr,0,list.usePool())
 {
     transfer(list);
 }
@@ -366,7 +388,7 @@ Foam::List<T>::~List()
 #ifndef SYCL_DEVICE_ONLY
         if(this->usePool_)
         {
-            MemoryPool::getInstance()->free(this->v_);
+            Spuma::MemoryPool::getInstance()->free(this->v_);
 
         }
         else
@@ -384,7 +406,13 @@ template<class T>
 void Foam::List<T>::resize(const label len, const T& val)
 {
     const label oldLen = this->size_;
-    this->doResize(len);
+
+    if (oldLen == len)
+    {
+        return;
+    }
+
+    resize_copy(oldLen, len);
 
     // Fill trailing part with new values
     if (oldLen < this->size_)
@@ -409,12 +437,24 @@ void Foam::List<T>::transfer(List<T>& list)
     clear();
     this->size_ = list.size_;
 
-    //if input list is not on pool trigger copy
+    // If allocators differ, deep-copy and release source with its own allocator.
+    // This avoids transferring raw pointers across different deallocation paths.
 #ifndef SYCL_DEVICE_ONLY
     if (this->usePool() && !list.usePool())
     {
-        doAlloc();
-        MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+        doAlloc(list.size());
+        Spuma::MemoryPool::getInstance()->copyIn
+        (
+            this->v_,
+            reinterpret_cast<void*>(list.begin()),
+            this->size_*sizeof(T)
+        );
+        list.clear();
+    }
+    else if (!this->usePool() && list.usePool())
+    {
+        this->v_ = new T[this->size_];
+        std::copy(list.begin(), list.end(), this->v_);
         list.clear();
     }
     else
@@ -438,7 +478,7 @@ void Foam::List<T>::transfer(DynamicList<T, SizeMin>& list)
     // Shrink the allocated space to the number of elements used
     list.shrink_to_fit();
     transfer(static_cast<List<T>&>(list));
-    list.clearStorage();  // Deletion, capacity=0 etc.
+    list.setCapacity_unsafe(0);  // All contents moved
 }
 
 
@@ -452,9 +492,9 @@ void Foam::List<T>::operator=(const UList<T>& list)
         return;  // Self-assignment is a no-op
     }
 
-    reAlloc(list.size_);
+    resize_nocopy(list.size());
 
-    if (this->size_ > 0)
+    if (!list.empty())
     {
         UList<T>::deepCopy(list);
     }
@@ -469,9 +509,9 @@ void Foam::List<T>::operator=(const List<T>& list)
         return;  // Self-assignment is a no-op
     }
 
-    reAlloc(list.size_);
+    resize_nocopy(list.size());
 
-    if (this->size_ > 0)
+    if (!list.empty())
     {
         UList<T>::deepCopy(list);
     }
@@ -482,7 +522,7 @@ template<class T>
 template<unsigned N>
 void Foam::List<T>::operator=(const FixedList<T, N>& list)
 {
-    reAlloc(list.size());
+    resize_nocopy(list.size());
 
     std::copy(list.begin(), list.end(), this->v_);
 }
@@ -492,7 +532,7 @@ template<class T>
 template<class Addr>
 void Foam::List<T>::operator=(const IndirectListBase<T, Addr>& list)
 {
-    reAlloc(list.size());
+    resize_nocopy(list.size());
     UList<T>::deepCopy(list);
 }
 
@@ -500,8 +540,7 @@ void Foam::List<T>::operator=(const IndirectListBase<T, Addr>& list)
 template<class T>
 void Foam::List<T>::operator=(std::initializer_list<T> list)
 {
-    reAlloc(list.size());
-
+    resize_nocopy(list.size());
     std::copy(list.begin(), list.end(), this->v_);
 }
 
@@ -564,37 +603,6 @@ void Foam::sortedOrder
 
     Foam::identity(order, 0);
     Foam::stableSort(order, comp);
-}
-
-
-// * * * * * * * * * * * * * * * Housekeeping  * * * * * * * * * * * * * * * //
-
-#include "SLList.H"
-
-template<class T>
-Foam::List<T>::List(const SLList<T>& list)
-:
-    List<T>(list.begin(), list.end(), list.size())
-{}
-
-
-template<class T>
-void Foam::List<T>::operator=(const SLList<T>& list)
-{
-    const label len = list.size();
-
-    reAlloc(len);
-
-    // Cannot use std::copy algorithm
-    // - SLList doesn't define iterator category
-
-    T* iter = this->begin();
-
-    for (const T& val : list)
-    {
-        *iter = val;
-        ++iter;
-    }
 }
 
 

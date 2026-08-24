@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,6 +25,33 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+
+template<Foam::vtk::fileTag FileType, Foam::vtk::fileTag DataType>
+inline bool Foam::vtk::vtmWriter::appendTyped
+(
+    const fileName& file
+)
+{
+    bool ok = append(file, FileType);
+    if (ok) entries_.back().setDataType(DataType);
+    return ok;
+}
+
+
+template<Foam::vtk::fileTag FileType, Foam::vtk::fileTag DataType>
+inline bool Foam::vtk::vtmWriter::appendTyped
+(
+    const word& name,
+    const fileName& file
+)
+{
+    bool ok = append(name, file, FileType);
+    if (ok) entries_.back().setDataType(DataType);
+    return ok;
+}
+
+
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 inline Foam::word Foam::vtk::vtmWriter::ext()
@@ -33,35 +60,53 @@ inline Foam::word Foam::vtk::vtmWriter::ext()
 }
 
 
-inline bool Foam::vtk::vtmWriter::append_vtp(const fileName& file)
+inline bool Foam::vtk::vtmWriter::append_poly(const fileName& file)
 {
-    return append(file, vtk::fileTag::POLY_DATA);
+    return appendTyped<vtk::fileTag::POLY_DATA>(file);
 }
 
 
-inline bool Foam::vtk::vtmWriter::append_vtp
+inline bool Foam::vtk::vtmWriter::append_poly
 (
     const word& name,
     const fileName& file
 )
 {
-    return append(name, file, vtk::fileTag::POLY_DATA);
+    return appendTyped<vtk::fileTag::POLY_DATA>(name, file);
 }
 
 
-inline bool Foam::vtk::vtmWriter::append_vtu(const fileName& file)
+inline bool Foam::vtk::vtmWriter::append_ugrid(const fileName& file)
 {
-    return append(file, vtk::fileTag::UNSTRUCTURED_GRID);
+    return appendTyped<vtk::fileTag::UNSTRUCTURED_GRID>(file);
 }
 
 
-inline bool Foam::vtk::vtmWriter::append_vtu
+inline bool Foam::vtk::vtmWriter::append_ugrid
 (
     const word& name,
     const fileName& file
 )
 {
-    return append(name, file, vtk::fileTag::UNSTRUCTURED_GRID);
+    return appendTyped<vtk::fileTag::UNSTRUCTURED_GRID>(name, file);
+}
+
+
+template<Foam::vtk::fileTag DataType>
+inline bool Foam::vtk::vtmWriter::append_hdf(const fileName& file)
+{
+    return appendTyped<vtk::fileTag::VTK_HDF, DataType>(file);
+}
+
+
+template<Foam::vtk::fileTag DataType>
+inline bool Foam::vtk::vtmWriter::append_hdf
+(
+    const word& name,
+    const fileName& file
+)
+{
+    return appendTyped<vtk::fileTag::VTK_HDF, DataType>(name, file);
 }
 
 

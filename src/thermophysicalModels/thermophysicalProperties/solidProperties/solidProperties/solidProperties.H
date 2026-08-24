@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,7 +28,7 @@ Class
     Foam::solidProperties
 
 Description
-    The thermophysical properties of a solid
+    The thermophysical, mechanical properties of a solid
 
 SourceFiles
     solidProperties.C
@@ -74,7 +74,7 @@ class solidProperties
         //- Molar weight [Kg/Kmol]
         scalar W_;
 
-        //- Poisson ration
+        //- Poisson ratio
         scalar nu_;
 
         //- Young Modulus [N/m2]
@@ -82,6 +82,21 @@ class solidProperties
 
 
 public:
+
+    // Public Data Types
+
+        //- Simple categories of solid properties.
+        //  Can be leveraged eg, for mechanical-only vs thermal-only etc
+        enum categories
+        {
+            //! Needs mechanical only [E, nu]
+            MECHANICAL = (1),
+            //! Needs thermal only [Cp, kappa, emissivity?]
+            THERMAL = (2),
+            //! thermal: mandatory, mechanical: optional
+            REGULAR = 0xFF
+        };
+
 
     //- Runtime type information
     TypeName("solid");
@@ -110,6 +125,9 @@ public:
 
     // Constructors
 
+        //- Default construct
+        solidProperties() noexcept;
+
         //- Construct from components
         solidProperties
         (
@@ -121,10 +139,14 @@ public:
             scalar W,
             scalar nu,
             scalar E
-        );
+        ) noexcept;
 
         //- Construct from dictionary
-        solidProperties(const dictionary& dict);
+        explicit solidProperties(const dictionary& dict);
+
+        //- Construct from dictionary with category-specific handling
+        solidProperties(const dictionary& dict, categories category);
+
 
         //- Construct and return clone
         virtual autoPtr<solidProperties> clone() const
@@ -157,32 +179,32 @@ public:
 
         // Physical constants which define the solidProperties
 
-            //- Density [kg/m3]
-            inline scalar rho() const;
+        //- Density [kg/m3]
+        scalar rho() const noexcept { return rho_; }
 
-            //- Specific heat capacity [J/(kg.K)]
-            inline scalar Cp() const;
+        //- Specific heat capacity [J/(kg.K)]
+        scalar Cp() const { return Cp_; }
 
-            //- Thermal conductivity [W/(m.K)]
-            inline scalar kappa() const;
+        //- Thermal conductivity [W/(m.K)]
+        scalar kappa() const noexcept { return kappa_; }
 
-            //- Heat of formation [J/kg]
-            inline scalar Hf() const;
+        //- Heat of formation [J/kg]
+        scalar Hf() const noexcept { return Hf_; }
 
-            //- Sensible enthalpy - reference to Tstd [J/kg]
-            inline scalar Hs(const scalar T) const;
+        //- Sensible enthalpy - reference to Tstd [J/kg]
+        inline scalar Hs(const scalar T) const;
 
-            //- Emissivity []
-            inline scalar emissivity() const;
+        //- Emissivity []
+        scalar emissivity() const noexcept { return emissivity_;}
 
-            //- Molar weight [Kg/Kmol]
-            inline scalar W() const;
+        //- Molar weight [Kg/Kmol]
+        scalar W() const noexcept { return W_; }
 
-            //- Poissons
-            inline scalar nu() const;
+        //- Poisson ratio
+        scalar nu() const noexcept { return nu_; }
 
-            //- Young modulus [N/m2]
-            inline scalar E() const;
+        //- Young modulus [N/m2]
+        scalar E() const noexcept { return E_; }
 
 
     // I-O

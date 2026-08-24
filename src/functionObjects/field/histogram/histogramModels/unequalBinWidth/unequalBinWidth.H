@@ -32,7 +32,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    histogram1
+    histogramFO
     {
         // Inherited entries
         ...
@@ -125,7 +125,7 @@ public:
 
     // Member Functions
 
-        //- Read top-level dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
         //- Write data to stream and files

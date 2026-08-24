@@ -33,9 +33,9 @@ Description
     Runs in parallel. Redistributes from fromMesh to toMesh.
 
 SourceFiles
-    parLagrangianDistributor.C
-    parLagrangianDistributorFields.C
-    parLagrangianDistributorTemplates.C
+    parLagrangianDistributor.cxx
+    parLagrangianDistributor.txx
+    parLagrangianDistributorFields.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -226,7 +226,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-#   include "parLagrangianDistributorTemplates.C"
+#   include "parLagrangianDistributor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

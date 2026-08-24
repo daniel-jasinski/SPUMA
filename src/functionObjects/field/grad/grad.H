@@ -39,52 +39,36 @@ Description
     Operands:
     \table
       Operand       | Type                              | Location
-      input         | {vol,surface}{Scalar,Vector}Field <!--
-                --> | $FOAM_CASE/\<time\>/\<inpField\>
+      input         | {vol,surface}{Scalar,Vector}Field | <time>/inputFields
       output file   | -                                 | -
-      output field  | vol{Vector,Tensor}Field           <!--
-                --> | $FOAM_CASE/\<time\>/\<outField\>
+      output field  | vol{Vector,Tensor}Field           | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    grad1
+    gradFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            grad;
         libs            (fieldFunctionObjects);
+        field           <word>;
 
-        // Mandatory (inherited) entries (runtime modifiable)
-        field           <field>;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: grad                    | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       field        | Name of the operand field          | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func "grad(<field>)"
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::fieldExpression
-    - ExtendedCodeGuide::functionObjects::field::grad
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     grad.C
@@ -92,8 +76,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_grad_H
-#define functionObjects_grad_H
+#ifndef Foam_functionObjects_grad_H
+#define Foam_functionObjects_grad_H
 
 #include "fieldExpression.H"
 
@@ -130,7 +114,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         grad
         (
             const word& name,

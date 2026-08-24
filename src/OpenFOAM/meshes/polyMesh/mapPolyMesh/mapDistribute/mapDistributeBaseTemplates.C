@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2015-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,7 +35,7 @@ License
 template<class T, class CombineOp, class NegateOp>
 void Foam::mapDistributeBase::flipAndCombine
 (
-    List<T>& lhs,
+    UList<T>& lhs,
     const UList<T>& rhs,
 
     const labelUList& map,
@@ -45,6 +45,9 @@ void Foam::mapDistributeBase::flipAndCombine
 )
 {
     const label len = map.size();
+
+    // FULLDEBUG: if (lhs.size() < max(map))  FatalError ...;
+    // FULLDEBUG: if (rhs.size() < len)  FatalError ...;
 
     if (hasFlip)
     {
@@ -82,7 +85,7 @@ void Foam::mapDistributeBase::flipAndCombine
 template<class T, class NegateOp>
 void Foam::mapDistributeBase::accessAndFlip
 (
-    List<T>& output,
+    UList<T>& output,
     const UList<T>& values,
     const labelUList& map,
     const bool hasFlip,
@@ -91,6 +94,7 @@ void Foam::mapDistributeBase::accessAndFlip
 {
     const label len = map.size();
 
+    // FULLDEBUG: if (values.size() < max(map))  FatalError ...;
     // FULLDEBUG: if (output.size() < len)  FatalError ...;
 
     if (hasFlip)
@@ -162,11 +166,11 @@ void Foam::mapDistributeBase::send
     const label comm
 )
 {
-    if (!is_contiguous<T>::value)
+    if constexpr (!is_contiguous_v<T>)
     {
         FatalErrorInFunction
             << "Only contiguous is currently supported"
-            << exit(FatalError);
+            << Foam::abort(FatalError);
     }
 
     const auto myRank = UPstream::myProcNo(comm);
@@ -201,8 +205,7 @@ void Foam::mapDistributeBase::send
             (
                 UPstream::commsTypes::nonBlocking,
                 proci,
-                subField.data_bytes(),
-                subField.size_bytes(),
+                subField,
                 tag,
                 comm
             );
@@ -244,8 +247,7 @@ void Foam::mapDistributeBase::send
             (
                 UPstream::commsTypes::nonBlocking,
                 proci,
-                subField.cdata_bytes(),
-                subField.size_bytes(),
+                subField,
                 tag,
                 comm
             );
@@ -318,14 +320,15 @@ void Foam::mapDistributeBase::receive
     const label comm
 )
 {
-    if (!is_contiguous<T>::value)
+    if constexpr (!is_contiguous_v<T>)
     {
         FatalErrorInFunction
             << "Only contiguous is currently supported"
-            << exit(FatalError);
+            << Foam::abort(FatalError);
     }
 
     const auto myRank = UPstream::myProcNo(comm);
+    [[maybe_unused]]
     const auto nProcs = UPstream::nProcs(comm);
 
 
@@ -448,7 +451,7 @@ template<class T, class CombineOp, class NegateOp>
 void Foam::mapDistributeBase::distribute
 (
     const UPstream::commsTypes commsType,
-    const List<labelPair>& schedule,
+    const UList<labelPair>& schedule,
     const label constructSize,
     const labelListList& subMap,
     const bool subHasFlip,
@@ -463,6 +466,7 @@ void Foam::mapDistributeBase::distribute
 )
 {
     const auto myRank = UPstream::myProcNo(comm);
+    [[maybe_unused]]
     const auto nProcs = UPstream::nProcs(comm);
 
     if (!UPstream::parRun())
@@ -679,7 +683,7 @@ void Foam::mapDistributeBase::distribute
     {
         const label startOfRequests = UPstream::nRequests();
 
-        if (!is_contiguous<T>::value)
+        if constexpr (!is_contiguous_v<T>)
         {
             PstreamBuffers pBufs(comm, tag);
 
@@ -776,8 +780,7 @@ void Foam::mapDistributeBase::distribute
                     (
                         UPstream::commsTypes::nonBlocking,
                         proci,
-                        subField.data_bytes(),
-                        subField.size_bytes(),
+                        subField,
                         tag,
                         comm
                     );
@@ -804,8 +807,7 @@ void Foam::mapDistributeBase::distribute
                     (
                         UPstream::commsTypes::nonBlocking,
                         proci,
-                        subField.cdata_bytes(),
-                        subField.size_bytes(),
+                        subField,
                         tag,
                         comm
                     );
@@ -892,11 +894,280 @@ void Foam::mapDistributeBase::distribute
 }
 
 
+template<class T, class CombineOp, class NegateOp>
+void Foam::mapDistributeBase::distribute
+(
+    const UPstream::commsTypes commsType,
+    const UList<labelPair>& schedule,
+
+    const UList<T>& inField,         // input field
+    const labelListList& subMap,
+    const bool subHasFlip,
+
+    List<T>& field,
+    const label constructSize,
+    const labelListList& constructMap,
+    const bool constructHasFlip,
+    const T& nullValue,
+    const CombineOp& cop,
+    const NegateOp& negOp,
+
+    const int tag,
+    const label comm
+)
+{
+    const auto myRank = UPstream::myProcNo(comm);
+    const auto nProcs = UPstream::nProcs(comm);
+
+    if (!UPstream::parRun())
+    {
+        // Do only me to me.
+
+        List<T> subField
+        (
+            accessAndFlip(inField, subMap[myRank], subHasFlip, negOp)
+        );
+
+        // Receive sub field from myself (subField)
+        const labelList& map = constructMap[myRank];
+
+        // Combining bits - can now reuse field storage
+        field.resize_nocopy(constructSize);
+        field = nullValue;
+
+        flipAndCombine
+        (
+            field,
+            subField,
+            map,
+            constructHasFlip,
+            cop,
+            negOp
+        );
+
+        return;
+    }
+
+    if (commsType != UPstream::commsTypes::nonBlocking)
+    {
+        FatalErrorInFunction
+            << "Unsupport communication type " << int(commsType)
+            << abort(FatalError);
+    }
+
+    const label startOfRequests = UPstream::nRequests();
+
+    if constexpr (!is_contiguous_v<T>)
+    {
+        PstreamBuffers pBufs(comm, tag);
+
+        // Stream data into buffer
+        for (const int proci : UPstream::allProcs(comm))
+        {
+            const labelList& map = subMap[proci];
+
+            if (proci != myRank && map.size())
+            {
+                List<T> subField
+                (
+                    accessAndFlip(inField, map, subHasFlip, negOp)
+                );
+
+                UOPstream os(proci, pBufs);
+                os  << subField;
+            }
+        }
+
+        // Initiate receiving - do yet not block
+        pBufs.finishedSends(false);
+
+        {
+            // Set up 'send' to myself
+            List<T> subField
+            (
+                accessAndFlip(inField, subMap[myRank], subHasFlip, negOp)
+            );
+
+            // Combining bits - can now reuse field storage
+            field.resize_nocopy(constructSize);
+            field = nullValue;
+
+            // Receive sub field from myself
+            const labelList& map = constructMap[myRank];
+
+            flipAndCombine
+            (
+                field,
+                subField,
+                map,
+                constructHasFlip,
+                cop,
+                negOp
+            );
+        }
+
+        // Wait for receive requests (and the send requests too)
+        UPstream::waitRequests(startOfRequests);
+
+        // Receive and process neighbour fields
+        for (const int proci : UPstream::allProcs(comm))
+        {
+            const labelList& map = constructMap[proci];
+
+            if (proci != myRank && map.size())
+            {
+                UIPstream is(proci, pBufs);
+                List<T> subField(is);
+
+                checkReceivedSize(proci, map.size(), subField.size());
+
+                flipAndCombine
+                (
+                    field,
+                    subField,
+                    map,
+                    constructHasFlip,
+                    cop,
+                    negOp
+                );
+            }
+        }
+    }
+    else
+    {
+        // Set up receives from neighbours
+
+        List<List<T>> recvFields(nProcs);
+        DynamicList<int> recvProcs(nProcs);
+
+        for (const int proci : UPstream::allProcs(comm))
+        {
+            const labelList& map = constructMap[proci];
+
+            if (proci != myRank && map.size())
+            {
+                recvProcs.push_back(proci);
+                List<T>& subField = recvFields[proci];
+                subField.resize_nocopy(map.size());
+
+                UIPstream::read
+                (
+                    UPstream::commsTypes::nonBlocking,
+                    proci,
+                    subField.data_bytes(),
+                    subField.size_bytes(),
+                    tag,
+                    comm
+                );
+            }
+        }
+
+
+        // Set up sends to neighbours
+
+        List<List<T>> sendFields(nProcs);
+
+        for (const int proci : UPstream::allProcs(comm))
+        {
+            const labelList& map = subMap[proci];
+
+            if (proci != myRank && map.size())
+            {
+                List<T>& subField = sendFields[proci];
+                subField.resize_nocopy(map.size());
+
+                accessAndFlip(subField, inField, map, subHasFlip, negOp);
+
+                UOPstream::write
+                (
+                    UPstream::commsTypes::nonBlocking,
+                    proci,
+                    subField.cdata_bytes(),
+                    subField.size_bytes(),
+                    tag,
+                    comm
+                );
+            }
+        }
+
+        // Set up 'send' to myself - copy directly into recvFields
+        {
+            const labelList& map = subMap[myRank];
+            List<T>& subField = recvFields[myRank];
+            subField.resize_nocopy(map.size());
+
+            accessAndFlip(subField, inField, map, subHasFlip, negOp);
+        }
+
+
+        // Combining bits - can now reuse field storage
+        field.resize_nocopy(constructSize);
+        field = nullValue;
+
+        // Receive sub field from myself : recvFields[myRank]
+        {
+            const labelList& map = constructMap[myRank];
+            const List<T>& subField = recvFields[myRank];
+
+            // Probably don't need a size check
+            // checkReceivedSize(myRank, map.size(), subField.size());
+
+            flipAndCombine
+            (
+                field,
+                subField,
+                map,
+                constructHasFlip,
+                cop,
+                negOp
+            );
+        }
+
+
+        // Poll for completed receive requests and dispatch
+        DynamicList<int> indices(recvProcs.size());
+        while
+        (
+            UPstream::waitSomeRequests
+            (
+                startOfRequests,
+                recvProcs.size(),
+                &indices
+            )
+        )
+        {
+            for (const int idx : indices)
+            {
+                const int proci = recvProcs[idx];
+                const labelList& map = constructMap[proci];
+                const List<T>& subField = recvFields[proci];
+
+                // No size check - was dimensioned above
+                // checkReceivedSize(proci, map.size(), subField.size());
+
+                flipAndCombine
+                (
+                    field,
+                    subField,
+                    map,
+                    constructHasFlip,
+                    cop,
+                    negOp
+                );
+            }
+        }
+
+        // Wait for any remaining requests
+        UPstream::waitRequests(startOfRequests);
+    }
+}
+
+
 template<class T, class NegateOp>
 void Foam::mapDistributeBase::distribute
 (
     const UPstream::commsTypes commsType,
-    const List<labelPair>& schedule,
+    const UList<labelPair>& schedule,
     const label constructSize,
     const labelListList& subMap,
     const bool subHasFlip,
@@ -909,6 +1180,7 @@ void Foam::mapDistributeBase::distribute
 )
 {
     const auto myRank = UPstream::myProcNo(comm);
+    [[maybe_unused]]
     const auto nProcs = UPstream::nProcs(comm);
 
     if (!UPstream::parRun())
@@ -1119,7 +1391,7 @@ void Foam::mapDistributeBase::distribute
     {
         const label startOfRequests = UPstream::nRequests();
 
-        if (!is_contiguous<T>::value)
+        if constexpr (!is_contiguous_v<T>)
         {
             PstreamBuffers pBufs(comm, tag);
 
@@ -1215,8 +1487,7 @@ void Foam::mapDistributeBase::distribute
                     (
                         UPstream::commsTypes::nonBlocking,
                         proci,
-                        subField.data_bytes(),
-                        subField.size_bytes(),
+                        subField,
                         tag,
                         comm
                     );
@@ -1243,8 +1514,7 @@ void Foam::mapDistributeBase::distribute
                     (
                         UPstream::commsTypes::nonBlocking,
                         proci,
-                        subField.cdata_bytes(),
-                        subField.size_bytes(),
+                        subField,
                         tag,
                         comm
                     );
@@ -1335,7 +1605,7 @@ template<class T>
 void Foam::mapDistributeBase::send
 (
     PstreamBuffers& pBufs,
-    const List<T>& field
+    const UList<T>& field
 ) const
 {
     // Stream data into buffer
@@ -1485,13 +1755,11 @@ void Foam::mapDistributeBase::distribute
     const int tag
 ) const
 {
-    values.shrink();
+    List<T> work(std::move(values));
 
-    List<T>& list = static_cast<List<T>&>(values);
+    distribute(commsType, work, tag);
 
-    distribute(commsType, list, tag);
-
-    values.setCapacity(list.size());
+    values = std::move(work);
 }
 
 

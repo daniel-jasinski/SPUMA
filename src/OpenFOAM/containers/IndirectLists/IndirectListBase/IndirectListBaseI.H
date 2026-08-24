@@ -238,7 +238,7 @@ inline void Foam::IndirectListBase<T, Addr>::operator=(const T& val)
 
 
 template<class T, class Addr>
-inline void Foam::IndirectListBase<T, Addr>::operator=(const Foam::zero)
+inline void Foam::IndirectListBase<T, Addr>::operator=(Foam::zero)
 {
     if (values_.usePool() && addr_.usePool())
     {

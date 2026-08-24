@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2017 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -32,7 +32,7 @@ Description
     taking an Istream or ISstream. Aborts at any attempt to read from it.
 
 Note
-    The inheritance from an empty IStringStream is solely for convenience
+    The inheritance from an empty ICharStream is solely for convenience
     of implementation and should not be relied upon.
 
 SourceFiles
@@ -43,7 +43,8 @@ SourceFiles
 #ifndef Foam_dummyISstream_H
 #define Foam_dummyISstream_H
 
-#include "StringStream.H"
+#include "autoPtr.H"
+#include "SpanStream.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,7 +57,7 @@ namespace Foam
 
 class dummyISstream
 :
-    public IStringStream
+    public ICharStream
 {
 public:
 
@@ -67,6 +68,15 @@ public:
 
         //- Destructor
         virtual ~dummyISstream() = default;
+
+
+    // Factory Methods
+
+        //- Return a dummyISstream
+        static autoPtr<ISstream> New()
+        {
+            return autoPtr<ISstream>(new dummyISstream());
+        }
 
 
     // Member Functions
@@ -118,8 +128,29 @@ public:
             return *this;
         }
 
-        //- Read a label
-        virtual Istream& read(label&) override
+        //- Read int32_t
+        virtual Istream& read(int32_t&) override
+        {
+            NotImplemented;
+            return *this;
+        }
+
+        //- Read int64_t
+        virtual Istream& read(int64_t&) override
+        {
+            NotImplemented;
+            return *this;
+        }
+
+        //- Read uint32_t
+        virtual Istream& read(uint32_t&) override
+        {
+            NotImplemented;
+            return *this;
+        }
+
+        //- Read uint64_t
+        virtual Istream& read(uint64_t&) override
         {
             NotImplemented;
             return *this;

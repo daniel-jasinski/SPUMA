@@ -30,8 +30,8 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Computes a field whose values are offset to a reference
-    value obtained by from a Function1.
+    Computes a field whose values are offset to a reference value obtained by
+    from a Function1.
 
     The field values are calculated using:
 
@@ -51,42 +51,37 @@ Description
     Operands:
     \table
       Operand       | Type                       | Location
-      input         | {vol,surface}\<Type\>Field <!--
-                --> | $FOAM_CASE/\<time\>/\<inpField\>
+      input         | {vol,surface}<Type>Field   | <time>/inputField
       output file   | -                          | -
-      output field  | {vol,surface}\<Type\>Field <!--
-                --> | $FOAM_CASE/\<time\>/\<outField\>
+      output field  | {vol,surface}<Type>Field   | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    reference1
+    referenceFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        reference;
         libs        (fieldFunctionObjects);
-
-        // Mandatory (inherited) entry (runtime modifiable)
-        field       <field>;
-
-        // Reference value
+        field       <word>;
         refValue    <Function1>;
 
-        // Optional entries (runtime modifiable)
-        scale       1.0;
-        offset      0.0;
+        // Optional entries
+        scale       <scalar>;
+        offset      <scalar>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     Where the entries comprise:
     \table
-        Property     | Description                | Type | Req'd | Dflt
+        Property     | Description                | Type | Reqd  | Deflt
         type         | Type name: reference       | word | yes   | -
         field        | Name of the operand field  | word | yes   | -
         refValue     | Function1 reference value  | Function1 | yes | -
@@ -95,17 +90,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::Function1
-    - ExtendedCodeGuide::functionObjects::field::reference
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     reference.C
@@ -113,8 +98,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_reference_H
-#define functionObjects_reference_H
+#ifndef Foam_functionObjects_reference_H
+#define Foam_functionObjects_reference_H
 
 #include "fieldExpression.H"
 #include "point.H"
@@ -161,7 +146,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         reference
         (
             const word& name,
@@ -182,7 +167,7 @@ public:
 
     // Public Member Functions
 
-        //- Read the fieldExpression data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 };
 

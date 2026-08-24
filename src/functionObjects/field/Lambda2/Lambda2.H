@@ -37,9 +37,9 @@ Description
     Operands:
     \table
       Operand          | Type           | Location
-      input            | volVectorField | \<case\>/\<time\>/\<inpField\>
+      input            | volVectorField | <time>/inputField
       output file      | -              | -
-      output field     | volScalarField | \<case\>/\<time\>/\<outField\>
+      output field     | volScalarField | <time>/outputField
     \endtable
 
     References:
@@ -54,7 +54,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    Lambda21
+    Lambda2FO
     {
         // Mandatory entries
         type            Lambda2;
@@ -73,21 +73,15 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func Lambda2
-    \endverbatim
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     Lambda2.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_Lambda2_H
-#define functionObjects_Lambda2_H
+#ifndef Foam_functionObjects_Lambda2_H
+#define Foam_functionObjects_Lambda2_H
 
 #include "fieldExpression.H"
 
@@ -120,7 +114,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         Lambda2
         (
             const word& name,

@@ -26,7 +26,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "DynamicList.H"
-#include "labelRange.H"
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 

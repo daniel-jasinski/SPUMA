@@ -61,6 +61,14 @@ Foam::functionObjects::add::add
     fieldsExpression(name, runTime, dict)
 {
     setResultName("add");
+
+    if (fieldNames_.size() < 2)
+    {
+        FatalIOErrorInFunction(dict)
+            << "At least two field names are required, but only "
+            << fieldNames_.size() << " provided." << nl
+            << exit(FatalIOError);
+    }
 }
 
 

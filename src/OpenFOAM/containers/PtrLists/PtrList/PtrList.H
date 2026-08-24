@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -70,6 +70,15 @@ class PtrList
 :
     public UPtrList<T>
 {
+    // Private Member Functions
+
+        //- Copy assignment.
+        //  For existing list entries, values are copied from the list.
+        //  For new list entries, pointers are cloned from the list.
+        template<bool CheckSelf>
+        void copyPtrList(const UPtrList<T>& list);
+
+
 protected:
 
     // Protected Member Functions
@@ -103,7 +112,7 @@ public:
         inline PtrList(const PtrList<T>& list, const CloneArg& cloneArgs);
 
         //- Construct as copy or re-use as specified
-        PtrList(PtrList<T>& list, bool reuse);
+        inline PtrList(PtrList<T>& list, bool reuse);
 
         //- Copy construct using 'clone()' on each element of SLPtrList\<T\>
         explicit PtrList(const SLPtrList<T>& list);
@@ -224,6 +233,11 @@ public:
         //- Copy assignment.
         //  For existing list entries, values are copied from the list.
         //  For new list entries, pointers are cloned from the list.
+        void operator=(const UPtrList<T>& list);
+
+        //- Copy assignment.
+        //  For existing list entries, values are copied from the list.
+        //  For new list entries, pointers are cloned from the list.
         void operator=(const PtrList<T>& list);
 
         //- Move assignment
@@ -249,7 +263,7 @@ public:
         }
 
         //- Same as resize()
-        void setSize(const label newLen) { this->resize(newLen); }
+        void setSize(const label n) { this->resize(n); }
 
         //- Move append an element to the end of the list
         //FOAM_DEPRECATED_FOR(2022-10, "push_back()")

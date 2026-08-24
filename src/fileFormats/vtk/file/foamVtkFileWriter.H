@@ -41,9 +41,9 @@ Description
     multi-piece geometries.
 
 SourceFiles
-    foamVtkFileWriter.C
+    foamVtkFileWriter.cxx
+    foamVtkFileWriter.txx
     foamVtkFileWriterI.H
-    foamVtkFileWriterTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
@@ -51,6 +51,7 @@ SourceFiles
 #define Foam_vtk_fileWriter_H
 
 #include <fstream>
+
 #include "Enum.H"
 #include "UPstream.H"
 #include "foamVtkOutputOptions.H"
@@ -73,7 +74,7 @@ protected:
     // Protected Member Data
 
         //- Internal tracking of the output state.
-        enum outputState : uint8_t
+        enum class outputState : uint8_t
         {
             CLOSED = 0,     //!< File is closed
             OPENED,         //!< File is opened
@@ -350,7 +351,7 @@ public:
 #include "foamVtkFileWriterI.H"
 
 #ifdef NoRepository
-    #include "foamVtkFileWriterTemplates.C"
+    #include "foamVtkFileWriter.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

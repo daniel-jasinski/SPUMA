@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2020-2021 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -90,7 +90,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    DMD1
+    DMDFO
     {
         // Mandatory entries
         DMDModel            STDMD;
@@ -177,18 +177,14 @@ Note
     mag(eigenvalue)*(no. of STDMD steps), i.e. x*y, whose magnitude is larger
     than \c sortLimiter.
 
-See also
-  - Foam::functionObjects::DMD
-  - Foam::DMDModel
-
 SourceFiles
     STDMD.C
     STDMDTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef DMDModels_STDMD_H
-#define DMDModels_STDMD_H
+#ifndef Foam_DMDModels_STDMD_H
+#define Foam_DMDModels_STDMD_H
 
 #include "DMDModel.H"
 #include "SquareMatrix.H"
@@ -400,28 +396,9 @@ class STDMD
             template<class GeoFieldType>
             bool calcModes();
 
-            //- Compute a mode for a given scalar-based input field
+            //- Compute a mode for a given scalar-based or other input field
             template<class GeoFieldType>
-            typename std::enable_if
-            <
-                std::is_same<scalar, typename GeoFieldType::value_type>::value,
-                void
-            >::type calcMode
-            (
-                GeoFieldType& modeRe,
-                GeoFieldType& modeIm,
-                const RMatrix& primitiveMode,
-                const label magi,
-                const label rowi = 0
-            );
-
-            //- Compute a mode for a given non-scalar-based input field
-            template<class GeoFieldType>
-            typename std::enable_if
-            <
-                !std::is_same<scalar, typename GeoFieldType::value_type>::value,
-                void
-            >::type calcMode
+            void calcMode
             (
                 GeoFieldType& modeRe,
                 GeoFieldType& modeIm,
@@ -504,9 +481,9 @@ public:
             virtual bool fit();
 
 
-        // IO
+        // I-O
 
-            //- Read STDMD settings
+            //- Read the function-object dictionary
             virtual bool read(const dictionary& dict);
 };
 

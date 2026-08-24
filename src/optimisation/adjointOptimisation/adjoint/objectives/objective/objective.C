@@ -486,7 +486,7 @@ void objective::nullify()
     {
         if (hasdJdb())
         {
-            dJdbPtr_() == dimensionedScalar(dJdbPtr_().dimensions(), Zero);
+            dJdbPtr_() == Zero;
         }
         if (hasdJdbField())
         {
@@ -494,23 +494,23 @@ void objective::nullify()
         }
         if (hasBoundarydJdb())
         {
-            bdJdbPtr_() == vector::zero;
+            bdJdbPtr_() == Zero;
         }
         if (hasdSdbMult())
         {
-            bdSdbMultPtr_() == vector::zero;
+            bdSdbMultPtr_() == Zero;
         }
         if (hasdndbMult())
         {
-            bdndbMultPtr_() == vector::zero;
+            bdndbMultPtr_() == Zero;
         }
         if (hasdxdbMult())
         {
-            bdxdbMultPtr_() == vector::zero;
+            bdxdbMultPtr_() == Zero;
         }
         if (hasdxdbDirectMult())
         {
-            bdxdbDirectMultPtr_() == vector::zero;
+            bdxdbDirectMultPtr_() == Zero;
         }
         if (hasBoundaryEdgeContribution())
         {
@@ -526,19 +526,17 @@ void objective::nullify()
         #else
             for (Field<vectorField>& field : bEdgeContribution_())
             {
-                field = vector::zero;
+                field = Zero;
             }
         #endif
         }
         if (hasDivDxDbMult())
         {
-            divDxDbMultPtr_() ==
-                dimensionedScalar(divDxDbMultPtr_().dimensions(), Zero);
+            divDxDbMultPtr_() == Zero;
         }
         if (hasGradDxDbMult())
         {
-            gradDxDbMultPtr_() ==
-                dimensionedTensor(gradDxDbMultPtr_().dimensions(), Zero);
+            gradDxDbMultPtr_() == Zero;
         }
 
         nullified_ = true;

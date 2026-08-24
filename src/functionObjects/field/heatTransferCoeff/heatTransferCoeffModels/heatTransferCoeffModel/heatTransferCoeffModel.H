@@ -146,28 +146,16 @@ public:
     // Access
 
         //- Return const reference to the mesh
-        const fvMesh& mesh() const noexcept
-        {
-            return mesh_;
-        }
+        const fvMesh& mesh() const noexcept { return mesh_; }
 
         //- Return const reference to wall patches to process
-        const labelList& patchIDs() const noexcept
-        {
-            return patchIDs_;
-        }
+        const labelList& patchIDs() const noexcept { return patchIDs_; }
 
         //- Return const reference to name of temperature field
-        const word& TName() const noexcept
-        {
-            return TName_;
-        }
+        const word& TName() const noexcept { return TName_; }
 
         //- Return const reference to name of radiative heat-flux field
-        const word& qrName() const noexcept
-        {
-            return qrName_;
-        }
+        const word& qrName() const noexcept { return qrName_; }
 
 
     // Evaluation
@@ -186,7 +174,7 @@ public:
 
     // I-O
 
-        //- Read from dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 };
 

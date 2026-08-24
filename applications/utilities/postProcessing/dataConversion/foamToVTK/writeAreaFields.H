@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -28,7 +28,10 @@ namespace Foam
 {
 
 // Writer type for finite-area mesh + fields
-typedef vtk::uindirectPatchGeoFieldsWriter vtkWriterType_areaMesh;
+typedef
+    vtk::uindirectPatchGeoFieldsWriter
+    vtkWriterType_areaMesh;
+
 
 template<class GeoField>
 label writeAreaFields
@@ -67,24 +70,35 @@ label writeAllAreaFields
     const bool syncPar
 )
 {
-    #undef  foamToVtk_WRITE_FIELD
-    #define foamToVtk_WRITE_FIELD(FieldType)    \
-        writeAreaFields<FieldType>              \
-        (                                       \
-            writer,                             \
-            mesh,                               \
-            objects,                            \
-            syncPar                             \
-        )
-
     label count = 0;
-    count += foamToVtk_WRITE_FIELD(areaScalarField);
-    count += foamToVtk_WRITE_FIELD(areaVectorField);
-    count += foamToVtk_WRITE_FIELD(areaSphericalTensorField);
-    count += foamToVtk_WRITE_FIELD(areaSymmTensorField);
-    count += foamToVtk_WRITE_FIELD(areaTensorField);
+    const label total = objects.size();
+    do
+    {
+        #undef  doLocalWriteCode
+        #define doLocalWriteCode(Type)                      \
+        {                                                   \
+            typedef AreaField<Type> FieldType;              \
+                                                            \
+            count += writeAreaFields<FieldType>             \
+            (                                               \
+                writer,                                     \
+                mesh,                                       \
+                objects,                                    \
+                syncPar                                     \
+            );                                              \
+            if (count >= total) break;  /* early exit */    \
+        }
 
-    #undef foamToVtk_WRITE_FIELD
+        doLocalWriteCode(scalar);
+        doLocalWriteCode(vector);
+        doLocalWriteCode(sphericalTensor);
+        doLocalWriteCode(symmTensor);
+        doLocalWriteCode(tensor);
+
+        #undef doLocalWriteCode
+    }
+    while (false);
+
     return count;
 }
 

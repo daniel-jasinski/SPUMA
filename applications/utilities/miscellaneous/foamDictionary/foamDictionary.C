@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -140,6 +140,38 @@ using namespace Foam;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+//- Read dictionary from IFstream, setting the stream to ascii/binary mode
+//- depending on the 'FoamFile' header content
+dictionary readDictionary(Istream& is)
+{
+    auto format = is.format();
+
+    // If the file starts with 'FoamFile { ... }'
+    token tok;
+    if
+    (
+        (tok.read(is) && tok.isWord("FoamFile"))
+     && (tok.read(is) && tok.isPunctuation(token::BEGIN_BLOCK))
+    )
+    {
+        is.putBack(tok);  // Put back '{'
+
+        // FoamFile sub-dictionary content
+        dictionary header(is);
+
+        // Get "format" if present
+        format = IOstreamOption::formatEnum("format", header, format);
+    }
+
+    // Start again. Probably does not work well with IPstream though
+    is.rewind();
+    is.format(format);
+
+    // Read, preserving headers
+    return dictionary(is, true);
+}
+
+
 //- Convert very old ':' scope syntax to less old '.' scope syntax,
 //  but leave anything with '/' delimiters untouched
 bool upgradeScope(word& entryName)
@@ -219,18 +251,31 @@ const dictionary& lookupScopedDict
         return dict;
     }
 
-    const entry* eptr = dict.findScoped(subDictName, keyType::LITERAL);
+    const auto finder = dict.csearchScoped(subDictName, keyType::LITERAL);
 
-    if (!eptr || !eptr->isDict())
+    if (!finder.good() || !finder.isDict())
     {
+        // Not found or not a dictionary
         FatalIOErrorInFunction(dict)
-            << "'" << subDictName << "' not found in dictionary "
-            << dict.name() << " or is not a dictionary" << nl
-            << "Known entries are " << dict.keys()
+            << '"' << subDictName << '"' << nl;
+
+        if (!finder.good())
+        {
+            FatalIOError << "Not found in dictionary";
+        }
+        else
+        {
+            FatalIOError << "Not a dictionary entry";
+        }
+
+        FatalIOError
+            << nl << nl
+            << "Known entries of " << finder.context().name() << " : " << nl
+            << finder.context().keys()
             << exit(FatalIOError);
     }
 
-    return eptr->dict();
+    return finder.dict();
 }
 
 
@@ -266,6 +311,8 @@ void removeDict(dictionary& dict, const dictionary& dictToRemove)
 }
 
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 int main(int argc, char *argv[])
 {
     argList::addNote
@@ -273,7 +320,7 @@ int main(int argc, char *argv[])
         "Interrogate and manipulate dictionaries"
     );
 
-    argList::noBanner();
+    argList::noBanner();  // Essential if redirecting stdout
     argList::noJobInfo();
     argList::addArgument("dict", "The dictionary file to process");
     argList::addBoolOption("keywords", "List keywords");
@@ -336,7 +383,7 @@ int main(int argc, char *argv[])
         "disableFunctionEntries",
         "Disable expansion of dictionary directives - #include, #codeStream etc"
     );
-    profiling::disable(); // Disable profiling (and its output)
+    profiling::disable();  // Disable profiling (and its output)
 
     argList args(argc, argv);
 
@@ -369,7 +416,7 @@ int main(int argc, char *argv[])
     const auto dictFileName = args.get<fileName>(1);
 
     auto dictFile = autoPtr<IFstream>::New(dictFileName);
-    if (!dictFile().good())
+    if (!dictFile || !dictFile().good())
     {
         FatalErrorInFunction
             << "Cannot open file " << dictFileName
@@ -379,8 +426,13 @@ int main(int argc, char *argv[])
 
     bool changed = false;
 
-    // Read but preserve headers
-    dictionary dict(dictFile(), true);
+    // Read, preserving headers
+    //// dictionary dict(dictFile(), true);
+    dictionary dict = readDictionary(dictFile());
+
+    // The extracted dictionary format
+    const auto dictFormat = dictFile().format();
+
 
     if (listIncludes)
     {
@@ -414,8 +466,10 @@ int main(int argc, char *argv[])
                     << exit(FatalError, 1);
             }
 
-            // Read but preserve headers
-            diffDict.read(diffFile, true);
+            // Read, preserving headers
+            //// diffDict.read(diffFile, true);
+            diffDict = readDictionary(diffFile);
+
             optDiff = true;
         }
         else if (args.readIfPresent("diff-etc", diffFileName))
@@ -436,8 +490,9 @@ int main(int argc, char *argv[])
                     << exit(FatalError, 1);
             }
 
-            // Read but preserve headers
-            diffDict.read(diffFile, true);
+            // Read, preserving headers
+            //// diffDict.read(diffFile, true);
+            diffDict = readDictionary(diffFile);
             optDiff = true;
         }
     }
@@ -592,10 +647,12 @@ int main(int argc, char *argv[])
         dict.write(Info, false);
     }
 
+    // Close the input file
+    dictFile.reset();
+
     if (changed)
     {
-        dictFile.clear();
-        OFstream os(dictFileName);
+        OFstream os(dictFileName, dictFormat);
         IOobject::writeBanner(os);
         IOobject::writeDivider(os);
         dict.write(os, false);

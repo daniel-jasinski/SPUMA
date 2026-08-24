@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
+    Copyright (C) 2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,7 +30,6 @@ License
 #include "wedgeFaPatchField.H"
 #include "transformField.H"
 #include "symmTransform.H"
-#include "diagTensor.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -105,13 +105,25 @@ Foam::wedgeFaPatchField<Type>::wedgeFaPatchField
 template<class Type>
 Foam::tmp<Foam::Field<Type>> Foam::wedgeFaPatchField<Type>::snGrad() const
 {
-    const Field<Type> pif (this->patchInternalField());
+    if constexpr (!is_rotational_vectorspace_v<Type>)
+    {
+        // Rotational-invariant type: treat like zero-gradient
+        return tmp<Field<Type>>::New(this->size(), Foam::zero{});
+    }
+    else
+    {
+        const auto& rot = refCast<const wedgeFaPatch>(this->patch()).faceT();
 
-    return
-    (
-        transform(refCast<const wedgeFaPatch>(this->patch()).faceT(), pif)
-      - pif
-    )*(0.5*this->patch().deltaCoeffs());
+        const Field<Type> pif(this->patchInternalField());
+
+        const auto& dc = this->patch().deltaCoeffs();
+
+        return
+        (
+            (0.5*dc)
+          * (transform(rot, pif) - pif)
+        );
+    }
 }
 
 
@@ -123,14 +135,20 @@ void Foam::wedgeFaPatchField<Type>::evaluate(const Pstream::commsTypes)
         this->updateCoeffs();
     }
 
-    faPatchField<Type>::operator==
-    (
-        transform
+    if constexpr (!is_rotational_vectorspace_v<Type>)
+    {
+        // Rotational-invariant type: treat like zero-gradient
+        this->extrapolateInternal();
+    }
+    else
+    {
+        const auto& rot = refCast<const wedgeFaPatch>(this->patch()).edgeT();
+
+        faPatchField<Type>::operator==
         (
-            refCast<const wedgeFaPatch>(this->patch()).edgeT(),
-            this->patchInternalField()
-        )
-    );
+            transform(rot, this->patchInternalField())
+        );
+    }
 }
 
 
@@ -138,26 +156,36 @@ template<class Type>
 Foam::tmp<Foam::Field<Type>>
 Foam::wedgeFaPatchField<Type>::snGradTransformDiag() const
 {
-    const diagTensor diagT =
-        0.5*diag(I - refCast<const wedgeFaPatch>(this->patch()).faceT());
+    if constexpr (!is_rotational_vectorspace_v<Type>)
+    {
+        // Rotational-invariant type
+        // FatalErrorInFunction
+        //     << "Should not be called for this type"
+        //     << ::Foam::abort(FatalError);
+        return tmp<Field<Type>>::New(this->size(), Foam::zero{});
+    }
+    else
+    {
+        const auto& rot = refCast<const wedgeFaPatch>(this->patch()).faceT();
 
-    const vector diagV(diagT.xx(), diagT.yy(), diagT.zz());
+        const vector diag = 0.5*(I - rot).diag();
 
-    return tmp<Field<Type>>::New
-    (
-        this->size(),
-        transformMask<Type>
+        return tmp<Field<Type>>::New
         (
-            pow
+            this->size(),
+            transformMask<Type>
             (
-                diagV,
-                pTraits
-                <
-                    typename powProduct<vector, pTraits<Type>::rank>::type
-                >::zero
+                pow
+                (
+                    diag,
+                    pTraits
+                    <
+                        typename powProduct<vector, pTraits<Type>::rank>::type
+                    >::zero
+                )
             )
-        )
-    );
+        );
+    }
 }
 
 

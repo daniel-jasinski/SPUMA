@@ -227,7 +227,7 @@ public:
             const dictionary& dict
         );
 
-        //- Construct from Time and dictionary and list of fields to sample
+        //- Construct from name, Time, dictionary and list of fields to sample
         streamLineBase
         (
             const word& name,
@@ -244,7 +244,7 @@ public:
     // Member Functions
 
         //- Read the field average data
-        virtual bool read(const dictionary&);
+        virtual bool read(const dictionary& dict);
 
         //- Execute the averaging
         virtual bool execute();

@@ -32,7 +32,6 @@ License
 #include "slicedVolFields.H"
 #include "slicedSurfaceFields.H"
 #include "SubField.H"
-#include "demandDrivenData.H"
 #include "fvMeshLduAddressing.H"
 #include "fvMeshCsrAddressing.H"
 #include "mapPolyMesh.H"
@@ -68,11 +67,11 @@ void Foam::fvMesh::clearGeomNotOldVol()
         MoveableMeshObject
     >(*this);
 
-    deleteDemandDrivenData(VPtr_);
-    deleteDemandDrivenData(SfPtr_);
-    deleteDemandDrivenData(magSfPtr_);
-    deleteDemandDrivenData(CPtr_);
-    deleteDemandDrivenData(CfPtr_);
+    VPtr_.reset(nullptr);
+    SfPtr_.reset(nullptr);
+    magSfPtr_.reset(nullptr);
+    CPtr_.reset(nullptr);
+    CfPtr_.reset(nullptr);
 }
 
 
@@ -118,8 +117,8 @@ void Foam::fvMesh::clearGeom()
 {
     clearGeomNotOldVol();
 
-    deleteDemandDrivenData(V0Ptr_);
-    deleteDemandDrivenData(V00Ptr_);
+    V0Ptr_.reset(nullptr);
+    V00Ptr_.reset(nullptr);
 
     // Mesh motion flux cannot be deleted here because the old-time flux
     // needs to be saved.
@@ -159,8 +158,8 @@ void Foam::fvMesh::clearAddressing(const bool isMeshUpdate)
         meshObject::clear<lduMesh, TopologicalMeshObject>(*this);
     }
 
-    deleteDemandDrivenData(csrPtr_);
-    deleteDemandDrivenData(lduPtr_);
+    lduPtr_.reset(nullptr);
+    csrPtr_.reset(nullptr);
 }
 
 
@@ -181,7 +180,7 @@ void Foam::fvMesh::storeOldVol(const scalarField& V)
 
         if (!V0Ptr_)
         {
-            V0Ptr_ = new DimensionedField<scalar, volMesh>
+            V0Ptr_ = std::make_unique<DimensionedField<scalar, volMesh>>
             (
                 IOobject
                 (
@@ -258,17 +257,7 @@ Foam::fvMesh::fvMesh(const IOobject& io, const bool doInit)
     surfaceInterpolation(*this),
     fvSolution(static_cast<const objectRegistry&>(*this)),
     boundary_(*this, boundaryMesh()),
-    lduPtr_(nullptr),
-    csrPtr_(nullptr),
-    curTimeIndex_(time().timeIndex()),
-    VPtr_(nullptr),
-    V0Ptr_(nullptr),
-    V00Ptr_(nullptr),
-    SfPtr_(nullptr),
-    magSfPtr_(nullptr),
-    CPtr_(nullptr),
-    CfPtr_(nullptr),
-    phiPtr_(nullptr)
+    curTimeIndex_(time().timeIndex())
 {
     DebugInFunction << "Constructing fvMesh from IOobject" << endl;
 
@@ -314,7 +303,7 @@ bool Foam::fvMesh::init(const bool doInit)
         DebugInFunction
             << "Detected V0: " << rio.objectRelPath() << nl;
 
-        V0Ptr_ = new DimensionedField<scalar, volMesh>
+        V0Ptr_ = std::make_unique<DimensionedField<scalar, volMesh>>
         (
             rio,
             *this,
@@ -355,7 +344,7 @@ bool Foam::fvMesh::init(const bool doInit)
         // read initialise to the current cell volumes
         if (!V0Ptr_)
         {
-            V0Ptr_ = new DimensionedField<scalar, volMesh>
+            V0Ptr_ = std::make_unique<DimensionedField<scalar, volMesh>>
             (
                 IOobject
                 (
@@ -399,17 +388,7 @@ Foam::fvMesh::fvMesh
     surfaceInterpolation(*this),
     fvSolution(static_cast<const objectRegistry&>(*this)),
     boundary_(*this),
-    lduPtr_(nullptr),
-    csrPtr_(nullptr),
-    curTimeIndex_(time().timeIndex()),
-    VPtr_(nullptr),
-    V0Ptr_(nullptr),
-    V00Ptr_(nullptr),
-    SfPtr_(nullptr),
-    magSfPtr_(nullptr),
-    CPtr_(nullptr),
-    CfPtr_(nullptr),
-    phiPtr_(nullptr)
+    curTimeIndex_(time().timeIndex())
 {
     DebugInFunction << "Constructing fvMesh from components" << endl;
 }
@@ -436,17 +415,7 @@ Foam::fvMesh::fvMesh
     surfaceInterpolation(*this),
     fvSolution(static_cast<const objectRegistry&>(*this)),
     boundary_(*this),
-    lduPtr_(nullptr),
-    csrPtr_(nullptr),
-    curTimeIndex_(time().timeIndex()),
-    VPtr_(nullptr),
-    V0Ptr_(nullptr),
-    V00Ptr_(nullptr),
-    SfPtr_(nullptr),
-    magSfPtr_(nullptr),
-    CPtr_(nullptr),
-    CfPtr_(nullptr),
-    phiPtr_(nullptr)
+    curTimeIndex_(time().timeIndex())
 {
     DebugInFunction << "Constructing fvMesh from components" << endl;
 }
@@ -513,17 +482,7 @@ Foam::fvMesh::fvMesh
         static_cast<const dictionary*>(baseMesh.hasSolution())
     ),
     boundary_(*this),
-    lduPtr_(nullptr),
-    csrPtr_(nullptr),
-    curTimeIndex_(time().timeIndex()),
-    VPtr_(nullptr),
-    V0Ptr_(nullptr),
-    V00Ptr_(nullptr),
-    SfPtr_(nullptr),
-    magSfPtr_(nullptr),
-    CPtr_(nullptr),
-    CfPtr_(nullptr),
-    phiPtr_(nullptr)
+    curTimeIndex_(time().timeIndex())
 {
     DebugInFunction << "Constructing fvMesh as copy and primitives" << endl;
 
@@ -564,17 +523,7 @@ Foam::fvMesh::fvMesh
         static_cast<const dictionary*>(baseMesh.hasSolution())
     ),
     boundary_(*this),
-    lduPtr_(nullptr),
-    csrPtr_(nullptr),
-    curTimeIndex_(time().timeIndex()),
-    VPtr_(nullptr),
-    V0Ptr_(nullptr),
-    V00Ptr_(nullptr),
-    SfPtr_(nullptr),
-    magSfPtr_(nullptr),
-    CPtr_(nullptr),
-    CfPtr_(nullptr),
-    phiPtr_(nullptr)
+    curTimeIndex_(time().timeIndex())
 {
     DebugInFunction << "Constructing fvMesh as copy and primitives" << endl;
 
@@ -772,7 +721,7 @@ const Foam::lduAddressing& Foam::fvMesh::lduAddr() const
             << "Calculating fvMeshLduAddressing from nFaces:"
             << nFaces() << endl;
 
-        lduPtr_ = new fvMeshLduAddressing(*this);
+        lduPtr_ = std::make_unique<fvMeshLduAddressing>(*this);
 
         return *lduPtr_;
     }
@@ -785,8 +734,11 @@ const Foam::fvMeshCsrAddressing& Foam::fvMesh::csrAddr() const
 {
     if (!csrPtr_)
     {
+        DebugInFunction
+            << "Calculating fvMeshCsrAddressing from nFaces:"
+            << nFaces() << endl;
 
-        csrPtr_ = new fvMeshCsrAddressing(*this);
+        csrPtr_ = std::make_unique<fvMeshCsrAddressing>(*this);
 
         return *csrPtr_;
     }
@@ -1039,8 +991,9 @@ void Foam::fvMesh::updateMesh(const mapPolyMesh& mpm)
     polyMesh::updateMesh(mpm);
 
     // Our slice of the addressing is no longer valid
-    deleteDemandDrivenData(csrPtr_);
-    deleteDemandDrivenData(lduPtr_);
+    lduPtr_.reset(nullptr);
+    csrPtr_.reset(nullptr);
+
 
     if (VPtr_)
     {

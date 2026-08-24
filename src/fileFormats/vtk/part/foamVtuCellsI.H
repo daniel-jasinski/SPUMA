@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2021 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,6 +33,12 @@ inline enum Foam::vtk::vtuCells::contentType
 Foam::vtk::vtuCells::content() const noexcept
 {
     return output_;
+}
+
+
+inline bool Foam::vtk::vtuCells::is_hdf() const noexcept
+{
+    return (output_ == contentType::HDF);
 }
 
 
@@ -90,9 +96,26 @@ Foam::vtk::vtuCells::faceOffsets() const noexcept
 
 
 inline const Foam::labelList&
+Foam::vtk::vtuCells::polyFaceOffsets() const noexcept
+{
+    return polyFaceOffset_;
+}
+
+
+inline const Foam::labelList&
 Foam::vtk::vtuCells::addPointCellLabels() const noexcept
 {
     return maps_.additionalIds();
+}
+
+
+inline bool Foam::vtk::vtuCells::useCellMap() const noexcept
+{
+    return
+    (
+        (nAddCells() > 0)
+     || (selectionMode() == selectionModeType::SUBSET_MESH)
+    );
 }
 
 
@@ -100,6 +123,19 @@ inline const Foam::labelList&
 Foam::vtk::vtuCells::cellMap() const noexcept
 {
     return maps_.cellMap();
+}
+
+
+inline bool Foam::vtk::vtuCells::usePointMap() const noexcept
+{
+    return (!maps_.pointMap().empty());
+}
+
+
+inline const Foam::labelUList&
+Foam::vtk::vtuCells::pointMap() const noexcept
+{
+    return maps_.pointMap();
 }
 
 

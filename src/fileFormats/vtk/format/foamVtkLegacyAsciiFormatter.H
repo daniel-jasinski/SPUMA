@@ -31,7 +31,7 @@ Description
     naming for legacy output.
 
 SourceFiles
-    foamVtkLegacyAsciiFormatter.C
+    foamVtkLegacyAsciiFormatter.cxx
 
 \*---------------------------------------------------------------------------*/
 

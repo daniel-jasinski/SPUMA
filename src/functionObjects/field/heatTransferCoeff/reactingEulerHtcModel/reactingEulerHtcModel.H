@@ -32,7 +32,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    reactingEulerHtcModel1
+    reactingEulerHtcModelFO
     {
         // Mandatory entries
         type        reactingEulerHtcModel;
@@ -66,7 +66,6 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-      - \link functionObject.H \endlink
       - \link fieldExpression.H \endlink
       - \link heatTransferCoeffModel.H \endlink
 
@@ -154,7 +153,7 @@ public:
 
     // Member Functions
 
-        //- Read the heatTransferCoeff data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 };
 

@@ -43,13 +43,16 @@ void Foam::GAMGSolver::scale
     const direction cmpt
 ) const
 {
+    const bool useLowerCSR = controlDict_.getOrDefault<bool>("useLowerCSR", false);
+
     A.Amul
     (
         Acf,
         field,
         interfaceLevelBouCoeffs,
         interfaceLevel,
-        cmpt
+        cmpt,
+        useLowerCSR
     );
 
     const label nCells = field.size();

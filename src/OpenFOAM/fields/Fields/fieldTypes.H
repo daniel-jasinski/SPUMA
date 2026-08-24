@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -82,6 +82,9 @@ namespace fieldTypes
 //  These also correspond to cloud output fields.
 FOAM_EXPORT_DATA extern const wordList basic;
 
+//- Test if the class name appears to be a basic field
+bool is_basic(const word& clsName);
+
 
 // Commonly used patch field types
 
@@ -117,6 +120,12 @@ inline const char* zeroGradientTypeName_() noexcept { return "zeroGradient"; }
 
 //- A \c zeroGradient patch field type
 FOAM_EXPORT_DATA extern const word zeroGradientType;
+
+//- A \c zeroValue patch field type
+inline const char* zeroValueTypeName_() noexcept { return "zeroValue"; }
+
+//- A \c zeroValue patch field type
+FOAM_EXPORT_DATA extern const word zeroValueType;
 
 } // End namespace fieldTypes
 } // End namespace Foam

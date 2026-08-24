@@ -39,34 +39,31 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    volFieldValue1
+    volFieldValueFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            volFieldValue;
         libs            (fieldFunctionObjects);
+        fields          <wordList>;  // (<field1> <field2> ... <fieldN>);
+        regionType      <word>;
+        operation       <word>;
 
-        // Mandatory entries (runtime modifiable)
-        fields          (<field1> <field2> ... <fieldN>);
-        operation       <operationType>;
-        regionType      <volRegion>;
+        // Optional entries
+        postOperation   <word>;
+        weightField     <word>;  // alpha1;
 
-        // Optional entries (runtime modifiable)
-        postOperation   none;
-        weightField     alpha1;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: volFieldValue           | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       fields       | Names of operand fields            | wordList | yes | -
       regionType   | Face regionType: see below         | word |  yes  | -
-      name         | Name for regionType                | word |  yes  | -
       operation    | Operation type: see below          | word |  yes  | -
       postOperation | Post-operation type: see below    | word |  no   | none
       weightField   | Name of field to apply weighting   | word |  maybe |
@@ -74,8 +71,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link fieldValue.H \endlink
-     - \link volRegion.H \endlink
+      - \link fieldValue.H \endlink
+      - \link volRegion.H \endlink
 
     Options for the \c regionType entry:
     \plaintable
@@ -107,21 +104,14 @@ Usage
       sqrt          | Component-wise \c sqrt() after normal operation
     \endplaintable
 
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldValues::fieldValue
-    - Foam::functionObjects::volRegion
-
 SourceFiles
     volFieldValue.C
     volFieldValueTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_volFieldValue_H
-#define functionObjects_volFieldValue_H
+#ifndef Foam_functionObjects_volFieldValue_H
+#define Foam_functionObjects_volFieldValue_H
 
 #include "fieldValue.H"
 #include "volRegion.H"
@@ -313,10 +303,10 @@ public:
 
     // Member Functions
 
-        //- Read from dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate and write
+        //- Write the function-object results
         virtual bool write();
 };
 

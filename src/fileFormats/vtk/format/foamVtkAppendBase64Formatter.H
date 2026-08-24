@@ -31,7 +31,7 @@ Description
     Uses an output filter layer to write base-64 encoded content.
 
 SourceFiles
-    foamVtkAppendBase64Formatter.C
+    foamVtkAppendBase64Formatter.cxx
 
 \*---------------------------------------------------------------------------*/
 

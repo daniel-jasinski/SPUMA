@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -83,6 +83,13 @@ class faePatchFieldBase
         //- Reference to patch
         const faPatch& patch_;
 
+        //- Optional patch type
+        //  Used to allow specified boundary conditions to be applied
+        //  to constraint patches by providing the constraint
+        //  patch type as 'patchType'
+        word patchType_;
+
+
 protected:
 
     // Protected Member Functions
@@ -90,14 +97,6 @@ protected:
         //- Read dictionary entries.
         //  Useful when initially constructed without a dictionary
         virtual void readDict(const dictionary& dict);
-
-        //- Set updated state. This is a no-op for faePatchField
-        void setUpdated(bool state) noexcept
-        {}
-
-        //- Set matrix manipulated state. This is a no-op for faePatchField
-        void setManipulated(bool state) noexcept
-        {}
 
 
 public:
@@ -145,6 +144,12 @@ public:
             return Foam::fieldTypes::calculatedType;
         }
 
+        //- The type name for \c zeroValue patch fields
+        static const word& zeroValueType() noexcept
+        {
+            return Foam::fieldTypes::zeroValueType;
+        }
+
 
     // Member Functions
 
@@ -176,6 +181,24 @@ public:
             return patch_;
         }
 
+        //- The optional patch type
+        const word& patchType() const noexcept
+        {
+            return patchType_;
+        }
+
+        //- The optional patch type
+        word& patchType() noexcept
+        {
+            return patchType_;
+        }
+
+        //- True if the type does not correspond to the constraint type
+        virtual bool constraintOverride() const
+        {
+            return !patchType_.empty() && patchType_ != type();
+        }
+
 
     // Solution
 
@@ -186,12 +209,21 @@ public:
             return true;
         }
 
+        //- Set updated state. This is a no-op for faePatchField
+        void setUpdated(bool state) noexcept
+        {}
+
         //- True if the matrix has already been manipulated.
-        //- Currently ignored (always false) for faePatchField
+        //- Always false for faePatchField
         bool manipulatedMatrix() const noexcept
         {
             return false;
         }
+
+        //- Set matrix manipulated state.
+        //- This is a no-op for faePatchField
+        void setManipulated(bool state) noexcept
+        {}
 
 
     // Check
@@ -220,6 +252,9 @@ public:
 
         //- The value_type for the patch field
         typedef Type value_type;
+
+        //- The component type for patch field
+        typedef typename pTraits<Type>::cmptType cmptType;
 
         //- The internal field type associated with the patch field
         typedef DimensionedField<Type, edgeMesh> Internal;
@@ -352,15 +387,28 @@ public:
             const faPatchFieldMapper&
         );
 
-        //- Construct as copy
-        faePatchField(const faePatchField<Type>&);
-
-        //- Construct as copy setting internal field reference
+        //- Copy construct onto new patch with specified value
         faePatchField
         (
-            const faePatchField<Type>&,
-            const DimensionedField<Type, edgeMesh>&
+            const faePatchField<Type>& pfld,
+            const faPatch& p,
+            const DimensionedField<Type, edgeMesh>& iF,
+            const Type& value
         );
+
+        //- Copy construct with internal field reference
+        faePatchField
+        (
+            const faePatchField<Type>& pfld,
+            const DimensionedField<Type, edgeMesh>& iF
+        );
+
+        //- Copy construct
+        faePatchField(const faePatchField<Type>& pfld)
+        :
+            faePatchField<Type>(pfld, pfld.internalField())
+        {}
+
 
         //- Clone patch field with its own internal field reference
         virtual tmp<faePatchField<Type>> clone() const

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2022 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -31,10 +31,9 @@ Description
     Lagrangian field decomposer.
 
 SourceFiles
-    lagrangianFieldDecomposer.C
-    lagrangianFieldDecomposerCache.C
-    lagrangianFieldDecomposerReadFields.C
-    lagrangianFieldDecomposerTemplates.C
+    lagrangianFieldDecomposer.cxx
+    lagrangianFieldDecomposer.txx
+    lagrangianFieldDecomposerCache.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -92,13 +91,13 @@ public:
         //- Construct from components
         lagrangianFieldDecomposer
         (
-            const polyMesh& mesh,       //<! unused
+            const polyMesh& mesh,       //!< unused
             const polyMesh& procMesh,
-            const labelList& faceProcAddressing,
-            const labelList& cellProcAddressing,
+            const labelUList& faceProcAddressing,
+            const labelUList& cellProcAddressing,
             const word& cloudName,
             const Cloud<indexedParticle>& lagrangianPositions,
-            const List<SLList<indexedParticle*>*>& cellParticles
+            const UList<SLList<indexedParticle*>*>& cellParticles
         );
 
 
@@ -119,13 +118,13 @@ public:
         (
             const label cloudi,
             const IOobjectList& lagrangianObjects,
-            PtrList<PtrList<CompactIOField<Field<Type>, Type>>>& cloudFields
+            PtrList<PtrList<CompactIOField<Field<Type>>>>& cloudFields
         );
 
 
     // Member Functions
 
-        //- Decompose volume field
+        //- Decompose field
         template<class Type>
         tmp<IOField<Type>> decomposeField
         (
@@ -133,26 +132,29 @@ public:
             const IOField<Type>& field
         ) const;
 
+        //- Decompose field-field
         template<class Type>
-        tmp<CompactIOField<Field<Type>, Type>> decomposeFieldField
+        tmp<CompactIOField<Field<Type>>> decomposeFieldField
         (
             const word& cloudName,
-            const CompactIOField<Field<Type>, Type>& field
+            const CompactIOField<Field<Type>>& field
         ) const;
 
 
+        //- Decompose fields
         template<class GeoField>
         void decomposeFields
         (
             const word& cloudName,
-            const PtrList<GeoField>& fields
+            const UPtrList<GeoField>& fields
         ) const;
 
+        //- Decompose field-fields
         template<class GeoField>
         void decomposeFieldFields
         (
             const word& cloudName,
-            const PtrList<GeoField>& fields
+            const UPtrList<GeoField>& fields
         ) const;
 };
 
@@ -163,21 +165,14 @@ public:
 
 class lagrangianFieldDecomposer::fieldsCache
 {
-    // Private Data
+    class privateCache;
+    std::unique_ptr<privateCache> cache_;
 
-        class privateCache;
+    //- No copy construct
+    fieldsCache(const fieldsCache&) = delete;
 
-        //- All field and field-field types for lagrangian
-        std::unique_ptr<privateCache> cache_;
-
-
-    // Private Member Functions
-
-        //- No copy construct
-        fieldsCache(const fieldsCache&) = delete;
-
-        //- No copy assignment
-        void operator=(const fieldsCache&) = delete;
+    //- No copy assignment
+    void operator=(const fieldsCache&) = delete;
 
 
 public:
@@ -188,7 +183,7 @@ public:
         fieldsCache();
 
         //- Construct for given number of clouds
-        explicit fieldsCache(const label nClouds);
+        explicit fieldsCache(label nClouds);
 
 
     //- Destructor
@@ -198,16 +193,16 @@ public:
     // Member Functions
 
         //- No clouds
-        bool empty() const;
+        bool empty() const noexcept;
 
         //- Number of clouds
-        label size() const;
+        label size() const noexcept;
 
         //- Clear out
         void clear();
 
         //- Resize for the number of clouds
-        void resize(const label nClouds);
+        void resize(label nClouds);
 
 
         //- Read all fields and field-fields for given cloud and objects
@@ -235,8 +230,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "lagrangianFieldDecomposerReadFields.C"
-    #include "lagrangianFieldDecomposerTemplates.C"
+    #include "lagrangianFieldDecomposer.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

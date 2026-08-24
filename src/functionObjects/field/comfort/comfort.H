@@ -40,7 +40,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    comfort1
+    comfortFO
     {
         // Mandatory entries
         type            comfort;
@@ -81,7 +81,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
+      - \link functionObject.H \endlink
 
     \table
         Predicted Mean Vote (PMV)   | evaluation
@@ -110,8 +110,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef comfort_H
-#define comfort_H
+#ifndef Foam_functionObjects_comfort_H
+#define Foam_functionObjects_comfort_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFields.H"
@@ -132,6 +132,9 @@ class comfort
     public fvMeshFunctionObject
 {
     // Private Data
+
+        //- Wall patch IDs
+        mutable labelList wallPatchIDs_;
 
         //- Clothing [-]
         dimensionedScalar clothing_;
@@ -160,8 +163,14 @@ class comfort
         //- Tolerance criteria for iterative process to find Tcl
         scalar tolerance_;
 
+        //- Global sum of wall area [m^2]
+        mutable scalar wallArea_;
+
         //- Maximum number of correctors for cloth temperature
         int maxClothIter_;
+
+        //- Flag to indicate if wall info has been initialized
+        mutable bool wallInfoInit_;
 
         //- Flag to set to true if the radiation temperature is provided
         bool TradSet_;
@@ -174,6 +183,9 @@ class comfort
 
         //- Calculate the magnitude of the velocity [m/s]
         tmp<volScalarField> magU() const;
+
+        //- Initialize wall caches for Trad() (ids + global area)
+        void initWallInfo() const;
 
         //- Calculate the radiation temperature in the domain using a simple
         //- approach [K]
@@ -207,7 +219,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         comfort
         (
             const word& name,
@@ -222,14 +234,13 @@ public:
 
     // Member Functions
 
-        //- Read the data needed for the comfort calculation
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the predicted mean vote (PMV)
-        //- and predicted percentage dissatisfaction (PPD) fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the PPD and PMV fields
+        //- Write the function-object results
         virtual bool write();
 };
 

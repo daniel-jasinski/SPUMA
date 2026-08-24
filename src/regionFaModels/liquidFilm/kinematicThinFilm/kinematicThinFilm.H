@@ -24,7 +24,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::regionFaModels::kinematicThinFilm
+    Foam::regionModels::areaSurfaceFilmModels::kinematicThinFilm
 
 Description
     Thin film model.
@@ -55,8 +55,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef kinematicThinFilm_H
-#define kinematicThinFilm_H
+#ifndef areaSurfaceFilmModels_kinematicThinFilm_H
+#define areaSurfaceFilmModels_kinematicThinFilm_H
 
 #include "volFieldsFwd.H"
 #include "liquidFilmModel.H"
@@ -71,13 +71,21 @@ namespace areaSurfaceFilmModels
 {
 
 /*---------------------------------------------------------------------------*\
-                        Class kinematicThinFilm Declaration
+                      Class kinematicThinFilm Declaration
 \*---------------------------------------------------------------------------*/
 
 class kinematicThinFilm
 :
     public liquidFilmModel
 {
+protected:
+
+    // Protected Member Functions
+
+        //- Construct a momentum equation
+        tmp<faVectorMatrix> UEqn(areaVectorField& U);
+
+
 public:
 
     //- Runtime type information

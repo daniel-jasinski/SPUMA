@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2022 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,16 +26,20 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "bitSet.H"
-#include "labelRange.H"
 #include "IOstreams.H"
+#include "UPstream.H"
+#include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
     defineTypeNameAndDebug(bitSet, 0);
-}
 
+    // TBD: add IO support of compound type?
+    // defineNamedCompoundTypeName(bitSet, List<1>);
+    // addNamedCompoundToRunTimeSelectionTable(bitSet, bitSet, List<1>);
+}
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
@@ -76,7 +80,7 @@ Foam::bitSet& Foam::bitSet::minusEq(const bitSet& other)
 
 Foam::bitSet& Foam::bitSet::andEq(const bitSet& other)
 {
-    if (&other == this)
+    if (FOAM_UNLIKELY(&other == this))
     {
         // Self '&=' : no-op
 
@@ -273,19 +277,24 @@ Foam::bitSet::bitSet(const labelRange& range)
 
 void Foam::bitSet::assign(const UList<bool>& bools)
 {
-    const label len = bools.size();
+    fill(false);
+    resize(bools.size());
 
-    clear();
-    resize(len);
+    unsigned bitIdx = 0u;
+    auto* packed = blocks_.data();
 
-    // Could also handle block-wise (in the future?)
-
-    // Set according to indices that are true.
-    for (label i = 0; i < len; ++i)
+    // Set according to indices that are true
+    for (const auto b : bools)
     {
-        if (bools[i])
+        if (b)
         {
-            set(i);
+            *packed |= (1u << bitIdx);
+        }
+
+        if (++bitIdx >= PackedList<1>::elem_per_block)
+        {
+            bitIdx = 0u;
+            ++packed;
         }
     }
 }
@@ -537,6 +546,283 @@ Foam::List<bool> Foam::bitSet::values() const
     }
 
     return output;
+}
+
+
+// * * * * * * * * * * * * * *  Parallel Functions * * * * * * * * * * * * * //
+
+namespace
+{
+
+// Special purpose broadcast for bitSet which is more efficient than
+// either a regular broadcast (with serialization) or the usual
+// broadcast for lists.
+//
+// The initial broadcast sends both count (bits=on) and the length.
+// The receive clears out its bits and resizes (ie, all zeros and the proper
+// length).
+// This allows the final broadcast to be skipped if either
+// the length or the content is zero.
+//
+// With syncSizes=false it assumes that the lengths are identical on all ranks
+// and doesn't do the initial broadcast. In this case it can only decide
+// about the final broadcast based on the length information allow.
+
+void broadcast_bitSet
+(
+    Foam::bitSet& bitset,
+    int communicator,
+    int root,
+    bool syncSizes
+)
+{
+    using namespace Foam;
+
+    if (!UPstream::is_parallel(communicator))  // Probably already checked...
+    {
+        return;
+    }
+
+    // Broadcast data content?
+    bool bcastContent(true);
+
+    if (syncSizes)
+    {
+        int64_t count_size[2] = { 0, 0 };
+
+        if (root == UPstream::myProcNo(communicator))
+        {
+            // Sender: knows the count/size
+            count_size[0] = static_cast<int64_t>(bitset.count());
+            count_size[1] = static_cast<int64_t>(bitset.size());
+
+            UPstream::broadcast(count_size, 2, communicator, root);
+        }
+        else
+        {
+            // Receiver: gets the count/size and makes a clean bitset
+            UPstream::broadcast(count_size, 2, communicator, root);
+
+            bitset.clear();  // Clear old contents
+            bitset.resize(count_size[1]);
+        }
+
+        if (count_size[0] == 0)
+        {
+            // All content is zero, don't need to broadcast it
+            bcastContent = false;
+        }
+    }
+
+    if (bcastContent && !bitset.empty())
+    {
+        // Only broadcast with non-empty content
+        UPstream::broadcast
+        (
+            bitset.data(),
+            bitset.num_blocks(),
+            communicator,
+            root
+        );
+    }
+}
+
+} // End anonymous namespace
+
+
+void Foam::bitSet::broadcast
+(
+    std::pair<int,int> communicator_root,
+    bool syncSizes
+)
+{
+    int comm = communicator_root.first;
+    int root = communicator_root.second;
+
+    if (UPstream::is_parallel(comm))
+    {
+        broadcast_bitSet(*this, comm, root, syncSizes);
+    }
+}
+
+
+void Foam::bitSet::broadcast(int communicator, bool syncSizes)
+{
+    if (communicator < 0)
+    {
+        communicator = UPstream::worldComm;
+    }
+
+    if (UPstream::is_parallel(communicator))
+    {
+        broadcast_bitSet(*this, communicator, UPstream::masterNo(), syncSizes);
+    }
+}
+
+
+void Foam::bitSet::reduceAnd(int communicator, bool syncSizes)
+{
+    if (communicator < 0)
+    {
+        communicator = UPstream::worldComm;
+    }
+
+    if (!UPstream::is_parallel(communicator))
+    {
+        return;
+    }
+
+    const label origSize(size());
+
+    if (syncSizes)
+    {
+        // Operation is an intersection
+        // - common size may be smaller than the original size
+        int64_t commonSize(size());
+
+        UPstream::mpiAllReduce<UPstream::opCodes::op_min>
+        (
+            &commonSize,
+            1,
+            communicator
+        );
+        resize(commonSize);
+    }
+
+    if (!empty())
+    {
+        UPstream::mpiAllReduce<UPstream::opCodes::op_bit_and>
+        (
+            this->data(),
+            this->num_blocks(),
+            communicator
+        );
+
+        clear_trailing_bits();  // safety
+    }
+
+    // Undo side effects from the reduction
+    if (syncSizes)
+    {
+        resize(origSize);
+    }
+}
+
+
+void Foam::bitSet::reduceOr(int communicator, bool syncSizes)
+{
+    if (communicator < 0)
+    {
+        communicator = UPstream::worldComm;
+    }
+
+    if (!UPstream::is_parallel(communicator))
+    {
+        return;
+    }
+
+    // const label origSize(size());
+
+    if (syncSizes)
+    {
+        // Operation can increase the addressed size
+
+        // Extend size based on the addressed length.
+        // This is greedy, but produces consistent sizing
+        int64_t commonSize(size());
+
+        // Alternative: Extend size based on the bits used.
+        // - tighter, but inconsistent sizes result
+        // // label commonSize(find_last()+1);
+
+        UPstream::mpiAllReduce<UPstream::opCodes::op_max>
+        (
+            &commonSize,
+            1,
+            communicator
+        );
+
+        extend(commonSize);
+    }
+
+    if (!empty())
+    {
+        UPstream::mpiAllReduce<UPstream::opCodes::op_bit_or>
+        (
+            this->data(),
+            this->num_blocks(),
+            communicator
+        );
+
+        clear_trailing_bits();  // safety
+    }
+}
+
+
+Foam::bitSet Foam::bitSet::gatherValues(bool localValue, int communicator)
+{
+    if (communicator < 0)
+    {
+        communicator = UPstream::worldComm;
+    }
+
+    bitSet allValues;
+
+    if (!UPstream::is_parallel(communicator))
+    {
+        // non-parallel: return own value
+        // TBD: only when UPstream::is_rank(communicator) as well?
+        allValues.resize(1);
+        allValues.set(0, localValue);
+    }
+    else
+    {
+        List<bool> bools;
+        if (UPstream::master(communicator))
+        {
+            bools.resize(UPstream::nProcs(communicator), false);
+        }
+
+        UPstream::mpiGather
+        (
+            &localValue,    // Send
+            bools.data(),   // Recv
+            1,              // Num send/recv data per rank
+            communicator
+        );
+
+        // Transcribe to bitSet (on master)
+        allValues.assign(bools);
+    }
+
+    return allValues;
+}
+
+
+// Note that for allGather()
+// - MPI_Gather of individual bool values and broadcast the packed result
+// - this avoids bit_or on 32bit values everywhere, since we know a priori
+//   that each rank only contributes 1bit of info
+
+Foam::bitSet Foam::bitSet::allGather(bool localValue, int communicator)
+{
+    if (communicator < 0)
+    {
+        communicator = UPstream::worldComm;
+    }
+
+    bitSet allValues(bitSet::gatherValues(localValue, communicator));
+
+    if (UPstream::is_parallel(communicator))
+    {
+        // Identical size on all ranks
+        allValues.resize(UPstream::nProcs(communicator));
+
+        // Sizes are consistent - broadcast without resizing
+        allValues.broadcast(communicator, false);
+    }
+
+    return allValues;
 }
 
 

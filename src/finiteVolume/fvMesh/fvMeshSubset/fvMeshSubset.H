@@ -129,18 +129,11 @@ protected:
         //- FatalError if subset has not been performed
         bool checkHasSubMesh() const;
 
-        //- No copy construct
-        fvMeshSubset(const fvMeshSubset&) = delete;
-
-        //- No copy assignment
-        void operator=(const fvMeshSubset&) = delete;
-
 
 public:
 
     // Declare name of the class and its debug switch
     ClassName("fvMeshSubset");
-
 
     // Static Data Members
 
@@ -148,13 +141,22 @@ public:
         static word exposedPatchName;
 
 
+    // Generated Methods
+
+        //- No copy construct
+        fvMeshSubset(const fvMeshSubset&) = delete;
+
+        //- No copy assignment
+        void operator=(const fvMeshSubset&) = delete;
+
+
     // Constructors
 
         //- Construct using the entire mesh (no subset)
-        explicit fvMeshSubset(const fvMesh& baseMesh);
+        explicit fvMeshSubset(const fvMesh& baseMesh) noexcept;
 
         //- Construct a zero-sized subset mesh, non-processor patches only
-        fvMeshSubset(const fvMesh& baseMesh, const Foam::zero);
+        fvMeshSubset(const fvMesh& baseMesh, Foam::zero);
 
         //- Construct for a cell-subset of the given mesh
         //  See reset() for more details.
@@ -246,7 +248,7 @@ public:
         void reset();
 
         //- Reset to a zero-sized subset mesh, non-processor patches only
-        void reset(const Foam::zero);
+        void reset(Foam::zero);
 
         //- Reset from components
         void reset

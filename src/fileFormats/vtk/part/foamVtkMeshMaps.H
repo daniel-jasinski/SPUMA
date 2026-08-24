@@ -37,7 +37,7 @@ Description
     for additional points of decomposed cells
 
 SourceFiles
-    foamVtkMeshMaps.C
+    foamVtkMeshMaps.cxx
     foamVtkMeshMapsI.H
 
 \*---------------------------------------------------------------------------*/
@@ -68,7 +68,7 @@ class foamVtkMeshMaps
 
         //- Any additional (user) labels.
         //  Eg, cell-centre labels for additional points of decomposed cells
-        DynamicList<label> additionalIds_;
+        DynamicList<label> extraIds_;
 
 
 public:
@@ -87,23 +87,23 @@ public:
         //  For regular mesh comprising only primitive cell types, this will
         //  be an identity list. However, for subsetted meshes and decomposed
         //  cells this becomes a useful means of mapping from the original mesh.
-        inline const labelList& cellMap() const noexcept;
+        const labelList& cellMap() const noexcept { return cellMap_; }
 
         //- Write access to original cell ids
-        inline DynamicList<label>& cellMap() noexcept;
+        DynamicList<label>& cellMap() noexcept { return cellMap_; }
 
         //- Point labels for subsetted meshes
-        inline const labelList& pointMap() const noexcept;
+        const labelList& pointMap() const noexcept { return pointMap_; }
 
         //- Write access to point labels for subsetted meshes
-        inline DynamicList<label>& pointMap() noexcept;
+        DynamicList<label>& pointMap() noexcept { return pointMap_; }
 
         //- Any additional (user) labels.
         //  Eg, cell-centre labels for additional points of decomposed cells
-        inline const labelList& additionalIds() const noexcept;
+        const labelList& additionalIds() const noexcept { return extraIds_; }
 
         //- Write access to additional (user) labels.
-        inline DynamicList<label>& additionalIds() noexcept;
+        DynamicList<label>& additionalIds() noexcept { return extraIds_; }
 
 
     // Edit

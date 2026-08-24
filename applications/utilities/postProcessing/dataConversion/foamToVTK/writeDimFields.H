@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -108,25 +108,36 @@ label writeAllDimFields
     // Sanity test
     if (!internalWriter) return 0;
 
-    #undef  foamToVtk_WRITE_FIELD
-    #define foamToVtk_WRITE_FIELD(FieldType)    \
-        writeDimFields<FieldType>               \
-        (                                       \
-            internalWriter,                     \
-            proxy,                              \
-            objects,                            \
-            syncPar,                            \
-            cache                               \
-        )
-
     label count = 0;
-    count += foamToVtk_WRITE_FIELD(volScalarField::Internal);
-    count += foamToVtk_WRITE_FIELD(volVectorField::Internal);
-    count += foamToVtk_WRITE_FIELD(volSphericalTensorField::Internal);
-    count += foamToVtk_WRITE_FIELD(volSymmTensorField::Internal);
-    count += foamToVtk_WRITE_FIELD(volTensorField::Internal);
+    const label total = objects.size();
+    do
+    {
+        #undef  doLocalWriteCode
+        #define doLocalWriteCode(Type)                      \
+        {                                                   \
+            typedef VolumeInternalField<Type> FieldType;    \
+                                                            \
+            count += writeDimFields<FieldType>              \
+            (                                               \
+                internalWriter,                             \
+                proxy,                                      \
+                objects,                                    \
+                syncPar,                                    \
+                cache                                       \
+            );                                              \
+            if (count >= total) break;  /* early exit */    \
+        }
 
-    #undef foamToVTK_WRITE_FIELD
+        doLocalWriteCode(scalar);
+        doLocalWriteCode(vector);
+        doLocalWriteCode(sphericalTensor);
+        doLocalWriteCode(symmTensor);
+        doLocalWriteCode(tensor);
+
+        #undef doLocalWriteField
+    }
+    while (false);
+
     return count;
 }
 
@@ -145,25 +156,36 @@ label writeAllDimFields
     // Sanity test
     if (!internalWriter || !pInterp) return 0;
 
-    #undef  foamToVtk_WRITE_FIELD
-    #define foamToVtk_WRITE_FIELD(FieldType)    \
-        writeDimFields<FieldType>               \
-        (                                       \
-            internalWriter, pInterp,            \
-            proxy,                              \
-            objects,                            \
-            syncPar,                            \
-            cache                               \
-        )
-
     label count = 0;
-    count += foamToVtk_WRITE_FIELD(volScalarField::Internal);
-    count += foamToVtk_WRITE_FIELD(volVectorField::Internal);
-    count += foamToVtk_WRITE_FIELD(volSphericalTensorField::Internal);
-    count += foamToVtk_WRITE_FIELD(volSymmTensorField::Internal);
-    count += foamToVtk_WRITE_FIELD(volTensorField::Internal);
+    const label total = objects.size();
+    do
+    {
+        #undef  doLocalWriteCode
+        #define doLocalWriteCode(Type)                      \
+        {                                                   \
+            typedef VolumeInternalField<Type> FieldType;    \
+                                                            \
+            count += writeDimFields<FieldType>              \
+            (                                               \
+                internalWriter, pInterp,                    \
+                proxy,                                      \
+                objects,                                    \
+                syncPar,                                    \
+                cache                                       \
+            );                                              \
+            if (count >= total) break;  /* early exit */    \
+        }
 
-    #undef foamToVTK_WRITE_FIELD
+        doLocalWriteCode(scalar);
+        doLocalWriteCode(vector);
+        doLocalWriteCode(sphericalTensor);
+        doLocalWriteCode(symmTensor);
+        doLocalWriteCode(tensor);
+
+        #undef doLocalWriteCode
+    }
+    while (false);
+
     return count;
 }
 

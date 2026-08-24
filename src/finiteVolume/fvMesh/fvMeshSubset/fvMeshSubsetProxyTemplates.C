@@ -91,7 +91,7 @@ Foam::fvMeshSubsetProxy::interpolateInternal
     // TODO - move dimensioned mesh into internal,
     // but needs different GeometricField constructors
 
-    if (tdf.valid())
+    if (tdf.good())
     {
         if (subsetter.hasSubMesh())
         {
@@ -144,7 +144,7 @@ Foam::fvMeshSubsetProxy::interpolate
     const tmp<GeoField>& tfield
 )
 {
-    if (tfield.valid() && subsetter.hasSubMesh())
+    if (tfield.good() && subsetter.hasSubMesh())
     {
         auto tproxied = interpolate(subsetter, tfield());
         tfield.clear();

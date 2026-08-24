@@ -218,6 +218,12 @@ char Foam::Istream::readEndList(const char* funcName)
 }
 
 
+void Foam::Istream::rewind()
+{
+    putBackClear();  // Drop any putback
+}
+
+
 Foam::Istream& Foam::Istream::operator()() const
 {
     if (!good())

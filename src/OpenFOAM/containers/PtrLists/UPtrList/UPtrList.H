@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -314,10 +314,6 @@ public:
         //  \return the number of non-null entries
         label squeezeNull();
 
-        //- Reduce addressable list size to ignore any trailing null pointers.
-        //  The reduces the effective list length without reallocation
-        void trimTrailingNull();
-
         //- Append an element to the end of the list
         inline void push_back(T* ptr);
 
@@ -382,9 +378,18 @@ public:
         inline void operator=(UPtrList<T>&& list);
 
 
+    // Writing
+
+        //- Print pointer addresses to Ostream (debugging only)
+        Ostream& printAddresses(Ostream& os) const;
+
+        //- Write UPtrList to Ostream, optionally ignoring null entries
+        Ostream& writeList(Ostream& os, const bool trimNull=false) const;
+
+
     // IOstream Operators
 
-        //- Write UPtrList to Ostream
+        //- Write UPtrList to Ostream. Does not ignore null entries
         friend Ostream& operator<< <T>(Ostream& os, const UPtrList<T>& list);
 
 
@@ -413,12 +418,8 @@ protected:
         // Typedefs
 
             //- The list container type
-            using list_type = typename std::conditional
-            <
-                Const,
-                const UPtrList<T>,
-                UPtrList<T>
-            >::type;
+            using list_type =
+                std::conditional_t<Const, const UPtrList<T>, UPtrList<T>>;
 
 
         protected:

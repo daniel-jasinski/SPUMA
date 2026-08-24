@@ -39,31 +39,36 @@ Description
     from averaged extensive fields from a DSMC calculation.
 
 Usage
-    Example of function object specification to calculate DSMC fields:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    dsmcFields1
+    dsmcFieldsFO
     {
+        // Mandatory entries
         type        dsmcFields;
         libs        (lagrangianFunctionObjects);
+
+        // Inherited entries
         ...
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property     | Description             | Required    | Default value
-        type         | Type name: dsmcFields   | yes         |
-        log          | Log to standard output  | no          | yes
+      Property  | Description                | Type | Reqd | Deflt
+      type      | Type name: dsmcFields      | word | yes  | -
+      libs      | Library name: lagrangianFunctionObjects | word | yes  | -
     \endtable
 
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
 
 SourceFiles
     dsmcFields.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_dsmcFields_H
-#define functionObjects_dsmcFields_H
+#ifndef Foam_functionObjects_dsmcFields_H
+#define Foam_functionObjects_dsmcFields_H
 
 #include "fvMeshFunctionObject.H"
 
@@ -100,7 +105,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         dsmcFields
         (
             const word& name,
@@ -115,13 +120,13 @@ public:
 
     // Member Functions
 
-        //- Read the dsmcFields data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Do nothing
+        //- Execute the function-object operations, currently does nothing
         virtual bool execute();
 
-        //- Calculate and write the DSMC fields
+        //- Write the function-object results
         virtual bool write();
 };
 

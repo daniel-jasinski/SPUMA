@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -201,6 +201,7 @@ Foam::surfaceWriter::surfaceWriter()
     isPointData_(false),
     verbose_(false),
     commType_(UPstream::commsTypes::scheduled),
+    gatherv_(false),
     nFields_(0),
     currTime_(),
     outputPath_(),
@@ -218,6 +219,8 @@ Foam::surfaceWriter::surfaceWriter(const dictionary& options)
     options.readIfPresent("verbose", verbose_);
 
     UPstream::commsTypeNames.readIfPresent("commsType", options, commType_);
+    gatherv_ = false;
+    options.readIfPresent("gatherv", gatherv_);
 
     geometryScale_ = 1;
     geometryCentre_ = Zero;
@@ -244,7 +247,19 @@ Foam::surfaceWriter::surfaceWriter(const dictionary& options)
     {
         Info<< "Create surfaceWriter ("
             << (this->isPointData() ? "point" : "face") << " data):"
-            << " commsType=" << UPstream::commsTypeNames[commType_] << endl;
+            << " commsType=";
+
+        if (UPstream::parRun())
+        {
+            if (gatherv_) Info<< "gatherv+";
+            Info<< UPstream::commsTypeNames[commType_];
+        }
+        else
+        {
+            Info<< "serial";
+        }
+
+        Info<< endl;
     }
 }
 
@@ -605,14 +620,29 @@ Foam::tmp<Foam::Field<Type>> Foam::surfaceWriter::mergeFieldTemplate
           : mergedSurf_.faceGlobalIndex()
         );
 
-        globIndex.gather
-        (
-            fld,
-            allFld,
-            UPstream::msgType(),
-            commType_,
-            UPstream::worldComm
-        );
+        if (gatherv_)
+        {
+            globIndex.mpiGather
+            (
+                fld,
+                allFld,
+                UPstream::worldComm,
+                // For fallback:
+                commType_,
+                UPstream::msgType()
+            );
+        }
+        else
+        {
+            globIndex.gather
+            (
+                fld,
+                allFld,
+                UPstream::msgType(),
+                commType_,
+                UPstream::worldComm
+            );
+        }
 
         // Renumber (point data) to correspond to merged points
         if
@@ -625,6 +655,15 @@ Foam::tmp<Foam::Field<Type>> Foam::surfaceWriter::mergeFieldTemplate
             inplaceReorder(mergedSurf_.pointsMap(), allFld);
             allFld.resize(mergedSurf_.points().size());
         }
+
+        // Extended debugging. Limit to master:
+        #if 0
+        if (UPstream::master())
+        {
+            Info<< "merged List<" << pTraits<Type>::typeName << "> : ";
+            allFld.writeList(Info) << endl;
+        }
+        #endif
 
         return tfield;
     }
@@ -652,7 +691,11 @@ Foam::tmp<Foam::Field<Type>> Foam::surfaceWriter::adjustFieldTemplate
 
     // Output scaling for the variable, but not for integer types
     // which are typically ids etc.
-    if (!std::is_integral<Type>::value)
+    if constexpr (std::is_integral_v<Type>)
+    {
+        return tfield;
+    }
+    else
     {
         scalar value;
 
@@ -667,9 +710,13 @@ Foam::tmp<Foam::Field<Type>> Foam::surfaceWriter::adjustFieldTemplate
             // or automatically scale by 1/sqrt(nComponents) instead ...
 
             Type refLevel;
-            for (direction cmpt = 0; cmpt < pTraits<Type>::nComponents; ++cmpt)
+            if constexpr (is_vectorspace_v<Type>)
             {
-                setComponent(refLevel, cmpt) = value;
+                refLevel.fill(value);
+            }
+            else
+            {
+                refLevel = value;
             }
 
             if (verbose_)
@@ -708,14 +755,13 @@ Foam::tmp<Foam::Field<Type>> Foam::surfaceWriter::adjustFieldTemplate
             // Apply scaling
             tadjusted.ref() *= value;
         }
+    }
 
-        // Rotate fields (vector and non-spherical tensors)
-        if
-        (
-            (is_vectorspace<Type>::value && pTraits<Type>::nComponents > 1)
-         && geometryTransform_.good()
-         && !geometryTransform_.R().is_identity()
-        )
+
+    // Rotate fields (vector and non-spherical tensors)
+    if constexpr (is_rotational_vectorspace_v<Type>)
+    {
+        if (geometryTransform_.good() && !geometryTransform_.R().is_identity())
         {
             if (!tadjusted)
             {

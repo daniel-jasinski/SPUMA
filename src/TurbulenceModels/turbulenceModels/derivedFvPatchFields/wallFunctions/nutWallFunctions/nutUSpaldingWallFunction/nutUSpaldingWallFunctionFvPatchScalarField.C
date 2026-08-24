@@ -67,7 +67,7 @@ Foam::nutUSpaldingWallFunctionFvPatchScalarField::calcNut() const
         )
     );
 
-    if (tolerance_ != 0.01)
+    if (Foam::mag(tolerance_ - 0.01) > VSMALL)
     {
         // User-specified tolerance. Find out if current nut already satisfies
         // eqns.

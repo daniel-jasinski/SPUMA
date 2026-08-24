@@ -35,13 +35,13 @@ Description
     \f[
         \mathbf{x}_\tau \approx
         \tilde{\mathbf{x}_\tau} =
-        \left( \sum_{i=0}^{N-1} \phi_i \alpha_i v_i^\tau \right)_{real}​
+        \left( \sum_{i=0}^{N-1} \phi_i \alpha_i v_i^\tau \right)_{real}
     \f]
 
     with
 
     \f[
-        \tau = \frac{t - t_o}{\Delta t}​
+        \tau = \frac{t - t_o}{\Delta t}
     \f]
 
     where:

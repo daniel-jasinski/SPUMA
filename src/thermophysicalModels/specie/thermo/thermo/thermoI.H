@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
     Copyright (C) 2020 OpenCFD Ltd.
+    Copyright (C) 2025
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,6 +28,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "thermo.H"
+#include "deviceErrors.H"
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -54,9 +56,10 @@ inline Foam::scalar Foam::species::thermo<Thermo, Type>::T
 {
     if (T0 < 0)
     {
-        FatalErrorInFunction
-            << "Negative initial temperature T0: " << T0
-            << abort(FatalError);
+        fatalErrorInKernelFunction
+        (
+            "Negative initial temperature T0: %f", T0
+        )
     }
 
     scalar Test = T0;
@@ -73,14 +76,15 @@ inline Foam::scalar Foam::species::thermo<Thermo, Type>::T
 
         if (iter++ > maxIter_)
         {
-            FatalErrorInFunction
-                << "Maximum number of iterations exceeded: " << maxIter_
-                << " when starting from T0:" << T0
-                << " old T:" << Test << " new T:" << Tnew
-                << " f:" << f
-                << " p:" << p
-                << " tol:" << Ttol
-                << abort(FatalError);
+            fatalErrorInKernelFunction
+            (
+                "Maximum number of iterations exceeded: %d\n"
+                " when starting from T0:%f\n"
+                " old T:%f new T:%f\n" 
+                " f:%f\n"
+                " p:%f\n"
+                " tol:%f", maxIter_, T0, Test, Tnew, f, p, Ttol
+            )
         }
 
     } while (mag(Tnew - Test) > Ttol);
@@ -113,7 +117,7 @@ Foam::species::thermo<Thermo, Type>::heName()
 
 
 template<class Thermo, template<class> class Type>
-inline Foam::scalar
+FOAM_DEVICE inline Foam::scalar
 Foam::species::thermo<Thermo, Type>::Cpv(const scalar p, const scalar T) const
 {
     return Type<thermo<Thermo, Type>>::Cpv(*this, p, T);
@@ -121,7 +125,7 @@ Foam::species::thermo<Thermo, Type>::Cpv(const scalar p, const scalar T) const
 
 
 template<class Thermo, template<class> class Type>
-inline Foam::scalar
+FOAM_DEVICE inline Foam::scalar
 Foam::species::thermo<Thermo, Type>::gamma(const scalar p, const scalar T) const
 {
     #ifdef __clang__
@@ -135,7 +139,7 @@ Foam::species::thermo<Thermo, Type>::gamma(const scalar p, const scalar T) const
 
 
 template<class Thermo, template<class> class Type>
-inline Foam::scalar
+FOAM_DEVICE inline Foam::scalar
 Foam::species::thermo<Thermo, Type>::CpByCpv
 (
     const scalar p,
@@ -147,7 +151,7 @@ Foam::species::thermo<Thermo, Type>::CpByCpv
 
 
 template<class Thermo, template<class> class Type>
-inline Foam::scalar
+FOAM_DEVICE inline Foam::scalar
 Foam::species::thermo<Thermo, Type>::HE(const scalar p, const scalar T) const
 {
     return Type<thermo<Thermo, Type>>::HE(*this, p, T);
@@ -342,7 +346,7 @@ inline Foam::scalar Foam::species::thermo<Thermo, Type>::Kn
 
 
 template<class Thermo, template<class> class Type>
-inline Foam::scalar Foam::species::thermo<Thermo, Type>::THE
+FOAM_DEVICE inline Foam::scalar Foam::species::thermo<Thermo, Type>::THE
 (
     const scalar he,
     const scalar p,
@@ -354,82 +358,190 @@ inline Foam::scalar Foam::species::thermo<Thermo, Type>::THE
 
 
 template<class Thermo, template<class> class Type>
-inline Foam::scalar Foam::species::thermo<Thermo, Type>::THs
+FOAM_DEVICE inline Foam::scalar Foam::species::thermo<Thermo, Type>::THs
 (
     const scalar hs,
     const scalar p,
     const scalar T0
 ) const
 {
-    return T
-    (
-        hs,
-        p,
-        T0,
-        &thermo<Thermo, Type>::Hs,
-        &thermo<Thermo, Type>::Cp,
-        &thermo<Thermo, Type>::limit
-    );
+    if (T0 < 0)
+    {
+        fatalErrorInKernelFunction
+        (
+            "Negative initial temperature T0: %f", T0
+        )
+    }
+
+    scalar Test = T0;
+    scalar Tnew = T0;
+    scalar Ttol = T0*tol_;
+    int    iter = 0;
+
+    do
+    {
+        Test = Tnew;
+        Tnew =
+            thermo<Thermo,Type>::limit
+            (Test - (thermo<Thermo,Type>::Hs(p, Test) - hs)/thermo<Thermo,Type>::Cp(p, Test));
+
+        if (iter++ > maxIter_)
+        {
+            fatalErrorInKernelFunction
+            (
+                "Maximum number of iterations exceeded: %d\n"
+                " when starting from T0:%f\n"
+                " old T:%f new T:%f\n"
+                " ha:%f\n"
+                " p:%f\n"
+                " tol:%f", maxIter_, T0, Test, Tnew, hs, p, Ttol
+            )
+        }
+
+    } while (mag(Tnew - Test) > Ttol);
+
+    return Tnew;
 }
 
 
 template<class Thermo, template<class> class Type>
-inline Foam::scalar Foam::species::thermo<Thermo, Type>::THa
+FOAM_DEVICE inline Foam::scalar Foam::species::thermo<Thermo, Type>::THa
 (
     const scalar ha,
     const scalar p,
     const scalar T0
 ) const
 {
-    return T
-    (
-        ha,
-        p,
-        T0,
-        &thermo<Thermo, Type>::Ha,
-        &thermo<Thermo, Type>::Cp,
-        &thermo<Thermo, Type>::limit
-    );
+    if (T0 < 0)
+    {
+        fatalErrorInKernelFunction
+        (
+            "Negative initial temperature T0: %f", T0
+        )
+    }
+
+    scalar Test = T0;
+    scalar Tnew = T0;
+    scalar Ttol = T0*tol_;
+    int    iter = 0;
+
+    do
+    {
+        Test = Tnew;
+        Tnew =
+            thermo<Thermo,Type>::limit
+            (Test - (thermo<Thermo,Type>::Ha(p, Test) - ha)/thermo<Thermo,Type>::Cp(p, Test));
+
+        if (iter++ > maxIter_)
+        {
+            fatalErrorInKernelFunction
+            (
+                "Maximum number of iterations exceeded: %d\n"
+                " when starting from T0:%f\n"
+                " old T:%f new T:%f\n"
+                " ha:%f\n"
+                " p:%f\n"
+                " tol:%f", maxIter_, T0, Test, Tnew, ha, p, Ttol
+            )
+        }
+
+    } while (mag(Tnew - Test) > Ttol);
+
+    return Tnew;
 }
 
 
 template<class Thermo, template<class> class Type>
-inline Foam::scalar Foam::species::thermo<Thermo, Type>::TEs
+FOAM_DEVICE inline Foam::scalar Foam::species::thermo<Thermo, Type>::TEs
 (
     const scalar es,
     const scalar p,
     const scalar T0
 ) const
 {
-    return T
-    (
-        es,
-        p,
-        T0,
-        &thermo<Thermo, Type>::Es,
-        &thermo<Thermo, Type>::Cv,
-        &thermo<Thermo, Type>::limit
-    );
+    if (T0 < 0)
+    {
+        fatalErrorInKernelFunction
+        (
+            "Negative initial temperature T0: %f", T0
+        )
+    }
+
+    scalar Test = T0;
+    scalar Tnew = T0;
+    scalar Ttol = T0*tol_;
+    int    iter = 0;
+
+    do
+    {
+        Test = Tnew;
+        Tnew =
+            thermo<Thermo,Type>::limit
+            (Test - (thermo<Thermo,Type>::Es(p, Test) - es)/thermo<Thermo,Type>::Cv(p, Test));
+
+        if (iter++ > maxIter_)
+        {
+            fatalErrorInKernelFunction
+            (
+                "Maximum number of iterations exceeded: %d\n"
+                " when starting from T0:%f\n"
+                " old T:%f new T:%f\n"
+                " es:%f\n"
+                " p:%f\n"
+                " tol:%f", maxIter_, T0, Test, Tnew, es, p, Ttol
+            )
+        }
+
+    } while (mag(Tnew - Test) > Ttol);
+
+    return Tnew;
 }
 
 
 template<class Thermo, template<class> class Type>
-inline Foam::scalar Foam::species::thermo<Thermo, Type>::TEa
+FOAM_DEVICE inline Foam::scalar Foam::species::thermo<Thermo, Type>::TEa
 (
     const scalar ea,
     const scalar p,
     const scalar T0
 ) const
 {
-    return T
-    (
-        ea,
-        p,
-        T0,
-        &thermo<Thermo, Type>::Ea,
-        &thermo<Thermo, Type>::Cv,
-        &thermo<Thermo, Type>::limit
-    );
+    if (T0 < 0)
+    {
+        fatalErrorInKernelFunction
+        (
+            "Negative initial temperature T0: %f", T0
+        )
+    }
+
+    scalar Test = T0;
+    scalar Tnew = T0;
+    scalar Ttol = T0*tol_;
+    int    iter = 0;
+
+    do
+    {
+        Test = Tnew;
+        Tnew =
+            thermo<Thermo,Type>::limit
+            (Test - (thermo<Thermo,Type>::Ea(p, Test) - ea)/thermo<Thermo,Type>::Cv(p, Test));
+
+        if (iter++ > maxIter_)
+        {
+            fatalErrorInKernelFunction
+            (
+                "Maximum number of iterations exceeded: %d\n"
+                " when starting from T0:%f\n"
+                " old T:%f new T:%f\n"
+                " ea:%f\n"
+                " p:%f\n"
+                " tol:%f", maxIter_, T0, Test, Tnew, ea, p, Ttol
+            )
+        }
+
+    } while (mag(Tnew - Test) > Ttol);
+
+    return Tnew;
 }
 
 

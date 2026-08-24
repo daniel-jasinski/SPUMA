@@ -40,7 +40,7 @@ namespace Foam
     typedef IOField<labelField> labelFieldIOField;
 
     //! Compact IO for a Field of labelField
-    typedef CompactIOField<labelField, label> labelFieldCompactIOField;
+    typedef CompactIOField<labelField> labelFieldCompactIOField;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

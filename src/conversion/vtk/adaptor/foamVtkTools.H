@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2020 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,11 +35,11 @@ Description
     VTK uses (XX, YY, ZZ, XY, YZ, XZ) order.
 
 Note
-    The class is implemented as headers-only.
+    This file is implemented as headers-only.
 
 SourceFiles
     foamVtkToolsI.H
-    foamVtkToolsTemplates.C
+    foamVtkTools.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -50,6 +50,7 @@ SourceFiles
 #include "pointField.H"
 #include "symmTensor.H"
 #include "MinMax.H"
+#include "foamVtkCore.H"
 
 // VTK includes
 #include "vtkCellArray.h"
@@ -84,6 +85,7 @@ namespace vtk
 template<class DataType>
 struct Caching
 {
+    //- The VTK geometry data type
     typedef DataType dataType;
 
     //- The geometry, without any cell/point data
@@ -181,14 +183,17 @@ namespace Tools
         const label size
     );
 
+    //- Allocate vtkPoints
+    inline vtkSmartPointer<vtkPoints>
+    NewPoints(vtkIdType count);
+
     //- Return a list of points as vtkPoints
-    inline vtkSmartPointer<vtkPoints> Points
-    (
-        const UList<point>& pts
-    );
+    inline vtkSmartPointer<vtkPoints>
+    Points(const UList<point>& pts);
 
     //- Return an indirect list of points as vtkPoints
-    inline vtkSmartPointer<vtkPoints> Points
+    inline vtkSmartPointer<vtkPoints>
+    Points
     (
         const UList<point>& pts,
         const labelUList& addr
@@ -196,16 +201,19 @@ namespace Tools
 
     //- Convert a list of faces (or triFaces) to vtk polygon cells
     template<class Face>
-    vtkSmartPointer<vtkCellArray> Faces(const UList<Face>& faces);
+    vtkSmartPointer<vtkCellArray>
+    Faces(const UList<Face>& faces);
 
     //- Return vtkPolyData of vertices for each point
-    inline vtkSmartPointer<vtkPolyData> Vertices
+    inline vtkSmartPointer<vtkPolyData>
+    Vertices
     (
         const UList<point>& pts
     );
 
     //- Return vtkPolyData of vertices for each point
-    inline vtkSmartPointer<vtkPolyData> Vertices
+    inline vtkSmartPointer<vtkPolyData>
+    Vertices
     (
         const UList<point>& pts,
         const labelUList& addr
@@ -220,27 +228,33 @@ namespace Tools
     {
         //- Return local patch points as vtkPoints
         template<class PatchType>
-        static vtkSmartPointer<vtkPoints> points(const PatchType& p);
+        static vtkSmartPointer<vtkPoints>
+        points(const PatchType& p);
 
         //- Convert patch faces to vtk polygon cells
         template<class PatchType>
-        static vtkSmartPointer<vtkCellArray> faces(const PatchType& p);
+        static vtkSmartPointer<vtkCellArray>
+        faces(const PatchType& p);
 
         //- Convert patch points/faces to vtkPolyData
         template<class PatchType>
-        static vtkSmartPointer<vtkPolyData> mesh(const PatchType& p);
+        static vtkSmartPointer<vtkPolyData>
+        mesh(const PatchType& p);
 
         //- Convert patch face normals to vtkFloatArray
         template<class PatchType>
-        static vtkSmartPointer<vtkFloatArray> faceNormals(const PatchType& p);
+        static vtkSmartPointer<vtkFloatArray>
+        faceNormals(const PatchType& p);
 
         //- Return patch face centres as vtkPoints
         template<class PatchType>
-        static vtkSmartPointer<vtkPoints> faceCentres(const PatchType& p);
+        static vtkSmartPointer<vtkPoints>
+        faceCentres(const PatchType& p);
 
         //- Convert points/faces component to vtkPolyData
         template<class Face>
-        static vtkSmartPointer<vtkPolyData> mesh
+        static vtkSmartPointer<vtkPolyData>
+        mesh
         (
             const UList<point>& pts,
             const UList<Face>& fcs
@@ -248,43 +262,19 @@ namespace Tools
     };
 
 
-    //- Remapping for some OpenFOAM data types (eg, symmTensor)
-    //  \param data[in,out] The data to be remapped in-place
+    //- Older name for copyTuple
     template<class Type>
-    inline void remapTuple(float data[]) {}
+    void foamToVtkTuple(float output[], const Type& value)
+    {
+        vtk::Tools::copyTuple(output, value);
+    }
 
-    //- Template specialization for symmTensor ordering
-    template<>
-    inline void remapTuple<symmTensor>(float data[]);
-
-    //- Remapping for some OpenFOAM data types (eg, symmTensor)
-    //  \param data[in,out] The data to be remapped in-place
+    //- Older name for copyTuple
     template<class Type>
-    inline void remapTuple(double data[]) {}
-
-    //- Template specialization for symmTensor ordering
-    template<>
-    inline void remapTuple<symmTensor>(double data[]);
-
-    //- Copy/transcribe OpenFOAM data types to VTK format
-    //  This allows a change of data type (float vs double) as well as
-    //  addressing any swapping issues (eg, symmTensor)
-    //
-    //  \param output[out] The output scratch space. Must be long enough
-    //     to hold the result.
-    //  \param val[in] The input data to copy/transcribe
-    template<class Type>
-    inline void foamToVtkTuple(float output[], const Type& val);
-
-    //- Copy/transcribe OpenFOAM data types to VTK format
-    //  This allows a change of data type (float vs double) as well as
-    //  addressing any swapping issues (eg, symmTensor)
-    //
-    //  \param output[out] The output scratch space. Must be long enough
-    //     to hold the result.
-    //  \param val[in] The input data to copy/transcribe
-    template<class Type>
-    inline void foamToVtkTuple(double output[], const Type& val);
+    void foamToVtkTuple(double output[], const Type& value)
+    {
+        vtk::Tools::copyTuple(output, value);
+    }
 
 
     // Field Conversion Functions
@@ -294,32 +284,44 @@ namespace Tools
     template<class Type>
     label transcribeFloatData
     (
-        vtkFloatArray* array,
+        //! [out] destination (vtkFloatArray or vtkDoubleArray)
+        //! can also be a nullptr (no-op)
+        vtkDataArray* array,
         const UList<Type>& input,
         vtkIdType start = 0         //!< The write offset into output array
     );
 
     //- Create named field initialized to zero
-    template<class Type>
-    vtkSmartPointer<vtkFloatArray> zeroField
+    template<class Type, class DataArrayType = vtkFloatArray>
+    vtkSmartPointer<DataArrayType>
+    zeroField
     (
         const word& name,
         const label size
     );
 
     //- Convert field data to a vtkFloatArray
-    template<class Type>
-    vtkSmartPointer<vtkFloatArray> convertFieldToVTK
+    template<class Type, class DataArrayType = vtkFloatArray>
+    vtkSmartPointer<DataArrayType>
+    convertFieldToVTK
     (
         const word& name,
         const UList<Type>& fld
     );
 
-    //- An identity list of VTK_VERTEX
-    inline vtkSmartPointer<vtkCellArray> identityVertices
+    //- Convert field data to a vtkFloatArray, using indirect addressing
+    template<class Type, class DataArrayType = vtkFloatArray>
+    vtkSmartPointer<DataArrayType>
+    convertFieldToVTK
     (
-        const label size
+        const word& name,
+        const UList<Type>& fld,
+        const labelUList& addr
     );
+
+    //- An identity list of VTK_VERTEX
+    inline vtkSmartPointer<vtkCellArray>
+    identityVertices(const vtkIdType size);
 
 } // End namespace Tools
 
@@ -328,29 +330,6 @@ namespace Tools
 } // End namespace vtk
 } // End namespace Foam
 
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-// Specializations
-
-//- Template specialization for symmTensor ordering
-template<>
-void Foam::vtk::Tools::remapTuple<Foam::symmTensor>(float data[])
-{
-    std::swap(data[1], data[3]);    // swap XY <-> YY
-    std::swap(data[2], data[5]);    // swap XZ <-> ZZ
-}
-
-
-//- Template specialization for symmTensor ordering
-template<>
-void Foam::vtk::Tools::remapTuple<Foam::symmTensor>(double data[])
-{
-    std::swap(data[1], data[3]);    // swap XY <-> YY
-    std::swap(data[2], data[5]);    // swap XZ <-> ZZ
-}
-
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #include "foamVtkToolsI.H"
@@ -358,7 +337,7 @@ void Foam::vtk::Tools::remapTuple<Foam::symmTensor>(double data[])
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "foamVtkToolsTemplates.C"
+    #include "foamVtkTools.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

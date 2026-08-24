@@ -35,8 +35,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef ensight_readFields_H
-#define ensight_readFields_H
+#ifndef FoamToEnsight_readFields_H
+#define FoamToEnsight_readFields_H
 
 #include "instantList.H"
 #include "IOobjectList.H"

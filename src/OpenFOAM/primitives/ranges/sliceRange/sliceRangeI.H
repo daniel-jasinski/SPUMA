@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2021 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -46,6 +46,44 @@ inline constexpr Foam::sliceRange::sliceRange
     size_(len),
     stride_(stride)
 {}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+inline bool Foam::sliceRange::equals
+(
+    const sliceRange& b
+) const noexcept
+{
+    const auto& a = *this;
+
+    return
+    (
+        a.start() == b.start()
+     && a.size() == b.size()
+     && a.stride() == b.stride()
+    );
+}
+
+
+inline int Foam::sliceRange::compare
+(
+    const sliceRange& b
+) const noexcept
+{
+    const auto& a = *this;
+
+    if (a.start() < b.start()) return -1;
+    if (b.start() < a.start()) return +1;
+
+    if (a.size() < b.size()) return -1;
+    if (b.size() < a.size()) return +1;
+
+    if (a.stride() < b.stride()) return -1;
+    if (b.stride() < a.stride()) return +1;
+
+    return 0;
+}
 
 
 // * * * * * * * * * * * * * * * * Iterators * * * * * * * * * * * * * * * * //

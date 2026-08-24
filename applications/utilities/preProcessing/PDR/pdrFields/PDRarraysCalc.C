@@ -1056,7 +1056,7 @@ void calc_drag_etc
     const scalar expon =
     (
         br > 0.0
-      ? Foam::min(Foam::max((surr_br / br - 0.25) * 4.0 / 3.0, scalar(0)), scalar(1))
+      ? Foam::clamp((surr_br / br - 0.25) * 4.0 / 3.0, Foam::zero_one{})
       : 0.0
     );
 

@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2013-2017 OpenFOAM Foundation
     Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -32,6 +33,8 @@ License
 #include "edgeHashes.H"
 #include "labelPair.H"
 #include "processorGAMGInterface.H"
+#include "randomizedGraphColoring.H"
+
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -1448,6 +1451,26 @@ void Foam::lduPrimitiveMesh::gather
             );
         }
     }
+}
+
+
+const Foam::List<Foam::DynamicList<Foam::label>>& 
+Foam::lduPrimitiveMesh::partitions(const dictionary& dict) const
+{
+    if (!partitions_)
+    {
+        partitions_ = std::make_unique<List<DynamicList<label>>>();
+        
+        autoPtr<graphColoring> alg = graphColoring::New
+        (
+            dict,
+            *this,
+            *partitions_
+        );
+        alg->execute();
+    }
+
+    return *partitions_;
 }
 
 

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2021-2023 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,8 +28,6 @@ License
 #include "List.H"
 #include "Istream.H"
 #include "token.H"
-#include "contiguous.H"
-#include <memory>
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -153,7 +151,7 @@ bool Foam::DynamicList<T, SizeMin>::readBracketList(Istream& is)
             List<T> currChunk(std::move(*(chunks[chunki])));
             chunks[chunki].reset(nullptr);
 
-            const label localLen = min(currChunk.size(), totalCount);
+            const label localLen = Foam::min(currChunk.size(), totalCount);
 
             dest = std::move
             (
@@ -202,27 +200,7 @@ Foam::Istream& Foam::DynamicList<T, SizeMin>::readList(Istream& is)
         // Resize to length required
         list.resize_nocopy(len);
 
-        if (is.format() == IOstreamOption::BINARY && is_contiguous<T>::value)
-        {
-            // Binary and contiguous
-
-            if (len)
-            {
-                Detail::readContiguous<T>
-                (
-                    is,
-                    list.data_bytes(),
-                    list.size_bytes()
-                );
-
-                is.fatalCheck
-                (
-                    "DynamicList<T>::readList(Istream&) : "
-                    "reading binary block"
-                );
-            }
-        }
-        else if (std::is_same<char, typename std::remove_cv<T>::type>::value)
+        if constexpr (std::is_same_v<char, std::remove_cv_t<T>>)
         {
             // Special treatment for char data (binary I/O only)
             const auto oldFmt = is.format(IOstreamOption::BINARY);
@@ -234,8 +212,7 @@ Foam::Istream& Foam::DynamicList<T, SizeMin>::readList(Istream& is)
 
                 is.fatalCheck
                 (
-                    "DynamicList<char>::readList(Istream&) : "
-                    "reading binary block"
+                    "DynamicList<char>::readList(Istream&) : [binary block]"
                 );
             }
 
@@ -243,48 +220,70 @@ Foam::Istream& Foam::DynamicList<T, SizeMin>::readList(Istream& is)
         }
         else
         {
-            // Begin of contents marker
-            const char delimiter = is.readBeginList("List");
-
-            if (len)
+            if (is.format() == IOstreamOption::BINARY && is_contiguous_v<T>)
             {
-                if (delimiter == token::BEGIN_LIST)
-                {
-                    auto iter = list.begin();
-                    const auto last = list.end();
+                // Binary and contiguous
 
-                    // Contents
-                    for (/*nil*/; (iter != last); (void)++iter)
+                if (len)
+                {
+                    Detail::readContiguous<T>
+                    (
+                        is,
+                        list.data_bytes(),
+                        list.size_bytes()
+                    );
+
+                    is.fatalCheck
+                    (
+                        "DynamicList<T>::readList(Istream&) : [binary block]"
+                    );
+                }
+            }
+            else
+            {
+                // Begin of contents marker
+                const char delimiter = is.readBeginList("List");
+
+                if (len)
+                {
+                    if (delimiter == token::BEGIN_LIST)
                     {
-                        is >> *iter;
+                        auto iter = list.begin();
+                        const auto last = list.end();
+
+                        // Contents
+                        for (/*nil*/; (iter != last); (void)++iter)
+                        {
+                            is >> *iter;
+
+                            is.fatalCheck
+                            (
+                                "DynamicList<T>::readList(Istream&) : "
+                                "reading entry"
+                            );
+                        }
+                    }
+                    else
+                    {
+                        // Uniform content (delimiter == token::BEGIN_BLOCK)
+
+                        T elem;
+                        is >> elem;
 
                         is.fatalCheck
                         (
                             "DynamicList<T>::readList(Istream&) : "
-                            "reading entry"
+                            "reading the single entry"
                         );
+
+                        // Fill with the value
+                        UList<T>::operator=(elem);
                     }
                 }
-                else
-                {
-                    // Uniform content (delimiter == token::BEGIN_BLOCK)
 
-                    T elem;
-                    is >> elem;
-
-                    is.fatalCheck
-                    (
-                        "DynamicList<T>::readList(Istream&) : "
-                        "reading the single entry"
-                    );
-
-                    // Fill with the value
-                    UList<T>::operator=(elem);
-                }
+                // End of contents marker
+                is.readEndList("List");
             }
-
-            // End of contents marker
-            is.readEndList("List");
         }
     }
     else if (tok.isPunctuation(token::BEGIN_LIST))

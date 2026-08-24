@@ -198,6 +198,7 @@ Foam::Field<Type> Foam::rawIOField<Type>::readContents(const IOobject& io)
     {
         rio.readOpt(IOobjectOption::MUST_READ);
     }
+    rio.resetHeader();
 
     rawIOField<Type> reader(rio);
 

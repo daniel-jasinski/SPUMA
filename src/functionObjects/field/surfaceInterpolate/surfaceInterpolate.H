@@ -36,47 +36,39 @@ Description
     Operands:
     \table
       Operand        | Type                  | Location
-      input          | vol\<Type\>Field      | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | vol<Type>Field        | <time>/inputFields
       output file    | -                     | -
-      output field   | surface\<Type\>Field  | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | surfaceTypeField      | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    surfaceInterpolate1
+    surfaceInterpolateFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        surfaceInterpolate;
         libs        (fieldFunctionObjects);
-
-        // Mandatory entries (runtime modifiable)
         fields      ((<inpField1> <outField1>) ... (<inpFieldN> <outFieldN>));
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                           | Type | Req'd | Dflt
+      Property     | Description                           | Type | Reqd | Deflt
       type         | Type name: surfaceInterpolate         | word |  yes  | -
       libs         | Library name: fieldFunctionObjects    | word |  yes  | -
       fields       | Names of operand and output fields    | wordList | yes | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::surfaceInterpolate
+      - \link functionObject.H \endlink
 
 SourceFiles
     surfaceInterpolate.C
@@ -84,8 +76,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_surfaceInterpolate_H
-#define functionObjects_surfaceInterpolate_H
+#ifndef Foam_functionObjects_surfaceInterpolate_H
+#define Foam_functionObjects_surfaceInterpolate_H
 
 #include "fvMeshFunctionObject.H"
 #include "surfaceFieldsFwd.H"
@@ -157,13 +149,13 @@ public:
 
     // Member Functions
 
-        //- Read the controls
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the interpolated fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the interpolated fields
+        //- Write the function-object results
         virtual bool write();
 };
 

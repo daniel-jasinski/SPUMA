@@ -162,7 +162,10 @@ Foam::surfaceInterpolationScheme<Type>::interpolate
                 vf.db()
             ),
             mesh,
-            vf.dimensions()
+            vf.dimensions(),
+            fvsPatchFieldBase::calculatedType(),
+            true,
+            true
         )
     );
     GeometricField<Type, fvsPatchField, surfaceMesh>& sf = tsf.ref();
@@ -262,7 +265,10 @@ Foam::surfaceInterpolationScheme<Type>::dotInterpolate
                 vf.db()
             ),
             mesh,
-            Sf.dimensions()*vf.dimensions()
+            Sf.dimensions()*vf.dimensions(),
+            fvsPatchFieldBase::calculatedType(),
+            true,
+            true
         )
     );
     GeometricField<RetType, fvsPatchField, surfaceMesh>& sf = tsf.ref();

@@ -1,23 +1,24 @@
 ## Getting the code
 
-Links to all code packs are available on https://dl.openfoam.com. For OpenFOAM-v2412:
+Links to all code packs are available on https://dl.openfoam.com.
+For OpenFOAM-v2512:
 
 - https://dl.openfoam.com/source/latest/
-- Source: https://dl.openfoam.com/source/v2412/OpenFOAM-v2412.tgz
-- ThirdParty: https://dl.openfoam.com/source/v2412/ThirdParty-v2412.tgz
+- Source: https://dl.openfoam.com/source/v2512/OpenFOAM-v2512.tgz
+- ThirdParty: https://dl.openfoam.com/source/v2512/ThirdParty-v2512.tar.gz
 
 ## OpenFOAM&reg; Quick Build Guide
 
 Prior to building, ensure that the [system requirements][link openfoam-require]
 are satisfied (including any special [cross-compiling][wiki-cross-compile]
 considerations), and source the correct OpenFOAM environment.
-For example, for the OpenFOAM-v2412 version:
+For example, for the OpenFOAM-v2512 version:
 ```
-source <installation path>/OpenFOAM-v2412/etc/bashrc
+source <installation path>/OpenFOAM-v2512/etc/bashrc
 ```
 e.g. if installed under the `~/openfoam` directory
 ```
-source ~/openfoam/OpenFOAM-v2412/etc/bashrc
+source ~/openfoam/OpenFOAM-v2512/etc/bashrc
 ```
 
 
@@ -359,19 +360,19 @@ More details in the [ThirdParty build guide][link third-build].
 
 <!-- OpenFOAM -->
 
-[repo openfoam]: https://develop.openfoam.com/Development/openfoam/
-[repo third]: https://develop.openfoam.com/Development/ThirdParty-common/
+[repo openfoam]: https://gitlab.com/openfoam/core/openfoam/
+[repo third]: https://gitlab.com/openfoam/core/thirdparty-common/
 
-[link openfoam-readme]: https://develop.openfoam.com/Development/openfoam/blob/develop/README.md
-[link openfoam-issues]: https://develop.openfoam.com/Development/openfoam/blob/develop/doc/BuildIssues.md
-[link openfoam-build]: https://develop.openfoam.com/Development/openfoam/blob/develop/doc/Build.md
-[link openfoam-require]: https://develop.openfoam.com/Development/openfoam/blob/develop/doc/Requirements.md
-[link third-readme]: https://develop.openfoam.com/Development/ThirdParty-common/blob/develop/README.md
-[link third-build]: https://develop.openfoam.com/Development/ThirdParty-common/blob/develop/BUILD.md
-[link third-require]: https://develop.openfoam.com/Development/ThirdParty-common/blob/develop/Requirements.md
+[link openfoam-readme]: https://gitlab.com/openfoam/core/openfoam/blob/develop/README.md
+[link openfoam-issues]: https://gitlab.com/openfoam/core/openfoam/blob/develop/doc/BuildIssues.md
+[link openfoam-build]: https://gitlab.com/openfoam/core/openfoam/blob/develop/doc/Build.md
+[link openfoam-require]: https://gitlab.com/openfoam/core/openfoam/blob/develop/doc/Requirements.md
+[link third-readme]: https://gitlab.com/openfoam/core/thirdparty-common/blob/develop/README.md
+[link third-build]: https://gitlab.com/openfoam/core/thirdparty-common/blob/develop/BUILD.md
+[link third-require]: https://gitlab.com/openfoam/core/thirdparty-common/blob/develop/Requirements.md
 
-[wiki-cross-compile]: https://develop.openfoam.com/Development/openfoam/-/wikis/building/cross-compile-mingw
-[wiki-config]: https://develop.openfoam.com/Development/openfoam/-/wikis/configuring
+[wiki-cross-compile]: https://gitlab.com/openfoam/core/openfoam/-/wikis/building/cross-compile-mingw
+[wiki-config]: https://gitlab.com/openfoam/core/openfoam/-/wikis/configuring
 
 ---
-Copyright 2019-2024 OpenCFD Ltd
+Copyright 2019-2025 OpenCFD Ltd

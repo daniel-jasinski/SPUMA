@@ -1,4 +1,4 @@
-## Known Build Issues (v2412, v2406, v2312, v2306, v2212, v2206, v2112, v2106, v2012)
+## Known Build Issues (v2506, v2412, v2406, v2312, v2306, v2212, v2206, v2112, v2106, v2012)
 
 ### Windows cross-compilation
 
@@ -137,15 +137,11 @@ cd $WM_THIRD_PARTY_DIR
 Subequent compilation with Allwmake will now run largely without any
 problems, except that the components linking against CGAL
 (foamyMesh and surfaceBooleanFeatures) will also try to link against
-a nonexistent mpfr library. As a workaround, the link-dependency can
-be removed in wmake/rules/General/CGAL :
+a nonexistent mpfr library. As a workaround, the link-dependency will
+be removed in wmake/rules/General/cgal by specifying the `CGAL_FLAVOUR`
+when compiling:
 ```
-CGAL_LIBS = \
-    -L$(BOOST_ARCH_PATH)/lib \
-    -L$(BOOST_ARCH_PATH)/lib$(WM_COMPILER_LIB_ARCH) \
-    -L$(CGAL_ARCH_PATH)/lib \
-    -L$(CGAL_ARCH_PATH)/lib$(WM_COMPILER_LIB_ARCH) \
-    -lCGAL
+no-cgal | cgal-header | cgal-header-no-mpfr | cgal-no-mpfr | cgal-mpfr
 ```
 
 A robuster solution is still being sought.
@@ -174,18 +170,18 @@ and attempt to install a `paraview~qt` version instead.
 
 <!-- OpenFOAM -->
 
-[repo openfoam]: https://develop.openfoam.com/Development/openfoam/
-[repo third]: https://develop.openfoam.com/Development/ThirdParty-common/
+[repo openfoam]: https://gitlab.com/openfoam/core/openfoam/
+[repo third]: https://gitlab.com/openfoam/core/thirdparty-common/
 
-[link openfoam-readme]: https://develop.openfoam.com/Development/openfoam/blob/develop/README.md
-[link openfoam-issues]: https://develop.openfoam.com/Development/openfoam/blob/develop/doc/BuildIssues.md
-[link openfoam-build]: https://develop.openfoam.com/Development/openfoam/blob/develop/doc/Build.md
-[link openfoam-require]: https://develop.openfoam.com/Development/openfoam/blob/develop/doc/Requirements.md
-[link third-readme]: https://develop.openfoam.com/Development/ThirdParty-common/blob/develop/README.md
-[link third-build]: https://develop.openfoam.com/Development/ThirdParty-common/blob/develop/BUILD.md
-[link third-require]: https://develop.openfoam.com/Development/ThirdParty-common/blob/develop/Requirements.md
+[link openfoam-readme]: https://gitlab.com/openfoam/core/openfoam/blob/develop/README.md
+[link openfoam-issues]: https://gitlab.com/openfoam/core/openfoam/blob/develop/doc/BuildIssues.md
+[link openfoam-build]: https://gitlab.com/openfoam/core/openfoam/blob/develop/doc/Build.md
+[link openfoam-require]: https://gitlab.com/openfoam/core/openfoam/blob/develop/doc/Requirements.md
+[link third-readme]: https://gitlab.com/openfoam/core/thirdparty-common/blob/develop/README.md
+[link third-build]: https://gitlab.com/openfoam/core/thirdparty-common/blob/develop/BUILD.md
+[link third-require]: https://gitlab.com/openfoam/core/thirdparty-common/blob/develop/Requirements.md
 
-[wiki-config]: https://develop.openfoam.com/Development/openfoam/-/wikis/configuring
+[wiki-config]: https://gitlab.com/openfoam/core/openfoam/-/wikis/configuring
 
 ---
 Copyright 2019-2024 OpenCFD Ltd

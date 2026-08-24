@@ -37,52 +37,42 @@ Description
     Operands:
     \table
       Operand        | Type           | Location
-      input          | volScalarField | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | volScalarField | <time>/inputField
       output file    | -              | -
-      output field   | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    processorField1
+    processorFieldFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        processorField;
         libs        (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: processorField          | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func processorField
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::processorField
+      - \link functionObject.H \endlink
 
 SourceFiles
     processorField.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_processorField_H
-#define functionObjects_processorField_H
+#ifndef Foam_functionObjects_processorField_H
+#define Foam_functionObjects_processorField_H
 
 #include "fvMeshFunctionObject.H"
 
@@ -109,7 +99,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         processorField
         (
             const word& name,
@@ -130,13 +120,13 @@ public:
 
     // Member Functions
 
-        //- Read the input data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the processorID field
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the processorID field
+        //- Write the function-object results
         virtual bool write();
 
         //- Update for changes of mesh

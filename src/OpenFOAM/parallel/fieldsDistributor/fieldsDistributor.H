@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022-2023 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,7 +30,7 @@ Description
     Common methods/utilities for field decomposers/distributors etc.
 
 SourceFiles
-    fieldsDistributorTemplates.C
+    fieldsDistributor.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -61,9 +61,11 @@ class fieldsDistributor
     template<class BoolListType, class GeoField, class MeshSubsetter>
     static void readFieldsImpl
     (
-        refPtr<fileOperation>* readHandlerPtr,  // Can be nullptr
+        //! Optional filehandler (nullptr if unused). NB: pointer to refPtr!
+        refPtr<fileOperation>* readHandlerPtr,
         const BoolListType& haveMeshOnProc,
-        const MeshSubsetter* subsetter,         // Can be nullptr
+        //! Optional subsetting (nullptr if unused)
+        const MeshSubsetter* subsetter,
         const typename GeoField::Mesh& mesh,
         IOobjectList& allObjects,
         PtrList<GeoField>& fields,
@@ -127,7 +129,8 @@ public:
     static void readFields
     (
         const bitSet& haveMeshOnProc,
-        const MeshSubsetter* subsetter,     // Can be nullptr
+        //! Optional subsetting (nullptr if unused)
+        const MeshSubsetter* subsetter,
         const typename GeoField::Mesh& mesh,
         IOobjectList& allObjects,
         PtrList<GeoField>& fields,
@@ -140,8 +143,23 @@ public:
     static void readFields
     (
         const boolUList& haveMeshOnProc,
-        const MeshSubsetter* subsetter,     // Can be nullptr
+        //! Optional subsetting (nullptr if unused)
+        const MeshSubsetter* subsetter,
         const typename GeoField::Mesh& mesh,
+        IOobjectList& allObjects,
+        PtrList<GeoField>& fields,
+        const bool deregister = false
+    );
+
+    //- Read volume/surface/point/area fields that may or may not exist
+    //- on all processors
+    template<class GeoField, class MeshSubsetter>
+    static void readFields
+    (
+        const bitSet& haveMeshOnProc,
+        const typename GeoField::Mesh& mesh,
+        //! Optional subsetting (can be nullptr)
+        const autoPtr<MeshSubsetter>& subsetter,
         IOobjectList& allObjects,
         PtrList<GeoField>& fields,
         const bool deregister = false
@@ -154,6 +172,22 @@ public:
     (
         const boolUList& haveMeshOnProc,
         const typename GeoField::Mesh& mesh,
+        //! Optional subsetting (can be nullptr)
+        const autoPtr<MeshSubsetter>& subsetter,
+        IOobjectList& allObjects,
+        PtrList<GeoField>& fields,
+        const bool deregister = false
+    );
+
+    //- Read volume/surface/point/area fields that may or may not exist
+    //- on all processors
+    template<class GeoField, class MeshSubsetter>
+    static void readFields
+    (
+        const bitSet& haveMeshOnProc,
+        refPtr<fileOperation>& readHandler,
+        const typename GeoField::Mesh& mesh,
+        //! Optional subsetting (can be nullptr)
         const autoPtr<MeshSubsetter>& subsetter,
         IOobjectList& allObjects,
         PtrList<GeoField>& fields,
@@ -168,6 +202,7 @@ public:
         const boolUList& haveMeshOnProc,
         refPtr<fileOperation>& readHandler,
         const typename GeoField::Mesh& mesh,
+        //! Optional subsetting (can be nullptr)
         const autoPtr<MeshSubsetter>& subsetter,
         IOobjectList& allObjects,
         PtrList<GeoField>& fields,
@@ -183,7 +218,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "fieldsDistributorTemplates.C"
+    #include "fieldsDistributor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

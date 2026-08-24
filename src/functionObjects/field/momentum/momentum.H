@@ -30,49 +30,52 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Computes linear/angular momentum, reporting integral values
-    and optionally writing the fields.
+    Computes linear/angular momentum, reporting integral values and optionally
+    writing the fields.
 
     Operands:
     \table
       Operand       | Type | Location
       input         | -    | -
-      output file   | dat  | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
+      output file   | dat  | postProcessing/<FO>/<time>/file
       output field  | -    | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    momentum1
+    momentumFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            momentum;
         libs            (fieldFunctionObjects);
 
-        // Optional entries (runtime modifiable)
-        regionType      all;
-        writeMomentum   yes;
-        writePosition   yes;
-        writeVelocity   yes;
-        p               p;
-        U               U;
-        rho             rho;
-        rhoRef          1.0;
+        // Optional entries
+        regionType      <word>;;
+        writeMomentum   <bool>;
+        writePosition   <bool>;
+        writeVelocity   <bool>;
+        p               <word>;
+        U               <word>;
+        rho             <word>;
+        rhoRef          <scalar>;
+        cylindrical     <bool>;
 
-        cylindrical     true;
-        origin          (0 0 0);
-        e1              (1 0 0);
-        e3              (0 0 1);
+        // Conditional entries
 
-        // Optional (inherited) entries
+            // when 'cylindrical' is 'true'
+            origin          (0 0 0);
+            e1              (1 0 0);
+            e3              (0 0 1);
+
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: momentum                | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       regionType   | Selection type: all/cellSet/cellZone | word   | no  | all
@@ -89,10 +92,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 Note
   - For incompressible cases, the value of \c rhoRef is used.
@@ -109,20 +110,13 @@ Note
         }
     \endverbatim
 
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::volRegion
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::momentum
-
 SourceFiles
     momentum.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_momentum_H
-#define functionObjects_momentum_H
+#ifndef Foam_functionObjects_momentum_H
+#define Foam_functionObjects_momentum_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -234,7 +228,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         momentum
         (
             const word& name,
@@ -265,13 +259,13 @@ public:
 
     // Member Functions
 
-        //- Read the momentum data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate and report the integral momentum
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the momentum, possibly angular momentum and velocity
+        //- Write the function-object results
         virtual bool write();
 
         //- Update for changes of mesh

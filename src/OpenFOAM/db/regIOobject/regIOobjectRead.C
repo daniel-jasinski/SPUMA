@@ -45,10 +45,7 @@ bool Foam::regIOobject::readHeaderOk
     const bool masterOnly
     (
         global()
-     && (
-            IOobject::fileModificationChecking == IOobject::timeStampMaster
-         || IOobject::fileModificationChecking == IOobject::inotifyMaster
-        )
+     && IOobject::fileModificationChecking_masterOnly()
     );
 
 
@@ -194,10 +191,7 @@ bool Foam::regIOobject::read()
     const bool masterOnly
     (
         global()
-     && (
-            IOobject::fileModificationChecking == IOobject::timeStampMaster
-         || IOobject::fileModificationChecking == IOobject::inotifyMaster
-        )
+     && IOobject::fileModificationChecking_masterOnly()
     );
 
     // Remove old watches (indices) and clear:

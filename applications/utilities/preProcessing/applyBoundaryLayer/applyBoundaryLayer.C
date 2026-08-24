@@ -278,6 +278,7 @@ int main(int argc, char *argv[])
     );
 
     #include "addMemoryPoolOptions.H"
+    #include "addInitDeviceOptions.H"
     #include "setRootCase.H"
 
     if (!args.found("ybl") && !args.found("Cbl"))

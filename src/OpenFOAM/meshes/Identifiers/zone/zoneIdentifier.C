@@ -32,7 +32,6 @@ License
 
 Foam::zoneIdentifier::zoneIdentifier()
 :
-    name_(),
     index_(0)
 {}
 

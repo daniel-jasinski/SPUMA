@@ -216,7 +216,7 @@ public:
         inline void operator=(const T& val);
 
         //- Assignment of all entries to zero
-        inline void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
         //- Deep copy values from a list of the addressed elements
         //  Fatal if list sizes are not identical
@@ -398,11 +398,11 @@ public:
 // * * * * * * * * * * * * * * * IOstream Operators  * * * * * * * * * * * * //
 
 //- Write List to Ostream, as per UList::writeList() with default length.
-//  The default short-length is given by Detail::ListPolicy::short_length
+//  The default short-length is given by Foam::ListPolicy::short_length
 template<class T, class Addr>
 Ostream& operator<<(Ostream& os, const IndirectListBase<T, Addr>& list)
 {
-    return list.writeList(os, Detail::ListPolicy::short_length<T>::value);
+    return list.writeList(os, Foam::ListPolicy::short_length<T>::value);
 }
 
 

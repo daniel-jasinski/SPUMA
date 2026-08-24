@@ -381,6 +381,80 @@ void Foam::cyclicAMIPolyPatch::resetAMI(const UList<point>& points) const
         return;
     }
 
+    point refPt = point::max;
+    bool restoredFromCache = false;
+    if (AMIPtr_->cacheActive())
+    {
+        const auto& mesh = boundaryMesh().mesh();
+        const label comm = mesh.comm();
+
+        if (UPstream::parRun())
+        {
+            label refProci = -1;
+            if (size() > 0)
+            {
+                refProci = UPstream::myProcNo(comm);
+            }
+            reduce(refProci, maxOp<label>(), UPstream::msgType(), comm);
+
+            if (refProci == -1)
+            {
+                // No AMI faces
+                Info<< "AMI: Patch " << name() << " has no faces "
+                    << "- deactivating cache" << endl;
+                AMIPtr_->cache().setSize(-1);
+            }
+            else
+            {
+                if (refProci == UPstream::myProcNo(comm))
+                {
+                    const label meshPointi = meshPoints()[0];
+                    refPt = points[meshPointi];
+
+                    // Need to ensure that this patch is on the moving side!
+                    const scalar d(magSqr(refPt - mesh.oldPoints()[meshPointi]));
+
+                    if (d < tolerance_)
+                    {
+                        WarningInFunction
+                            << "Attempted to use AMI caching on a static patch "
+                            << name()
+                            << ". Potential patch ordering issue - "
+                            << "flip owner and neighbour patches?"
+                            << endl;
+                    }
+                }
+                reduce(refPt, minOp<point>(), UPstream::msgType(), comm);
+            }
+        }
+        else
+        {
+            if (size())
+            {
+                refPt = points[meshPoints()[0]];
+            }
+            else
+            {
+                // No AMI faces
+                Info<< "AMI: Patch " << name() << " has no faces "
+                    << "- deactivating cache" << endl;
+                AMIPtr_->cache().setSize(-1);
+            }
+        }
+
+        // Sets cache indices to use and time interpolation weight
+        restoredFromCache = AMIPtr_->restoreCache(refPt);
+
+        if (returnReduceOr(restoredFromCache, comm))
+        {
+            // Restored AMI weight and addressing from cache - all done
+            Info<< "AMI: Cached weights and addresses restored" << endl;
+            return;
+        }
+
+        Info<< "AMI: Cached weights and addresses unavailable" << endl;
+    }
+
     const cyclicAMIPolyPatch& nbr = neighbPatch();
     const pointField srcPoints(points, meshPoints());
     pointField nbrPoints(points, nbr.meshPoints());
@@ -424,7 +498,6 @@ void Foam::cyclicAMIPolyPatch::resetAMI(const UList<point>& points) const
         srcPoints
     );
 
-
     if (debug)
     {
         const Time& t = boundaryMesh().mesh().time();
@@ -432,11 +505,12 @@ void Foam::cyclicAMIPolyPatch::resetAMI(const UList<point>& points) const
         meshTools::writeOBJ(osN, nbrPatch0.localFaces(), nbrPoints);
 
         OFstream osO(t.path()/name() + "_ownerPatch.obj");
-        meshTools::writeOBJ(osO, this->localFaces(), localPoints());
+        meshTools::writeOBJ(osO, this->localFaces(), srcPoints);
     }
 
     // Construct/apply AMI interpolation to determine addressing and weights
     AMIPtr_->upToDate(false);
+
     // Note: e.g. redistributePar might construct the AMI with a different
     // worldComm so reset it to the mesh.comm.
     AMIPtr_->comm(boundaryMesh().mesh().comm());
@@ -446,6 +520,8 @@ void Foam::cyclicAMIPolyPatch::resetAMI(const UList<point>& points) const
     {
         AMIPtr_->checkSymmetricWeights(true);
     }
+
+    AMIPtr_->addToCache(refPt);
 }
 
 
@@ -748,6 +824,13 @@ Foam::cyclicAMIPolyPatch::cyclicAMIPolyPatch
     // read additional controls
     if (createAMIFaces_)
     {
+        if (AMIPtr_->cacheActive())
+        {
+            FatalIOErrorInFunction(dict)
+                << "createAMIFaces and AMI caching cannot be used together."
+                << exit(FatalIOError);
+        }
+
         srcFaceIDs_.setSize(dict.get<label>("srcSize"));
         tgtFaceIDs_.setSize(dict.get<label>("tgtSize"));
         moveFaceCentres_ = dict.getOrDefault("moveFaceCentres", true);

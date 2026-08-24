@@ -122,13 +122,16 @@ public:
         FOAM_EXPORT_DATA static const int8_t rootMin;
 
 
+    // Limits
+
+        static constexpr int8_t min_ = INT8_MIN;
+        static constexpr int8_t max_ = INT8_MAX;
+
+
     // Constructors
 
         //- Copy construct from primitive
-        explicit pTraits(int8_t val) noexcept
-        :
-            p_(val)
-        {}
+        explicit pTraits(int8_t val) noexcept : p_(val) {}
 
         //- Read construct from Istream
         explicit pTraits(Istream& is);

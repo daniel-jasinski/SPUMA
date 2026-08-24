@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2023-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -109,14 +109,49 @@ Foam::coupledFvPatchField<Type>::coupledFvPatchField
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Type>
+void Foam::coupledFvPatchField<Type>::snGrad
+(
+    const scalarField& deltaCoeffs,
+    UList<Type>& result
+) const
+{
+    // Get patch neighbour field, store temporarily in result
+    this->patchNeighbourField(result);
+    const auto& pnf = result;
+
+    // Same as patchInternalField(...), assuming faceCells are an indirection
+    // into internal field, but without additional storage...
+    const auto& addr = this->patch().faceCells();
+    const auto& iF = this->primitiveField();
+
+    // snGrad = deltaCoeffs * (patchNeighbourField - patchInternalField)
+
+    const label len = result.size();
+
+    auto resultPtr = result.begin();
+    const auto deltaCoeffsPtr = deltaCoeffs.cbegin();
+    const auto pnfPtr = pnf.cbegin();
+    const auto addrPtr = addr.cbegin();
+    const auto iFPtr = iF.cbegin();
+
+    foamExecutor exec;
+    auto Lambda = [=](label i)
+    {
+        resultPtr[i] = deltaCoeffsPtr[i]*(pnfPtr[i] - iFPtr[addrPtr[i]]);
+    };
+    exec.parallelFor(Lambda, len);
+}
+
+
+template<class Type>
 Foam::tmp<Foam::Field<Type>> Foam::coupledFvPatchField<Type>::snGrad
 (
     const scalarField& deltaCoeffs
 ) const
 {
-    return
-        deltaCoeffs
-       *(this->patchNeighbourField() - this->patchInternalField());
+    auto tresult = tmp<Field<Type>>::New(this->size());
+    this->snGrad(deltaCoeffs, tresult.ref());
+    return tresult;
 }
 
 
@@ -153,6 +188,50 @@ void Foam::coupledFvPatchField<Type>::evaluate(const Pstream::commsTypes)
 
 
 template<class Type>
+void Foam::coupledFvPatchField<Type>::valueInternalCoeffs
+(
+    const tmp<scalarField>& tweights,
+    UList<Type>& result
+) const
+{
+    const auto& w = tweights();
+
+    const label len = result.size();
+
+    auto resultPtr = result.begin();
+    const auto wPtr = w.cbegin();
+    const Type localType = Type(pTraits<Type>::one);
+
+    foamExecutor exec;
+    auto Lambda = [=](label i)
+    {
+        resultPtr[i] = localType*wPtr[i];
+    };
+    exec.parallelFor(Lambda, len);
+    tweights.clear();
+}
+
+
+template<class Type>
+void Foam::coupledFvPatchField<Type>::valueBoundaryCoeffs
+(
+    const tmp<scalarField>& tweights,
+    UList<Type>& result
+) const
+{
+    const auto& w = tweights();
+
+    const label len = result.size();
+
+    for (label i = 0; i < len; ++i)
+    {
+        result[i] = Type(pTraits<Type>::one)*(1.0 - w[i]);
+    }
+    tweights.clear();
+}
+
+
+template<class Type>
 Foam::tmp<Foam::Field<Type>>
 Foam::coupledFvPatchField<Type>::valueInternalCoeffs
 (
@@ -175,13 +254,57 @@ Foam::coupledFvPatchField<Type>::valueBoundaryCoeffs
 
 
 template<class Type>
+void Foam::coupledFvPatchField<Type>::gradientInternalCoeffs
+(
+    const scalarField& deltaCoeffs,
+    UList<Type>& result
+) const
+{
+    const label len = result.size();
+
+    auto resultPtr = result.begin();
+    const auto deltaCoeffsPtr = deltaCoeffs.cbegin();
+    const Type localType = -Type(pTraits<Type>::one);
+    foamExecutor exec;
+    auto Lambda = [=](label i)
+    {
+        resultPtr[i] = localType*deltaCoeffsPtr[i];
+    };
+    exec.parallelFor(Lambda, len);
+}
+
+
+template<class Type>
+void Foam::coupledFvPatchField<Type>::gradientBoundaryCoeffs
+(
+    const scalarField& deltaCoeffs,
+    UList<Type>& result
+) const
+{
+    const label len = result.size();
+
+    auto resultPtr = result.begin();
+    const auto deltaCoeffsPtr = deltaCoeffs.cbegin();
+    const Type localType = Type(pTraits<Type>::one);
+    foamExecutor exec;
+    auto Lambda = [=](label i)
+    {
+        resultPtr[i] = localType*deltaCoeffsPtr[i];
+    };
+    exec.parallelFor(Lambda, len);
+}
+
+
+template<class Type>
 Foam::tmp<Foam::Field<Type>>
 Foam::coupledFvPatchField<Type>::gradientInternalCoeffs
 (
     const scalarField& deltaCoeffs
 ) const
 {
-    return -Type(pTraits<Type>::one)*deltaCoeffs;
+    auto tresult = tmp<Field<Type>>::New(deltaCoeffs.size());
+    this->gradientInternalCoeffs(deltaCoeffs, tresult.ref());
+    return tresult;
 }
 
 
@@ -191,6 +314,17 @@ Foam::coupledFvPatchField<Type>::gradientInternalCoeffs() const
 {
     NotImplemented;
     return -Type(pTraits<Type>::one)*this->patch().deltaCoeffs();
+}
+
+
+template<class Type>
+void Foam::coupledFvPatchField<Type>::gradientInternalCoeffs
+(
+    UList<Type>& result
+) const
+{
+    NotImplemented;
+    this->gradientInternalCoeffs(this->patch().deltaCoeffs(), result);
 }
 
 
@@ -211,6 +345,17 @@ Foam::coupledFvPatchField<Type>::gradientBoundaryCoeffs() const
 {
     NotImplemented;
     return -this->gradientInternalCoeffs();
+}
+
+
+template<class Type>
+void Foam::coupledFvPatchField<Type>::gradientBoundaryCoeffs
+(
+    UList<Type>& result
+) const
+{
+    NotImplemented;
+    this->gradientBoundaryCoeffs(this->patch().deltaCoeffs(), result);
 }
 
 

@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -82,16 +83,62 @@ Foam::basicSymmetryFvPatchField<Type>::basicSymmetryFvPatchField
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Type>
+void Foam::basicSymmetryFvPatchField<Type>::snGrad(UList<Type>& result) const
+{
+    if constexpr (!is_rotational_vectorspace_v<Type>)
+    {
+        // Rotational-invariant type : treat like zero-gradient
+        result = Foam::zero{};
+    }
+    else
+    {
+        // Get patch internal field, stored temporarily in result
+        this->patchInternalField(result);
+        const auto& pif = result;
+
+        tmp<vectorField> tnHat = this->patch().nf();
+        const auto& nHat = tnHat();
+
+        const auto& dc = this->patch().deltaCoeffs();
+
+        const label len = result.size();
+
+        // (dc/2.0)*(transform(I - 2.0*sqr(nHat), iF) - iF);
+
+        foamExecutor exec;
+        auto resultPtr = result.begin();
+        const auto dcPtr = dc.cbegin();
+        const auto nHatPtr = nHat.cbegin();
+        const auto pifPtr = pif.cbegin();
+        const auto localI(I);
+        auto Lambda = [=](label i)
+        {
+            resultPtr[i] =
+            (
+                (0.5*dcPtr[i])
+              * (transform(localI - 2.0*sqr(nHatPtr[i]), pifPtr[i]) - pifPtr[i])
+            );
+        };
+        exec.parallelFor(Lambda,len);
+    }
+}
+
+
+template<class Type>
 Foam::tmp<Foam::Field<Type>>
 Foam::basicSymmetryFvPatchField<Type>::snGrad() const
 {
-    tmp<vectorField> nHat = this->patch().nf();
-
-    const Field<Type> iF(this->patchInternalField());
-
-    return
-        (transform(I - 2.0*sqr(nHat), iF) - iF)
-       *(this->patch().deltaCoeffs()/2.0);
+    if constexpr (!is_rotational_vectorspace_v<Type>)
+    {
+        // Rotational-invariant type : treat like zero-gradient
+        return tmp<Field<Type>>::New(this->size(), Foam::zero{});
+    }
+    else
+    {
+        auto tresult = tmp<Field<Type>>::New(this->size());
+        this->snGrad(static_cast<UList<Type>&>(tresult.ref()));
+        return tresult;
+    }
 }
 
 
@@ -103,14 +150,22 @@ void Foam::basicSymmetryFvPatchField<Type>::evaluate(const Pstream::commsTypes)
         this->updateCoeffs();
     }
 
-    tmp<vectorField> nHat = this->patch().nf();
+    if constexpr (!is_rotational_vectorspace_v<Type>)
+    {
+        // Rotational-invariant type : treat like zero-gradient
+        this->extrapolateInternal();
+    }
+    else
+    {
+        tmp<vectorField> nHat = this->patch().nf();
 
-    const Field<Type> iF(this->patchInternalField());
+        const Field<Type> pif(this->patchInternalField());
 
-    Field<Type>::operator=
-    (
-        (iF + transform(I - 2.0*sqr(nHat), iF))/2.0
-    );
+        Field<Type>::operator=
+        (
+            0.5*(pif + transform(I - 2.0*sqr(nHat), pif))
+        );
+    }
 
     transformFvPatchField<Type>::evaluate();
 }
@@ -120,9 +175,20 @@ template<class Type>
 Foam::tmp<Foam::Field<Type>>
 Foam::basicSymmetryFvPatchField<Type>::snGradTransformDiag() const
 {
-    tmp<vectorField> diag(cmptMag(this->patch().nf()));
+    if constexpr (!is_rotational_vectorspace_v<Type>)
+    {
+        // Rotational-invariant type
+        // FatalErrorInFunction
+        //     << "Should not be called for this type"
+        //     << ::Foam::abort(FatalError);
+        return tmp<Field<Type>>::New(this->size(), Foam::zero{});
+    }
+    else
+    {
+        tmp<vectorField> diag(cmptMag(this->patch().nf()));
 
-    return transformFieldMask<Type>(pow<vector, pTraits<Type>::rank>(diag));
+        return transformFieldMask<Type>(pow<vector, pTraits<Type>::rank>(diag));
+    }
 }
 
 

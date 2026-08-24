@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2020-2022 OpenFOAM Foundation
     Copyright (C) 2020 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -58,8 +59,8 @@ integratedNonUniformTable
 )
 :
     nonUniformTable(name, dict),
-    intf_(values().size()),
-    intfByT_(values().size())
+    intf_(values().size(), poolSwitch(1)),
+    intfByT_(values().size(), poolSwitch(1))
 {
     intf_[0] = 0;
     intfByT_[0] = 0;
@@ -92,24 +93,6 @@ integratedNonUniformTable
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-Foam::scalar Foam::thermophysicalFunctions::integratedNonUniformTable::intfdT
-(
-    scalar p,
-    scalar T
-) const
-{
-    const label i = index(p, T);
-    const scalar Ti = values()[i].first();
-    const scalar fi = values()[i].second();
-    const scalar dT = T - Ti;
-    const scalar lambda = dT/(values()[i + 1].first() - Ti);
-
-    return
-        intf_[i]
-      + (fi + 0.5*lambda*(values()[i + 1].second() - fi))*dT;
-}
-
 
 Foam::scalar Foam::thermophysicalFunctions::integratedNonUniformTable::intfByTdT
 (

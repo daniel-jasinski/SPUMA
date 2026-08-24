@@ -260,7 +260,7 @@ const Foam::volScalarField&  Foam::reconstructedDistanceFunction::constructRDF
     const labelListList& stencil = distribute.getStencil();
 
 
-    forAll(nextToInterface,celli)
+    forAll(nextToInterface, celli)
     {
         if (nextToInterface[celli])
         {
@@ -282,9 +282,28 @@ const Foam::volScalarField&  Foam::reconstructedDistanceFunction::constructRDF
                     if (mag(n) != 0)
                     {
                         n /= mag(n);
-                        vector c = distribute.getValue(centre,mapCentres,gblIdx);
-                        vector distanceToIntSeg = (c - p);
-                        scalar distToSurf = distanceToIntSeg & (n);
+                        vector c
+                        (
+                            distribute.getPosition
+                            (
+                                centre,
+                                mapCentres,
+                                gblIdx,
+                                distribute.getCyclicPatches
+                                (
+                                    celli,
+                                    gblIdx,
+                                    distribute.getValue
+                                    (
+                                        centre,
+                                        mapCentres,
+                                        gblIdx
+                                    )
+                                )
+                            )
+                        );
+                        vector distanceToIntSeg(c - p);
+                        scalar distToSurf = distanceToIntSeg & n;
                         scalar weight = 0;
 
                         if (mag(distanceToIntSeg) != 0)
@@ -332,14 +351,37 @@ const Foam::volScalarField&  Foam::reconstructedDistanceFunction::constructRDF
                     forAll(stencil[pCellI], j)
                     {
                         const label gblIdx = stencil[pCellI][j];
-                        vector n = -distribute.getValue(normal, mapNormal, gblIdx);
+                        vector n = -distribute.getValue
+                        (
+                            normal,
+                            mapNormal,
+                            gblIdx
+                        );
                         if (mag(n) != 0)
                         {
                             n /= mag(n);
-                            vector c =
-                                distribute.getValue(centre, mapCentres, gblIdx);
-                            vector distanceToIntSeg = (c - p);
-                            scalar distToSurf = distanceToIntSeg & (n);
+                            vector c
+                            (
+                                distribute.getPosition
+                                (
+                                    centre,
+                                    mapCentres,
+                                    gblIdx,
+                                    distribute.getCyclicPatches
+                                    (
+                                        pCellI,
+                                        gblIdx,
+                                        distribute.getValue
+                                        (
+                                            centre,
+                                            mapCentres,
+                                            gblIdx
+                                        )
+                                    )
+                                )
+                            );
+                            vector distanceToIntSeg(c - p);
+                            scalar distToSurf = distanceToIntSeg & n;
                             scalar weight = 0;
 
                             if (mag(distanceToIntSeg) != 0)

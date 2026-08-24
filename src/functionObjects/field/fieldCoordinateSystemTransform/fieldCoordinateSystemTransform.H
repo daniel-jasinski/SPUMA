@@ -37,26 +37,23 @@ Description
     Operands:
     \table
       Operand      | Type                          | Location
-      input        | {vol,surface}\<Type\>Field(s) <!--
-               --> | $FOAM_CASE/\<time\>/\<inpField\>s
+      input        | {vol,surface}<Type>Field(s)   | <time>/inputFields
       output file  | -                             | -
-      output field | {vol,surface}\<Type\>Field(s) <!--
-               --> | $FOAM_CASE/\<time\>/\<outField\>s
+      output field | {vol,surface}<Type>Field(s)   | <time>/outputFields
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    fieldCoordinateSystemTransform1
+    fieldCoordinateSystemTransformFO
     {
-        // Mandatory entries (unmodifiable)
-        type    fieldCoordinateSystemTransform;
-        libs    (fieldFunctionObjects);
-
-        // Mandatory entries (runtime modifiable)
-        fields  ( U UMean UPrime2Mean );
+        // Mandatory entries
+        type            fieldCoordinateSystemTransform;
+        libs            (fieldFunctionObjects);
+        fields          (<wordList>);  // ( U UMean UPrime2Mean );
         coordinateSystem
         {
             origin      (0.001 0 0);
@@ -68,30 +65,22 @@ Usage
             }
         }
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property  | Description                              | Type | Req'd | Dflt
+      Property  | Description                              | Type | Reqd | Deflt
       type      | Type name: fieldCoordinateSystemTransform | word |  yes  | -
       libs      | Library name: fieldFunctionObjects | word |  yes  | -
       fields    | Names of the operand fields               | wordList | yes | -
       coordinateSystem | Local coordinate system            | dict  | yes | -
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link coordinateSystem.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::coordinateSystem
-    - ExtendedCodeGuide::functionObjects::field::fieldCoordinateSystemTransform
+      - \link functionObject.H \endlink
+      - \link coordinateSystem.H \endlink
 
 SourceFiles
     fieldCoordinateSystemTransform.C
@@ -99,8 +88,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_fieldCoordinateSystemTransform_H
-#define functionObjects_fieldCoordinateSystemTransform_H
+#ifndef Foam_functionObjects_fieldCoordinateSystemTransform_H
+#define Foam_functionObjects_fieldCoordinateSystemTransform_H
 
 #include "fvMeshFunctionObject.H"
 #include "coordinateSystem.H"
@@ -177,7 +166,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         fieldCoordinateSystemTransform
         (
             const word& name,
@@ -199,13 +188,13 @@ public:
 
     // Member Functions
 
-        //- Read the input data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the transformed fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the transformed fields
+        //- Write the function-object results
         virtual bool write();
 };
 

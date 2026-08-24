@@ -69,7 +69,7 @@ public:
         //- Default copy construct
         GlobalIOField(const GlobalIOField&) = default;
 
-        //- Construct from IOobject
+        //- Construct from IOobject. Will be zero size if not read.
         explicit GlobalIOField(const IOobject& io);
 
         //- Construct from IOobject and field size (if not read)
@@ -127,11 +127,20 @@ public:
 
     // Member Operators
 
-        //- Copy assignment of entries
-        void operator=(const GlobalIOField<Type>& rhs);
-
         //- Copy or move assignment of entries
         using Field<Type>::operator=;
+
+        //- Copy assignment of entries
+        void operator=(const GlobalIOField<Type>& rhs)
+        {
+            Field<Type>::operator=(rhs);
+        }
+
+        //- Move assignment of entries
+        void operator=(GlobalIOField<Type>&& rhs)
+        {
+            Field<Type>::operator=(std::move(static_cast<Field<Type>&>(rhs)));
+        }
 };
 
 

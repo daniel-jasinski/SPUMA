@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 ------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,10 +27,30 @@ Class
     Foam::fa::options
 
 Description
-    Finite-area options
+    Finite-area options, which is an IOdictionary of values and
+    a fa::optionList
+
+    Possible file locations (default area region):
+    \verbatim
+    .
+    |-- constant/finite-area/faOptions
+    |-- system/finite-area/faOptions
+    |
+    |-- constant/faOptions  (legacy location: OpenFOAM-v2506 and earlier)
+    |-- system/faOptions    (legacy location: OpenFOAM-v2506 and earlier)
+    \endverbatim
+
+    Possible file locations (multi-region):
+    \verbatim
+    .
+    |-- constant/finite-area/faOptions.<area-name>
+    |-- system/finite-area/faOptions.<area-name>
+    \endverbatim
+
+    There are no legacy locations when using multiple area regions.
 
 SourceFiles
-    faOptions.C
+    faOptions.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -39,7 +59,6 @@ SourceFiles
 
 #include "faOptionList.H"
 #include "IOdictionary.H"
-#include "autoPtr.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -55,12 +74,30 @@ namespace fa
 class options
 :
     public IOdictionary,
-    public optionList
+    public fa::optionList
 {
-    // Private Member Functions
+    // Private Methods
 
-        //- Create IO object if dictionary is present
-        IOobject createIOobject(const fvMesh& mesh) const;
+        //- Construct with specified IOobject for the IOdictionary
+        //- (somewhat fragile)
+        options(const fvMesh& mesh, const IOobject& io, const word& areaName);
+
+
+public:
+
+    //- Runtime information
+    ClassName("faOptions");
+
+
+    // Constructors
+
+        //- Construct from components with list of field names
+        explicit options
+        (
+            const fvMesh& mesh,
+            //! The expected finite-area mesh name
+            const word& defaultAreaName = word()
+        );
 
         //- No copy construct
         options(const options&) = delete;
@@ -69,20 +106,16 @@ class options
         void operator=(const options&) = delete;
 
 
-public:
-
-    // Declare name of the class and its debug switch
-    ClassName("faOptions");
-
-
-    // Constructors
-
-        //- Construct from components with list of field names
-        explicit options(const fvMesh& mesh);
+    // Factory Methods
 
         //- Construct faOptions and register to database if not present
         //- otherwise lookup and return
-        static options& New(const fvMesh& mesh);
+        static options& New
+        (
+            const fvMesh& mesh,
+            //! The expected finite-area mesh name
+            const word& defaultAreaName = word()
+        );
 
 
     //- Destructor
@@ -91,8 +124,10 @@ public:
 
     // Member Functions
 
-        //- Inherit read from optionList
-        using optionList::read;
+        // Note: areaName() available from fa::optionList
+
+        //- Inherit read from fa::optionList
+        using fa::optionList::read;
 
         //- Read dictionary
         virtual bool read();

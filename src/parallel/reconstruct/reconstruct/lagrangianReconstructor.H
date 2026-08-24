@@ -31,8 +31,8 @@ Description
     Reconstructor for lagrangian positions and fields
 
 SourceFiles
-    lagrangianReconstructor.C
-    lagrangianReconstructorTemplates.C
+    lagrangianReconstructor.cxx
+    lagrangianReconstructor.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -59,16 +59,16 @@ class lagrangianReconstructor
     // Private Data
 
         //- Mesh reference
-        const fvMesh& mesh_;
+        const polyMesh& mesh_;
 
         //- List of processor meshes
-        const PtrList<fvMesh>& procMeshes_;
+        const UPtrList<fvMesh>& procMeshes_;
 
         //- List of processor face addressing lists
-        const PtrList<labelIOList>& faceProcAddressing_;
+        const UPtrList<labelIOList>& faceProcAddressing_;
 
         //- List of processor cell addressing lists
-        const PtrList<labelIOList>& cellProcAddressing_;
+        const UPtrList<labelIOList>& cellProcAddressing_;
 
 
     // Private Member Functions
@@ -93,10 +93,10 @@ public:
         //- Construct from components
         lagrangianReconstructor
         (
-            const fvMesh& mesh,
-            const PtrList<fvMesh>& procMeshes,
-            const PtrList<labelIOList>& faceProcAddressing,
-            const PtrList<labelIOList>& cellProcAddressing
+            const polyMesh& mesh,
+            const UPtrList<fvMesh>& procMeshes,
+            const UPtrList<labelIOList>& faceProcAddressing,
+            const UPtrList<labelIOList>& cellProcAddressing
         );
 
 
@@ -116,7 +116,7 @@ public:
 
         //- Reconstruct a single field-field for given cloud
         template<class Type>
-        tmp<CompactIOField<Field<Type>, Type>>
+        tmp<CompactIOField<Field<Type>>>
         reconstructFieldField
         (
             const word& cloudName,
@@ -166,7 +166,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "lagrangianReconstructorTemplates.C"
+    #include "lagrangianReconstructor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

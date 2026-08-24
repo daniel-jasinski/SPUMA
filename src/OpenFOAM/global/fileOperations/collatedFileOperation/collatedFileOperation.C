@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2017-2018 OpenFOAM Foundation
-    Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -36,6 +36,7 @@ License
 #include "masterOFstream.H"
 #include "OFstream.H"
 #include "foamVersion.H"
+#include "UPstreamFile.H"
 
 /* * * * * * * * * * * * * * * Static Member Data  * * * * * * * * * * * * * */
 
@@ -80,6 +81,18 @@ namespace fileOperations
 }
 
 
+int Foam::fileOperations::collatedFileOperation::backend_
+(
+    Foam::debug::optimisationSwitch("collated.backend", 0)
+);
+registerOptSwitch
+(
+    "collated.backend",
+    int,
+    Foam::fileOperations::collatedFileOperation::backend_
+);
+
+
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
 void Foam::fileOperations::collatedFileOperation::printBanner
@@ -90,7 +103,15 @@ void Foam::fileOperations::collatedFileOperation::printBanner
     DetailInfo
         << "I/O    : " << this->type();
 
-    if (mag(maxThreadFileBufferSize) > 1)
+    if
+    (
+        collatedFileOperation::backend_ == backendTypes::BACKEND_MPI_IO
+     && UPstream::File::supported()
+    )
+    {
+        DetailInfo<< " [mpi/io]" << nl;
+    }
+    else if (Foam::mag(maxThreadFileBufferSize) > 1)
     {
         // FUTURE: deprecate or remove threading?
         DetailInfo
@@ -107,7 +128,7 @@ void Foam::fileOperations::collatedFileOperation::printBanner
         DetailInfo
             << " [unthreaded] (maxThreadFileBufferSize = 0)." << nl;
 
-        if (mag(maxMasterFileBufferSize) < 1)
+        if (Foam::mag(maxMasterFileBufferSize) < 1)
         {
             DetailInfo
                 << "         With scheduled transfer" << nl;
@@ -154,7 +175,7 @@ bool Foam::fileOperations::collatedFileOperation::appendObject
 {
     // Append to processorsNN/ file
 
-    const label proci = detectProcessorPath(io.objectPath());
+    const label proci = fileOperation::detectProcessorPath(io.objectPath());
 
     if (debug)
     {
@@ -236,7 +257,7 @@ static Tuple2<label, labelList> getCommPattern()
     if (UPstream::parRun() && commAndIORanks.second().size() > 1)
     {
         // Multiple masters: ranks for my IO range
-        commAndIORanks.first() = UPstream::allocateCommunicator
+        commAndIORanks.first() = UPstream::newCommunicator
         (
             UPstream::worldComm,
             fileOperation::subRanks(commAndIORanks.second())
@@ -349,6 +370,96 @@ Foam::fileName Foam::fileOperations::collatedFileOperation::objectPath
     }
 }
 
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+bool Foam::fileOperations::collatedFileOperation::writeObject_legacy
+(
+    const fileName& pathName,
+    const regIOobject& io,
+    IOstreamOption streamOpt,
+    const bool writeOnProc
+) const
+{
+    const Time& tm = io.time();
+    const fileName& inst = io.instance();
+
+    if
+    (
+        (inst.isAbsolute() || !tm.processorCase())
+     || (io.global() || io.globalObject())
+     || (!UPstream::is_parallel(comm_))
+    )
+    {
+        FatalErrorInFunction
+            << "Should not have been called for any of these conditions:"
+            << " - isAbsolute" << nl
+            << " - not processorCase" << nl
+            << " - global or globalObject" << nl
+            << " - not parallel" << nl
+            << abort(FatalError);
+
+        return false;
+    }
+    else
+    {
+        // Re-check static maxThreadFileBufferSize variable to see
+        // if needs to use threading
+        const bool useThread = (Foam::mag(maxThreadFileBufferSize) > 1);
+
+        if (debug)
+        {
+            Pout<< "collatedFileOperation::writeObject :"
+                << " For object : " << io.name()
+                << " starting collating output to " << pathName
+                << " useThread:" << useThread << endl;
+        }
+
+        if (!useThread)
+        {
+            writer_.waitAll();
+        }
+
+        // Note: currently still NON_ATOMIC (Dec-2022)
+        threadedCollatedOFstream os
+        (
+            writer_,
+            pathName,
+            streamOpt,
+            useThread
+        );
+
+        bool ok = os.good();
+
+        if (UPstream::master(comm_))
+        {
+            // Suppress comment banner
+            const bool old = IOobject::bannerEnabled(false);
+
+            ok = ok && io.writeHeader(os);
+
+            IOobject::bannerEnabled(old);
+
+            // Additional header content
+            dictionary dict;
+            decomposedBlockData::writeExtraHeaderContent
+            (
+                dict,
+                streamOpt,
+                io
+            );
+            os.setHeaderEntries(dict);
+        }
+
+        ok = ok && io.writeData(os);
+        // No end divider for collated output
+
+        return ok;
+    }
+}
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 bool Foam::fileOperations::collatedFileOperation::writeObject
 (
@@ -468,61 +579,34 @@ bool Foam::fileOperations::collatedFileOperation::writeObject
         }
         else
         {
-            // Re-check static maxThreadFileBufferSize variable to see
-            // if needs to use threading
-            const bool useThread = (mag(maxThreadFileBufferSize) > 1);
-
-            if (debug)
-            {
-                Pout<< "collatedFileOperation::writeObject :"
-                    << " For object : " << io.name()
-                    << " starting collating output to " << pathName
-                    << " useThread:" << useThread << endl;
-            }
-
-            if (!useThread)
-            {
-                writer_.waitAll();
-            }
-
-            // Note: currently still NON_ATOMIC (Dec-2022)
-            threadedCollatedOFstream os
+            if
             (
-                writer_,
-                pathName,
-                streamOpt,
-                useThread
-            );
-
-            bool ok = os.good();
-
-            if (UPstream::master(comm_))
+                collatedFileOperation::backend_ == backendTypes::BACKEND_MPI_IO
+             && UPstream::File::supported()
+            )
             {
-                // Suppress comment banner
-                const bool old = IOobject::bannerEnabled(false);
-
-                ok = ok && io.writeHeader(os);
-
-                IOobject::bannerEnabled(old);
-
-                // Additional header content
-                dictionary dict;
-                decomposedBlockData::writeExtraHeaderContent
+                return writeObject_mpiio
                 (
-                    dict,
+                    pathName,
+                    io,
                     streamOpt,
-                    io
+                    writeOnProc
                 );
-                os.setHeaderEntries(dict);
             }
-
-            ok = ok && io.writeData(os);
-            // No end divider for collated output
-
-            return ok;
+            else
+            {
+                return writeObject_legacy
+                (
+                    pathName,
+                    io,
+                    streamOpt,
+                    writeOnProc
+                );
+            }
         }
     }
 }
+
 
 void Foam::fileOperations::collatedFileOperation::flush() const
 {
@@ -544,7 +628,7 @@ Foam::word Foam::fileOperations::collatedFileOperation::processorsDir
 {
     if (UPstream::parRun())
     {
-        const List<int>& procs(UPstream::procID(comm_));
+        const auto& procs = UPstream::procID(comm_);
 
         word procDir(processorsBaseDir+Foam::name(nProcs_));
 
@@ -565,7 +649,7 @@ Foam::word Foam::fileOperations::collatedFileOperation::processorsDir
         if (ioRanks_.size())
         {
             // Detect current processor number
-            label proci = detectProcessorPath(fName);
+            label proci = fileOperation::detectProcessorPath(fName);
 
             if (proci != -1)
             {
@@ -614,5 +698,10 @@ Foam::word Foam::fileOperations::collatedFileOperation::processorsDir
     return processorsDir(io.objectPath());
 }
 
+
+// ************************************************************************* //
+// Various backends
+
+#include "collatedFileOperation_mpiio.cxx"
 
 // ************************************************************************* //

@@ -42,12 +42,11 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef IndirectSubList_H
-#define IndirectSubList_H
+#ifndef Foam_IndirectSubList_H
+#define Foam_IndirectSubList_H
 
 #include "IndirectListAddressing.H"
 #include "IndirectListBase.H"
-#include "labelRange.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

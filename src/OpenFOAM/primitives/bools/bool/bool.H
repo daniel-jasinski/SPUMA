@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2021 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -98,15 +98,16 @@ public:
         FOAM_EXPORT_DATA static const char* const componentNames[];
         FOAM_EXPORT_DATA static const bool zero;
         FOAM_EXPORT_DATA static const bool one;
+        FOAM_EXPORT_DATA static bool dummy;  //!< Dummy for return reference
+
+        //- Return reference to a (false) dummy value
+        static const bool& null() noexcept;
 
 
     // Constructors
 
         //- Copy construct from primitive
-        explicit pTraits(bool val) noexcept
-        :
-            p_(val)
-        {}
+        explicit pTraits(bool val) noexcept : p_(val) {}
 
         //- Read construct from Istream
         explicit pTraits(Istream& is);

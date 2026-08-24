@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -97,16 +97,11 @@ Foam::cyclicAMIFvPatchField<Type>::cyclicAMIFvPatchField
             // old logic (ultimately calls the fully self contained
             // patchNeighbourField)
 
-            int& consistency =
-                GeometricField<Type, fvPatchField, volMesh>::
-                Boundary::localConsistencyRef();
-
-            const int oldConsistency = consistency;
-            consistency = 0;
+            const auto oldConsistency = FieldBase::localBoundaryConsistency(0);
 
             this->evaluate(UPstream::commsTypes::nonBlocking);
 
-            consistency = oldConsistency;
+            FieldBase::localBoundaryConsistency(oldConsistency);
         }
         else
         {
@@ -212,9 +207,15 @@ bool Foam::cyclicAMIFvPatchField<Type>::all_ready() const
             recvRequests_.start(),
             recvRequests_.size()
         )
+    &&  UPstream::finishedRequests
+        (
+            recvRequests1_.start(),
+            recvRequests1_.size()
+        )
     )
     {
         recvRequests_.clear();
+        recvRequests1_.clear();
         ++done;
     }
 
@@ -225,9 +226,15 @@ bool Foam::cyclicAMIFvPatchField<Type>::all_ready() const
             sendRequests_.start(),
             sendRequests_.size()
         )
+    &&  UPstream::finishedRequests
+        (
+            sendRequests1_.start(),
+            sendRequests1_.size()
+        )
     )
     {
         sendRequests_.clear();
+        sendRequests1_.clear();
         ++done;
     }
 
@@ -245,9 +252,15 @@ bool Foam::cyclicAMIFvPatchField<Type>::ready() const
             recvRequests_.start(),
             recvRequests_.size()
         )
+     && UPstream::finishedRequests
+        (
+            recvRequests1_.start(),
+            recvRequests1_.size()
+        )
     )
     {
         recvRequests_.clear();
+        recvRequests1_.clear();
 
         if
         (
@@ -256,9 +269,15 @@ bool Foam::cyclicAMIFvPatchField<Type>::ready() const
                 sendRequests_.start(),
                 sendRequests_.size()
             )
+         && UPstream::finishedRequests
+            (
+                sendRequests1_.start(),
+                sendRequests1_.size()
+            )
         )
         {
             sendRequests_.clear();
+            sendRequests1_.clear();
         }
 
         return true;
@@ -294,22 +313,22 @@ void Foam::cyclicAMIFvPatchField<Type>::rmap
 
 template<class Type>
 Foam::tmp<Foam::Field<Type>>
-Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField
+Foam::cyclicAMIFvPatchField<Type>::getNeighbourField
 (
-    const Field<Type>& iField
+    const UList<Type>& internalData
 ) const
 {
     // By pass polyPatch to get nbrId. Instead use cyclicAMIFvPatch virtual
     // neighbPatch()
-    const cyclicAMIFvPatch& neighbPatch = cyclicAMIPatch_.neighbPatch();
+    const auto& neighbPatch = cyclicAMIPatch_.neighbPatch();
     const labelUList& nbrFaceCells = neighbPatch.faceCells();
 
-    Field<Type> pnf(iField, nbrFaceCells);
+    Field<Type> pnf(internalData, nbrFaceCells);
     Field<Type> defaultValues;
 
     if (cyclicAMIPatch_.applyLowWeightCorrection())
     {
-        defaultValues = Field<Type>(iField, cyclicAMIPatch_.faceCells());
+        defaultValues = Field<Type>(internalData, cyclicAMIPatch_.faceCells());
     }
 
     tmp<Field<Type>> tpnf = cyclicAMIPatch_.interpolate(pnf, defaultValues);
@@ -324,21 +343,35 @@ Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField
 
 
 template<class Type>
-bool Foam::cyclicAMIFvPatchField<Type>::cacheNeighbourField()
+bool Foam::cyclicAMIFvPatchField<Type>::cacheNeighbourField() const
 {
-    return
-    (
-        GeometricField<Type, fvPatchField, volMesh>::Boundary::localConsistencyRef()
-     != 0
-    );
+    // const auto& AMI = this->ownerAMI();
+
+    // if (AMI.cacheActive())
+    // {
+    //     return false;
+    // }
+    // else
+    {
+        return (FieldBase::localBoundaryConsistency() != 0);
+    }
 }
 
 
 template<class Type>
 Foam::tmp<Foam::Field<Type>>
-Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField() const
+Foam::cyclicAMIFvPatchField<Type>::getPatchNeighbourField
+(
+    bool checkCommunicator
+) const
 {
-    if (this->ownerAMI().distributed() && cacheNeighbourField())
+    const auto& AMI = this->ownerAMI();
+
+    if
+    (
+        AMI.distributed() && cacheNeighbourField()
+     && (!checkCommunicator || AMI.comm() != -1)
+    )
     {
         if (!this->ready())
         {
@@ -350,11 +383,12 @@ Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField() const
         }
 
         const auto& fvp = this->patch();
+        const auto& mesh = fvp.boundaryMesh().mesh();
 
         if
         (
             patchNeighbourFieldPtr_
-        && !fvp.boundaryMesh().mesh().upToDatePoints(this->internalField())
+        && !mesh.upToDatePoints(this->internalField())
         )
         {
             //DebugPout
@@ -379,7 +413,7 @@ Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField() const
             // Do interpolation and store result
             patchNeighbourFieldPtr_.reset
             (
-                patchNeighbourField(this->primitiveField()).ptr()
+                getNeighbourField(this->primitiveField()).ptr()
             );
         }
         else
@@ -389,7 +423,7 @@ Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField() const
             //{
             //    tmp<Field<Type>> tpnf
             //    (
-            //        patchNeighbourField(this->primitiveField())
+            //        getNeighbourField(this->primitiveField())
             //    );
             //    if (tpnf() != patchNeighbourFieldPtr_())
             //    {
@@ -409,8 +443,29 @@ Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField() const
     else
     {
         // Do interpolation
-        return patchNeighbourField(this->primitiveField());
+        return getNeighbourField(this->primitiveField());
     }
+}
+
+
+template<class Type>
+Foam::tmp<Foam::Field<Type>>
+Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField() const
+{
+    // checkCommunicator = true
+    return this->getPatchNeighbourField(true);
+}
+
+
+template<class Type>
+void Foam::cyclicAMIFvPatchField<Type>::patchNeighbourField
+(
+    UList<Type>& pnf
+) const
+{
+    // checkCommunicator = false
+    auto tpnf = this->getPatchNeighbourField(false);
+    pnf.deepCopy(tpnf());
 }
 
 
@@ -418,7 +473,7 @@ template<class Type>
 const Foam::cyclicAMIFvPatchField<Type>&
 Foam::cyclicAMIFvPatchField<Type>::neighbourPatchField() const
 {
-    const GeometricField<Type, fvPatchField, volMesh>& fld =
+    const auto& fld =
         static_cast<const GeometricField<Type, fvPatchField, volMesh>&>
         (
             this->primitiveField()
@@ -442,7 +497,9 @@ void Foam::cyclicAMIFvPatchField<Type>::initEvaluate
         this->updateCoeffs();
     }
 
-    if (this->ownerAMI().distributed() && cacheNeighbourField())
+    const auto& AMI = this->ownerAMI();
+
+    if (AMI.distributed() && cacheNeighbourField() && AMI.comm() != -1)
     {
         //DebugPout
         //    << "*** cyclicAMIFvPatchField::initEvaluate() :"
@@ -469,7 +526,7 @@ void Foam::cyclicAMIFvPatchField<Type>::initEvaluate
         const cyclicAMIPolyPatch& cpp = cyclicAMIPatch_.cyclicAMIPatch();
 
         // Assert that all receives are known to have finished
-        if (!recvRequests_.empty())
+        if (!recvRequests_.empty() || !recvRequests1_.empty())
         {
             FatalErrorInFunction
                 << "Outstanding recv request(s) on patch "
@@ -480,14 +537,20 @@ void Foam::cyclicAMIFvPatchField<Type>::initEvaluate
 
         // Assume that sends are also OK
         sendRequests_.clear();
+        sendRequests1_.clear();
 
         cpp.initInterpolate
         (
             pnf,
             sendRequests_,
-            sendBufs_,
             recvRequests_,
-            recvBufs_
+            sendBufs_,
+            recvBufs_,
+
+            sendRequests1_,
+            recvRequests1_,
+            sendBufs1_,
+            recvBufs1_
         );
     }
 }
@@ -506,7 +569,7 @@ void Foam::cyclicAMIFvPatchField<Type>::evaluate
 
     const auto& AMI = this->ownerAMI();
 
-    if (AMI.distributed() && cacheNeighbourField())
+    if (AMI.distributed() && cacheNeighbourField() && AMI.comm() != -1)
     {
         // Calculate patchNeighbourField
         if (commsType != UPstream::commsTypes::nonBlocking)
@@ -540,19 +603,21 @@ void Foam::cyclicAMIFvPatchField<Type>::evaluate
                 Field<Type>::null(),    // Not used for distributed
                 recvRequests_,
                 recvBufs_,
+                recvRequests1_,
+                recvBufs1_,
                 defaultValues
             ).ptr()
         );
 
         // Receive requests all handled by last function call
         recvRequests_.clear();
-
-        auto& patchNeighbourField = patchNeighbourFieldPtr_.ref();
+        recvRequests1_.clear();
 
         if (doTransform())
         {
             // In-place transform
-            transform(patchNeighbourField, forwardT(), patchNeighbourField);
+            auto& pnf = *patchNeighbourFieldPtr_;
+            transform(pnf, forwardT(), pnf);
         }
     }
 
@@ -574,7 +639,9 @@ void Foam::cyclicAMIFvPatchField<Type>::initInterfaceMatrixUpdate
     const Pstream::commsTypes commsType
 ) const
 {
-    if (this->ownerAMI().distributed())
+    const auto& AMI = this->ownerAMI();
+
+    if (AMI.distributed() && AMI.comm() != -1)
     {
         // Start sending
         if (commsType != UPstream::commsTypes::nonBlocking)
@@ -595,7 +662,7 @@ void Foam::cyclicAMIFvPatchField<Type>::initInterfaceMatrixUpdate
         const cyclicAMIPolyPatch& cpp = cyclicAMIPatch_.cyclicAMIPatch();
 
         // Assert that all receives are known to have finished
-        if (!recvRequests_.empty())
+        if (!recvRequests_.empty() || !recvRequests1_.empty())
         {
             FatalErrorInFunction
                 << "Outstanding recv request(s) on patch "
@@ -606,14 +673,20 @@ void Foam::cyclicAMIFvPatchField<Type>::initInterfaceMatrixUpdate
 
         // Assume that sends are also OK
         sendRequests_.clear();
+        sendRequests1_.clear();
 
         cpp.initInterpolate
         (
             pnf,
             sendRequests_,
-            scalarSendBufs_,
             recvRequests_,
-            scalarRecvBufs_
+            scalarSendBufs_,
+            scalarRecvBufs_,
+
+            sendRequests1_,
+            recvRequests1_,
+            scalarSendBufs1_,
+            scalarRecvBufs1_
         );
     }
 
@@ -645,7 +718,7 @@ void Foam::cyclicAMIFvPatchField<Type>::updateInterfaceMatrix
 
     solveScalarField pnf;
 
-    if (AMI.distributed())
+    if (AMI.distributed() && AMI.comm() != -1)
     {
         if (commsType != UPstream::commsTypes::nonBlocking)
         {
@@ -668,11 +741,14 @@ void Foam::cyclicAMIFvPatchField<Type>::updateInterfaceMatrix
                 solveScalarField::null(),   // Not used for distributed
                 recvRequests_,
                 scalarRecvBufs_,
+                recvRequests1_,
+                scalarRecvBufs1_,
                 defaultValues
             );
 
         // Receive requests all handled by last function call
         recvRequests_.clear();
+        recvRequests1_.clear();
     }
     else
     {
@@ -714,7 +790,7 @@ void Foam::cyclicAMIFvPatchField<Type>::initInterfaceMatrixUpdate
 {
     const auto& AMI = this->ownerAMI();
 
-    if (AMI.distributed())
+    if (AMI.distributed() && AMI.comm() != -1)
     {
         if (commsType != UPstream::commsTypes::nonBlocking)
         {
@@ -734,7 +810,7 @@ void Foam::cyclicAMIFvPatchField<Type>::initInterfaceMatrixUpdate
         const cyclicAMIPolyPatch& cpp = cyclicAMIPatch_.cyclicAMIPatch();
 
         // Assert that all receives are known to have finished
-        if (!recvRequests_.empty())
+        if (!recvRequests_.empty() || !recvRequests1_.empty())
         {
             FatalErrorInFunction
                 << "Outstanding recv request(s) on patch "
@@ -745,14 +821,20 @@ void Foam::cyclicAMIFvPatchField<Type>::initInterfaceMatrixUpdate
 
         // Assume that sends are also OK
         sendRequests_.clear();
+        sendRequests1_.clear();
 
         cpp.initInterpolate
         (
             pnf,
             sendRequests_,
-            sendBufs_,
             recvRequests_,
-            recvBufs_
+            sendBufs_,
+            recvBufs_,
+
+            sendRequests1_,
+            recvRequests1_,
+            sendBufs1_,
+            recvBufs1_
         );
     }
 
@@ -783,7 +865,7 @@ void Foam::cyclicAMIFvPatchField<Type>::updateInterfaceMatrix
 
     Field<Type> pnf;
 
-    if (AMI.distributed())
+    if (AMI.distributed() && AMI.comm() != -1)
     {
         if (commsType != UPstream::commsTypes::nonBlocking)
         {
@@ -806,11 +888,14 @@ void Foam::cyclicAMIFvPatchField<Type>::updateInterfaceMatrix
                 Field<Type>::null(),  // Not used for distributed
                 recvRequests_,
                 recvBufs_,
+                recvRequests1_,
+                recvBufs1_,
                 defaultValues
             );
 
         // Receive requests all handled by last function call
         recvRequests_.clear();
+        recvRequests1_.clear();
     }
     else
     {
@@ -895,7 +980,7 @@ void Foam::cyclicAMIFvPatchField<Type>::manipulateMatrix
         }
 
         // Set internalCoeffs and boundaryCoeffs in the assembly matrix
-        // on clyclicAMI patches to be used in the individual matrix by
+        // on cyclicAMI patches to be used in the individual matrix by
         // matrix.flux()
         if (matrix.psi(mat).mesh().fluxRequired(this->internalField().name()))
         {
@@ -985,7 +1070,7 @@ void Foam::cyclicAMIFvPatchField<Type>::collectStencilData
 
         forAll(stencil, facei)
         {
-            const labelList& slots = stencil[facei];
+            const auto& slots = stencil[facei];
             expandedData[facei].push_back
             (
                 UIndirectList<typename Type2::value_type>(work, slots)
@@ -996,7 +1081,7 @@ void Foam::cyclicAMIFvPatchField<Type>::collectStencilData
     {
         forAll(stencil, facei)
         {
-            const labelList& slots = stencil[facei];
+            const auto& slots = stencil[facei];
             expandedData[facei].push_back
             (
                 UIndirectList<typename Type2::value_type>(data, slots)
@@ -1036,31 +1121,21 @@ void Foam::cyclicAMIFvPatchField<Type>::operator=
     //    << endl;
 
     const auto* cycPtr = isA<cyclicAMIFvPatchField<Type>>(ptf);
-    if (cycPtr)
+
+    if
+    (
+        cycPtr
+     && cycPtr->patchNeighbourFieldPtr_
+     && cycPtr->patchNeighbourFieldPtr_->size() == this->size()
+    )
     {
-        const auto& cyc = *cycPtr;
-        if
-        (
-            cyc.patchNeighbourFieldPtr_
-         && cyc.patchNeighbourFieldPtr_->size() == this->size()
-        )
+        if (!patchNeighbourFieldPtr_)
         {
-            const auto& cycPnf = cyc.patchNeighbourFieldPtr_();
-            if (patchNeighbourFieldPtr_)
-            {
-                // Copy values
-                patchNeighbourFieldPtr_() = cycPnf;
-            }
-            else
-            {
-                // Copy values
-                patchNeighbourFieldPtr_.reset(new Field<Type>(cycPnf));
-            }
+            patchNeighbourFieldPtr_ = autoPtr<Field<Type>>::New();
         }
-        else
-        {
-            patchNeighbourFieldPtr_.reset(nullptr);
-        }
+
+        // Copy values
+        *patchNeighbourFieldPtr_ = *(cycPtr->patchNeighbourFieldPtr_);
     }
     else
     {
@@ -1084,31 +1159,21 @@ void Foam::cyclicAMIFvPatchField<Type>::operator==
     //    << endl;
 
     const auto* cycPtr = isA<cyclicAMIFvPatchField<Type>>(ptf);
-    if (cycPtr)
+
+    if
+    (
+        cycPtr
+     && cycPtr->patchNeighbourFieldPtr_
+     && cycPtr->patchNeighbourFieldPtr_->size() == this->size()
+    )
     {
-        const auto& cyc = *cycPtr;
-        if
-        (
-            cyc.patchNeighbourFieldPtr_
-         && cyc.patchNeighbourFieldPtr_->size() == this->size()
-        )
+        if (!patchNeighbourFieldPtr_)
         {
-            const auto& cycPnf = cyc.patchNeighbourFieldPtr_();
-            if (patchNeighbourFieldPtr_)
-            {
-                // Copy values
-                patchNeighbourFieldPtr_() = cycPnf;
-            }
-            else
-            {
-                // Copy values
-                patchNeighbourFieldPtr_.reset(new Field<Type>(cycPnf));
-            }
+            patchNeighbourFieldPtr_ = autoPtr<Field<Type>>::New();
         }
-        else
-        {
-            patchNeighbourFieldPtr_.reset(nullptr);
-        }
+
+        // Copy values
+        *patchNeighbourFieldPtr_ = *(cycPtr->patchNeighbourFieldPtr_);
     }
     else
     {

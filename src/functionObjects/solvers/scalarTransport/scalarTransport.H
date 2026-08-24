@@ -54,7 +54,7 @@ Description
 Usage
     Minimal example in \c system/controlDict.functions:
     \verbatim
-    scalarTransport1
+    scalarTransportFO
     {
         // Mandatory entries
         type            scalarTransport;
@@ -104,7 +104,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-      - \link fvMeshFunctionObject.H \endlink
+      - \link functionObject.H \endlink
       - \link fvOption.H \endlink
 
     An example of function object specification to solve a residence time
@@ -165,8 +165,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_scalarTransport_H
-#define functionObjects_scalarTransport_H
+#ifndef Foam_functionObjects_scalarTransport_H
+#define Foam_functionObjects_scalarTransport_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFields.H"
@@ -259,7 +259,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         scalarTransport
         (
             const word& name,
@@ -274,13 +274,13 @@ public:
 
     // Member Functions
 
-        //- Read the scalarTransport data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Calculate the scalarTransport
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Do nothing.
+        //- Write the function object output
         //  The volScalarField is registered and written automatically
         virtual bool write();
 };

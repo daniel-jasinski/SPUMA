@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -50,24 +50,16 @@ namespace Foam
 {
 
 // Forward Declarations
-template<class T, class BaseType> class CompactIOList;
+template<class T> class CompactIOList;
 
-template<class T, class BaseType> Istream& operator>>
-(
-    Istream&,
-    CompactIOList<T, BaseType>&
-);
-template<class T, class BaseType> Ostream& operator<<
-(
-    Ostream&,
-    const CompactIOList<T, BaseType>&
-);
+template<class T> Istream& operator>>(Istream&, CompactIOList<T>&);
+template<class T> Ostream& operator<<(Ostream&, const CompactIOList<T>&);
 
 /*---------------------------------------------------------------------------*\
                         Class CompactIOList Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class T, class BaseType>
+template<class T>
 class CompactIOList
 :
     public regIOobject,
@@ -79,6 +71,10 @@ class CompactIOList
         //- Reads according to the header type.
         //  Return true if read.
         bool readIOcontents();
+
+        //- Read the content size.
+        //  Return the size if read, -1 otherwise
+        label readIOsize();
 
         //- Has too many elements in it?
         bool overflows() const;
@@ -98,7 +94,7 @@ public:
         //- Default copy construct
         CompactIOList(const CompactIOList&) = default;
 
-        //- Construct from IOobject
+        //- Construct from IOobject. Will be zero size if not read.
         explicit CompactIOList(const IOobject& io);
 
         //- Construct from IOobject and zero size (if not read)
@@ -114,11 +110,27 @@ public:
         CompactIOList(const IOobject& io, List<T>&& content);
 
 
+    // Factory Methods
+
+        //- Read and return content size, -1 if not read.
+        //  The IOobject will not be registered
+        static label readContentsSize(const IOobject& io);
+
+        //- Read and return contents. The IOobject will not be registered
+        static List<T> readContents(const IOobject& io);
+
+
     //- Destructor
     virtual ~CompactIOList() = default;
 
 
     // Member Functions
+
+        //- Read as offsets/packed-values and transcribe into *this
+        Istream& readCompact(Istream& is);
+
+        //- Write as offsets/packed-values
+        Ostream& writeCompact(Ostream& os) const;
 
         //- Write using stream options. Checks for overflow in binary
         virtual bool writeObject
@@ -127,16 +139,26 @@ public:
             const bool writeOnProc
         ) const;
 
+        //- Write as plain or compact content (depends on stream format)
         virtual bool writeData(Ostream& os) const;
 
 
     // Member Operators
 
-        //- Copy assignment of entries
-        void operator=(const CompactIOList<T, BaseType>& rhs);
-
         //- Copy or move assignment of entries
         using List<T>::operator=;
+
+        //- Copy assignment of entries
+        void operator=(const CompactIOList<T>& rhs)
+        {
+            List<T>::operator=(rhs);
+        }
+
+        //- Move assignment of entries
+        void operator=(CompactIOList<T>&& rhs)
+        {
+            List<T>::operator=(std::move(static_cast<List<T>&>(rhs)));
+        }
 };
 
 

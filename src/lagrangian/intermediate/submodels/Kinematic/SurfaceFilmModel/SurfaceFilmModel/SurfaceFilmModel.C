@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2020-2022 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -32,6 +32,53 @@ License
 #include "liquidFilmBase.H"
 
 using namespace Foam::constant;
+
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+
+// The area film models.
+// - 2506 and earlier: registered on Time.
+// - 2512 and later  : registered below faMeshesRegistry
+
+template<class CloudType>
+Foam::UPtrList<const Foam::regionModels::areaSurfaceFilmModels::liquidFilmBase>
+Foam::SurfaceFilmModel<CloudType>::csorted_areaFilms(const polyMesh& mesh)
+{
+    if (const objectRegistry* parent = faMesh::registry(mesh); parent)
+    {
+        return
+        (
+            parent->thisDb().csorted
+            <
+                Foam::regionModels::areaSurfaceFilmModels::liquidFilmBase
+            >()
+        );
+    }
+    else
+    {
+        return {};
+    }
+}
+
+template<class CloudType>
+Foam::UPtrList<Foam::regionModels::areaSurfaceFilmModels::liquidFilmBase>
+Foam::SurfaceFilmModel<CloudType>::sorted_areaFilms(const polyMesh& mesh)
+{
+    if (const objectRegistry* parent = faMesh::registry(mesh); parent)
+    {
+        return
+        (
+            const_cast<objectRegistry&>(parent->thisDb()).sorted
+            <
+                Foam::regionModels::areaSurfaceFilmModels::liquidFilmBase
+            >()
+        );
+    }
+    else
+    {
+        return {};
+    }
+}
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -284,20 +331,14 @@ void Foam::SurfaceFilmModel<CloudType>::inject(TrackCloudType& cloud)
         }
     }
 
-    // Check finite area films
-    for
-    (
-        const areaFilm& regionFa
-      : mesh.time().objectRegistry::template csorted<areaFilm>()
-    )
+    // Check finite-area films
+    // - allow non-const access to the area films
+    for (auto& film : SurfaceFilmModel<CloudType>::sorted_areaFilms(mesh))
     {
-        if (regionFa.active())
+        if (film.active())
         {
-            auto& film = const_cast<areaFilm&>(regionFa);
-
             const List<labelPair>& patchFaces =
                 film.regionMesh().whichPatchFaces();
-
 
             cacheFilmFields(film);
 

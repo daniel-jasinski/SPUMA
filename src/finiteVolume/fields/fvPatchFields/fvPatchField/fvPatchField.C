@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -68,7 +68,9 @@ bool Foam::fvPatchField<Type>::readValueEntry
 template<class Type>
 void Foam::fvPatchField<Type>::extrapolateInternal()
 {
-    fvPatchFieldBase::patch().patchInternalField(internalField_, *this);
+    const auto& p = fvPatchFieldBase::patch();
+    this->resize_nocopy(p.size());  // In general this is a no-op
+    p.patchInternalField(internalField_, *this);
 }
 
 
@@ -185,12 +187,15 @@ Foam::fvPatchField<Type>::fvPatchField
 template<class Type>
 Foam::fvPatchField<Type>::fvPatchField
 (
-    const fvPatchField<Type>& ptf
+    const fvPatchField<Type>& pfld,
+    const fvPatch& p,
+    const DimensionedField<Type, volMesh>& iF,
+    const Type& value
 )
 :
-    fvPatchFieldBase(ptf),
-    Field<Type>(ptf),
-    internalField_(ptf.internalField_)
+    fvPatchFieldBase(pfld, p),
+    Field<Type>(p.size(), value),
+    internalField_(iF)
 {}
 
 
@@ -217,9 +222,36 @@ void Foam::fvPatchField<Type>::check(const fvPatchField<Type>& rhs) const
 
 
 template<class Type>
+void Foam::fvPatchField<Type>::snGrad(UList<Type>& result) const
+{
+    // Get patch internal field, store temporarily in result
+    this->patchInternalField(result);
+    const auto& pif = result;
+
+    const Field<Type>& pfld = *this;
+    const auto& dc = patch().deltaCoeffs();
+
+    const label len = result.size();
+
+    foamExecutor exec;
+    auto resultPtr = result.begin();
+    const auto dcPtr = dc.cbegin();
+    const auto pfldPtr = pfld.cbegin();
+    const auto pifPtr = pif.cbegin();
+    auto Lambda = [=](label i)
+    {
+        resultPtr[i] = dcPtr[i]*(pfldPtr[i] - pifPtr[i]);
+    };
+    exec.parallelFor(Lambda,len);
+}
+
+
+template<class Type>
 Foam::tmp<Foam::Field<Type>> Foam::fvPatchField<Type>::snGrad() const
 {
-    return patch().deltaCoeffs()*(*this - patchInternalField());
+    auto tfld = tmp<Field<Type>>::New(this->size());
+    this->snGrad(static_cast<UList<Type>&>(tfld.ref()));
+    return tfld;
 }
 
 
@@ -232,7 +264,7 @@ Foam::fvPatchField<Type>::patchInternalField() const
 
 
 template<class Type>
-void Foam::fvPatchField<Type>::patchInternalField(Field<Type>& pfld) const
+void Foam::fvPatchField<Type>::patchInternalField(UList<Type>& pfld) const
 {
     patch().patchInternalField(internalField_, pfld);
 }
@@ -272,7 +304,7 @@ void Foam::fvPatchField<Type>::autoMap
              && mapper.directAddressing().size()
             )
             {
-                const labelList& mapAddressing = mapper.directAddressing();
+                const labelUList& mapAddressing = mapper.directAddressing();
 
                 forAll(mapAddressing, i)
                 {

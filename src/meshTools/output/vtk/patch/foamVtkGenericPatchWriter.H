@@ -72,8 +72,9 @@ class GenericPatchWriter
         //- Reference to faces/points as a patch
         const PatchType& pp_;
 
+public:
 
-    // Private Member Functions
+    // Generated Methods
 
         //- No copy construct
         GenericPatchWriter(const GenericPatchWriter<PatchType>&) = delete;
@@ -81,8 +82,6 @@ class GenericPatchWriter
         //- No copy assignment
         void operator=(const GenericPatchWriter<PatchType>&) = delete;
 
-
-public:
 
     // Constructors
 
@@ -104,7 +103,7 @@ public:
         (
             const PatchType& pp,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         )
         :
             vtk::polyWriter(file, parallel),
@@ -118,7 +117,7 @@ public:
             const PatchType& pp,
             const vtk::outputOptions opts,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         )
         :
             vtk::polyWriter(opts, file, parallel),

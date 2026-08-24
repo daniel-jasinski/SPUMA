@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -66,7 +66,9 @@ bool Foam::faPatchField<Type>::readValueEntry
 template<class Type>
 void Foam::faPatchField<Type>::extrapolateInternal()
 {
-    faPatchFieldBase::patch().patchInternalField(internalField_, *this);
+    const auto& p = faPatchFieldBase::patch();
+    this->resize_nocopy(p.size());  // In general this is a no-op
+    p.patchInternalField(internalField_, *this);
 }
 
 
@@ -166,24 +168,27 @@ Foam::faPatchField<Type>::faPatchField
 template<class Type>
 Foam::faPatchField<Type>::faPatchField
 (
-    const faPatchField<Type>& ptf
+    const faPatchField<Type>& pfld,
+    const faPatch& p,
+    const DimensionedField<Type, areaMesh>& iF,
+    const Type& value
 )
 :
-    faPatchFieldBase(ptf),
-    Field<Type>(ptf),
-    internalField_(ptf.internalField_)
+    faPatchFieldBase(pfld, p),
+    Field<Type>(p.size(), value),
+    internalField_(iF)
 {}
 
 
 template<class Type>
 Foam::faPatchField<Type>::faPatchField
 (
-    const faPatchField<Type>& ptf,
+    const faPatchField<Type>& pfld,
     const DimensionedField<Type, areaMesh>& iF
 )
 :
-    faPatchFieldBase(ptf),
-    Field<Type>(ptf),
+    faPatchFieldBase(pfld),
+    Field<Type>(pfld),
     internalField_(iF)
 {}
 
@@ -198,9 +203,30 @@ void Foam::faPatchField<Type>::check(const faPatchField<Type>& rhs) const
 
 
 template<class Type>
+void Foam::faPatchField<Type>::snGrad(UList<Type>& result) const
+{
+    // Get patch internal field, store temporarily in result
+    this->patchInternalField(result);
+    const auto& pif = result;
+
+    const Field<Type>& pfld = *this;
+    const auto& dc = patch().deltaCoeffs();
+
+    const label len = result.size();
+
+    for (label i = 0; i < len; ++i)
+    {
+        result[i] = dc[i]*(pfld[i] - pif[i]);
+    }
+}
+
+
+template<class Type>
 Foam::tmp<Foam::Field<Type>> Foam::faPatchField<Type>::snGrad() const
 {
-    return (*this - patchInternalField())*patch().deltaCoeffs();
+    auto tfld = tmp<Field<Type>>::New(this->size());
+    this->snGrad(static_cast<UList<Type>&>(tfld.ref()));
+    return tfld;
 }
 
 
@@ -213,7 +239,7 @@ Foam::faPatchField<Type>::patchInternalField() const
 
 
 template<class Type>
-void Foam::faPatchField<Type>::patchInternalField(Field<Type>& pfld) const
+void Foam::faPatchField<Type>::patchInternalField(UList<Type>& pfld) const
 {
     patch().patchInternalField(internalField_, pfld);
 }
@@ -253,6 +279,7 @@ void Foam::faPatchField<Type>::evaluate(const Pstream::commsTypes)
     }
 
     faPatchFieldBase::setUpdated(false);
+    faPatchFieldBase::setManipulated(false);
 }
 
 

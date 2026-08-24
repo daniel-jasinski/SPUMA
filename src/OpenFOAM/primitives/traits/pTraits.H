@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
-    Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -41,20 +41,8 @@ Description
 
 #include "stdFoam.H"
 #include "direction.H"
-#include <type_traits>  // For std::integral_constant, std::void_t (C++17)
+#include <type_traits>  // For std::integral_constant, std::void_t
 #include <utility>      // For declval
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-namespace stdFoam
-{
-
-//- Map a sequence of any types to \c void as per C++17 \c std::void_t
-template<class... >
-using void_t = void;
-
-} // End namespace stdFoam
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -105,21 +93,8 @@ public:
 
 
 /*---------------------------------------------------------------------------*\
-                              VectorSpace Traits
+                         Robuster generalised pTraits
 \*---------------------------------------------------------------------------*/
-
-//- Test for VectorSpace : default is false
-template<class T, class = void>
-struct is_vectorspace : std::false_type {};
-
-//- Test for VectorSpace : test for T::rank != 0 static member directly
-//  Do not need pTraits layer since rank is defined via VectorSpace etc
-template<class T>
-struct is_vectorspace<T, stdFoam::void_t<decltype(T::rank)>>
-:
-    std::integral_constant<bool, (T::rank != 0)>
-{};
-
 
 //- The vector-space rank: default is 0.
 template<class T, class = void>
@@ -131,10 +106,10 @@ template<class T>
 struct pTraits_rank
 <
     T,
-    stdFoam::void_t<decltype(pTraits<T>::rank)>
+    std::void_t<decltype(pTraits<std::remove_cv_t<T>>::rank)>
 >
 :
-    std::integral_constant<Foam::direction, pTraits<T>::rank>
+    std::integral_constant<Foam::direction, pTraits<std::remove_cv_t<T>>::rank>
 {};
 
 
@@ -147,9 +122,13 @@ struct pTraits_cmptType { typedef T type; };
 //  such as for arithmetic primitives, vector-space etc. where the concept
 //  of a component type also makes sense.
 template<class T>
-struct pTraits_cmptType<T, stdFoam::void_t<decltype(pTraits<T>::zero)>>
+struct pTraits_cmptType
+<
+    T,
+    std::void_t<decltype(pTraits<std::remove_cv_t<T>>::zero)>
+>
 {
-    typedef typename pTraits<T>::cmptType type;
+    using type = typename pTraits<std::remove_cv_t<T>>::cmptType;
 };
 
 
@@ -163,10 +142,14 @@ template<class T>
 struct pTraits_nComponents
 <
     T,
-    stdFoam::void_t<decltype(pTraits<T>::nComponents)>
+    std::void_t<decltype(std::remove_cv_t<T>::nComponents)>
 >
 :
-    std::integral_constant<Foam::direction, pTraits<T>::nComponents>
+    std::integral_constant
+    <
+        Foam::direction,
+        pTraits<std::remove_cv_t<T>>::nComponents
+    >
 {};
 
 
@@ -179,11 +162,70 @@ template<class T>
 struct pTraits_has_zero
 <
     T,
-    stdFoam::void_t<decltype(pTraits<T>::zero)>
+    std::void_t<decltype(pTraits<std::remove_cv_t<T>>::zero)>
 >
 :
     std::true_type
 {};
+
+
+/*---------------------------------------------------------------------------*\
+                              VectorSpace Traits
+\*---------------------------------------------------------------------------*/
+
+//- Test for VectorSpace : default is false
+template<class T, class = void>
+struct is_vectorspace : std::false_type {};
+
+//- Test for VectorSpace : test for T::rank != 0 static member directly
+//  Do not need pTraits layer since rank is defined via VectorSpace etc
+template<class T>
+struct is_vectorspace
+<
+    T,
+    std::void_t<decltype(std::remove_cv_t<T>::rank)>
+>
+:
+    std::bool_constant<std::remove_cv_t<T>::rank != 0>
+{};
+
+
+//- Test for VectorSpace and multiple components (eg, not sphericalTensor)
+//- which means it is not rotationally invariant
+template<class T, class = void>
+struct is_rotational_vectorspace : std::false_type {};
+
+//- Test for VectorSpace and multiple components (eg, not sphericalTensor)
+//  Do not need pTraits layer since rank and nComponents are both
+//  defined via VectorSpace
+template<class T>
+struct is_rotational_vectorspace
+<
+    T,
+    std::void_t
+    <
+        decltype(std::remove_cv_t<T>::rank),
+        decltype(std::remove_cv_t<T>::nComponents)
+    >
+>
+:
+    std::bool_constant
+    <
+        (std::remove_cv_t<T>::rank != 0)
+     && (std::remove_cv_t<T>::nComponents > 1)
+    >
+{};
+
+
+//- The is_vectorspace value of Type
+template<class T>
+inline constexpr bool is_vectorspace_v
+    = is_vectorspace<T>::value;
+
+//- The is_rotational_vectorspace value of Type
+template<class T>
+inline constexpr bool is_rotational_vectorspace_v
+    = is_rotational_vectorspace<T>::value;
 
 
 /*---------------------------------------------------------------------------*\
@@ -200,7 +242,7 @@ template<class T>
 struct is_range
 <
     T,
-    stdFoam::void_t
+    std::void_t
     <
         decltype(std::declval<T>().begin()),
         decltype(std::declval<T>().end())

@@ -121,11 +121,7 @@ bool Foam::binModels::uniformBin::processField(const label fieldi)
         nField += 1;
     }
 
-    List<List<Type>> data(nField);
-    for (auto& binList : data)
-    {
-        binList.resize(nBin_, Zero);
-    }
+    List<List<Type>> data(nField, List<Type>(nBin_, Zero));
 
     for (const label zonei : cellZoneIDs_)
     {
@@ -165,9 +161,12 @@ bool Foam::binModels::uniformBin::processField(const label fieldi)
         }
     }
 
-    for (auto& binList : data)
+    if (Pstream::parRun())
     {
-        reduce(binList, sumOp<List<Type>>());
+        for (auto& binList : data)
+        {
+            reduce(binList, sumOp<List<Type>>());
+        }
     }
 
     if (writeToFile())

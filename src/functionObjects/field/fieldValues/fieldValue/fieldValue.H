@@ -36,37 +36,31 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    <userDefinedSubDictName1>
+    FOname
     {
-        // Mandatory and other optional entries
+        // Mandatory and optional entries
         ...
 
-        // Mandatory (inherited) entries (runtime modifiable)
-        fields            (<field1> <field2> ... <fieldN>);
+        // Mandatory entries
+        fields            (<wordList>);  // (<field1> <field2> ... <fieldN>);
 
-        // Optional (inherited) entries (runtime modifiable)
-        writeFields       false;
-        scaleFactor       1.0;
+        // Optional entries
+        writeFields       <bool>;
+        scaleFactor       <scalar>;
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property    | Description                 | Type     | Req'd | Dflt
+      Property    | Description                 | Type     | Reqd  | Deflt
       fields      | Names of operand fields     | wordList |  yes  | -
       writeFields | Flag to output field values | bool     |  no   | false
       scaleFactor | Scaling factor              | scalar   |  no   | 1.0
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::fieldValue
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 SourceFiles
     fieldValue.C
@@ -74,8 +68,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_fieldValue_H
-#define functionObjects_fieldValue_H
+#ifndef Foam_functionObjects_fieldValue_H
+#define Foam_functionObjects_fieldValue_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -151,7 +145,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         fieldValue
         (
             const word& name,
@@ -197,13 +191,13 @@ public:
         //- Return the output field values flag
         inline bool writeFields() const noexcept;
 
-        //- Read from dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write
+        //- Write the function-object results
         virtual bool write();
 };
 

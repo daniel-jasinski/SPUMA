@@ -37,16 +37,17 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    <functionObject>
+    FOname
     {
         // Mandatory and optional entries
         ...
 
-        // Inherited entries
-        field             <field>;
-        result            <fieldResult>;
-        cellZones         ( <cellZone1> <cellZone2> ... <cellZoneN> );
-        nLayers           <label>;
+        // Mandatory entries
+        field             <word>;
+
+        // Optional entries
+        result            <word>;
+        cellZones         (<word> <word> ... <word>);
     }
     \endverbatim
 
@@ -56,13 +57,7 @@ Usage
       field     | Name of the operand field               | word  | yes  | -
       result    | Name of the output field  | word | no   | \<FO\>(\<field\>)
       cellZones | Names of cellZones                    | wordRes | no   | -
-      nLayers   | Number of cell layers around cellZones  | label | no   | 0
     \endtable
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::fieldExpression
 
 SourceFiles
     fieldExpression.C
@@ -70,8 +65,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_fieldExpression_H
-#define functionObjects_fieldExpression_H
+#ifndef Foam_functionObjects_fieldExpression_H
+#define Foam_functionObjects_fieldExpression_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFieldsFwd.H"
@@ -127,7 +122,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         fieldExpression
         (
             const word& name,
@@ -150,13 +145,13 @@ public:
 
     // Member Functions
 
-        //- Read the fieldExpression data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the result field
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the result field
+        //- Write the function-object results
         virtual bool write();
 
         //- Clear the result field from the objectRegistry

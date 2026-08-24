@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2020-2022 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -205,7 +205,7 @@ inline Foam::labelList Foam::cellShape::meshFaces
 
     forAll(localFaces, i)
     {
-        const Foam::face& localF = localFaces[i];
+        const auto& localF = localFaces[i];
 
         for (const label meshFacei : cFaces)
         {
@@ -236,7 +236,7 @@ inline Foam::labelList Foam::cellShape::meshEdges
 
     forAll(localEdges, i)
     {
-        const Foam::edge& e = localEdges[i];
+        const auto& e = localEdges[i];
 
         for (const label edgei : cEdges)
         {
@@ -271,9 +271,9 @@ inline Foam::faceList Foam::cellShape::collapsedFaces() const
     faceList newFaces(oldFaces.size());
     label newFacei = 0;
 
-    for (const Foam::face& f : oldFaces)
+    for (const auto& f : oldFaces)
     {
-        Foam::face& newF = newFaces[newFacei];
+        auto& newF = newFaces[newFacei];
         newF.resize(f.size());
 
         label newFp = 0;
@@ -330,6 +330,38 @@ inline Foam::scalar Foam::cellShape::mag(const UList<point>& points) const
 }
 
 
+inline Foam::label Foam::cellShape::min() const
+{
+    label result = (empty() ? -1 : (*this)[0]);
+
+    for (const label pointi : *this)
+    {
+        if (result > pointi)
+        {
+            result = pointi;
+        }
+    }
+
+    return result;
+}
+
+
+inline Foam::label Foam::cellShape::max() const
+{
+    label result = (empty() ? -1 : (*this)[0]);
+
+    for (const label pointi : *this)
+    {
+        if (result < pointi)
+        {
+            result = pointi;
+        }
+    }
+
+    return result;
+}
+
+
 inline void Foam::cellShape::reset
 (
     const cellModel& model,
@@ -361,6 +393,20 @@ inline void Foam::cellShape::reset
     if (doCollapse)
     {
         collapse();
+    }
+}
+
+
+// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
+
+inline void Foam::cellShape::operator+=(const label vertexOffset)
+{
+    if (vertexOffset)
+    {
+        for (auto& vrt : static_cast<labelList&>(*this))
+        {
+            vrt += vertexOffset;
+        }
     }
 }
 

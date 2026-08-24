@@ -36,19 +36,20 @@ Description
     Operands:
     \table
       Operand        | Type             | Location
-      input          | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | vol<Type>Field   | <time>/inputFields
       output file    | -                | -
-      output field   | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | vol<Type>Field   | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    nearWallFields1
+    nearWallFieldsFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            nearWallFields;
         libs            (fieldFunctionObjects);
         fields
@@ -56,17 +57,17 @@ Usage
             (<field1> <outField1>)
             (<field2> <outField2>)
         );
-        patches         (<patch1> <patch2> ... <patchN>);
-        distance        0.01;
+        patches         <wordList>;  // (<patch1> <patch2> ... <patchN>);
+        distance        <scalar>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd  | Dflt
+      Property     | Description                        | Type | Reqd   | Deflt
       type         | Type name: nearWallFields          | word |  yes   | -
       libs         | Library name: fieldFunctionObjects | word |  yes   | -
       fields       | Names of input-output fields | wordHashTable | yes | -
@@ -75,14 +76,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::nearWallFields
+      - \link functionObject.H \endlink
 
 SourceFiles
     nearWallFields.C
@@ -161,6 +155,7 @@ protected:
         //- Calculate addressing from cells back to patch faces
         void calcAddressing();
 
+        //- Create the local fields
         template<class Type>
         void createFields
         (
@@ -175,6 +170,7 @@ protected:
             GeometricField<Type, fvPatchField, volMesh>& fld
         ) const;
 
+        //- Sample the fields
         template<class Type>
         void sampleFields
         (
@@ -212,13 +208,13 @@ public:
 
     // Member Functions
 
-        //- Read the controls
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the near-wall fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the near-wall fields
+        //- Write the function-object results
         virtual bool write();
 };
 

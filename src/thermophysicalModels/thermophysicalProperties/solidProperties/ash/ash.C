@@ -40,7 +40,7 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::ash::ash()
+Foam::ash::ash() noexcept
 :
     solidProperties(2010, 710, 0.04, 0.0, 1.0, 12.011, 0.0, 0.0)
 {

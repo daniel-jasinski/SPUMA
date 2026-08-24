@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -547,7 +547,26 @@ inline void Foam::PackedList<Width>::reserve(const label numElem)
         blocks_.resize
         (
             // SizeMin=16, allocation doubling
-            max(16, max(newLen, 2*oldLen)),
+            Foam::max(16, Foam::max(newLen, 2*oldLen)),
+            0u
+        );
+    }
+}
+
+
+template<unsigned Width>
+inline void Foam::PackedList<Width>::reserve_exact(const label numElem)
+{
+    const label oldLen = blocks_.size();
+    const label newLen = num_blocks(numElem);
+
+    // Allocate more capacity if necessary
+    if (oldLen < newLen)
+    {
+        blocks_.resize
+        (
+            // SizeMin=16
+            Foam::max(16, newLen),
             0u
         );
     }
@@ -578,7 +597,7 @@ inline void Foam::PackedList<Width>::clearStorage()
 
 
 template<unsigned Width>
-inline void Foam::PackedList<Width>::shrink()
+inline void Foam::PackedList<Width>::shrink_to_fit()
 {
     // Any unneeded space allocated?
     const label nblocks = num_blocks(size());
@@ -590,37 +609,9 @@ inline void Foam::PackedList<Width>::shrink()
 
 
 template<unsigned Width>
-inline Foam::List<unsigned int>& Foam::PackedList<Width>::storage()
-{
-    return blocks_;
-}
-
-
-template<unsigned Width>
-inline const Foam::List<unsigned int>& Foam::PackedList<Width>::storage() const
-{
-    return blocks_;
-}
-
-
-template<unsigned Width>
-inline Foam::label Foam::PackedList<Width>::nBlocks() const
+inline Foam::label Foam::PackedList<Width>::num_blocks() const noexcept
 {
     return num_blocks(size());
-}
-
-
-template<unsigned Width>
-inline const unsigned int* Foam::PackedList<Width>::cdata() const noexcept
-{
-    return blocks_.cdata();
-}
-
-
-template<unsigned Width>
-inline unsigned int* Foam::PackedList<Width>::data() noexcept
-{
-    return blocks_.data();
 }
 
 

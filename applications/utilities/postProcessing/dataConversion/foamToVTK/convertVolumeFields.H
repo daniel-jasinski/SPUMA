@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -24,21 +24,21 @@ Description
     const label nVolFields =
     (
         (doInternal || doBoundary)
-      ? objects.count(stringListOps::foundOp<word>(fieldTypes::volume))
+      ? objects.count(Foam::fieldTypes::is_volume)
       : 0
     );
 
     const label nDimFields =
     (
         (doInternal || doBoundary)
-      ? objects.count(stringListOps::foundOp<word>(fieldTypes::internal))
+      ? objects.count(Foam::fieldTypes::is_internal)
       : 0
     );
 
     label nPointFields =
     (
         doPointValues
-      ? objects.count(stringListOps::foundOp<word>(fieldTypes::point))
+      ? objects.count(Foam::fieldTypes::is_point)
       : 0
     );
 
@@ -75,6 +75,8 @@ Description
 
     if (doInternal)
     {
+        typedef vtk::internalWriter writerType;
+
         if (vtuMeshCells.empty())
         {
             // Use the appropriate mesh (baseMesh or subMesh)
@@ -92,7 +94,7 @@ Description
             }
         }
 
-        internalWriter = autoPtr<vtk::internalWriter>::New
+        auto writer = autoPtr<writerType>::New
         (
             meshProxy.mesh(),
             vtuMeshCells,
@@ -107,17 +109,20 @@ Description
         );
 
         // No sub-block for internal
-        vtmWriter.append_vtu
+        vtmWriter.append_ugrid
         (
             "internal",
             vtmOutputBase.name()/"internal"
         );
 
         Info<< "    Internal  : "
-            << args.relativePath(internalWriter->output()) << nl;
+            << args.relativePath(writer->output()) << nl;
 
-        internalWriter->writeTimeValue(mesh.time().value());
-        internalWriter->writeGeometry();
+        writer->writeTimeValue(mesh.time().value());
+        writer->writeGeometry();
+
+        // Transfer writer to outer for later use
+        internalWriter = std::move(writer);
 
         if (doPointValues)
         {
@@ -136,17 +141,18 @@ Description
     labelList patchIds;
     if (doBoundary)
     {
-        patchIds = getSelectedPatches(patches, patchSelector);
+        patchIds = patchSelector.indices(patches);
     }
 
     if (oneBoundary && patchIds.size())
     {
-        auto writer = autoPtr<vtk::patchWriter>::New
+        typedef vtk::patchWriter writerType;
+
+        auto writer = autoPtr<writerType>::New
         (
             meshProxy.mesh(),
             patchIds,
             writeOpts,
-            nearCellValue,
             // Output one patch: "boundary"
             (
                 writeOpts.legacy()
@@ -161,8 +167,13 @@ Description
             UPstream::parRun()
         );
 
+        if (nearCellValue)
+        {
+            writer->useCellValue(nearCellValue);
+        }
+
         // No sub-block for one-patch
-        vtmWriter.append_vtp
+        vtmWriter.append_poly
         (
             "boundary",
             vtmOutputBase.name()/"boundary"
@@ -183,6 +194,8 @@ Description
     }
     else if (patchIds.size())
     {
+        typedef vtk::patchWriter writerType;
+
         patchWriters.resize(patchIds.size());
         if (doPointValues)
         {
@@ -191,17 +204,18 @@ Description
 
         label nPatchWriters = 0;
         label nPatchInterps = 0;
+        labelList selectedPatchId(1);
 
         for (const label patchId : patchIds)
         {
             const polyPatch& pp = patches[patchId];
+            selectedPatchId[0] = pp.index();
 
-            auto writer = autoPtr<vtk::patchWriter>::New
+            auto writer = autoPtr<writerType>::New
             (
                 meshProxy.mesh(),
-                labelList(one{}, pp.index()),
+                selectedPatchId,
                 writeOpts,
-                nearCellValue,
                 // Output patch: "boundary"/name
                 (
                     writeOpts.legacy()
@@ -216,19 +230,24 @@ Description
                 UPstream::parRun()
             );
 
+            if (nearCellValue)
+            {
+                writer->useCellValue(nearCellValue);
+            }
+
             if (!nPatchWriters)
             {
                 vtmWriter.beginBlock("boundary");
                 vtmBoundaries.beginBlock("boundary");
             }
 
-            vtmWriter.append_vtp
+            vtmWriter.append_poly
             (
                 pp.name(),
                 vtmOutputBase.name()/"boundary"/pp.name()
             );
 
-            vtmBoundaries.append_vtp
+            vtmBoundaries.append_poly
             (
                 pp.name(),
                 "boundary"/pp.name()
@@ -304,7 +323,7 @@ Description
 
         if (nVolFields || withMeshIds)
         {
-            for (vtk::patchWriter& writer : patchWriters)
+            for (auto& writer : patchWriters)
             {
                 // Optionally with (patchID, procID) fields
                 writer.beginCellData
@@ -416,7 +435,7 @@ Description
         internalWriter->close();
     }
 
-    for (vtk::patchWriter& writer : patchWriters)
+    for (auto& writer : patchWriters)
     {
         writer.close();
     }

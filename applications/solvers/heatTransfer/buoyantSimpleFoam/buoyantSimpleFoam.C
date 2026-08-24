@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -38,6 +39,7 @@ Description
 #include "fvCFD.H"
 #include "rhoThermo.H"
 #include "turbulentFluidThermoModel.H"
+#include "thermalTurbulentFluidThermoModel.H"
 #include "radiationModel.H"
 #include "simpleControl.H"
 #include "fvOptions.H"
@@ -56,6 +58,8 @@ int main(int argc, char *argv[])
 
     #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
+    #include "initDevice.H"
+    #include "createMemoryPool.H"
     #include "createTime.H"
     #include "createMesh.H"
     #include "createControl.H"
@@ -64,6 +68,7 @@ int main(int argc, char *argv[])
     #include "initContinuityErrs.H"
 
     turbulence->validate();
+    thermalTurbulence->validate();
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -81,11 +86,15 @@ int main(int argc, char *argv[])
         }
 
         turbulence->correct();
+        thermalTurbulence->correct();
 
-        runTime.write();
-
+        #include "poolOccupancy.H"
+	
+	runTime.write();
         runTime.printExecutionTime(Info);
     }
+
+    #include "poolMaxOccupancy.H"
 
     Info<< "End\n" << endl;
 

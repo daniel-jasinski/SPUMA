@@ -5,8 +5,8 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011-2014 OpenFOAM Foundation
-    Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2011-2014,2024 OpenFOAM Foundation
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -58,8 +58,10 @@ class prefixOSstream
 {
     // Private Data
 
+        //- Prefix printing is active
         bool printPrefix_;
 
+        //- The prefix to add
         string prefix_;
 
 
@@ -84,9 +86,9 @@ public:
 
     // Member Functions
 
-    // Enquiry
+    // Decorators
 
-        //- Return the stream prefix
+        //- The stream prefix
         const string& prefix() const noexcept { return prefix_; }
 
         //- Return non-const access to the stream prefix
@@ -127,6 +129,12 @@ public:
 
         //- Write int64_t
         virtual Ostream& write(const int64_t val) override;
+
+        //- Write uint32_t
+        virtual Ostream& write(const uint32_t val) override;
+
+        //- Write uint64_t
+        virtual Ostream& write(const uint64_t val) override;
 
         //- Write float
         virtual Ostream& write(const float val) override;

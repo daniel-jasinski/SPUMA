@@ -93,6 +93,14 @@ Foam::triSurface Foam::subTriSurfaceMesh::subset
     const triSurfaceMesh& s =
         io.db().lookupObject<triSurfaceMesh>(subGeomName);
 
+    if (s.type() == "distributedTriSurfaceMesh")
+    {
+        IOWarningInFunction(dict)
+            << "Found surface " << subGeomName << " of type " << s.type()
+            << ". subTriSurfaceMesh only works with non-distributed surfaces."
+            << endl;
+    }
+
     const wordRes regionNames(dict.get<wordRes>("patches"));
 
     labelList regionMap(selectedRegions(s, regionNames));

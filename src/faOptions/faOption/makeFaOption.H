@@ -25,8 +25,8 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef makeFaOption_H
-#define makeFaOption_H
+#ifndef Foam_makeFaOption_H
+#define Foam_makeFaOption_H
 
 #include "faOption.H"
 #include "addToRunTimeSelectionTable.H"

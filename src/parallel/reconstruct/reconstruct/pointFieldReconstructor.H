@@ -31,8 +31,8 @@ Description
     Point field reconstructor.
 
 SourceFiles
-    pointFieldReconstructor.C
-    pointFieldReconstructorTemplates.C
+    pointFieldReconstructor.cxx
+    pointFieldReconstructor.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -41,7 +41,7 @@ SourceFiles
 
 #include "pointMesh.H"
 #include "pointFields.H"
-#include "pointPatchFieldMapperPatchRef.H"
+#include "pointPatchFieldMapper.H"
 #include "IOobjectList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -61,13 +61,13 @@ class pointFieldReconstructor
         const pointMesh& mesh_;
 
         //- List of processor meshes
-        const PtrList<pointMesh>& procMeshes_;
+        const UPtrList<pointMesh>& procMeshes_;
 
         //- List of processor point addressing lists
-        const PtrList<labelIOList>& pointProcAddressing_;
+        const UPtrList<labelIOList>& pointProcAddressing_;
 
         //- List of processor boundary addressing lists
-        const PtrList<labelIOList>& boundaryProcAddressing_;
+        const UPtrList<labelIOList>& boundaryProcAddressing_;
 
         //- Point patch addressing
         labelListListList patchPointAddressing_;
@@ -100,7 +100,7 @@ public:
             // Constructors
 
                 //- Construct given size
-                pointPatchFieldReconstructor(const label size)
+                explicit pointPatchFieldReconstructor(const label size)
                 :
                     size_(size)
                 {}
@@ -108,22 +108,22 @@ public:
 
             // Member functions
 
-                label size() const
+                label size() const noexcept
                 {
                     return size_;
                 }
 
-                bool direct() const
+                bool direct() const noexcept
                 {
                     return true;
                 }
 
-                bool hasUnmapped() const
+                bool hasUnmapped() const noexcept
                 {
                     return false;
                 }
 
-                const labelUList& directAddressing() const
+                const labelUList& directAddressing() const noexcept
                 {
                     return labelUList::null();
                 }
@@ -142,9 +142,9 @@ public:
         pointFieldReconstructor
         (
             const pointMesh& mesh,
-            const PtrList<pointMesh>& procMeshes,
-            const PtrList<labelIOList>& pointProcAddressing,
-            const PtrList<labelIOList>& boundaryProcAddressing
+            const UPtrList<pointMesh>& procMeshes,
+            const UPtrList<labelIOList>& pointProcAddressing,
+            const UPtrList<labelIOList>& boundaryProcAddressing
         );
 
 
@@ -163,7 +163,7 @@ public:
         reconstructField
         (
             const IOobject& fieldObject,
-            const PtrList<GeometricField<Type, pointPatchField, pointMesh>>&
+            const UPtrList<GeometricField<Type, pointPatchField, pointMesh>>&
         ) const;
 
 
@@ -204,7 +204,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "pointFieldReconstructorTemplates.C"
+    #include "pointFieldReconstructor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

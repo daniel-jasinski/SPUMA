@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2019 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,7 +40,8 @@ Foam::HashTable<Foam::wordHashSet> Foam::objectRegistry::classesImpl
     const MatchPredicate& matchName
 )
 {
-    HashTable<wordHashSet> summary(2*list.size());
+    HashTable<wordHashSet> summary;
+    summary.reserve(16);  // Relatively few types
 
     // Summary (key,val) = (class-name, object-names)
     forAllConstIters(list, iter)
@@ -99,7 +100,7 @@ Foam::label Foam::objectRegistry::countTypeImpl
 
         if
         (
-            (std::is_void<Type>::value || Foam::isA<Type>(*obj))
+            (std::is_void_v<Type> || Foam::isA<Type>(*obj))
          && matchName(obj->name())
         )
         {
@@ -164,7 +165,7 @@ Foam::wordList Foam::objectRegistry::namesTypeImpl
 
         if
         (
-            (std::is_void<Type>::value || Foam::isA<Type>(*obj))
+            (std::is_void_v<Type> || Foam::isA<Type>(*obj))
          && matchName(obj->name())
         )
         {
@@ -195,7 +196,7 @@ Foam::objectRegistry::objectsTypeImpl
     const bool doSort
 )
 {
-    typedef typename std::remove_cv<Type>::type BaseType;
+    using BaseType = std::remove_cv_t<Type>;
 
     UPtrList<Type> result(list.size());
 
@@ -237,7 +238,7 @@ Foam::objectRegistry::lookupClassTypeImpl
     const objectRegistry& list
 )
 {
-    typedef typename std::remove_cv<Type>::type BaseType;
+    using BaseType = std::remove_cv_t<Type>;
 
     HashTable<Type*> result(list.capacity());
 
@@ -318,7 +319,7 @@ Foam::label Foam::objectRegistry::count
 
         if
         (
-            std::is_void<Type>::value
+            std::is_void_v<Type>
          ||
             (
                 strict
@@ -601,9 +602,7 @@ const Type& Foam::objectRegistry::lookupObject
     const bool recursive
 ) const
 {
-    const_iterator iter = cfind(name);
-
-    if (iter.good())
+    if (auto iter = cfind(name); iter.good())
     {
         const Type* ptr = dynamic_cast<const Type*>(iter.val());
 

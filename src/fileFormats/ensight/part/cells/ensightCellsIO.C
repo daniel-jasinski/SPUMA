@@ -282,7 +282,7 @@ void Foam::ensightCells::write
     labelList pointToGlobal;  // local point to unique global index
     labelList uniqueMeshPointLabels;  // unique global points
 
-    nPoints = meshPointMapppings
+    nPoints = meshPointMappings
     (
         mesh,
         pointToGlobal,

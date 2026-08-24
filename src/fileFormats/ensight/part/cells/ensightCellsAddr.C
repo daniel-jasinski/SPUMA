@@ -67,7 +67,7 @@ Foam::ensightCells::meshPointMap(const polyMesh& mesh) const
 }
 
 
-Foam::label Foam::ensightCells::meshPointMapppings
+Foam::label Foam::ensightCells::meshPointMappings
 (
     const polyMesh& mesh,
     labelList& pointToGlobalRequest,
@@ -231,7 +231,7 @@ Foam::label Foam::ensightCells::uniqueMeshPoints
     bool parallel
 ) const
 {
-    return meshPointMapppings
+    return meshPointMappings
     (
         mesh,
         const_cast<labelList&>(labelList::null()),  // Ignore pointToGlobal

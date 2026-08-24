@@ -126,6 +126,7 @@ Foam::PtrList<T> Foam::IOPtrList<T>::readContents(const IOobject& io)
     {
         rio.readOpt(IOobjectOption::MUST_READ);
     }
+    rio.resetHeader();
 
     IOPtrList<T> reader(rio);
 
@@ -139,15 +140,6 @@ template<class T>
 bool Foam::IOPtrList<T>::writeData(Ostream& os) const
 {
     return (os << *this).good();
-}
-
-
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-template<class T>
-void Foam::IOPtrList<T>::operator=(const IOPtrList<T>& rhs)
-{
-    PtrList<T>::operator=(rhs);
 }
 
 

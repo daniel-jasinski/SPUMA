@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,11 +27,10 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "cellZone.H"
-#include "addToRunTimeSelectionTable.H"
 #include "cellZoneMesh.H"
 #include "polyMesh.H"
-#include "primitiveMesh.H"
 #include "IOstream.H"
+#include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -42,14 +41,12 @@ namespace Foam
     addToRunTimeSelectionTable(cellZone, cellZone, dictionary);
 }
 
-const char * const Foam::cellZone::labelsName = "cellLabels";
-
-
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::cellZone::cellZone(const cellZoneMesh& zm)
 :
-    cellZone(word::null, 0, zm)
+    zone(),
+    zoneMesh_(zm)
 {}
 
 
@@ -99,7 +96,7 @@ Foam::cellZone::cellZone
     const cellZoneMesh& zm
 )
 :
-    zone(name, dict, this->labelsName, index),
+    zone(name, dict, cellZone::labelsName(), index),
     zoneMesh_(zm)
 {}
 
@@ -107,7 +104,19 @@ Foam::cellZone::cellZone
 Foam::cellZone::cellZone
 (
     const cellZone& originalZone,
-    const Foam::zero,
+    const cellZoneMesh& zm,
+    const label newIndex
+)
+:
+    zone(originalZone, newIndex),
+    zoneMesh_(zm)
+{}
+
+
+Foam::cellZone::cellZone
+(
+    const cellZone& originalZone,
+    Foam::zero,
     const cellZoneMesh& zm,
     const label newIndex
 )
@@ -120,7 +129,7 @@ Foam::cellZone::cellZone
 Foam::cellZone::cellZone
 (
     const cellZone& originalZone,
-    const Foam::zero,
+    Foam::zero,
     const label index,
     const cellZoneMesh& zm
 )
@@ -160,28 +169,17 @@ Foam::cellZone::cellZone
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::label Foam::cellZone::whichCell(const label globalCellID) const
+Foam::label Foam::cellZone::max_index() const noexcept
 {
-    return zone::localID(globalCellID);
+    return zoneMesh_.mesh().nCells();
 }
 
 
-bool Foam::cellZone::checkDefinition(const bool report) const
-{
-    return zone::checkDefinition(zoneMesh_.mesh().nCells(), report);
-}
-
-
-void Foam::cellZone::writeDict(Ostream& os) const
-{
-    os.beginBlock(name());
-
-    os.writeEntry("type", type());
-    zoneIdentifier::write(os);
-    writeEntry(this->labelsName, os);
-
-    os.endBlock();
-}
+// void Foam::cellZone::sort()
+// {
+//     clearAddressing();
+//     Foam::sort(static_cast<labelList&>(*this));
+// }
 
 
 void Foam::cellZone::resetAddressing(cellZone&& zn)
@@ -220,6 +218,13 @@ void Foam::cellZone::resetAddressing(labelList&& addr)
 {
     clearAddressing();
     labelList::transfer(addr);
+}
+
+
+void Foam::cellZone::write(Ostream& os) const
+{
+    zone::write(os);
+    labelList::writeEntry(cellZone::labelsName(), os);
 }
 
 

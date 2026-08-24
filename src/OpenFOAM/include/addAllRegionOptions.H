@@ -5,13 +5,16 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2021 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
 
 Description
-    Add multi-region command-line options: -allRegions, -regions, -region
+    Add multi-region command-line options:
+      -allRegions | -all-regions
+      -regions
+      -region
 
 Required Classes
     - Foam::argList
@@ -27,6 +30,7 @@ See Also
         "allRegions",
         "Use all regions in regionProperties"
     );
+    Foam::argList::addOptionCompat("allRegions", { "all-regions", 0 });
 
     Foam::argList::addOption
     (

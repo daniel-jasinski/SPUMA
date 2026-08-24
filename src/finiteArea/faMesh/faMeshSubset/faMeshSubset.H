@@ -36,9 +36,9 @@ Caution
     a simple zero-sized mesh.
 
 SourceFiles
-    faMeshSubset.C
+    faMeshSubset.cxx
+    faMeshSubset.txx
     faMeshSubsetI.H
-    faMeshSubsetTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
@@ -110,6 +110,7 @@ public:
         //- Name for exposed internal edges (default: oldInternalEdges)
         static word exposedPatchName;
 
+
     // Generated Methods
 
         //- No copy construct
@@ -122,10 +123,10 @@ public:
     // Constructors
 
         //- Construct using the entire mesh (no subset)
-        explicit faMeshSubset(const faMesh& baseMesh);
+        explicit faMeshSubset(const faMesh& baseMesh) noexcept;
 
         //- Construct a zero-sized subset mesh, non-processor patches only
-        faMeshSubset(const faMesh& baseMesh, const Foam::zero);
+        faMeshSubset(const faMesh& baseMesh, Foam::zero);
 
 
     // Member Functions
@@ -172,7 +173,7 @@ public:
         void reset();
 
         //- Reset to a zero-sized subset mesh, non-processor patches only
-        void reset(const Foam::zero);
+        void reset(Foam::zero);
 
 
     // Field Mapping (static functions)
@@ -233,7 +234,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "faMeshSubsetTemplates.C"
+    #include "faMeshSubset.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

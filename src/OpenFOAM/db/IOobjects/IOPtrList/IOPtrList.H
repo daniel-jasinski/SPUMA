@@ -101,11 +101,20 @@ public:
 
     // Member Operators
 
-        //- Copy assignment of entries
-        void operator=(const IOPtrList<T>& rhs);
-
         //- Copy or move assignment of entries
         using PtrList<T>::operator=;
+
+        //- Copy assignment of entries
+        void operator=(const IOPtrList<T>& rhs)
+        {
+            PtrList<T>::operator=(rhs);
+        }
+
+        //- Move assignment of entries
+        void operator=(IOPtrList<T>&& rhs)
+        {
+            PtrList<T>::operator=(std::move(static_cast<PtrList<T>&>(rhs)));
+        }
 };
 
 

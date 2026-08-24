@@ -5,7 +5,7 @@
 #   \\  /    A nd           | www.openfoam.com
 #    \\/     M anipulation  |
 #------------------------------------------------------------------------------
-#     Copyright (C) 2018-2020 OpenCFD Ltd.
+#     Copyright (C) 2018-2025 OpenCFD Ltd.
 #------------------------------------------------------------------------------
 # License
 #     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -74,9 +74,7 @@ search_adios2()
 {
     local warn # warn="==> skip adios2"
     local incName="adios2.h"
-    local libName="libadios2"
-    local libName2="libadios2_cxx11_mpi"
-
+    local libName="libadios2"  # (and libadios2_cxx_mpi, libadios2_cxx11_mpi)
     local prefix="${1:-system}"
     local header library
 
@@ -104,11 +102,19 @@ search_adios2()
         return 2
     }
 
-    # Library
-    [ -n "$library" ] \
-    || library=$(findLibrary -prefix="$prefix" -name="$libName") \
-    || library=$(findLibrary -prefix="$prefix" -name="$libName2") \
-    || {
+    # Library searching
+    if [ -z "$library" ] && [ -d "$prefix" ]
+    then
+        local name
+        for name in "${libName}" "${libName}_cxx_mpi" "${libName}_cxx11_mpi"
+        do
+            [ -n "$name" ] || continue
+            library=$(findLibrary -prefix="$prefix" -name="$name")
+            [ -n "$library" ] && break
+        done
+    fi
+
+    [ -n "$library" ] || {  # Still nothing
         [ -n "$warn" ] && echo "$warn (no library)"
         return 2
     }
@@ -166,8 +172,10 @@ no_adios2
 
 # Test/query
 case "$1" in
--test)
+-test | -debug-test)
+    [ "$1" = "-debug-test" ] && set -x
     have_adios2
+    [ "$1" = "-debug-test" ] && set +x
     echo_adios2
     ;;
 -query)

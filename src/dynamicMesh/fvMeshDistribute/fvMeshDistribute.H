@@ -98,12 +98,8 @@ class fvMeshDistribute
         static wordList mergeWordList(const wordList&);
 
         //- Reorder zones according to names
-        template<class ZoneType, class ZoneMesh>
-        void reorderZones
-        (
-            const wordList& zoneNames,
-            ZoneMesh& zones
-        );
+        template<class ZoneMesh>
+        void reorderZones(const wordList& zoneNames, ZoneMesh& zones);
 
 
         // Patch handling

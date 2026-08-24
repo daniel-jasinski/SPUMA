@@ -32,7 +32,7 @@ Description
 
 SourceFiles
     complexVectorI.H
-    complexVector.C
+    complexVector.cxx
 
 \*---------------------------------------------------------------------------*/
 

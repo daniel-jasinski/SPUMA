@@ -31,9 +31,6 @@ Description
     passivePositionParticleCloud but with autoMap and writing disabled.
     Only used for its objectRegistry to store lagrangian fields
 
-SourceFiles
-    unmappedPassivePositionParticleCloud.C
-
 \*---------------------------------------------------------------------------*/
 
 #ifndef Foam_unmappedPassivePositionParticleCloud_H
@@ -73,7 +70,7 @@ public:
         unmappedPassivePositionParticleCloud
         (
             const polyMesh& mesh,
-            const Foam::zero,
+            Foam::zero,
             const word& cloudName = cloud::defaultName
         )
         :

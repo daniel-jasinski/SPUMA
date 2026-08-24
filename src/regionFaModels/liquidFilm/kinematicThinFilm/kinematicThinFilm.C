@@ -43,6 +43,31 @@ namespace areaSurfaceFilmModels
 defineTypeNameAndDebug(kinematicThinFilm, 0);
 addToRunTimeSelectionTable(liquidFilmBase, kinematicThinFilm, dictionary);
 
+
+// * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
+
+Foam::tmp<Foam::faVectorMatrix> kinematicThinFilm::UEqn
+(
+    areaVectorField& U
+)
+{
+    const areaVectorField& ns = regionMesh().faceAreaNormals();
+    const areaVectorField gs(g_ - ns*(ns & g_));
+
+    return tmp<faVectorMatrix>
+    (
+        fam::ddt(h_, U)
+      + fam::div(phi2s_, U)
+      ==
+        gs*h_
+      + turbulence_->Su(U)
+      + faOptions()(h_, U, sqr(dimVelocity))
+      + forces_.correct(U)
+      + USp_
+    );
+}
+
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 kinematicThinFilm::kinematicThinFilm
@@ -76,27 +101,13 @@ void kinematicThinFilm::evolveRegion()
 {
     DebugInFunction << endl;
 
-    const areaVectorField& ns = regionMesh().faceAreaNormals();
-
-    const areaVectorField gs(g_ - ns*(ns & g_));
-
     phi2s_ = fac::interpolate(h_)*phif_;
 
     for (int oCorr=1; oCorr<=nOuterCorr_; ++oCorr)
     {
         pf_.storePrevIter();
 
-        faVectorMatrix UsEqn
-        (
-            fam::ddt(h_, Uf_)
-          + fam::div(phi2s_, Uf_)
-          ==
-            gs*h_
-          + turbulence_->Su(Uf_)
-          + faOptions()(h_, Uf_, sqr(dimVelocity))
-          + forces_.correct(Uf_)
-          + USp_
-        );
+        faVectorMatrix UsEqn(UEqn(Uf_));
 
         UsEqn.relax();
 

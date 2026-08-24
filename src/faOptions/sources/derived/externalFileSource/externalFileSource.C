@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -50,10 +50,11 @@ Foam::fa::externalFileSource::externalFileSource
     const word& sourceName,
     const word& modelType,
     const dictionary& dict,
-    const fvMesh& m
+    const fvMesh& m,
+    const word& defaultAreaName
 )
 :
-    fa::faceSetOption(sourceName, modelType, dict, m),
+    fa::faceSetOption(sourceName, modelType, dict, m, defaultAreaName),
     fieldName_(dict.get<word>("fieldName")),
     tableName_(dict.get<word>("tableName")),
     pExt_

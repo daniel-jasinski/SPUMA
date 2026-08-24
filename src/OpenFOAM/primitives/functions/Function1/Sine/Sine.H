@@ -214,6 +214,12 @@ public:
             return Sine<Type>::sinValue(t);
         }
 
+        //- Integrate between two (scalar) values
+        virtual Type integrate(const scalar x1, const scalar x2) const
+        {
+            return Sine<Type>::cosValue(x2) - Sine<Type>::cosValue(x1);
+        }
+
         //- Write in dictionary format
         virtual void writeData(Ostream& os) const;
 

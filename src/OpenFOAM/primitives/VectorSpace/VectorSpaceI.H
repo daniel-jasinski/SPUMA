@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -37,9 +37,9 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace(const Foam::zero)
+FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace(Foam::zero)
 {
-    VectorSpaceOps<Ncmpts,0>::eqOpS(*this, Zero, eqOp<Cmpt>());
+    VectorSpaceOps<Ncmpts>::fill_n(this->begin(), Cmpt(Foam::zero{}));
 }
 
 
@@ -49,7 +49,7 @@ FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
 {
-    VectorSpaceOps<Ncmpts,0>::eqOp(*this, vs, eqOp<Cmpt>());
+    VectorSpaceOps<Ncmpts>::copy_n(vs.cbegin(), this->begin());
 }
 
 
@@ -60,7 +60,7 @@ FOAM_DEVICE inline Foam::VectorSpace<Form, Cmpt, Ncmpts>::VectorSpace
     const VectorSpace<Form2, Cmpt2, Ncmpts>& vs
 )
 {
-    VectorSpaceOps<Ncmpts,0>::eqOp(*this, vs, eqOp<Cmpt>());
+    VectorSpaceOps<Ncmpts>::copy_n(vs.cbegin(), this->begin());
 }
 
 
@@ -163,10 +163,17 @@ FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::replace
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
+inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::fill(const Cmpt& s)
+{
+    VectorSpaceOps<Ncmpts>::fill_n(this->begin(), s);
+}
+
+
+template<class Form, class Cmpt, Foam::direction Ncmpts>
 inline Form Foam::VectorSpace<Form, Cmpt, Ncmpts>::uniform(const Cmpt& s)
 {
     Form v;
-    VectorSpaceOps<Ncmpts,0>::eqOpS(v, s, eqOp<Cmpt>());
+    v.fill(s);
     return v;
 }
 
@@ -178,68 +185,6 @@ inline const typename Foam::VectorSpace<Form, Cmpt, Ncmpts>::template
 Foam::VectorSpace<Form, Cmpt, Ncmpts>::block() const
 {
     return *this;
-}
-
-
-// * * * * * * * * * * * * * * * * Iterator  * * * * * * * * * * * * * * * * //
-
-template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Cmpt* Foam::VectorSpace<Form, Cmpt, Ncmpts>::data() noexcept
-{
-    return v_;
-}
-
-
-template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline const Cmpt* Foam::VectorSpace<Form, Cmpt, Ncmpts>::cdata() const noexcept
-{
-    return v_;
-}
-
-
-template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Cmpt* Foam::VectorSpace<Form, Cmpt, Ncmpts>::begin() noexcept
-{
-    return v_;
-}
-
-
-template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline Cmpt* Foam::VectorSpace<Form, Cmpt, Ncmpts>::end() noexcept
-{
-    return (v_ + Ncmpts);
-}
-
-
-template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline const Cmpt* Foam::VectorSpace<Form, Cmpt, Ncmpts>::cbegin()
-const noexcept
-{
-    return v_;
-}
-
-
-template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline const Cmpt* Foam::VectorSpace<Form, Cmpt, Ncmpts>::cend()
-const noexcept
-{
-    return (v_ + Ncmpts);
-}
-
-
-template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline const Cmpt* Foam::VectorSpace<Form, Cmpt, Ncmpts>::begin()
-const noexcept
-{
-    return v_;
-}
-
-
-template<class Form, class Cmpt, Foam::direction Ncmpts>
-inline const Cmpt* Foam::VectorSpace<Form, Cmpt, Ncmpts>::end()
-const noexcept
-{
-    return (v_ + Ncmpts);
 }
 
 
@@ -341,7 +286,18 @@ FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=
     const VectorSpace<Form, Cmpt, Ncmpts>& vs
 )
 {
-    VectorSpaceOps<Ncmpts,0>::eqOp(*this, vs, eqOp<Cmpt>());
+    VectorSpaceOps<Ncmpts>::copy_n(vs.cbegin(), this->begin());
+}
+
+
+template<class Form, class Cmpt, Foam::direction Ncmpts>
+template<class Form2, class Cmpt2>
+inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=
+(
+    const VectorSpace<Form2, Cmpt2, Ncmpts>& vs
+)
+{
+    VectorSpaceOps<Ncmpts>::copy_n(vs.cbegin(), this->begin());
 }
 
 
@@ -366,9 +322,9 @@ FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator-=
 
 
 template<class Form, class Cmpt, Foam::direction Ncmpts>
-FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=(const Foam::zero)
+FOAM_DEVICE inline void Foam::VectorSpace<Form, Cmpt, Ncmpts>::operator=(Foam::zero)
 {
-    VectorSpaceOps<Ncmpts,0>::eqOpS(*this, 0, eqOp<Cmpt>());
+    VectorSpaceOps<Ncmpts>::fill_n(this->begin(), Cmpt(Foam::zero{}));
 }
 
 

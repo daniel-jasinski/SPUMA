@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -37,6 +37,11 @@ Note
 
 SeeAlso
     Foam::treeBoundBox
+
+SourceFiles
+    boundBoxI.H
+    boundBox.cxx
+    boundBox.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -164,7 +169,7 @@ public:
         inline explicit boundBox(const point& p);
 
         //- Construct a 0/1 unit bounding box
-        inline explicit boundBox(const Foam::zero_one);
+        inline explicit boundBox(Foam::zero_one);
 
         //- Construct from bound box min/max points
         inline boundBox(const point& min, const point& max);
@@ -295,7 +300,7 @@ public:
             inline void reset();
 
             //- Reset to a 0/1 unit bounding box
-            inline void reset(const Foam::zero_one);
+            inline void reset(Foam::zero_one);
 
             //- Reset min/max to be identical to the specified point
             inline void reset(const point& pt);
@@ -370,11 +375,21 @@ public:
 
         // Parallel
 
-            //- Inplace parallel reduction of min/max values
+            //- Inplace parallel reduction of min/max values,
+            //- using UPstream::worldComm
             void reduce();
 
-            //- Perform a reduction on a copy and return the result
+            //- Inplace parallel reduction of min/max values,
+            //- using the specified communicator
+            void reduce(int communicator);
+
+            //- Perform a reduction on a copy and return the result,
+            //- using UPstream::worldComm
             static boundBox returnReduce(const boundBox& bb);
+
+            //- Perform a reduction on a copy and return the result,
+            //- using the specified communicator
+            static boundBox returnReduce(const boundBox& bb, int communicator);
 
 
         // Query
@@ -553,7 +568,7 @@ inline bool operator>=(const boundBox& a, const boundBox& b)
 #include "boundBoxI.H"
 
 #ifdef NoRepository
-    #include "boundBoxTemplates.C"
+    #include "boundBox.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

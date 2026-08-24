@@ -63,7 +63,7 @@ void Foam::advancingFrontAMI::checkPatches() const
     }
 
 
-    if (requireMatch_)
+    if (requireMatch_ && comm() != -1)
     {
         const scalar maxBoundsError = 0.05;
 
@@ -74,14 +74,14 @@ void Foam::advancingFrontAMI::checkPatches() const
             bbSrc.min(),
             minOp<point>(),
             UPstream::msgType(),
-            comm_
+            comm()
         );
         Foam::reduce
         (
             bbSrc.max(),
             maxOp<point>(),
             UPstream::msgType(),
-            comm_
+            comm()
         );
         boundBox bbTgt(tgt.points(), tgt.meshPoints(), false);
         Foam::reduce
@@ -89,14 +89,14 @@ void Foam::advancingFrontAMI::checkPatches() const
             bbTgt.min(),
             minOp<point>(),
             UPstream::msgType(),
-            comm_
+            comm()
         );
         Foam::reduce
         (
             bbTgt.max(),
             maxOp<point>(),
             UPstream::msgType(),
-            comm_
+            comm()
         );
 
         boundBox bbTgtInf(bbTgt);
@@ -178,7 +178,7 @@ void Foam::advancingFrontAMI::createExtendedTgtPatch()
 
     // Original faces from tgtPatch
     // Note: in globalIndexing since might be remote
-    globalIndex globalTgtFaces(tgtPatch0().size(), comm_);
+    globalIndex globalTgtFaces(tgtPatch0().size(), comm());
     distributeAndMergePatches
     (
         map,
@@ -364,7 +364,7 @@ void Foam::advancingFrontAMI::appendNbrFaces
 (
     const label facei,
     const primitivePatch& patch,
-    const DynamicList<label>& visitedFaces,
+    const labelUList& visitedFaces,
     DynamicList<label>& faceIDs
 ) const
 {
@@ -465,7 +465,7 @@ void Foam::advancingFrontAMI::triangulatePatch
 
 void Foam::advancingFrontAMI::nonConformalCorrection()
 {
-    if (!requireMatch_ && distributed())
+    if (!requireMatch_ && distributed() && comm() != -1)
     {
         scalarList newTgtMagSf(std::move(tgtMagSf_));
 
@@ -500,7 +500,7 @@ Foam::advancingFrontAMI::advancingFrontAMI
     extendedTgtPatchPtr_(nullptr),
     extendedTgtFaces_(),
     extendedTgtPoints_(),
-    extendedTgtFaceIDs_(),
+    extendedTgtFaceIDs_(poolSwitch(1)),
     extendedTgtMapPtr_(nullptr),
     srcNonOverlap_(),
     triMode_
@@ -548,7 +548,7 @@ Foam::advancingFrontAMI::advancingFrontAMI
     extendedTgtPatchPtr_(nullptr),
     extendedTgtFaces_(),
     extendedTgtPoints_(),
-    extendedTgtFaceIDs_(),
+    extendedTgtFaceIDs_(poolSwitch(1)),
     extendedTgtMapPtr_(nullptr),
     srcNonOverlap_(),
     triMode_(triMode),
@@ -566,7 +566,7 @@ Foam::advancingFrontAMI::advancingFrontAMI(const advancingFrontAMI& ami)
     extendedTgtPatchPtr_(nullptr),
     extendedTgtFaces_(),
     extendedTgtPoints_(),
-    extendedTgtFaceIDs_(),
+    extendedTgtFaceIDs_(poolSwitch(ami.extendedTgtFaceIDs_.usePool())),
     extendedTgtMapPtr_(nullptr),
     srcNonOverlap_(),
     triMode_(ami.triMode_),
@@ -587,7 +587,7 @@ bool Foam::advancingFrontAMI::calculate
     {
         // Create a representation of the target patch that covers the source
         // patch
-        if (distributed())
+        if (distributed() && comm() != -1)
         {
             createExtendedTgtPatch();
         }

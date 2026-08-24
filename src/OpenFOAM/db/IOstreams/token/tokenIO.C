@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -57,16 +57,20 @@ static OS& printTokenInfo(OS& os, const token& tok)
             os  << "punctuation '" << tok.pToken() << '\'';
         break;
 
-        // case token::tokenType::INT32:
-        //     os  << "int32 " << tok.int32Token();
-        // break;
-        //
-        // case token::tokenType::INT64:
-        //     os  << "int64 " << tok.int64Token();
-        // break;
+        case token::tokenType::INTEGER_32:
+            os  << "int32 " << tok.int32Token();
+        break;
 
-        case token::tokenType::LABEL:
-            os  << "label " << tok.labelToken();
+        case token::tokenType::INTEGER_64:
+            os  << "int64 " << tok.int64Token();
+        break;
+
+        case token::tokenType::UNSIGNED_INTEGER_32:
+            os  << "uint32 " << tok.uint32Token();
+        break;
+
+        case token::tokenType::UNSIGNED_INTEGER_64:
+            os  << "uint64 " << tok.uint64Token();
         break;
 
         case token::tokenType::FLOAT:
@@ -144,6 +148,19 @@ Foam::token::token(Istream& is)
 }
 
 
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+bool Foam::token::read(Istream& is)
+{
+    reset();
+    if (is.good())
+    {
+        is.read(*this);
+    }
+    return good();
+}
+
+
 // * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
 
 Foam::word Foam::token::name(const token::tokenType tokType)
@@ -155,9 +172,10 @@ Foam::word Foam::token::name(const token::tokenType tokType)
         case token::tokenType::FLAG: return "flag";
         case token::tokenType::PUNCTUATION: return "punctuation";
 
-        // case token::tokenType::INT32: return "int32";
-        // case token::tokenType::INT64: return "int64";
-        case token::tokenType::LABEL: return "label";
+        case token::tokenType::INTEGER_32: return "int32";
+        case token::tokenType::INTEGER_64: return "int64";
+        case token::tokenType::UNSIGNED_INTEGER_32: return "uint32";
+        case token::tokenType::UNSIGNED_INTEGER_64: return "uint64";
         case token::tokenType::FLOAT: return "float";
         case token::tokenType::DOUBLE: return "double";
         case token::tokenType::WORD: return "word";
@@ -206,8 +224,23 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const token& tok)
         break;
 
         case token::tokenType::BOOL:
-        case token::tokenType::LABEL:
-            os << tok.data_.labelVal;
+            os << tok.data_.flagVal;  // An int value
+            break;
+
+        case token::tokenType::INTEGER_32:
+            os << tok.data_.int32Val;
+        break;
+
+        case token::tokenType::INTEGER_64:
+            os << tok.data_.int64Val;
+        break;
+
+        case token::tokenType::UNSIGNED_INTEGER_32:
+            os << tok.data_.uint32Val;
+        break;
+
+        case token::tokenType::UNSIGNED_INTEGER_64:
+            os << tok.data_.uint64Val;
         break;
 
         case token::tokenType::FLOAT:

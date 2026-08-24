@@ -37,8 +37,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_runTimeControls_minMaxCondition_H
-#define functionObjects_runTimeControls_minMaxCondition_H
+#ifndef Foam_functionObjects_runTimeControls_minMaxCondition_H
+#define Foam_functionObjects_runTimeControls_minMaxCondition_H
 
 #include "runTimeCondition.H"
 #include "Enum.H"

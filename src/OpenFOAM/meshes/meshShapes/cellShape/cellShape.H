@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2020-2022 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -195,6 +195,14 @@ public:
         //- Scalar magnitude
         inline scalar mag(const UList<point>& points) const;
 
+        //- Return the smallest vertex label used by the shape
+        //- or -1 if the shape is empty.
+        inline label min() const;
+
+        //- Return the largest vertex label used by the shape
+        //- or -1 if the shape is empty.
+        inline label max() const;
+
         //- Reset from components
         inline void reset
         (
@@ -218,6 +226,22 @@ public:
         //- Return info proxy,
         //- used to print information to a stream
         InfoProxy<cellShape> info() const noexcept { return *this; }
+
+
+    // Comparison
+
+        //- Compare cellShape vertices
+        //  \return
+        //  -  0: different
+        //  - +1: identical values and order used
+        //  - -1: identical values, but in different order
+        static int compare(const cellShape& a, const cellShape& b);
+
+
+    // Member Operators
+
+        //- Increment (offset) vertices by given amount
+        inline void operator+=(const label vertexOffset);
 
 
     // Friend Operators

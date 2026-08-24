@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -42,14 +42,14 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-#include "cyclicPolyPatch.H"
-#include "syncTools.H"
 #include "argList.H"
 #include "Time.H"
 #include "OFstream.H"
 #include "meshTools.H"
 #include "faceSet.H"
 #include "IOPtrList.H"
+#include "cyclicPolyPatch.H"
+#include "syncTools.H"
 #include "polyTopoChange.H"
 #include "polyModifyFace.H"
 #include "polyAddFace.H"
@@ -942,6 +942,9 @@ int main(int argc, char *argv[])
     }
 
 
+    // Maintain list of added patches so we exclude them from filtering
+    // later on
+    List<DynamicList<word>> allAddedPatches(meshes.size());
 
     // Loop over all regions
 
@@ -1036,6 +1039,7 @@ int main(int argc, char *argv[])
                                 fvPatchFieldBase::calculatedType(),
                                 true
                             );
+                            allAddedPatches[meshi].append(ppPtr->name());
                         }
                     }
                 }
@@ -1087,6 +1091,7 @@ int main(int argc, char *argv[])
                                 fvPatchFieldBase::calculatedType(),
                                 true
                             );
+                            allAddedPatches[meshi].append(ppPtr->name());
                         }
                     }
                 }
@@ -1116,6 +1121,7 @@ int main(int argc, char *argv[])
                         fvPatchFieldBase::calculatedType(),
                         true
                     );
+                    allAddedPatches[meshi].append(ppPtr->name());
                 }
             }
         }
@@ -1453,7 +1459,7 @@ int main(int argc, char *argv[])
         Info<< "Removing patches with no faces in them." << nl << endl;
         const wordList oldPatchNames(mesh.boundaryMesh().names());
         const wordList oldPatchTypes(mesh.boundaryMesh().types());
-        fvMeshTools::removeEmptyPatches(mesh, true);
+        fvMeshTools::removeEmptyPatches(mesh, allAddedPatches[meshi], true);
         forAll(oldPatchNames, patchi)
         {
             const word& pName = oldPatchNames[patchi];
@@ -1476,14 +1482,11 @@ int main(int argc, char *argv[])
     {
         ++runTime;
     }
-    else
-    {
-        forAll(meshes, meshi)
-        {
-            fvMesh& mesh = meshes[meshi];
 
-            mesh.setInstance(oldInstances[meshi]);
-        }
+    forAll(meshes, meshi)
+    {
+        fvMesh& mesh = meshes[meshi];
+        mesh.setInstance(overwrite ? oldInstances[meshi] : runTime.timeName());
     }
 
     // More precision (for points data)
@@ -1493,6 +1496,21 @@ int main(int argc, char *argv[])
     forAll(meshes, meshi)
     {
         fvMesh& mesh = meshes[meshi];
+
+        // Override bcs with explicitly provided info. Done late so there
+        // are already patch faces
+        forAll(patchInfoDicts[meshi], sourcei)
+        {
+            const dictionary& patchDict = patchInfoDicts[meshi][sourcei];
+            const word& patchName = patchNames[meshi][sourcei];
+            const label patchID = mesh.boundary().findPatchID(patchName);
+            if (patchID != -1 && patchDict.found("patchFields"))
+            {
+                const dictionary& pfd = patchDict.subDict("patchFields");
+                fvMeshTools::setPatchFields(mesh, patchID, pfd);
+            }
+        }
+
         Info<< "\n\nWriting repatched mesh " << mesh.name()
             << " to " << runTime.timeName() << nl << endl;
         mesh.clearOut();    // remove meshPhi

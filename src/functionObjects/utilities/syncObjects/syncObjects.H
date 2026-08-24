@@ -38,40 +38,46 @@ Description
     boundary conditions.
 
 Usage
-    Example of function object specification:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    syncObjects1
+    syncObjectsFO
     {
-        type        syncObjects;
-        libs        ("libutilityFunctionObjects.so");
+        // Mandatory entries
+        type            syncObjects;
+        libs            (utilityFunctionObjects);
         ...
 
+        // Optional entries
         // Where is data located relative to runTime. Given as a filename
         // with every '/' indicating a sub-objectRegistry w.r.t. runTime.
         // Local data is under <root>/send/processorXXX. After execution
         // (potentially remote) data will be under the corresponding
         // <root>/receive/processorYYY objectRegistry.
-        //root        "level0/level1/level2";
+        root            <fileName>;  // "level0/level1/level2";
+
+        // Inherited entries
+        ...
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property     | Description             | Required     | Default value
-        type         | type name: syncObjects  | yes          |
-        root         | relative location of data  | no          | ""
+      Property     | Description                          | Type | Reqd | Deflt
+      type         | Type name: syncObjects               | word | yes  | -
+      libs         | Library name: utilityFunctionObjects | word | yes  | -
+      root         | Relative location of data            | fileName | no   | -
     \endtable
 
-See also
-    Foam::functionObject
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
 
 SourceFiles
     syncObjects.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_syncObjects_H
-#define functionObjects_syncObjects_H
+#ifndef Foam_functionObjects_syncObjects_H
+#define Foam_functionObjects_syncObjects_H
 
 #include "token.H"
 #include "functionObject.H"
@@ -98,7 +104,7 @@ class syncObjects
 {
 private:
 
-    // Private data
+    // Private Data
 
         //- Top-level registry
         const objectRegistry& obr_;
@@ -130,7 +136,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         syncObjects
         (
             const word& name,
@@ -155,13 +161,13 @@ public:
             return root_;
         }
 
-        //- Read the syncObjects data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Do nothing
+        //- Execute the function-object operations (no-op)
         virtual bool execute();
 
-        //- Write the registered objects
+        //- Write the function-object results
         virtual bool write();
 };
 

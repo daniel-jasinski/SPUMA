@@ -37,10 +37,13 @@ Description
     Operands:
     \table
       Operand        | Type                | Location
-      input          | vol\<Type\>Field(s) | \<time\>/\<inpField\>
+      input          | vol<Type>Field(s)   | <time>/inputFields
       output file    | -                   | -
-      output field   | volScalarField      | \<time\>/\<outField\>
+      output field   | volScalarField      | <time>/outputField
     \endtable
+
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
     References:
     \verbatim
@@ -60,7 +63,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    resolutionIndex1
+    resolutionIndexFO
     {
         // Mandatory entries
         type            resolutionIndex;
@@ -99,10 +102,10 @@ Usage
       - \link functionObject.H \endlink
 
 Note
-  - The \c resolutionIndex throws runtime error
-    when the turbulence model is RANS based.
-  - Resolution-estimator models strictly assume that
-    the flow is in a fully turbulent regime.
+  - The \c resolutionIndex throws runtime error when the turbulence model is
+  RANS based.
+  - Resolution-estimator models strictly assume that the flow is in a fully
+  turbulent regime.
 
 SourceFiles
     resolutionIndex.C
@@ -147,7 +150,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         resolutionIndex
         (
             const word& name,
@@ -168,13 +171,13 @@ public:
 
     // Member Functions
 
-        //- Read the resolutionIndex data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the result field
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the result field
+        //- Write the function-object results
         virtual bool write();
 };
 

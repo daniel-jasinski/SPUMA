@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -95,12 +95,12 @@ Foam::labelList Foam::fvBoundaryMesh::indices
 
 Foam::labelList Foam::fvBoundaryMesh::indices
 (
-    const wordRes& select,
-    const wordRes& ignore,
+    const wordRes& allow,
+    const wordRes& deny,
     const bool useGroups
 ) const
 {
-    return mesh().boundaryMesh().indices(select, ignore, useGroups);
+    return mesh().boundaryMesh().indices(allow, deny, useGroups);
 }
 
 
@@ -111,6 +111,21 @@ Foam::label Foam::fvBoundaryMesh::findPatchID(const word& patchName) const
         return -1;
     }
     return PtrListOps::firstMatching(*this, patchName);
+}
+
+
+const Foam::fvPatch*
+Foam::fvBoundaryMesh::cfindPatch(const word& patchName) const
+{
+    const fvPatchList& patches = *this;
+
+    if (!patchName.empty())
+    {
+        // Note: get() handles out-of-range access properly
+        return patches.get(PtrListOps::firstMatching(patches, patchName));
+    }
+
+    return nullptr;
 }
 
 
@@ -140,6 +155,22 @@ Foam::fvBoundaryMesh::faceCells() const
     forAll(list, patchi)
     {
         list.set(patchi, &patches[patchi].faceCells());
+    }
+
+    return list;
+}
+
+
+Foam::List<const Foam::label*>
+Foam::fvBoundaryMesh::faceCellsBegins() const
+{
+    const fvPatchList& patches = *this;
+
+    List<const label*> list(patches.size(), poolSwitch(1));
+
+    forAll(list, patchi)
+    {
+        list[patchi] = patches[patchi].faceCells().cbegin();
     }
 
     return list;

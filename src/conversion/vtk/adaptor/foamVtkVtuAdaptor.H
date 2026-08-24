@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2020 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -39,7 +39,7 @@ Note
 
 SourceFiles
     foamVtkVtuAdaptorI.H
-    foamVtkVtuAdaptorTemplates.C
+    foamVtkVtuAdaptor.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -60,6 +60,7 @@ SourceFiles
 // Forward Declarations
 class vtkDataSet;
 class vtkFloatArray;
+class vtkDoubleArray;
 
 namespace Foam
 {
@@ -82,17 +83,23 @@ public:
 
     // Mesh Conversion
 
+        //- Allocate vtkPoints
+        inline vtkSmartPointer<vtkPoints> NewPoints
+        (
+            vtkIdType count
+        ) const;
+
         //- The vtk points for the mesh (and decomposition)
         inline vtkSmartPointer<vtkPoints> points
         (
-            const fvMesh& mesh
+            const polyMesh& mesh
         ) const;
 
         //- The vtk points for the mesh (and decomposition)
         //- using the provided pointMap
         inline vtkSmartPointer<vtkPoints> points
         (
-            const fvMesh& mesh,
+            const polyMesh& mesh,
             const labelUList& pointMap
         ) const;
 
@@ -101,6 +108,7 @@ public:
         inline vtkSmartPointer<vtkUnstructuredGrid> internal
         (
             const fvMesh& mesh,
+            //! Request polyhedral decomposition
             const bool decompPoly = false
         );
 
@@ -108,35 +116,16 @@ public:
     // Field Conversion
 
         //- Convert internal volume field (CellData)
-        template<class Type>
-        static vtkSmartPointer<vtkFloatArray>
-        convertField
-        (
-            const DimensionedField<Type, volMesh>& fld,
-            const vtuAdaptor& vtuData
-        );
-
-        //- Convert internal volume field (CellData)
-        template<class Type>
-        static vtkSmartPointer<vtkFloatArray>
-        convertField
-        (
-            const GeometricField<Type, fvPatchField, volMesh>& fld,
-            const vtuAdaptor& vtuData
-        );
-
-
-        //- Convert internal volume field (CellData)
-        template<class Type>
-        vtkSmartPointer<vtkFloatArray>
+        template<class Type, class DataArrayType = vtkFloatArray>
+        vtkSmartPointer<DataArrayType>
         convertField
         (
             const DimensionedField<Type, volMesh>& fld
         ) const;
 
         //- Convert internal volume field (CellData)
-        template<class Type>
-        vtkSmartPointer<vtkFloatArray>
+        template<class Type, class DataArrayType = vtkFloatArray>
+        vtkSmartPointer<DataArrayType>
         convertField
         (
             const GeometricField<Type, fvPatchField, volMesh>& fld
@@ -156,7 +145,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "foamVtkVtuAdaptorTemplates.C"
+    #include "foamVtkVtuAdaptor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

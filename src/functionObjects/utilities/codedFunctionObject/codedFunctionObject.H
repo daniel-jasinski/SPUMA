@@ -33,30 +33,17 @@ Group
 Description
     Provides a general interface to enable dynamic code compilation.
 
-    The entries are:
-    \plaintable
-       codeInclude | include files
-       codeOptions | compiler line: added to EXE_INC (Make/options)
-       codeLibs    | linker line: added to LIB_LIBS (Make/options)
-       codeData    | c++; local member data (default constructed)
-       localCode   | c++; local static functions
-       codeRead    | c++; upon functionObject::read()
-       codeExecute | c++; upon functionObject::execute()
-       codeWrite   | c++; upon functionObject::write()
-       codeEnd     | c++; upon functionObject::end()
-       codeContext | additional dictionary context for the code
-    \endplaintable
-
 Usage
-    Example of function object specification:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
     difference
     {
-        type coded;
-        libs (utilityFunctionObjects);
+        // Mandatory entries
+        type                coded;
+        libs                (utilityFunctionObjects);
 
         // Name of on-the-fly generated functionObject
-        name writeMagU;
+        name                <word>;  // writeMagU;
         codeWrite
         #{
             // Lookup U
@@ -65,24 +52,45 @@ Usage
             // Write
             mag(U)().write();
         #};
+        ...
+
+        // Inherited entries
+        ...
     }
     \endverbatim
 
+    where the entries mean:
+    \table
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: coded                   | word | yes  | -
+      libs     | Library name: utilityFunctionObjects | word | yes | -
+      name     | Name of the function object        | word | yes  | -
+      codeInclude | include files                   | word | no | -
+      codeOptions | compiler line: added to EXE_INC (Make/options) | word | no | -
+      codeLibs    | linker line: added to LIB_LIBS (Make/options) | word | no | -
+      codeData    | c++; local member data (default constructed) | word | no | -
+      localCode   | c++; local static functions | word | no | -
+      codeRead    | c++; upon functionObject::read() | word | no | -
+      codeExecute | c++; upon functionObject::execute() | word | no | -
+      codeWrite   | c++; upon functionObject::write() | word | no | -
+      codeEnd     | c++; upon functionObject::end() | word | no | -
+      codeContext | additional dictionary context for the code | word | no | -
+    \endtable
+
+    The inherited entries are elaborated in:
+      - \link timeFunctionObject.H \endlink
+      - \link codedBase.H \endlink
 Note
     The code context dictionary can be supplied separately as the
     \c codeContext entry.
-
-See also
-    Foam::functionObject
-    Foam::codedBase
 
 SourceFiles
     codedFunctionObject.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_codedFunctionObject_H
-#define functionObjects_codedFunctionObject_H
+#ifndef Foam_functionObjects_codedFunctionObject_H
+#define Foam_functionObjects_codedFunctionObject_H
 
 #include "timeFunctionObject.H"
 #include "codedBase.H"
@@ -169,7 +177,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         codedFunctionObject
         (
             const word& name,

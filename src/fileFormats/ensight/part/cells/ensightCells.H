@@ -116,7 +116,7 @@ private:
         void classifyImpl(const polyMesh& mesh, const Addressing& cellIds);
 
 
-        label meshPointMapppings
+        label meshPointMappings
         (
             const polyMesh& mesh,
             labelList& pointToGlobal,  // Can also be labelList::null()

@@ -39,7 +39,7 @@ namespace Foam
     typedef IOList<edge> edgeIOList;
 
     //! Compact IO for a List of edge
-    typedef CompactIOList<edge, label> edgeCompactIOList;
+    typedef CompactIOList<edge> edgeCompactIOList;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

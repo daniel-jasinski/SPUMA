@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -58,6 +58,23 @@ inline Foam::PtrList<T>::PtrList(PtrList<T>&& list) noexcept
 :
     UPtrList<T>(std::move(list))
 {}
+
+
+template<class T>
+inline Foam::PtrList<T>::PtrList(PtrList<T>& list, bool reuse)
+:
+    UPtrList<T>()
+{
+    if (reuse)
+    {
+        transfer(list);
+    }
+    else
+    {
+        // No check for self-assignment
+        copyPtrList<false>(list);
+    }
+}
 
 
 template<class T>
@@ -278,7 +295,7 @@ inline Foam::autoPtr<T> Foam::PtrList<T>::release(const label i)
 template<class T>
 inline void Foam::PtrList<T>::transfer(PtrList<T>& list)
 {
-    if (this == &list)
+    if (FOAM_UNLIKELY(this == &list))
     {
         return;  // Self-assignment is a no-op
     }
@@ -289,6 +306,22 @@ inline void Foam::PtrList<T>::transfer(PtrList<T>& list)
 
 
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
+
+template<class T>
+inline void Foam::PtrList<T>::operator=(const UPtrList<T>& list)
+{
+    // With check for self-assignment
+    this->copyPtrList<true>(list);
+}
+
+
+template<class T>
+inline void Foam::PtrList<T>::operator=(const PtrList<T>& list)
+{
+    // With check for self-assignment
+    this->copyPtrList<true>(list);
+}
+
 
 template<class T>
 inline void Foam::PtrList<T>::operator=(PtrList<T>&& list)

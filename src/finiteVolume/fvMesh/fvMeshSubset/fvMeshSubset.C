@@ -404,19 +404,13 @@ void Foam::fvMeshSubset::subsetZones()
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::fvMeshSubset::fvMeshSubset(const fvMesh& baseMesh)
+Foam::fvMeshSubset::fvMeshSubset(const fvMesh& baseMesh) noexcept
 :
-    baseMesh_(baseMesh),
-    subMeshPtr_(nullptr),
-    faceFlipMapPtr_(nullptr),
-    pointMap_(),
-    faceMap_(),
-    cellMap_(),
-    patchMap_()
+    baseMesh_(baseMesh)
 {}
 
 
-Foam::fvMeshSubset::fvMeshSubset(const fvMesh& baseMesh, const Foam::zero)
+Foam::fvMeshSubset::fvMeshSubset(const fvMesh& baseMesh, Foam::zero)
 :
     fvMeshSubset(baseMesh)
 {
@@ -526,14 +520,14 @@ void Foam::fvMeshSubset::reset
 }
 
 
-void Foam::fvMeshSubset::reset(const Foam::zero)
+void Foam::fvMeshSubset::reset(Foam::zero)
 {
     // Was old pointMesh present?
     const auto* basePointMeshPtr =
             baseMesh_.thisDb().cfindObject<pointMesh>(pointMesh::typeName);
     if (basePointMeshPtr)
     {
-        DebugPout<< "fvMeshSubset::reset(const Foam::zero) :"
+        DebugPout<< "fvMeshSubset::reset(Foam::zero) :"
                 << " Detected pointMesh" << endl;
     }
 
@@ -1108,7 +1102,7 @@ void Foam::fvMeshSubset::reset
         // Get patch sizes (up to nextPatchID).
         // Note that up to nextPatchID the globalPatchMap is an identity so
         // no need to index through that.
-        Pstream::listCombineReduce(globalPatchSizes, plusEqOp<label>());
+        Pstream::listReduce(globalPatchSizes, sumOp<label>());
 
         // Now all processors have all the patchnames.
         // Decide: if all processors have the same patch names and size is zero

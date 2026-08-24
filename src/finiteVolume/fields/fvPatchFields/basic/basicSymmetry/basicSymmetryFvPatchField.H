@@ -119,8 +119,11 @@ public:
 
     // Member Functions
 
-        //- Return gradient at boundary
+        //- Retrieve patch-normal gradient at boundary
         virtual tmp<Field<Type>> snGrad() const;
+
+        //- Retrieve patch-normal gradient at boundary
+        virtual void snGrad(UList<Type>& result) const;
 
         //- Evaluate the patch field
         virtual void evaluate
@@ -137,18 +140,6 @@ public:
         //- Inherit assignment operators
         using transformFvPatchField<Type>::operator=;
 };
-
-
-// * * * * * * * * * * * Template Specialisations  * * * * * * * * * * * * * //
-
-template<>
-tmp<scalarField> basicSymmetryFvPatchField<scalar>::snGrad() const;
-
-template<>
-void basicSymmetryFvPatchField<scalar>::evaluate
-(
-    const Pstream::commsTypes commsType
-);
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

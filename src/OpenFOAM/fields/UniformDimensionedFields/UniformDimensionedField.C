@@ -100,7 +100,9 @@ Foam::UniformDimensionedField<Type>::UniformDimensionedField
 )
 :
     regIOobject(io),
-    dimensioned<Type>(regIOobject::name(), dimensionSet(), Zero)
+    // dimensionSet() instead of dimless: avoids cross-DLL data access to
+    // the global dimless object on Windows
+    dimensioned<Type>(regIOobject::name(), dimensionSet(), Foam::zero{})
 {
     // For if MUST_READ_IF_MODIFIED
     addWatch();

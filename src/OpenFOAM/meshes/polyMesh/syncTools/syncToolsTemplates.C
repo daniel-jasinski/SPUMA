@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -1057,7 +1057,7 @@ void Foam::syncTools::syncBoundaryFaceList
 
         if
         (
-            is_contiguous<T>::value
+            is_contiguous_v<T>
          && UPstream::defaultCommsType == UPstream::commsTypes::nonBlocking
         )
         {
@@ -1086,8 +1086,7 @@ void Foam::syncTools::syncBoundaryFaceList
                     (
                         UPstream::commsTypes::nonBlocking,
                         procPatch.neighbProcNo(),
-                        fld.data_bytes(),
-                        fld.size_bytes()
+                        fld
                     );
                 }
             }
@@ -1112,8 +1111,7 @@ void Foam::syncTools::syncBoundaryFaceList
                     (
                         UPstream::commsTypes::nonBlocking,
                         procPatch.neighbProcNo(),
-                        fld.cdata_bytes(),
-                        fld.size_bytes()
+                        fld
                     );
                 }
             }
@@ -1136,8 +1134,8 @@ void Foam::syncTools::syncBoundaryFaceList
                         pp.size(),
                         pp.start()-boundaryOffset
                     );
-                    const List<T>& fakeList = recvFld;
-                    top(procPatch, const_cast<List<T>&>(fakeList));
+
+                    top(procPatch, recvFld);
 
                     SubList<T> patchValues
                     (

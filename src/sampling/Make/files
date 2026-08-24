@@ -1,3 +1,6 @@
+probes/probeModels/probeModel.C
+probes/probeModels/internalField/internalFieldProbe.C
+probes/probeModels/patchField/patchFieldProbe.C
 probes/probes.C
 probes/patchProbes.C
 

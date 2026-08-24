@@ -147,6 +147,12 @@ public:
         static constexpr direction nComponents = 1;
 
 
+    // Limits
+
+        static constexpr uint32_t min_ = 0;
+        static constexpr uint32_t max_ = UINT32_MAX;
+
+
     // Static Data Members
 
         FOAM_EXPORT_DATA static const char* const typeName;
@@ -167,10 +173,7 @@ public:
     // Constructors
 
         //- Copy construct from primitive
-        explicit pTraits(uint32_t val) noexcept
-        :
-            p_(val)
-        {}
+        explicit pTraits(uint32_t val) noexcept : p_(val) {}
 
         //- Read construct from Istream
         explicit pTraits(Istream& is);

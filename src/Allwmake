@@ -20,6 +20,7 @@ echo Compile OpenFOAM libraries
 echo ========================================
 
 #------------------------------------------------------------------------------
+# Base libraries
 
 wmakeLnInclude -u OpenFOAM
 wmakeLnInclude -u OSspecific/"${WM_OSTYPE:-POSIX}"
@@ -56,9 +57,16 @@ esac
 
 wmake $targetType OpenFOAM
 
+# Frequently needed, even for minimal programs
 wmake $targetType fileFormats
 wmake $targetType surfMesh
 wmake $targetType meshTools
+
+# ========================================
+# Done OpenFOAM base libraries
+# ========================================
+
+#------------------------------------------------------------------------------
 
 wmake $targetType finiteArea
 wmake $targetType finiteVolume
@@ -95,6 +103,7 @@ wmake $targetType ODE
 
 thermophysicalModels/Allwmake $targetType $*
 TurbulenceModels/Allwmake $targetType $*
+ThermalTurbulenceModels/Allwmake $targetType $*
 wmake $targetType combustionModels
 
 wmakeLnInclude -u regionFaModels

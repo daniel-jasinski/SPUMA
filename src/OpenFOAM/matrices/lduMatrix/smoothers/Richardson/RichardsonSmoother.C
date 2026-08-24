@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
     Copyright (C) 2017-2019 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -115,6 +115,7 @@ void Foam::RichardsonSmoother::smooth_
     const label nSweeps
 ) const
 {
+    const bool useLowerCSR = controlDict_.getOrDefault<bool>("useLowerCSR", false);
 
     const label nCells = psi.size();
 
@@ -123,7 +124,7 @@ void Foam::RichardsonSmoother::smooth_
     for (label sweep=0; sweep<nSweeps; sweep++)
     {
         // --- Calculate A.psi
-        matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
+        matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
 
         preconditioner_().precondition(Apsi, source - Apsi);
 

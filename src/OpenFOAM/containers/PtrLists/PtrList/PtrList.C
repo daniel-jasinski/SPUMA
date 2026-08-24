@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2019 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,25 +29,54 @@ License
 #include "PtrList.H"
 #include "SLPtrList.H"
 
-// * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 template<class T>
-Foam::PtrList<T>::PtrList(PtrList<T>& list, bool reuse)
-:
-    UPtrList<T>(list, reuse)
+template<bool CheckSelf>
+void Foam::PtrList<T>::copyPtrList(const UPtrList<T>& list)
 {
-    if (!reuse)
+    // Check for self-assignment here instead of caller
+    if constexpr (CheckSelf)
     {
-        // This works like an inplace clone method
-        const label len = this->size();
-
-        for (label i=0; i<len; ++i)
+        if (FOAM_UNLIKELY(this == &list))
         {
-            this->ptrs_[i] = (list[i]).clone().ptr();
+            return;  // Self-assignment is a no-op
+        }
+    }
+
+    const label len = list.size();
+
+    // Truncate (frees old pointers) or extend the length
+    PtrList<T>::resize(len);
+
+    for (label i = 0; i < len; ++i)
+    {
+        const T* src = list.get(i);
+
+        if (src)
+        {
+            if (this->ptrs_[i])
+            {
+                // Deep copy values into existing destination
+                *(this->ptrs_[i]) = *src;
+            }
+            else
+            {
+                // Clone pointers for new entries
+                this->ptrs_[i] = src->clone().ptr();
+            }
+        }
+        else
+        {
+            // No source pointer, so remove destination (if any) too
+            delete this->ptrs_[i];
+            this->ptrs_[i] = nullptr;
         }
     }
 }
 
+
+// * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
 
 template<class T>
 Foam::PtrList<T>::PtrList(const SLPtrList<T>& list)
@@ -118,47 +147,6 @@ void Foam::PtrList<T>::resize(const label newLen)
 
         // Any new elements are initialized to nullptr.
         (this->ptrs_).resize(newLen);
-    }
-}
-
-
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-template<class T>
-void Foam::PtrList<T>::operator=(const PtrList<T>& list)
-{
-    if (this == &list)
-    {
-        return;  // Self-assignment is a no-op
-    }
-
-    const label oldLen = this->size();
-    const label newLen = list.size();
-
-    // Truncate (frees old pointers) or extend the length
-    resize(newLen);
-
-    if (newLen < oldLen)
-    {
-        // Copy values for existing entries
-        for (label i=0; i<newLen; ++i)
-        {
-            (*this)[i] = list[i];
-        }
-    }
-    else
-    {
-        // Copy values for existing entries
-        for (label i=0; i<oldLen; ++i)
-        {
-            (*this)[i] = list[i];
-        }
-
-        // Clone pointers for new entries
-        for (label i=oldLen; i<newLen; ++i)
-        {
-            this->ptrs_[i] = (list[i]).clone().ptr();
-        }
     }
 }
 

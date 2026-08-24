@@ -36,8 +36,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_runTimeConditions_minTimeStepCondition_H
-#define functionObjects_runTimeConditions_minTimeStepCondition_H
+#ifndef Foam_functionObjects_runTimeConditions_minTimeStepCondition_H
+#define Foam_functionObjects_runTimeConditions_minTimeStepCondition_H
 
 #include "runTimeCondition.H"
 

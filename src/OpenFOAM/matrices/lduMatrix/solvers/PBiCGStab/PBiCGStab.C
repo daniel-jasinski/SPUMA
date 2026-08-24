@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 OpenFOAM Foundation
     Copyright (C) 2019-2021 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -84,6 +84,8 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
         fieldName_
     );
 
+    const bool useLowerCSR = controlDict_.getOrDefault<bool>("useLowerCSR", false);
+
     const label nCells = psi.size();
 
     solveScalar* __restrict__ psiPtr = psi.begin();
@@ -97,7 +99,7 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
     foamExecutor exec;
 
     // --- Calculate A.psi
-    matrix_.Amul(yA, psi, interfaceBouCoeffs_, interfaces_, cmpt);
+    matrix_.Amul(yA, psi, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
 
     // --- Calculate initial residual field
     solveScalarField rA(source - yA);
@@ -206,7 +208,7 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
             preconPtr_->precondition(yA, pA, cmpt);
 
             // --- Calculate AyA
-            matrix_.Amul(AyA, yA, interfaceBouCoeffs_, interfaces_, cmpt);
+            matrix_.Amul(AyA, yA, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
 
             const solveScalar rA0AyA =
                 gSumProd(rA0, AyA, matrix().mesh().comm());
@@ -245,7 +247,7 @@ Foam::solverPerformance Foam::PBiCGStab::scalarSolve
             preconPtr_->precondition(zA, sA, cmpt);
 
             // --- Calculate tA
-            matrix_.Amul(tA, zA, interfaceBouCoeffs_, interfaces_, cmpt);
+            matrix_.Amul(tA, zA, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
 
             const solveScalar tAtA = gSumSqr(tA, matrix().mesh().comm());
 

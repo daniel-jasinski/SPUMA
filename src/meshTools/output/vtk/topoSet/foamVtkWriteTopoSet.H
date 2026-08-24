@@ -30,10 +30,10 @@ Description
     Write topoSet in VTK format
 
 SourceFiles
-    foamVtkWriteTopoSet.C
-    foamVtkWriteCellSetFaces.C
-    foamVtkWriteFaceSet.C
-    foamVtkWritePointSet.C
+    foamVtkWriteTopoSet.cxx
+    foamVtkWriteCellSetFaces.cxx
+    foamVtkWriteFaceSet.cxx
+    foamVtkWritePointSet.cxx
 
 \*---------------------------------------------------------------------------*/
 

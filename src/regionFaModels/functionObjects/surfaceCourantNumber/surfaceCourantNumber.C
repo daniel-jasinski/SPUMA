@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2024 OpenCFD Ltd.
+    Copyright (C) 2024-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,12 +26,11 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "surfaceCourantNumber.H"
-#include "fvMesh.H"
 #include "faMesh.H"
+#include "fvMesh.H"
 #include "areaFields.H"
 #include "edgeFields.H"
 #include "facEdgeIntegrate.H"
-#include "zeroGradientFaPatchFields.H"
 #include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -41,7 +40,12 @@ namespace Foam
 namespace functionObjects
 {
     defineTypeNameAndDebug(surfaceCourantNumber, 0);
-    addToRunTimeSelectionTable(functionObject, surfaceCourantNumber, dictionary);
+    addToRunTimeSelectionTable
+    (
+        functionObject,
+        surfaceCourantNumber,
+        dictionary
+    );
 }
 }
 
@@ -71,11 +75,12 @@ Foam::functionObjects::surfaceCourantNumber::surfaceCourantNumber
     const dictionary& dict
 )
 :
-    fvMeshFunctionObject(name, runTime, dict),
+    functionObjects::fvMeshFunctionObject(name, runTime, dict),
     writeFile(mesh_, name, typeName, dict),
     resultName_("surfaceCo"),
     phisName_("phis"),
-    rhoName_("rho")
+    rhoName_("rho"),
+    faMeshPtr_(nullptr)
 {
     read(dict);
 }
@@ -95,9 +100,9 @@ bool Foam::functionObjects::surfaceCourantNumber::read(const dictionary& dict)
     dict.readIfPresent("rho", rhoName_);
 
     // Registry containing all finite-area meshes on the polyMesh
-    const auto* faRegistryPtr = faMesh::registry(mesh_);
+    const auto* faRegistry = faMesh::registry(mesh_);
 
-    if (!faRegistryPtr)
+    if (!faRegistry)
     {
         FatalIOErrorInFunction(dict)
             << "No finite-area object registry is available."
@@ -105,28 +110,23 @@ bool Foam::functionObjects::surfaceCourantNumber::read(const dictionary& dict)
     }
 
     word areaName;
-
     if (!dict.readIfPresent("area", areaName))
     {
-        wordList available = faRegistryPtr->sortedNames<faMesh>();
+        wordList available = faRegistry->sortedNames<faMesh>();
         if (!available.empty())
         {
             areaName = available.front();
         }
     }
 
-    if (areaName.empty())
+    faMeshPtr_ = faRegistry->cfindObject<faMesh>(areaName);
+
+    if (!faMeshPtr_)
     {
         FatalIOErrorInFunction(dict)
-            << "No name for finite-area mesh is available."
+            << "No finite-area mesh available."
             << abort(FatalIOError);
     }
-
-    faMeshPtr_ = std::shared_ptr<const faMesh>
-    (
-        faRegistryPtr->cfindObject<faMesh>(areaName),
-        [](const faMesh*) { /* no-op deleter to avoid double deletion */ }
-    );
 
     return true;
 }
@@ -134,7 +134,9 @@ bool Foam::functionObjects::surfaceCourantNumber::read(const dictionary& dict)
 
 bool Foam::functionObjects::surfaceCourantNumber::execute()
 {
-    if (!faMeshPtr_->foundObject<edgeScalarField>(phisName_))
+    const auto* phiPtr = faMeshPtr_->cfindObject<edgeScalarField>(phisName_);
+
+    if (!phiPtr)
     {
         WarningInFunction
             << "No edge flux field is available. "
@@ -144,19 +146,20 @@ bool Foam::functionObjects::surfaceCourantNumber::execute()
         return false;
     }
 
-    const auto& phis = faMeshPtr_->lookupObject<edgeScalarField>(phisName_);
+    const auto& phi = *phiPtr;
 
     tmp<areaScalarField::Internal> tCo =
+    (
         (0.5*faMeshPtr_->time().deltaT())
-       *fac::edgeSum(mag(phis))()()
-       /faMeshPtr_->S();
+      * fac::edgeSum(Foam::mag(phi))().internalField()
+      / faMeshPtr_->S()
+    );
 
-    areaScalarField::Internal Co = tCo.ref();
-
-    if (Co.dimensions() == dimDensity)
+    if (tCo().dimensions() == dimDensity)
     {
-        Co /= faMeshPtr_->lookupObject<areaScalarField>(rhoName_);
+        tCo.ref() /= faMeshPtr_->lookupObject<areaScalarField>(rhoName_);
     }
+
 
     auto* resultPtr = faMeshPtr_->getObjectPtr<areaScalarField>(resultName_);
 
@@ -168,7 +171,7 @@ bool Foam::functionObjects::surfaceCourantNumber::execute()
             (
                 resultName_,
                 faMeshPtr_->time().timeName(),
-                *faMeshPtr_,
+               *faMeshPtr_,
                 IOobjectOption()
             ),
             *faMeshPtr_,
@@ -183,8 +186,8 @@ bool Foam::functionObjects::surfaceCourantNumber::execute()
     result.correctBoundaryConditions();
 
 
-    const scalarMinMax limits(gMinMax(result));
-    const scalar mean = gAverage(result);
+    const scalarMinMax limits = gMinMax(result.primitiveField());
+    const scalar mean = gAverage(result.primitiveField());
 
     Log << "Surface Courant number: "
         << "mean: " << mean

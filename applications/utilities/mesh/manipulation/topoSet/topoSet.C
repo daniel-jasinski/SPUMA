@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2018-2022 OpenCFD Ltd.
+    Copyright (C) 2018-2022,2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -201,6 +201,14 @@ polyMesh::readUpdateState meshReadUpdate(polyMesh& mesh)
 }
 
 
+// Lookup table to convert 'zone' types into their basic non-zone type
+static const HashTable<word> basicType
+({
+    std::pair("cellZoneSet", "cellSet"),
+    std::pair("faceZoneSet", "faceSet"),
+    std::pair("pointZoneSet", "pointSet"),
+});
+
 
 int main(int argc, char *argv[])
 {
@@ -345,23 +353,28 @@ int main(int argc, char *argv[])
                         dict.optionalSubDict("sourceInfo")
                     );
 
-                    // Backup current set.
-                    autoPtr<topoSet> oldSet
+                    // Construct 'set' type equivalent of 'zoneSet'. This is
+                    // done since we can ignore the flipMap of the
+                    // elements we want to remove so bypass all the zone
+                    // handling.
+                    const auto typeFnd(basicType.find(setType));
+                    autoPtr<topoSet> workSet
                     (
                         topoSet::New
                         (
-                            setType,
+                            (typeFnd ? typeFnd() : setType),
                             mesh,
                             currentSet().name() + "_old2",
-                            currentSet()
+                            0   // size
                         )
                     );
 
-                    currentSet().clear();
-                    source().applyToSet(topoSetSource::NEW, currentSet());
+                    source().applyToSet(topoSetSource::NEW, workSet());
 
-                    // Combine new value of currentSet with old one.
-                    currentSet().subset(oldSet());
+                   // Combine new value of currentSet with old one.
+                    currentSet().subset(workSet());
+
+
                     // Synchronize for coupled patches.
                     if (!noSync) currentSet().sync(mesh);
                     if (!currentSet().write())

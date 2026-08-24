@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022-2023 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -100,28 +100,30 @@ void Foam::lduCalculatedProcessorField<Type>::initInterfaceMatrixUpdate
     }
 
     // Bypass patchInternalField since uses fvPatch addressing
-    const labelList& fc = lduAddr.patchAddr(patchId);
+    const labelUList& fc = lduAddr.patchAddr(patchId);
 
-    scalarSendBuf_.resize_nocopy(fc.size());
-    foamExecutor exec;
-    auto sSendBufp = scalarSendBuf_.begin();
-    const auto psiInternalp = psiInternal.cbegin();
-    const auto fcp = fc.cbegin();
-    auto Lambda = [=](label i)
     {
-        sSendBufp[i] = psiInternalp[fcp[i]];
-    };
-    exec.parallelFor(Lambda, fc.size());
+        scalarSendBuf_.resize_nocopy(fc.size());
+        scalarRecvBuf_.resize_nocopy(fc.size());
+        foamExecutor exec;
+        auto sSendBufp = scalarSendBuf_.begin();
+        const auto psiInternalp = psiInternal.cbegin();
+        const auto fcp = fc.cbegin();
+        auto Lambda = [=](label i)
+        {
+            sSendBufp[i] = psiInternalp[fcp[i]];
+        };
+        exec.parallelFor(Lambda, fc.size());
 
-    scalarRecvBuf_.resize_nocopy(scalarSendBuf_.size());
+
+    }
 
     recvRequest_ = UPstream::nRequests();
     UIPstream::read
     (
         UPstream::commsTypes::nonBlocking,
         procInterface_.neighbProcNo(),
-        scalarRecvBuf_.data_bytes(),
-        scalarRecvBuf_.size_bytes(),
+        scalarRecvBuf_,
         procInterface_.tag(),
         procInterface_.comm()
     );
@@ -131,8 +133,7 @@ void Foam::lduCalculatedProcessorField<Type>::initInterfaceMatrixUpdate
     (
         UPstream::commsTypes::nonBlocking,
         procInterface_.neighbProcNo(),
-        scalarSendBuf_.cdata_bytes(),
-        scalarSendBuf_.size_bytes(),
+        scalarSendBuf_,
         procInterface_.tag(),
         procInterface_.comm()
     );

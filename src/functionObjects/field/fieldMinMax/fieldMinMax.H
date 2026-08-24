@@ -45,34 +45,32 @@ Description
     \table
       Operand        | Type | Location
       input          | -    | -
-      output file    | dat  | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
+      output file    | dat  | postProcessing/<FO>/<time>/file
       output field   | -    | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    fieldMinMax1
+    fieldMinMaxFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        fieldMinMax;
         libs        (fieldFunctionObjects);
+        mode        <word>;        // magnitude;
+        fields      (<wordList>);  // (<field1> <field2> ... <fieldN>);
 
-        // Mandatory entries (runtime modifiable)
-        mode        magnitude;
-        fields      (<field1> <field2> ... <fieldN>);
+        // Optional entries
+        location    <bool>;
 
-        // Optional entries (runtime modifiable)
-        location    true;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: fieldMinMax             | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       fields       | List of operand fields             | wordList | yes | -
@@ -81,16 +79,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::fieldMinMax
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 SourceFiles
     fieldMinMax.C
@@ -98,8 +88,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_fieldMinMax_H
-#define functionObjects_fieldMinMax_H
+#ifndef Foam_functionObjects_fieldMinMax_H
+#define Foam_functionObjects_fieldMinMax_H
 
 #include "Switch.H"
 #include "Enum.H"
@@ -129,6 +119,7 @@ public:
 
     // Public Enumerations
 
+        //- Options for the mode types
         enum modeType
         {
             mdMag,      //!< magnitude
@@ -200,7 +191,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         fieldMinMax
         (
             const word& name,
@@ -221,13 +212,13 @@ public:
 
     // Member Functions
 
-        //- Read the field min/max data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the fieldMinMax
+        //- Write the function-object results
         virtual bool write();
 };
 

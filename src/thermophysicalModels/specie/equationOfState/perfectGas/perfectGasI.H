@@ -73,63 +73,63 @@ inline Foam::autoPtr<Foam::perfectGas<Specie>> Foam::perfectGas<Specie>::New
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Specie>
-inline Foam::scalar Foam::perfectGas<Specie>::rho(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::perfectGas<Specie>::rho(scalar p, scalar T) const
 {
     return p/(this->R()*T);
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::perfectGas<Specie>::H(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::perfectGas<Specie>::H(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::perfectGas<Specie>::Cp(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::perfectGas<Specie>::Cp(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::perfectGas<Specie>::E(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::perfectGas<Specie>::E(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::perfectGas<Specie>::Cv(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::perfectGas<Specie>::Cv(scalar p, scalar T) const
 {
     return 0;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::perfectGas<Specie>::S(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::perfectGas<Specie>::S(scalar p, scalar T) const
 {
     return -this->R()*log(p/Pstd);
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::perfectGas<Specie>::psi(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::perfectGas<Specie>::psi(scalar p, scalar T) const
 {
     return 1.0/(this->R()*T);
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::perfectGas<Specie>::Z(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::perfectGas<Specie>::Z(scalar p, scalar T) const
 {
     return 1;
 }
 
 
 template<class Specie>
-inline Foam::scalar Foam::perfectGas<Specie>::CpMCv(scalar p, scalar T) const
+FOAM_DEVICE inline Foam::scalar Foam::perfectGas<Specie>::CpMCv(scalar p, scalar T) const
 {
     return this->R();
 }

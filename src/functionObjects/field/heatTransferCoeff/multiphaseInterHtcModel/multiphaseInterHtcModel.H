@@ -33,7 +33,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    multiphaseInterHtcModel1
+    multiphaseInterHtcModelFO
     {
         // Mandatory entries
         type        multiphaseInterHtcModel;
@@ -67,7 +67,6 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-      - \link functionObject.H \endlink
       - \link fieldExpression.H \endlink
       - \link heatTransferCoeffModel.H \endlink
 
@@ -155,7 +154,7 @@ public:
 
     // Member Functions
 
-        //- Read the heatTransferCoeff data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 };
 

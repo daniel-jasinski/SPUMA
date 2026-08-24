@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -91,19 +91,14 @@ class DynamicList
         template<class ListType>
         inline void doAssignDynList(const ListType& list);
 
-        //- Alter the size of the underlying storage
-        //  The 'nocopy' option will not attempt to recover old content
-        inline void doCapacity(const bool nocopy, const label len);
+        //- Alter the size of the underlying storage,
+        //- retaining the first count elements.
+        inline void doCapacity_copy(label count, const label len);
 
-        //- Reserve allocation space for at least this size.
+        //- Reserve allocation space for at least this size,
+        //- retaining the first count elements.
         //  Never shrinks the allocated size, use setCapacity() for that.
-        //  The 'nocopy' option will not attempt to recover old content
-        inline void doReserve(const bool nocopy, const label len);
-
-        //- Reserve allocation space for at least this size.
-        //  Never shrinks the allocated size, use setCapacity() for that.
-        //  The 'nocopy' option will not attempt to recover old content
-        inline void doResize(const bool nocopy, const label len);
+        inline void doReserve_copy(label count, const label len);
 
         //- Read List from Istream between '(' and ')' delimiters.
         //- The size is not known a priori.
@@ -117,14 +112,19 @@ public:
         //- Default construct, an empty list without allocation.
         inline constexpr DynamicList() noexcept;
 
+        inline explicit DynamicList(const poolSwitch usePool) noexcept;
+
         //- Construct an empty list with given initial capacity
-        inline explicit DynamicList(const label initialCapacity);
+        inline explicit DynamicList(const label initialCapacity, poolSwitch usePool = poolSwitch(false));
+
+        //- Construct with given size and capacity
+        inline explicit DynamicList(std::pair<label,label> sizing);
 
         //- Construct with given size and value for all elements.
-        inline DynamicList(const label len, const T& val);
+        inline DynamicList(const label len, const T& val, poolSwitch usePool = poolSwitch(false));
 
         //- Construct with given size initializing all elements to zero
-        inline DynamicList(const label len, const Foam::zero);
+        inline DynamicList(const label len, Foam::zero, poolSwitch usePool = poolSwitch(false));
 
         //- Copy construct.
         inline DynamicList(const DynamicList<T, SizeMin>& lst);
@@ -133,21 +133,21 @@ public:
         template<int AnySizeMin>
         inline DynamicList(const DynamicList<T, AnySizeMin>& lst);
 
-        //- Construct from UList. Size set to UList size.
+        //- Copy construct from UList. Size set to UList size.
         //  Also constructs from DynamicList with different sizing parameters.
         inline explicit DynamicList(const UList<T>& lst);
 
         //- Copy construct subset of list
         inline DynamicList(const UList<T>& list, const labelUList& indices);
 
-        //- Construct from a FixedList
+        //- Copy construct from a FixedList
         template<unsigned N>
         inline explicit DynamicList(const FixedList<T, N>& lst);
 
-        //- Construct from an initializer list. Size set to list size.
+        //- Copy construct from an initializer list. Size set to list size.
         inline explicit DynamicList(std::initializer_list<T> lst);
 
-        //- Construct from IndirectList. Size set to addressing size.
+        //- Copy construct from IndirectList. Size set to addressing size.
         template<class Addr>
         inline explicit DynamicList(const IndirectListBase<T, Addr>& lst);
 
@@ -163,6 +163,10 @@ public:
 
         //- Construct from Istream. Size set to size of list read.
         explicit DynamicList(Istream& is);
+
+
+    //- Destructor, sync allocated size before List destruction
+    ~DynamicList() { List<T>::setAddressableSize(capacity_); }
 
 
     // Member Functions
@@ -196,7 +200,7 @@ public:
 
         //- Change the value for the list capacity directly (ADVANCED, UNSAFE)
         //- Does not perform any memory management or resizing.
-        inline void setCapacity_unsafe(const label len) noexcept;
+        void setCapacity_unsafe(label len) noexcept { capacity_ = len; }
 
         //- Reserve allocation space for at least this size, allocating new
         //- space if required and \em retaining old content.
@@ -207,6 +211,12 @@ public:
         //- space if required \em without retaining old content.
         //  Never shrinks the allocated size, use setCapacity() for that.
         inline void reserve_nocopy(const label len);
+
+        //- Reserve allocation space for at least this size, allocating new
+        //- space if required and \em retaining old content.
+        //- If allocation is required, uses the specified size
+        //- without any other resizing logic.
+        inline void reserve_exact(const label len);
 
         //- Alter addressable list size, allocating new space if required
         //- while \em recovering old content.
@@ -219,6 +229,10 @@ public:
         //- Alter addressable size and fill \em new entries with constant value
         inline void resize(const label len, const T& val);
 
+        //- Alter addressable size, retaining the first count contents.
+        //  \note Only uses a limited number of internal checks.
+        void resize_copy(label count, const label len);
+
         //- Alter addressable size and set val for \em all addressed entries
         inline void resize_fill(const label len, const T& val);
 
@@ -227,12 +241,6 @@ public:
         //  If no reallocation is required, the contents remain untouched.
         //  Otherwise all entries will be uninitialized.
         inline void resize_nocopy(const label len);
-
-        //- Same as resize()
-        void setSize(const label n) { this->resize(n); }
-
-        //- Same as resize()
-        void setSize(const label n, const T& val) { this->resize(n, val); }
 
         //- Clear the addressed list, i.e. set the size to zero.
         //  Allocated size does not change
@@ -244,19 +252,11 @@ public:
         //- Shrink the allocated space to the number of elements used.
         inline void shrink_to_fit();
 
-        //- Shrink the internal bookkeeping of the allocated space to the
-        //- number of addressed elements without affecting allocation.
-        //  \note when empty() it will delete any allocated memory.
-        inline void shrink_unsafe();
-
-        //- Calls shrink_to_fit() and returns a reference to the DynamicList.
-        inline DynamicList<T, SizeMin>& shrink();
-
 
     // Edit
 
         //- Swap with plain List content. Implies shrink_to_fit().
-        inline void swap(List<T>& list);
+        inline void swap(List<T>& other);
 
         //- Swap content, independent of sizing parameter
         template<int AnySizeMin>
@@ -265,7 +265,7 @@ public:
         //- Transfer contents of the argument List into this.
         inline void transfer(List<T>& list);
 
-        //- Transfer contents of any sized DynamicList into this.
+        //- Transfer contents of any DynamicList into this.
         template<int AnySizeMin>
         inline void transfer(DynamicList<T, AnySizeMin>& list);
 
@@ -294,7 +294,7 @@ public:
         template<class Addr>
         inline void push_back(const IndirectListBase<T, Addr>& lst);
 
-        //- Move append list
+        //- Move append another list to the end of this list
         inline void push_back(List<T>&& list);
 
         //- Move append list
@@ -345,11 +345,11 @@ public:
             //- Return non-const access to an element, resizing list if needed
             inline T& operator()(const label i);
 
-            //- Assignment of all addressed entries to the given value
+            //- Assign addressed entries to the given value
             inline void operator=(const T& val);
 
-            //- Assignment of all entries to zero
-            inline void operator=(const Foam::zero);
+            //- Assign addressed entries to zero
+            inline void operator=(Foam::zero);
 
             //- Assignment to UList
             inline void operator=(const UList<T>& lst);
@@ -408,6 +408,20 @@ public:
 
     // Housekeeping
 
+        //- Alias for resize()
+        void setSize(const label n) { this->resize(n); }
+
+        //- Alias for resize()
+        void setSize(const label n, const T& val) { this->resize(n, val); }
+
+        //- Calls shrink_to_fit() and returns a reference to the DynamicList.
+        //FOAM_DEPRECATED_FOR(2025-04, "shrink_to_fit()")
+        DynamicList<T, SizeMin>& shrink()
+        {
+            this->shrink_to_fit();
+            return *this;
+        }
+
         //- Copy append an element to the end of this list.
         //FOAM_DEPRECATED_FOR(2022-10, "push_back()")
         void append(const T& val) { this->push_back(val); }
@@ -447,7 +461,7 @@ public:
         }
 
         //- Same as push_uniq()
-        FOAM_DEPRECATED_STRICT(2022-10, "push_uniq()")
+        FOAM_DEPRECATED_FOR(2022-10, "push_uniq()")
         label appendUniq(const T& val) { return this->push_uniq(val); }
 };
 

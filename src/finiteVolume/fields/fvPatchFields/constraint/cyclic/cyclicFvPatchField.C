@@ -128,15 +128,11 @@ Foam::cyclicFvPatchField<Type>::cyclicFvPatchField
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Type>
-Foam::tmp<Foam::Field<Type>>
-Foam::cyclicFvPatchField<Type>::patchNeighbourField() const
+void Foam::cyclicFvPatchField<Type>::patchNeighbourField(UList<Type>& pnf) const
 {
     const Field<Type>& iField = this->primitiveField();
     const labelUList& nbrFaceCells =
         cyclicPatch().cyclicPatch().neighbPatch().faceCells();
-
-    auto tpnf = tmp<Field<Type>>::New(this->size());
-    auto& pnf = tpnf.ref();
 
     foamExecutor exec;
     auto pnf_p = pnf.begin();
@@ -161,7 +157,15 @@ Foam::cyclicFvPatchField<Type>::patchNeighbourField() const
         };
         exec.parallelFor(Lambda,pnf.size());
     }
+}
 
+
+template<class Type>
+Foam::tmp<Foam::Field<Type>>
+Foam::cyclicFvPatchField<Type>::patchNeighbourField() const
+{
+    auto tpnf = tmp<Field<Type>>::New(this->size());
+    this->patchNeighbourField(tpnf.ref());
     return tpnf;
 }
 
@@ -170,7 +174,7 @@ template<class Type>
 const Foam::cyclicFvPatchField<Type>&
 Foam::cyclicFvPatchField<Type>::neighbourPatchField() const
 {
-    const GeometricField<Type, fvPatchField, volMesh>& fld =
+    const auto& fld =
     static_cast<const GeometricField<Type, fvPatchField, volMesh>&>
     (
         this->primitiveField()
@@ -228,7 +232,7 @@ void Foam::cyclicFvPatchField<Type>::updateInterfaceMatrix
     const Pstream::commsTypes
 ) const
 {
-    const labelList& nbrFaceCells =
+    const labelUList& nbrFaceCells =
         lduAddr.patchAddr
         (
             this->cyclicPatch().neighbPatchID()

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -2087,10 +2087,12 @@ Foam::vectorField Foam::snappySnapDriver::calcNearestSurface
 
             scalarField magDisp(mag(patchDisp));
 
+            auto limits = gMinMax(magDisp);
+
             Info<< "Wanted displacement : average:"
                 <<  meshRefinement::gAverage(isPatchMasterPoint, magDisp)
-                << " min:" << gMin(magDisp)
-                << " max:" << gMax(magDisp) << endl;
+                << " min:" << limits.min()
+                << " max:" << limits.max() << endl;
         }
     }
 
@@ -2650,16 +2652,8 @@ void Foam::snappySnapDriver::doSnap
         {
             if (addLayers[globalRegioni])
             {
-                const label masterP =
-                    globalToMasterPatch_[globalRegioni];
-                const label slaveP =
-                    globalToSlavePatch_[globalRegioni];
-
-                bufPatchIDs.append(masterP);
-                if (slaveP != masterP)
-                {
-                    bufPatchIDs.append(slaveP);
-                }
+                bufPatchIDs.push_uniq(globalToMasterPatch_[globalRegioni]);
+                bufPatchIDs.push_uniq(globalToSlavePatch_[globalRegioni]);
             }
         }
 
@@ -2670,8 +2664,8 @@ void Foam::snappySnapDriver::doSnap
             surfaceZonesInfo::faceZoneType type;
             if (meshRefiner_.getFaceZoneInfo(fz.name(), mpI, spI, type))
             {
-                bufPatchIDs.appendUniq(mpI);
-                bufPatchIDs.appendUniq(spI);
+                bufPatchIDs.push_uniq(mpI);
+                bufPatchIDs.push_uniq(spI);
             }
         }
     }
@@ -3262,6 +3256,10 @@ void Foam::snappySnapDriver::doSnap
 
             // Update mesh mover
             ppPtr = meshRefinement::makePatch(mesh, adaptPatchIDs);
+
+            // Update distance to attract to nearest feature on surface
+            snapDist = calcSnapDistance(mesh, snapParams, ppPtr());
+
             meshMoverPtr.reset
             (
                 new motionSmoother

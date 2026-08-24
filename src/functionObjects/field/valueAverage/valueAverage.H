@@ -39,35 +39,33 @@ Description
     \table
       Operand        | Type | Location
       input          | -    | -
-      output file    | dat  | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
+      output file    | dat  | postProcessing/<FO>/<time>/file
       output field   | -    | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    valueAverage1
+    valueAverageFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type              valueAverage;
         libs              (fieldFunctionObjects);
-
-        // Mandatory entries (runtime modifiable)
         functionObject    <FO>;                       // forceCoeffs1;
         fields            (<field1> ... <fieldN>);    // (Cm Cd Cl);
 
-        // Optional entries (runtime modifiable)
-        resetOnRestart    false;
-        window            0.5;
+        // Optional entries
+        resetOnRestart    <bool>;
+        window            <scalar>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                           | Type | Req'd | Dflt
+      Property     | Description                           | Type | Reqd | Deflt
       type         | Type name: valueAverage               | word |  yes  | -
       libs         | Library name: fieldFunctionObjects    | word |  yes  | -
       functionObject | Name of function object to retrieve data | word | yes | -
@@ -77,15 +75,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link regionFunctionObject.H \endlink
-     - \link valueAverageBase.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::valueAverageBase
-    - ExtendedCodeGuide::functionObjects::field::valueAverage
+      - \link regionFunctionObject.H \endlink
+      - \link valueAverageBase.H \endlink
 
 SourceFiles
     valueAverage.C
@@ -93,8 +84,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_valueAverage_H
-#define functionObjects_valueAverage_H
+#ifndef Foam_functionObjects_valueAverage_H
+#define Foam_functionObjects_valueAverage_H
 
 #include "regionFunctionObject.H"
 #include "valueAverageBase.H"
@@ -124,7 +115,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         valueAverage
         (
             const word& name,
@@ -145,13 +136,13 @@ public:
 
     // Public Member Functions
 
-        //- Read the field value average data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the value average
+        //- Write the function-object results
         virtual bool write();
 };
 

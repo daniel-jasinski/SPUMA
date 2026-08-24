@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2021 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -52,7 +52,7 @@ Description
         legacy output (vtk DataFile Version 2.0)
         \c types    | vtk cell type (1-255)
         \c cells    | nLabels and unique vertex labels used by the cell, or
-                    | [nLabels nFaces, nFace0Pts, id1, id2, ..., nFace1Pts, id1, id2, ...]
+                    | [nLabels nFaces, nFace0Pts, id0,id1,..., nFace1Pts, id0,...]
     \endtable
 
     \table
@@ -61,7 +61,7 @@ Description
         \c connectivity | unique vertex labels used by the cell
         \c offsets      | end offset for each of \c connectivity
         \c faces        | face stream for polyhedral cells
-                        | [nFaces, nFace0Pts, id1, id2, ..., nFace1Pts, id1, id2, ...]
+                        | [nFaces, nFace0Pts, id0,id1,..., nFace1Pts, id0,...]
         \c faceoffsets  | end offset for each of \c faces, with -1 for primitive cells
     \endtable
 
@@ -71,7 +71,7 @@ Description
         \c connectivity | nLabels and unique vertex labels used by the cell
         \c location     | begin location for each of \c connectivity
         \c faces        | face stream for polyhedral cells
-                        | [nFaces, nFace0Pts, id1, id2, ..., nFace1Pts, id1, id2, ...]
+                        | [nFaces, nFace0Pts, id0,id1,..., nFace1Pts, id0,...]
         \c facelocation | begin location for each of \c faces, with -1 for primitive cells
     \endtable
 
@@ -81,8 +81,21 @@ Description
         \c connectivity | unique vertex labels used by the cell
         \c offsets      | begin/end offsets for \c connectivity
         \c faces        | face stream for polyhedral cells
-                        | [nFaces, nFace0Pts, id1, id2, ..., nFace1Pts, id1, id2, ...]
+                        | [nFaces, nFace0Pts, id0,id1,..., nFace1Pts, id0,...]
         \c facelocation | begin location for each of \c faces, with -1 for primitive cells
+    \endtable
+
+    \table
+        hdf storage (similar to internal2)
+        \c Types        | vtk cell type (1-255)
+        \c Connectivity | unique vertex labels used by the cell
+        \c Offsets      | begin/end offsets for \c Connectivity
+        \c FaceConnectivity | faces for polyhedral cells (their vertex labels)
+                        | [id0,id1,...]
+        \c FaceOffsets  | begin/end offsets for FaceConnectivity.
+        \c PolyhedronToFaces | face ids (faces are defined by FaceOffsets/FaceConnectivity)
+        \c PolyhedronOffsets | begin/end offsets for \c PolyhedronToFaces
+                        | Has size nCells+1
     \endtable
 
     The VTK storage concept for "connectivity" and "faces" somewhat resemble
@@ -100,7 +113,8 @@ Note
     (internal2) new format is being used.
 
 SourceFiles
-    foamVtuSizing.C
+    foamVtuSizing.cxx
+    foamVtuSizingImpl.cxx
     foamVtuSizingI.H
 
 \*---------------------------------------------------------------------------*/
@@ -108,8 +122,6 @@ SourceFiles
 #ifndef Foam_vtk_vtuSizing_H
 #define Foam_vtk_vtuSizing_H
 
-#include "label.H"
-#include "labelList.H"
 #include "foamVtkMeshMaps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -135,30 +147,43 @@ public:
     // Public Data
 
     //- Types of content that the storage may represent
-    enum contentType : char
+    enum class contentType : unsigned char
     {
         LEGACY,     //!< Legacy VTK content
         XML,        //!< XML (VTU) content
-        INTERNAL1,  //!< Internal vtkUnstructuredGrid content
-        INTERNAL2   //!< Internal vtkUnstructuredGrid content, VTK_CELL_ARRAY_V2
+        INTERNAL1,  //!< Internal vtkUnstructuredGrid content (old)
+        INTERNAL2,  //!< Internal vtkUnstructuredGrid content, VTK_CELL_ARRAY_V2
+        HDF,        //!< Similar to INTERNAL2, but with VTKHDF specifics
     };
 
     //- The possible storage 'slots' that can be used
-    enum slotType : char
+    enum class slotType : unsigned char
     {
-        CELLS,         //!< Cell connectivity (ALL)
-        CELLS_OFFSETS, //!< Cell end-offsets (XML), locations (INTERNAL1)
-                       //!< or begin/end offsets (INTERNAL2)
-        FACES,         //!< Face-stream (XML, INTERNAL)
-        FACES_OFFSETS  //!< Faces end-offsets (XML) or locations (INTERNAL1)
+        //! Cell connectivity (ALL)
+        CELLS,
+        //! Cell connectivity offsets:
+        //! end-offsets (XML), locations (INTERNAL1),
+        //! begin/end offsets (INTERNAL2, HDF)
+        CELLS_OFFSETS,
+        //! Polyhedral face-stream (XML, INTERNAL) or face vertices (HDF)
+        FACES,
+        //! Polyhedral faces offsets:
+        //! end-offsets (XML), begin locations (INTERNAL),
+        //! begin/end offsets (HDF)
+        FACES_OFFSETS,
+        //! Polyhedral face lookup (HDF only)
+        POLY_FACEIDS,
+        //! Polyhedral face lookup offsets (HDF only):
+        //! per-cell begin/end offsets (HDF) otherwise
+        POLY_FACEIDS_OFFSETS,
     };
 
     //- How the mesh cells have been selected or defined
-    enum selectionModeType : char
+    enum class selectionModeType : unsigned char
     {
-        FULL_MESH,
-        SUBSET_MESH,
-        SHAPE_MESH
+        FULL_MESH,      //!< The entire mesh
+        SUBSET_MESH,    //!< A mesh subset, using all mesh points
+        SHAPE_MESH      //!< A limited subset of primitive shapes
     };
 
 
@@ -190,8 +215,11 @@ private:
         //- Number of polyhedral face labels for the mesh
         label nFaceLabels_;
 
-        //- Number of polyhedral cells (informational)
+        //- Number of polyhedral cells
         label nCellsPoly_;
+
+        //- Number of (non-unique) faces used by polyhedral cells
+        label nFacesPoly_;
 
         //- Number of vertex labels used by polyhedrals
         label nVertPoly_;
@@ -211,7 +239,7 @@ private:
 
     // Private Member Functions
 
-        //- set-size for cellMap and additionalIds
+        //- Allocate for cellMap and additionalIds
         void presizeMaps(foamVtkMeshMaps& maps) const;
 
         //- Verify list sizes
@@ -220,10 +248,11 @@ private:
             const vtk::vtuSizing& sizing,
 
             const label cellTypes_size,
-            const label vertLabels_size,
-            const label vertOffset_size,
-            const label faceLabels_size,
-            const label faceOffset_size,
+            const label vertLabels_size, const label vertOffset_size,
+            const label faceLabels_size, const label faceOffset_size,
+
+            // HDF only
+            const label polyFaceIds_size, const label polyFaceOffset_size,
 
             const enum contentType output,
 
@@ -231,17 +260,8 @@ private:
             const label addPointsIds_size
         );
 
-        //- Adjust cell/face offsets
-        template<class LabelType>
-        static void adjustOffsets
-        (
-            UList<LabelType>& vertOffset,
-            UList<LabelType>& faceOffset,
-            const enum contentType output,
-            const bool hasFaceStream
-        );
-
-        //- Populate lists. For (legacy | xml | internal) VTK representations
+        //- Populate lists.
+        //- For (legacy | xml | internal | hdf) VTK representations
         template<class LabelType>
         static void populateArrays
         (
@@ -252,6 +272,8 @@ private:
             UList<LabelType>& vertOffset,
             UList<LabelType>& faceLabels,
             UList<LabelType>& faceOffset,
+            UList<LabelType>& polyFaceIds,      // HDF only
+            UList<LabelType>& polyFaceOffsets,  // HDF only
             const enum contentType output,
             labelUList& cellMap,
             labelUList& addPointsIds
@@ -266,8 +288,10 @@ private:
             UList<uint8_t>& cellTypes,
             UList<LabelType>& vertLabels,
             UList<LabelType>& vertOffset,
-            UList<LabelType>& faceLabels,    // unused
-            UList<LabelType>& faceOffset,    // unused
+            UList<LabelType>& faceLabels,      // unused
+            UList<LabelType>& faceOffset,      // unused
+            UList<LabelType>& polyFaceIds,     // unused
+            UList<LabelType>& polyFaceOffsets, // unused
             const enum contentType output,
             labelUList& cellMap,
             labelUList& addPointsIds  // unused
@@ -299,6 +323,13 @@ protected:
             foamVtkMeshMaps& maps
         ) const;
 
+        //- Return a list of dummy faceOffsets
+        static labelList dummyFaceOffsets
+        (
+            const label numCells,
+            const enum contentType output,
+            label beginOffset = 0
+        );
 
 public:
 
@@ -353,6 +384,9 @@ public:
         //- Query how the mesh cells have been selected or defined
         inline selectionModeType selectionMode() const noexcept;
 
+        //- Has polyhedral cells?
+        bool hasPolyCells() const noexcept { return nCellsPoly_; }
+
         //- Number of cells for the mesh
         inline label nCells() const noexcept;
 
@@ -362,11 +396,19 @@ public:
         //- Number of vertex labels for the mesh
         inline label nVertLabels() const noexcept;
 
-        //- Number of polyhedral face labels for the mesh
+        //- Number of polyhedral face labels for the mesh,
+        //- without any prefixing information
         inline label nFaceLabels() const noexcept;
 
-        //- Number of polyhedral cells for the mesh
+        //- Number of polyhedral face labels for the mesh
+        //- with format-dependent prefixing information
+        label nFaceLabels(contentType output) const;
+
+        //- Number of output polyhedral cells for the mesh
         inline label nCellsPoly() const noexcept;
+
+        //- Number of (non-unique) faces used by polyhedral cells
+        inline label nFacesPoly() const noexcept;
 
         //- Number of vertex labels for polyhedral cells of the mesh
         inline label nVertPoly() const noexcept;
@@ -404,23 +446,14 @@ public:
         (
             const enum contentType output,
             const enum slotType slot
-        ) const;
+        ) const noexcept;
 
-
-        //- The calculated size for legacy storage
-        inline label sizeLegacy() const;
-
-        //- The calculated size for legacy storage of the specified slot
-        inline label sizeLegacy(const enum slotType slot) const;
-
-        //- The calculated size for xml storage of the specified slot
-        inline label sizeXml(const enum slotType slot) const;
-
-        //- The calculated size for vtk-internal storage of the specified slot
-        inline label sizeInternal1(const enum slotType slot) const;
-
-        //- The calculated size for vtk-internal storage of the specified slot
-        inline label sizeInternal2(const enum slotType slot) const;
+        //- Return the required size for the storage slot
+        template<vtuSizing::slotType slot>
+        label sizeOf(contentType output) const noexcept
+        {
+            return sizeOf(output, slot);
+        }
 
 
     // Routines for populating the output lists
@@ -443,6 +476,20 @@ public:
             labelUList& offsets,
             labelUList& faces,
             labelUList& facesOffsets,
+            foamVtkMeshMaps& maps
+        ) const;
+
+        //- Populate lists for HDF output
+        void populateHdf
+        (
+            const polyMesh& mesh,
+            UList<uint8_t>& cellTypes,
+            labelUList& connectivity,
+            labelUList& offsets,
+            labelUList& faces,
+            labelUList& facesOffsets,
+            labelUList& polyFaceIds,
+            labelUList& polyFaceOffsets,
             foamVtkMeshMaps& maps
         ) const;
 
@@ -490,60 +537,28 @@ public:
     // Routines for renumber vertices with a global point offset
     // Legacy and xml only, internal version less likely to be needed
 
-        //- Copy vertex labels with a global point offset - legacy format
-        static labelList copyVertLabelsLegacy
-        (
-            const labelUList& connectivity,
-            const label globalPointOffset
-        );
-
-        //- Copy vertex labels with a global point offset - XML format
-        static labelList copyVertLabelsXml
-        (
-            const labelUList& connectivity,
-            const label globalPointOffset
-        );
-
-        //- Copy faces stream labels with a global point offset - XML format
-        static labelList copyFaceLabelsXml
-        (
-            const labelUList& faceLabels,
-            const label globalPointOffset
-        );
-
-        //- Copy face offsets with an offset from previous - XML format
-        static labelList copyFaceOffsetsXml
-        (
-            const labelUList& faceOffsets,
-            const label prevOffset
-        );
-
-        //- Renumber vertex labels by global point offset - legacy format
-        static void renumberVertLabelsLegacy
+        //- Renumber vertex labels by (global) point offset
+        static void renumberVertLabels
         (
             labelUList& connectivity,
-            const label globalPointOffset
+            const label pointOffset,
+            const contentType output
         );
 
-        //- Renumber vertex labels by global point offset - XML format
-        static void renumberVertLabelsXml
-        (
-            labelUList& connectivity,
-            const label globalPointOffset
-        );
-
-        //- Renumber faces stream labels by global point offset - XML format
-        static void renumberFaceLabelsXml
+        //- Renumber faces stream labels by (global) point offset
+        static void renumberFaceLabels
         (
             labelUList& faceLabels,
-            const label globalPointOffset
+            const label pointOffset,
+            const contentType output
         );
 
-        //- Renumber face offsets with an offset from previous - XML format
-        static void renumberFaceOffsetsXml
+        //- Renumber face offsets with a specified (global) begin offset
+        static void renumberFaceOffsets
         (
             labelUList& faceOffsets,
-            const label prevOffset
+            const label beginOffset,
+            const contentType output
         );
 
 
@@ -560,6 +575,175 @@ public:
 
         //- Test inequality
         bool operator!=(const vtuSizing& rhs) const;
+
+
+    // Housekeeping
+
+        //- Copy vertex labels with a (global) point offset
+        static labelList copyVertLabels
+        (
+            const labelUList& connectivity,
+            const label pointOffset,
+            const contentType output
+        )
+        {
+            labelList result(connectivity);
+            renumberVertLabels(result, pointOffset, output);
+            return result;
+        }
+
+        //- Copy faces stream labels with a (global) point offset
+        static labelList copyFaceLabels
+        (
+            const labelUList& faceLabels,
+            const label pointOffset,
+            const contentType output
+        )
+        {
+            labelList result(faceLabels);
+            renumberFaceLabels(result, pointOffset, output);
+            return result;
+        }
+
+        //- Copy face offsets with a specified (global) begin offset
+        static labelList copyFaceOffsets
+        (
+            const labelUList& faceOffsets,
+            const label beginOffset,
+            const contentType output
+        )
+        {
+            labelList result(faceOffsets);
+            renumberFaceOffsets(result, beginOffset, output);
+            return result;
+        }
+
+        //- Renumber vertex labels by (global) point offset - legacy format
+        FOAM_DEPRECATED_FOR(2025-11, "renumberVertLabels(...) method")
+        static void renumberVertLabelsLegacy
+        (
+            labelUList& connectivity,
+            const label pointOffset
+        )
+        {
+            renumberVertLabels(connectivity, pointOffset, contentType::LEGACY);
+        }
+
+        //- Renumber vertex labels by (global) point offset - XML format
+        FOAM_DEPRECATED_FOR(2025-11, "renumberVertLabels(...) method")
+        static void renumberVertLabelsXml
+        (
+            labelUList& connectivity,
+            const label pointOffset
+        )
+        {
+            renumberVertLabels(connectivity, pointOffset, contentType::XML);
+        }
+
+        //- Renumber faces stream labels by (global) point offset - XML format
+        FOAM_DEPRECATED_FOR(2025-11, "renumberFaceLabels(...) method")
+        static void renumberFaceLabelsXml
+        (
+            labelUList& faceLabels,
+            const label pointOffset
+        )
+        {
+            renumberFaceLabels(faceLabels, pointOffset, contentType::XML);
+        }
+
+        //- Renumber face offsets with a specified begin offset - XML format
+        FOAM_DEPRECATED_FOR(2025-11, "renumberFaceOffsets(...) method")
+        static void renumberFaceOffsetsXml
+        (
+            labelUList& faceOffsets,
+            const label beginOffset
+        )
+        {
+            renumberFaceOffsets(faceOffsets, beginOffset, contentType::XML);
+        }
+
+        //- Copy vertex labels with a (global) point offset - legacy format
+        FOAM_DEPRECATED_FOR(2025-11, "copyVertLabels(...) method")
+        static labelList copyVertLabelsLegacy
+        (
+            const labelUList& connectivity,
+            const label pointOffset
+        )
+        {
+            return
+            copyVertLabels(connectivity, pointOffset, contentType::LEGACY);
+        }
+
+        //- Copy vertex labels with a (global) point offset - XML format
+        FOAM_DEPRECATED_FOR(2025-11, "copyVertLabels(...) method")
+        static labelList copyVertLabelsXml
+        (
+            const labelUList& connectivity,
+            const label pointOffset
+        )
+        {
+            return
+            copyVertLabels(connectivity, pointOffset, contentType::XML);
+        }
+
+        //- Copy faces stream labels with a (global) point offset - XML format
+        FOAM_DEPRECATED_FOR(2025-11, "copyFaceLabels(...) method")
+        static labelList copyFaceLabelsXml
+        (
+            const labelUList& faceLabels,
+            const label pointOffset
+        )
+        {
+            return
+            copyFaceLabels(faceLabels, pointOffset, contentType::XML);
+        }
+
+        //- Copy face offsets with an offset from previous - XML format
+        FOAM_DEPRECATED_FOR(2025-11, "copyFaceOffsets(...) method")
+        static labelList copyFaceOffsetsXml
+        (
+            const labelUList& faceOffsets,
+            const label beginOffset
+        )
+        {
+            return
+            copyFaceOffsets(faceOffsets, beginOffset, contentType::XML);
+        }
+
+        //- The calculated size for legacy storage
+        FOAM_DEPRECATED_FOR(2025-11, "sizeOf(LEGACY, CELLS)")
+        label sizeLegacy() const
+        {
+            return sizeOf(contentType::LEGACY, slotType::CELLS);
+        }
+
+        //- The calculated size for legacy storage of the specified slot
+        FOAM_DEPRECATED_FOR(2025-11, "sizeOf(LEGACY, ...)")
+        label sizeLegacy(slotType slot) const
+        {
+            return sizeOf(contentType::LEGACY, slot);
+        }
+
+        //- The calculated size for xml storage of the specified slot
+        FOAM_DEPRECATED_FOR(2025-11, "sizeOf(XML, ...)")
+        label sizeXml(slotType slot) const
+        {
+            return sizeOf(contentType::XML, slot);
+        }
+
+        //- The calculated size for vtk-internal storage of the specified slot
+        FOAM_DEPRECATED_FOR(2025-11, "sizeOf(INTERNAL1, ...)")
+        label sizeInternal1(slotType slot) const
+        {
+            return sizeOf(contentType::INTERNAL1, slot);
+        }
+
+        //- The calculated size for vtk-internal storage of the specified slot
+        FOAM_DEPRECATED_FOR(2025-11, "sizeOf(INTERNAL2, ...)")
+        label sizeInternal2(slotType slot) const
+        {
+            return sizeOf(contentType::INTERNAL2, slot);
+        }
 };
 
 

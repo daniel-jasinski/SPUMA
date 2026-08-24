@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -54,6 +54,7 @@ Foam::IOstreamOption::formatNames
 ({
     { streamFormat::ASCII, "ascii" },
     { streamFormat::BINARY, "binary" },
+    // No selection by name: UNKNOWN_FORMAT
 });
 
 
@@ -66,24 +67,22 @@ Foam::IOstreamOption::floatFormatEnum
     const floatFormat deflt
 )
 {
-    // Handle bad input graciously. A no-op for an empty string
-
-    if (!fmtName.empty())
+    if (fmtName.empty())
     {
-        auto iter = floatFormatNames.cfind(fmtName);
-
-        if (iter.good())
-        {
-            return iter.val();
-        }
-
-        // Fall-through to warning
+        // Empty string (no-op)
+    }
+    else if (auto iter = floatFormatNames.cfind(fmtName); iter.good())
+    {
+        return iter.val();
+    }
+    else
+    {
+        // Emit warning for bad input
 
         auto& err = WarningInFunction
             << "Unknown float format '" << fmtName << "' using ";
 
-        iter = floatFormatNames.cfind(deflt);
-        if (iter.good())
+        if (auto iter = floatFormatNames.cfind(deflt); iter.good())
         {
             err << '\'' << iter.key() << '\'';
         }
@@ -117,24 +116,22 @@ Foam::IOstreamOption::formatEnum
     const streamFormat deflt
 )
 {
-    // Handle bad input graciously. A no-op for an empty string
-
-    if (!fmtName.empty())
+    if (fmtName.empty())
     {
-        auto iter = formatNames.cfind(fmtName);
-
-        if (iter.good())
-        {
-            return iter.val();
-        }
-
-        // Fall-through to warning
+        // Empty string (no-op)
+    }
+    else if (auto iter = formatNames.cfind(fmtName); iter.good())
+    {
+        return iter.val();
+    }
+    else
+    {
+        // Emit warning for bad input
 
         auto& err = WarningInFunction
             << "Unknown stream format '" << fmtName << "' using ";
 
-        iter = formatNames.cfind(deflt);
-        if (iter.good())
+        if (auto iter = formatNames.cfind(deflt); iter.good())
         {
             err << '\'' << iter.key() << '\'';
         }
@@ -168,23 +165,22 @@ Foam::IOstreamOption::compressionEnum
     const compressionType deflt
 )
 {
-    // Handle bad input graciously. A no-op for an empty string
-
-    if (!compName.empty())
+    if (compName.empty())
     {
-        const Switch sw = Switch::find(compName);
-
-        if (sw.good())
-        {
-            return
-            (
-                sw
-              ? compressionType::COMPRESSED
-              : compressionType::UNCOMPRESSED
-            );
-        }
-
-        // Fall-through to warning
+        // Empty string (no-op)
+    }
+    else if (Switch sw = Switch::find(compName); sw.good())
+    {
+        return
+        (
+            sw
+          ? compressionType::COMPRESSED
+          : compressionType::UNCOMPRESSED
+        );
+    }
+    else
+    {
+        // Emit warning
 
         WarningInFunction
             << "Unknown compression specifier '" << compName
@@ -268,6 +264,7 @@ Foam::Ostream& Foam::operator<<
     const IOstreamOption::streamFormat& fmt
 )
 {
+    // Silently ignores unnamed formats
     os << IOstreamOption::formatNames[fmt];
     return os;
 }

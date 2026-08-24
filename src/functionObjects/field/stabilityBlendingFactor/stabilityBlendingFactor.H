@@ -179,64 +179,63 @@ Description
     \table
       Operand        | Type           | Location
       input          | -              | -
-      output file    | dat | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
-      output field   | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output file    | dat            | postProcessing/<FO>/<time>/file
+      output field   | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    stabilityBlendingFactor1
+    stabilityBlendingFactorFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type                stabilityBlendingFactor;
         libs                (fieldFunctionObjects);
+        field               <word>;    // U;
+        result              <word>;    // UBlendingFactor;
 
-        // Mandatory entries (unmodifiable)
-        field               <field>;    // U;
-        result              <outField>; // UBlendingFactor;
+        // Optional entries
+        tolerance           <scalar>;
 
-        // Optional entries (runtime modifiable)
-        tolerance           0.001;
-
+        // Conditional entries
         // Any of the options can be chosen in combinations
 
-        // Option-1
-        switchNonOrtho      true;
-        nonOrthogonality    nonOrthoAngle;
-        maxNonOrthogonality 20;
-        minNonOrthogonality 60;
+            // Option-1
+            switchNonOrtho      true;
+            nonOrthogonality    nonOrthoAngle;
+            maxNonOrthogonality 20;
+            minNonOrthogonality 60;
 
-        // Option-2
-        switchGradCc        true;
-        maxGradCc           3;
-        minGradCc           4;
+            // Option-2
+            switchGradCc        true;
+            maxGradCc           3;
+            minGradCc           4;
 
-        // Option-3
-        switchResiduals     true;
-        maxResidual         10;
-        residual            initialResidual:p;
-        P                   1.5;
-        I                   0;
-        D                   0.5;
+            // Option-3
+            switchResiduals     true;
+            maxResidual         10;
+            residual            initialResidual:p;
+            P                   1.5;
+            I                   0;
+            D                   0.5;
 
-        // Option-4
-        switchFaceWeight    true;
-        maxFaceWeight       0.3;
-        minFaceWeight       0.2;
+            // Option-4
+            switchFaceWeight    true;
+            maxFaceWeight       0.3;
+            minFaceWeight       0.2;
 
-        // Option-5
-        switchSkewness      true;
-        maxSkewness         2;
-        minSkewness         3;
+            // Option-5
+            switchSkewness      true;
+            maxSkewness         2;
+            minSkewness         3;
 
-        // Option-6
-        switchCo            true;
-        U                   U;
-        Co1                 1;
-        Co2                 10;
+            // Option-6
+            switchCo            true;
+            U                   U;
+            Co1                 1;
+            Co2                 10;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
@@ -257,7 +256,7 @@ Usage
 
     where the entries mean:
     \table
-      Property     | Description                           | Type | Req'd | Dflt
+      Property     | Description                           | Type | Reqd | Deflt
       type         | Type name: stabilityBlendingFactor    | word |  yes  | -
       libs         | Library name: fieldFunctionObjects    | word |  yes  | -
       field        | Name of operand field                 | word |  yes  | -
@@ -297,26 +296,16 @@ Usage
     class.
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::stabilityBlendingFactor
+      - \link fieldExpression.H \endlink
+      - \link writeFile.H \endlink
 
 SourceFiles
     stabilityBlendingFactor.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_stabilityBlendingFactor_H
-#define functionObjects_stabilityBlendingFactor_H
+#ifndef Foam_functionObjects_stabilityBlendingFactor_H
+#define Foam_functionObjects_stabilityBlendingFactor_H
 
 #include "fieldExpression.H"
 #include "writeFile.H"
@@ -466,7 +455,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         stabilityBlendingFactor
         (
             const word& name,
@@ -487,10 +476,10 @@ public:
 
     // Member Functions
 
-        //- Read the stabilityBlendingFactor data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Write the stabilityBlendingFactor
+        //- Write the function-object results
         virtual bool write();
 };
 

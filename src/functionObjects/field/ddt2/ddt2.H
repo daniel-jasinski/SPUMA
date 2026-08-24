@@ -39,39 +39,36 @@ Description
     Operands:
     \table
       Operand           | Type           | Location
-      input             | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<inpField\>
+      input             | vol<Type>Field   | <time>/inputFields
       output file       | -              | -
-      output field      | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<outField\>
+      output field      | vol<Type>Field   | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    ddt21
+    ddt2FO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            ddt2;
         libs            (fieldFunctionObjects);
 
-        // Mandatory entries (runtime modifiable)
-        fields          (<field1> <field2> ... <fieldN>);
-
-        // Optional entries (unmodifiable)
-        mag             false;
-
-        // Optional entries (runtime modifiable)
+        // Optional entries
         result          d@@dt2;
+        mag             <bool>;
 
-        // Optional (inherited) entries
+        // Inherited entries
+        fields          <wordList>;  // (<field1> <field2> ... <fieldN>);
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: ddt2                    | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       fields       | Names of the operand fields        | wordList | yes | -
@@ -80,7 +77,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
+      - \link functionObject.H \endlink
 
     A list of fields can contain exact names or regular expressions.
     The token '\@\@' in the result name is replaced by the name of the source
@@ -90,21 +87,14 @@ Usage
     The function object will skip over fields that appear to have
     already been processed (ie, their names are similar to the output names).
 
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::ddt2
-
 SourceFiles
     ddt2.C
     ddt2Templates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_ddt2_H
-#define functionObjects_ddt2_H
+#ifndef Foam_functionObjects_ddt2_H
+#define Foam_functionObjects_ddt2_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFieldsFwd.H"
@@ -169,7 +159,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         ddt2
         (
             const word& name,
@@ -190,13 +180,13 @@ public:
 
     // Member Functions
 
-        //- Read the ddt2 specification
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the ddt2 fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the ddt2 fields
+        //- Write the function-object results
         virtual bool write();
 };
 

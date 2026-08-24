@@ -36,7 +36,9 @@ Description
 if (adjustTimeStep)
 {
     scalar maxDeltaTFact = maxCo/(CoNum + SMALL);
-    scalar deltaTFact = Foam::min(Foam::min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
+
+    const scalar deltaTFact =
+        Foam::min(Foam::min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
 
     runTime.setDeltaT
     (

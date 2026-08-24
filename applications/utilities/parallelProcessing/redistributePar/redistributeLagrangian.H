@@ -48,13 +48,11 @@ PtrList<unmappedPassivePositionParticleCloud>
 readLagrangian
 (
     const fvMesh& mesh,
-    const wordList& cloudNames,
+    const UList<word>& cloudNames,
     const boolUList& haveClouds,
     const wordRes& selectedFields
 )
 {
-    PtrList<unmappedPassivePositionParticleCloud> clouds(cloudNames.size());
-
     if (!cloudNames.empty())
     {
         (void)mesh.tetBasePtIs();
@@ -72,16 +70,16 @@ readLagrangian
 
 
     // Setup clouds
+    PtrList<unmappedPassivePositionParticleCloud> clouds(cloudNames.size());
+
     forAll(cloudNames, i)
     {
-        //Pout<< "Loading cloud " << cloudNames[i] << endl;
-        clouds.set
-        (
-            i,
-            new unmappedPassivePositionParticleCloud(mesh, cloudNames[i], false)
-        );
+        const auto& cloudName = cloudNames[i];
+        //Pout<< "Loading cloud " << cloudName << endl;
 
-        //for (passivePositionParticle& p : clouds[i]))
+        auto& cloud = clouds.emplace_set(i, mesh, cloudName, false);
+
+        //for (passivePositionParticle& p : cloud)
         //{
         //    Pout<< "Particle position:" << p.position()
         //        << " cell:" << p.cell()
@@ -89,12 +87,12 @@ readLagrangian
         //        << endl;
         //}
 
-        IOobjectList cloudObjs(clouds[i], clouds[i].time().timeName());
+        IOobjectList cloudObjs(cloud, cloud.time().timeName());
 
         parLagrangianDistributor::readAllFields
         (
-            clouds[i],
-            haveClouds[i],
+            cloud,
+            haveClouds.test(i),
             cloudObjs,
             selectedFields
         );

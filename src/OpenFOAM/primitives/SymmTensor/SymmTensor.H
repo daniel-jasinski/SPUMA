@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -95,7 +95,7 @@ public:
     // Constructors
 
         //- Construct initialized to zero
-        inline SymmTensor(const Foam::zero);
+        FOAM_DEVICE inline SymmTensor(Foam::zero);
 
         //- Construct given VectorSpace of the same rank
         template<class Cmpt2>
@@ -139,15 +139,15 @@ public:
         FOAM_DEVICE const Cmpt& zy() const noexcept { return this->v_[YZ]; }
         FOAM_DEVICE const Cmpt& zz() const noexcept { return this->v_[ZZ]; }
 
-        Cmpt& xx() noexcept { return this->v_[XX]; }
-        Cmpt& xy() noexcept { return this->v_[XY]; }
-        Cmpt& xz() noexcept { return this->v_[XZ]; }
-        Cmpt& yx() noexcept { return this->v_[XY]; }
-        Cmpt& yy() noexcept { return this->v_[YY]; }
-        Cmpt& yz() noexcept { return this->v_[YZ]; }
-        Cmpt& zx() noexcept { return this->v_[XZ]; }
-        Cmpt& zy() noexcept { return this->v_[YZ]; }
-        Cmpt& zz() noexcept { return this->v_[ZZ]; }
+        FOAM_DEVICE Cmpt& xx() noexcept { return this->v_[XX]; }
+        FOAM_DEVICE Cmpt& xy() noexcept { return this->v_[XY]; }
+        FOAM_DEVICE Cmpt& xz() noexcept { return this->v_[XZ]; }
+        FOAM_DEVICE Cmpt& yx() noexcept { return this->v_[XY]; }
+        FOAM_DEVICE Cmpt& yy() noexcept { return this->v_[YY]; }
+        FOAM_DEVICE Cmpt& yz() noexcept { return this->v_[YZ]; }
+        FOAM_DEVICE Cmpt& zx() noexcept { return this->v_[XZ]; }
+        FOAM_DEVICE Cmpt& zy() noexcept { return this->v_[YZ]; }
+        FOAM_DEVICE Cmpt& zz() noexcept { return this->v_[ZZ]; }
 
 
     // Column-vector access
@@ -235,6 +235,12 @@ public:
         inline scalar diagSqr() const;
 
 
+    // Characteristics
+
+        //- Is identity tensor?
+        inline bool is_identity(const scalar tol = ROOTVSMALL) const;
+
+
     // Tensor Operations
 
         //- Return non-Hermitian transpose
@@ -259,7 +265,7 @@ public:
         inline SymmTensor<Cmpt> inv() const;
 
         //- Return inverse, with (ad hoc) failsafe handling of 2D tensors
-        inline SymmTensor<Cmpt> safeInv() const;
+        FOAM_DEVICE inline SymmTensor<Cmpt> safeInv() const;
 
         //- Return inverse of 2D tensor (by excluding given direction)
         inline SymmTensor<Cmpt> inv2D(const direction excludeCmpt) const;

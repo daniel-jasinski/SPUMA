@@ -37,40 +37,38 @@ Description
     are stored in the database so that they can be processed further, e.g. with
     the fieldAveraging functionObject.
 
-    Example of function object specification:
-    \verbatim
-    phaseForces.water
-    {
-        type phaseForces;
-        libs (reactingEulerFoamFunctionObjects);
-        writeControl    writeTime;
-        writeInterval   1;
-
-        ...
-
-        phaseName       water;
-    }
-    \endverbatim
-
 Usage
+    Minimal example by using \c system/controlDict.functions:
+    \verbatim
+    phaseForces.waterFO
+    {
+        // Mandatory entries
+        type                phaseForces;
+        libs                (reactingEulerFoamFunctionObjects);
+        phase               <word>;
+
+        // Inherited entries
+        ...
+    }
+
+    where the entries mean:
     \table
-        Property     | Description             | Required    | Default value
-        type         | type name: phaseForces  | yes         |
-        phaseName    | Name of evaluated phase | yes         |
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: phaseForces             | word | yes  | -
+      libs     | Library name: reactingEulerFoamFunctionObjects | word | yes | -
+      phase    | Name of operand phase              | word | yes  | -
     \endtable
 
-See also
-    Foam::BlendedInterfacialModel
-    Foam::functionObjects::fvMeshFunctionObject
-    Foam::functionObject
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
 
 SourceFiles
     phaseForces.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_phaseForces_H
-#define functionObjects_phaseForces_H
+#ifndef Foam_functionObjects_phaseForces_H
+#define Foam_functionObjects_phaseForces_H
 
 #include "fvMeshFunctionObject.H"
 #include "phaseSystem.H"
@@ -101,7 +99,7 @@ class phaseForces
 
 protected:
 
-    // Protected data
+    // Protected Data
 
         HashPtrTable<volVectorField> forceFields_;
 
@@ -127,7 +125,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         phaseForces
         (
             const word& name,
@@ -142,13 +140,13 @@ public:
 
     // Member Functions
 
-        //- Read the input data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the force fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the force fields
+        //- Write the function-object results
         virtual bool write();
 };
 

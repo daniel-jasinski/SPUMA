@@ -41,8 +41,8 @@ Note
     may be addressed using ghost points.
 
 SourceFiles
-    foamVtkPolyWriter.C
-    foamVtkPolyWriterTemplates.C
+    foamVtkPolyWriter.cxx
+    foamVtkPolyWriter.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -157,7 +157,7 @@ public:
         explicit polyWriter
         (
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
         //- Construct from components and open the file for writing.
@@ -166,7 +166,7 @@ public:
         (
             const vtk::outputOptions opts,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
 
@@ -253,7 +253,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "foamVtkPolyWriterTemplates.C"
+    #include "foamVtkPolyWriter.txx"
 #endif
 
 

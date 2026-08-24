@@ -31,8 +31,8 @@ Description
     Finite volume reconstructor for volume and surface fields.
 
 SourceFiles
-    fvFieldReconstructor.C
-    fvFieldReconstructorTemplates.C
+    fvFieldReconstructor.cxx
+    fvFieldReconstructor.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -62,16 +62,16 @@ class fvFieldReconstructor
         fvMesh& mesh_;
 
         //- List of processor meshes
-        const PtrList<fvMesh>& procMeshes_;
+        const UPtrList<fvMesh>& procMeshes_;
 
         //- List of processor face addressing lists
-        const PtrList<labelIOList>& faceProcAddressing_;
+        const UPtrList<labelIOList>& faceProcAddressing_;
 
         //- List of processor cell addressing lists
-        const PtrList<labelIOList>& cellProcAddressing_;
+        const UPtrList<labelIOList>& cellProcAddressing_;
 
         //- List of processor boundary addressing lists
-        const PtrList<labelIOList>& boundaryProcAddressing_;
+        const UPtrList<labelIOList>& boundaryProcAddressing_;
 
         //- Number of fields reconstructed
         label nReconstructed_;
@@ -144,10 +144,10 @@ public:
         fvFieldReconstructor
         (
             fvMesh& mesh,
-            const PtrList<fvMesh>& procMeshes,
-            const PtrList<labelIOList>& faceProcAddressing,
-            const PtrList<labelIOList>& cellProcAddressing,
-            const PtrList<labelIOList>& boundaryProcAddressing
+            const UPtrList<fvMesh>& procMeshes,
+            const UPtrList<labelIOList>& faceProcAddressing,
+            const UPtrList<labelIOList>& cellProcAddressing,
+            const UPtrList<labelIOList>& boundaryProcAddressing
         );
 
 
@@ -165,7 +165,7 @@ public:
         reconstructField
         (
             const IOobject& fieldObject,
-            const PtrList<DimensionedField<Type, volMesh>>& procFields
+            const UPtrList<DimensionedField<Type, volMesh>>& procFields
         ) const;
 
         //- Read and reconstruct volume internal field
@@ -180,7 +180,7 @@ public:
         reconstructField
         (
             const IOobject& fieldObject,
-            const PtrList<GeometricField<Type, fvPatchField, volMesh>>&
+            const UPtrList<GeometricField<Type, fvPatchField, volMesh>>&
         ) const;
 
         //- Read and reconstruct volume field
@@ -195,7 +195,7 @@ public:
         reconstructField
         (
             const IOobject& fieldObject,
-            const PtrList<GeometricField<Type, fvsPatchField, surfaceMesh>>&
+            const UPtrList<GeometricField<Type, fvsPatchField, surfaceMesh>>&
         ) const;
 
         //- Read and reconstruct surface field
@@ -269,7 +269,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "fvFieldReconstructorTemplates.C"
+    #include "fvFieldReconstructor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

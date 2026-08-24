@@ -87,9 +87,9 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    externalCoupled1
+    externalCoupledFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            externalCoupled;
         libs            (fieldFunctionObjects);
         commsDir        "<case>/comms";
@@ -106,13 +106,13 @@ Usage
         }
         initByExternal  true;
 
-        // Optional entries (runtime modifiable)
+        // Optional entries
         waitInterval    1;
         timeOut         100;
         statusDone      done;  // Any arbitrary status=... value
         calcFrequency   1;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
@@ -137,7 +137,7 @@ Usage
 
     The entries comprise:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: externalCoupled         | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       commsDir     | Communication directory            | word |  yes  | -
@@ -151,15 +151,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link timeFunctionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::timeFunctionObject
-    - Foam::externalFileCouple
-    - ExtendedCodeGuide::functionObjects::field::externalCoupled
+      - \link timeFunctionObject.H \endlink
 
 SourceFiles
     externalCoupled.C

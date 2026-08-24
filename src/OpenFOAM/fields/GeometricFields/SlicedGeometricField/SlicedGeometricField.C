@@ -97,7 +97,7 @@ makeBoundary
             bf.set
             (
                 patchi,
-                PatchField<Type>::New(p.type(), p, *this)
+                PatchField<Type>::New(p.type(), p, DimensionedField<Type, GeoMesh>::null())
             );
 
             // Initialize the values on the coupled patch to those of the slice

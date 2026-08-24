@@ -63,8 +63,8 @@ SeeAlso
 
 SourceFiles
     treeBoundBoxI.H
-    treeBoundBox.C
-    treeBoundBoxTemplates.C
+    treeBoundBox.cxx
+    treeBoundBox.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -202,7 +202,7 @@ public:
     // Constructors
 
         //- Construct a 0/1 unit bounding box
-        inline explicit treeBoundBox(const Foam::zero_one);
+        inline explicit treeBoundBox(Foam::zero_one);
 
         //- Construct a bounding box containing a single initial point
         inline explicit treeBoundBox(const point& p);
@@ -463,7 +463,7 @@ inline bool operator!=(const treeBoundBox& a, const treeBoundBox& b);
 #include "treeBoundBoxI.H"
 
 #ifdef NoRepository
-    #include "treeBoundBoxTemplates.C"
+    #include "treeBoundBox.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2023-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -100,18 +100,29 @@ public:
             const faPatchFieldMapper&
         );
 
-        //- Construct as copy
+        //- Copy construct onto a new patch with internal field reference
+        //- and specified value
         fixedValueFaPatchField
         (
-            const fixedValueFaPatchField<Type>&
+            const fixedValueFaPatchField<Type>& pfld,
+            const faPatch& p,
+            const DimensionedField<Type, areaMesh>& iF,
+            const Type& value
         );
 
-        //- Construct as copy setting internal field reference
+        //- Copy construct with internal field reference
         fixedValueFaPatchField
         (
-            const fixedValueFaPatchField<Type>&,
-            const DimensionedField<Type, areaMesh>&
+            const fixedValueFaPatchField<Type>& pfld,
+            const DimensionedField<Type, areaMesh>& iF
         );
+
+        //- Copy construct
+        fixedValueFaPatchField(const fixedValueFaPatchField<Type>& pfld)
+        :
+            fixedValueFaPatchField<Type>(pfld, pfld.internalField())
+        {}
+
 
         //- Return clone
         virtual tmp<faPatchField<Type>> clone() const

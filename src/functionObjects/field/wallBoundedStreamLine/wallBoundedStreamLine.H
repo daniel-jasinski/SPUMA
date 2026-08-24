@@ -39,16 +39,16 @@ Description
     \table
       Operand       | Type  | Location
       input         | -     | -
-      output file   | -     | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
+      output file   | -     | postProcessing/<FO>/<time>/file
       output field  | -     | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    wallBoundedStreamLine1
+    wallBoundedStreamLineFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            wallBoundedStreamLine;
         libs            (fieldFunctionObjects);
 
@@ -57,7 +57,7 @@ Usage
         direction       forward;
         cloud           particleTracks;
 
-        // Mandatory entries (runtime modifiable)
+        // Mandatory entries
         fields          (<field1> ... <fieldN>);
         setFormat       vtk;
         lifeTime        10000;
@@ -69,7 +69,7 @@ Usage
             maxPoints   20000;
         }
 
-        // Optional entries (runtime modifiable)
+        // Optional entries
         bounds          (0.2 -10 -10)(0.22 10 10);
         trackLength     1e-3;
         nSubCycle       1;
@@ -78,14 +78,14 @@ Usage
         // Deprecated
         // trackForward true;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                           | Type | Req'd | Dflt
+      Property     | Description                           | Type | Reqd | Deflt
       type         | Type name: wallBoundedStreamLine      | word |  yes  | -
       libs         | Library name: fieldFunctionObjects    | word |  yes  | -
       U            | Name of tracking velocity field       | word |  yes  | -
@@ -128,18 +128,11 @@ Usage
     \endverbatim
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
+      - \link streamLineBase.H \endlink
 
 Note
     When specifying the track resolution, the \c trackLength OR \c nSubCycle
     option should be used.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::streamLineBase
-    - ExtendedCodeGuide::functionObjects::field::wallBoundedStreamLine
 
 SourceFiles
     wallBoundedStreamLine.C
@@ -195,7 +188,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         wallBoundedStreamLine
         (
             const word& name,
@@ -203,7 +196,7 @@ public:
             const dictionary& dict
         );
 
-        //- Construct from Time and dictionary and list of fields to sample
+        //- Construct from name, Time, dictionary and list of fields to sample
         wallBoundedStreamLine
         (
             const word& name,
@@ -225,8 +218,8 @@ public:
 
     // Member Functions
 
-        //- Read settings
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
         //- Do the actual tracking to fill the track data
         virtual void track();

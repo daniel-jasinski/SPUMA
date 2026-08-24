@@ -31,46 +31,40 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Computes the volumetric- or mass-flux
-    information across selections of face zones.
+    Computes the volumetric- or mass-flux information across selections of face
+    zones.
 
     Operands:
     \table
       Operand       | Type | Location
       input         | -    | -
-      output file   | dat  | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<faceN\>
+      output file   | dat  | postProcessing/<FO>/<time>/faceName
       output field  | -    | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    fluxSummary1
+    fluxSummaryFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            fluxSummary;
         libs            (fieldFunctionObjects);
+        mode            <word>;
 
-        // Mandatory entries (runtime modifiable)
-        mode            cellZoneAndDirection;
-        cellZoneAndDirection
-        (
-            (porosity (1 0 0))
-        );
+        // Optional entries
+        phi             <word>;
+        scaleFactor     <scalar>;
+        tolerance       <scalar>;
 
-        // Optional entries  (runtime modifiable)
-        phi             phi;
-        scaleFactor     1.0;
-        tolerance       0.8;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: fluxSummary             | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       mode         | Mode to generate faces to test     | word |  yes  | -
@@ -78,6 +72,10 @@ Usage
       scaleFactor | Factor to scale results             | scalar | no  | 1.0
       tolerance   | Tolerance for reference direction   | scalar | no  | 0.8
     \endtable
+
+    The inherited entries are elaborated in:
+     - \link functionObject.H \endlink
+     - \link writeFile.H \endlink
 
     Options for the \c mode entry:
     \verbatim
@@ -88,29 +86,16 @@ Usage
       surfaceAndDirection
     \endverbatim
 
-    The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
 Note
     For surface and direction, phi='U' can be used for determining the fluxes.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - Foam::functionObjects::timeControl
-    - ExtendedCodeGuide::functionObjects::field::fluxSummary
 
 SourceFiles
     fluxSummary.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_fluxSummary_H
-#define functionObjects_fluxSummary_H
+#ifndef Foam_functionObjects_fluxSummary_H
+#define Foam_functionObjects_fluxSummary_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -291,7 +276,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         fluxSummary
         (
             const word& name,
@@ -312,13 +297,13 @@ public:
 
     // Member Functions
 
-        //- Read the field fluxSummary data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the fluxSummary
+        //- Write the function-object results
         virtual bool write();
 };
 

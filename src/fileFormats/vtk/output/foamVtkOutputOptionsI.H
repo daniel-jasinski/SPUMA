@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2022 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,7 +27,7 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-inline Foam::vtk::outputOptions::outputOptions()
+inline Foam::vtk::outputOptions::outputOptions() noexcept
 :
     fmtType_(formatType::INLINE_ASCII),
     precision_(IOstream::defaultPrecision())
@@ -36,8 +36,8 @@ inline Foam::vtk::outputOptions::outputOptions()
 
 inline Foam::vtk::outputOptions::outputOptions
 (
-    enum vtk::formatType fmtType
-)
+    Foam::vtk::formatType fmtType
+) noexcept
 :
     fmtType_(fmtType),
     precision_(IOstream::defaultPrecision())
@@ -46,9 +46,9 @@ inline Foam::vtk::outputOptions::outputOptions
 
 inline Foam::vtk::outputOptions::outputOptions
 (
-    enum vtk::formatType fmtType,
+    Foam::vtk::formatType fmtType,
     unsigned prec
-)
+) noexcept
 :
     fmtType_(fmtType),
     precision_(prec)
@@ -72,7 +72,8 @@ inline Foam::vtk::formatType Foam::vtk::outputOptions::fmt() const noexcept
 }
 
 
-inline Foam::word Foam::vtk::outputOptions::ext(vtk::fileTag contentType) const
+inline const Foam::word&
+Foam::vtk::outputOptions::ext(vtk::fileTag contentType) const
 {
     return
     (
@@ -80,6 +81,12 @@ inline Foam::word Foam::vtk::outputOptions::ext(vtk::fileTag contentType) const
       ? vtk::legacy::fileExtension
       : vtk::fileExtension[contentType]
     );
+}
+
+
+inline bool Foam::vtk::outputOptions::is_hdf() const noexcept
+{
+    return (fmtType_ == formatType::HDF_FORMAT);
 }
 
 
@@ -95,7 +102,7 @@ inline bool Foam::vtk::outputOptions::legacy() const noexcept
 
 inline bool Foam::vtk::outputOptions::xml() const noexcept
 {
-    return !legacy();
+    return (!legacy() && !is_hdf());
 }
 
 

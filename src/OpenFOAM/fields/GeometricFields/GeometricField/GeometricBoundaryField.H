@@ -6,7 +6,8 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017,2022 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -62,6 +63,9 @@ public:
 
     // Public Typedefs
 
+        //- The template instance used for this GeometricBoundaryField type
+        typedef GeometricBoundaryField<Type, PatchField, GeoMesh> this_type;
+
         //- The boundary mesh type for the boundary fields
         typedef typename GeoMesh::BoundaryMesh BoundaryMesh;
 
@@ -82,10 +86,14 @@ private:
         //- Reference to BoundaryMesh for which this field is defined
         const BoundaryMesh& bmesh_;
 
+        //- List of begin pointers for each patch field
+        mutable autoPtr<List<const Type*>> patchFieldBeginPtr_;
+
 
     // Private Member Functions
 
-        //- Helper: check if patchfields have been evaluated. If not:
+        //- Check if patch fields have been consistently evaluated.
+        //  If not:
         //      exit = true  : FatalError
         //      exit = false : return bool
         template<class CheckPatchField>
@@ -101,16 +109,6 @@ public:
     //- specializations define this in their owning library so Windows
     //- consumers call through a DLL-safe function thunk.
     static int debugLevel();
-
-    //- User-defined tolerance (for consistency checks)
-    static scalar tolerance;
-
-    //- Enable local consistency
-    static int localConsistency;
-
-    //- Mutable accessor for the local-consistency switch. Standard field
-    //- specializations define this in their owning library.
-    static int& localConsistencyRef();
 
 
     // Constructors
@@ -182,6 +180,12 @@ public:
 
     // Member Functions
 
+        //- Return non-const reference to this boundary field
+        this_type& constCast() const noexcept
+        {
+            return const_cast<this_type&>(*this);
+        }
+
         //- Read the boundary field
         void readField(const Internal& iField, const dictionary& dict);
 
@@ -211,8 +215,12 @@ public:
             const UPstream::commsTypes commsType = UPstream::defaultCommsType
         );
 
-        //- Evaluate boundary conditions on coupled patches of given type.
-        //- Uses specified or default comms.
+        //- Evaluate boundary conditions on coupled patches of the given type,
+        //- using specified or default comms.
+        //
+        //  \tparam CoupledPatchType The coupled \b patch type that should
+        //     be evaluated. For a \c void type,
+        //     all coupled patch fields will be evaluated.
         template<class CoupledPatchType>
         void evaluateCoupled
         (
@@ -240,6 +248,8 @@ public:
         //- Helper: check if field has been evaluated. See instantiations.
         bool check() const;
 
+        //- Return the list of begin pointers for each patch field
+        const List<const Type*>& patchFieldBegins() const;
 
     // Write
 
@@ -261,6 +271,9 @@ public:
         //- Assignment to uniform value
         void operator=(const Type& val);
 
+        //- Assignment to zero
+        void operator=(Foam::zero);
+
         //- Forced assignment from GeometricBoundaryField
         void operator==(const GeometricBoundaryField& bf);
 
@@ -270,10 +283,14 @@ public:
         //- Forced assignment to uniform value
         void operator==(const Type& val);
 
+        //- Forced assignment to zero
+        void operator==(Foam::zero) { *this == Type(Foam::zero{}); }
+
         // Prevent automatic comparison rewriting (c++20)
         bool operator!=(const GeometricBoundaryField&) = delete;
         bool operator!=(const FieldField<PatchField, Type>&) = delete;
         bool operator!=(const Type&) = delete;
+        bool operator!=(Foam::zero) = delete;
 };
 
 

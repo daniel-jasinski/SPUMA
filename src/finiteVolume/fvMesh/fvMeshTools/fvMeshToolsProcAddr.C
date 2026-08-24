@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -45,7 +45,7 @@ namespace Foam
 static autoPtr<mapDistributePolyMesh> createReconstructMap
 (
     const fvMesh& mesh,
-    const autoPtr<fvMesh>& baseMeshPtr,
+    const fvMesh* baseMeshPtr,
     const labelList& cellProcAddressing,
     const labelList& faceProcAddressing,
     const labelList& pointProcAddressing,
@@ -109,7 +109,7 @@ static autoPtr<mapDistributePolyMesh> createReconstructMap
 
 
     // NB: can only have a reconstruct on master!
-    if (Pstream::master() && baseMeshPtr && baseMeshPtr->nCells())
+    if (UPstream::master() && baseMeshPtr && baseMeshPtr->nCells())
     {
         const fvMesh& baseMesh = *baseMeshPtr;
 
@@ -219,7 +219,7 @@ Foam::autoPtr<Foam::mapDistributePolyMesh>
 Foam::fvMeshTools::readProcAddressing
 (
     const fvMesh& mesh,
-    const autoPtr<fvMesh>& baseMeshPtr
+    const fvMesh* baseMeshPtr
 )
 {
     // Processor-local reading
@@ -303,7 +303,7 @@ void Foam::fvMeshTools::writeProcAddressing
     const fvMesh& mesh,
     const mapDistributePolyMesh& map,
     const bool decompose,
-    const fileName& writeHandlerInstance,
+    const fileName& writeInstance,
     refPtr<fileOperation>& writeHandler
 )
 {
@@ -431,21 +431,22 @@ void Foam::fvMeshTools::writeProcAddressing
     // as instance so instead of e.g. 'celllMap.write()' directly call
     // the chosen file-handler.
 
+    if (!writeInstance.empty())
+    {
+        cellMap.instance() = writeInstance;
+        faceMap.instance() = writeInstance;
+        pointMap.instance() = writeInstance;
+        patchMap.instance() = writeInstance;
+    }
+
     const auto& tm = cellMap.time();
-    const IOstreamOption opt(tm.writeFormat(), tm.writeCompression());
+    const IOstreamOption opt(tm.writeStreamOption());
     {
         auto oldHandler = fileOperation::fileHandler(writeHandler);
 
-        cellMap.instance() = writeHandlerInstance;
         const bool cellOk = fileHandler().writeObject(cellMap, opt, true);
-
-        faceMap.instance() = writeHandlerInstance;
         const bool faceOk = fileHandler().writeObject(faceMap, opt, true);
-
-        pointMap.instance() = writeHandlerInstance;
         const bool pointOk = fileHandler().writeObject(pointMap, opt, true);
-
-        patchMap.instance() = writeHandlerInstance;
         const bool patchOk = fileHandler().writeObject(patchMap, opt, true);
 
         writeHandler = fileOperation::fileHandler(oldHandler);
@@ -460,6 +461,19 @@ void Foam::fvMeshTools::writeProcAddressing
                 << patchMap.objectRelPath() << endl;
         }
     }
+}
+
+
+// * * * * * * * * * * * * * * * Housekeeping  * * * * * * * * * * * * * * * //
+
+Foam::autoPtr<Foam::mapDistributePolyMesh>
+Foam::fvMeshTools::readProcAddressing
+(
+    const fvMesh& procMesh,
+    const autoPtr<fvMesh>& baseMeshPtr
+)
+{
+    return readProcAddressing(procMesh, baseMeshPtr.get());
 }
 
 

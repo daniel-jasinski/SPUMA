@@ -30,7 +30,7 @@ Description
     Appended raw binary output.
 
 SourceFiles
-    foamVtkAppendRawFormatter.C
+    foamVtkAppendRawFormatter.cxx
 
 \*---------------------------------------------------------------------------*/
 

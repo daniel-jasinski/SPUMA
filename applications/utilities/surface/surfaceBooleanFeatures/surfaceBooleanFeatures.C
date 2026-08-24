@@ -95,9 +95,15 @@ Description
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #endif
 #pragma clang diagnostic ignored "-Wbitwise-instead-of-logical"
+#pragma clang diagnostic ignored "-Wdeprecated-builtins"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 #include <CGAL/AABB_tree.h>
+#if defined(CGAL_VERSION_NR) && (CGAL_VERSION_NR < 1060011000)
 #include <CGAL/AABB_traits.h>
+#else
+#include <CGAL/AABB_traits_3.h>
+#endif
 #include <CGAL/AABB_face_graph_triangle_primitive.h>
 #include "CGALIndexedPolyhedron.H"
 #include "PolyhedronReader.H"
@@ -105,7 +111,11 @@ typedef CGAL::AABB_face_graph_triangle_primitive
 <
     Polyhedron, CGAL::Default, CGAL::Tag_false
 > Primitive;
+#if defined(CGAL_VERSION_NR) && (CGAL_VERSION_NR < 1060011000)
 typedef CGAL::AABB_traits<K, Primitive> Traits;
+#else
+typedef CGAL::AABB_traits_3<K, Primitive> Traits;
+#endif
 typedef CGAL::AABB_tree<Traits> Tree;
 
 // Used boost::optional prior to CGAL-6.0

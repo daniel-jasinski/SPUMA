@@ -34,34 +34,38 @@ Description
     Removes registered objects if present in the database.
 
 Usage
-    Example of function object specification:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    removeRegisteredObject1
+    removeRegisteredObjectFO
     {
+        // Mandatory entries
         type        removeRegisteredObject;
         libs        (utilityFunctionObjects);
+        objects     <wordList>;  // (obj1 obj2);
+
+        // Inherited entries
         ...
-        objects     (obj1 obj2);
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property     | Description             | Required    | Default value
-        type         | type name: removeRegisteredObject | yes |
-        objects      | objects to remove       | yes         |
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: removeRegisteredObject  | word | yes  | -
+      libs     | Library name: utilityFunctionObjects | word | yes | -
+      objects  | Names of objects to control        | wordList | yes | -
     \endtable
 
-See also
-    Foam::functionObject
+    The inherited entries are elaborated in:
+      - \link regionFunctionObject.H \endlink
 
 SourceFiles
     removeRegisteredObject.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_removeRegisteredObject_H
-#define functionObjects_removeRegisteredObject_H
+#ifndef Foam_functionObjects_removeRegisteredObject_H
+#define Foam_functionObjects_removeRegisteredObject_H
 
 #include "regionFunctionObject.H"
 #include "wordList.H"
@@ -87,7 +91,7 @@ class removeRegisteredObject
         wordList objectNames_;
 
 
-    // Private member functions
+    // Private Member Functions
 
         //- No copy construct
         removeRegisteredObject(const removeRegisteredObject&) = delete;
@@ -104,7 +108,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         removeRegisteredObject
         (
             const word& name,
@@ -119,13 +123,13 @@ public:
 
     // Member Functions
 
-        //- Read the removeRegisteredObject data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Remove the registered objects
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Do nothing
+        //- Write the function-object results (no-op)
         virtual bool write();
 };
 

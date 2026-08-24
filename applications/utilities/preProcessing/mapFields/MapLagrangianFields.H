@@ -129,7 +129,7 @@ void MapLagrangianFields
     MapLagrangianFields
     <
         IOField<Field<Type>>,
-        CompactIOField<Field<Type>, Type>
+        CompactIOField<Field<Type>>
     >
     (
         cloudName,
@@ -141,8 +141,8 @@ void MapLagrangianFields
 
     MapLagrangianFields
     <
-        CompactIOField<Field<Type>, Type>,
-        CompactIOField<Field<Type>, Type>
+        CompactIOField<Field<Type>>,
+        CompactIOField<Field<Type>>
     >
     (
         cloudName,

@@ -79,6 +79,8 @@ Foam::PatchFlowRateInjection<CloudType>::PatchFlowRateInjection
     // - will be reset during each injection
     this->volumeTotal_ = 0.0;
     this->massTotal_ = 0.0;
+
+    volumeToInject(time.value(), time.value() + duration_);
 }
 
 

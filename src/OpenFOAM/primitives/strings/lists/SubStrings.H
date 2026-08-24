@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,7 +35,9 @@ Description
 #ifndef Foam_SubStrings_H
 #define Foam_SubStrings_H
 
-#include <regex>  // For std::sub_match
+#include <regex>    // For std::ssub_match
+#include <memory>
+#include <string_view>
 #include <string>
 #include <vector>
 
@@ -48,22 +50,30 @@ namespace Foam
                          Class SubStrings Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class StringType>
 class SubStrings
 :
-    public std::vector<std::sub_match<typename StringType::const_iterator>>
+    public std::vector<std::ssub_match>
 {
 public:
 
-    // Types
+    // Static Functions
 
-        //- The element type
-        using value_type =
-            typename std::sub_match<typename StringType::const_iterator>;
+        //- Return match as a string_view
+        static std::string_view view(const std::ssub_match& m)
+        {
+            if (!m.matched) return std::string_view();
 
-        //- The const_iterator for the underlying string type
-        using string_iterator =
-            typename StringType::const_iterator;
+            #if __cplusplus >= 202002L
+            return std::string_view(m.first, m.second);
+            #else
+            // No string_view construct from iterator pairs before c++20
+            return std::string_view
+            (
+                std::pointer_traits<const char*>::pointer_to(*(m.first)),
+                (m.second - m.first)
+            );
+            #endif
+        }
 
 
     // Member Functions
@@ -82,27 +92,36 @@ public:
             return len;
         }
 
-        //- Retrieve element at pos, converted to a string type.
-        StringType str(size_t pos) const
+        //- Return length of element at pos
+        std::string::size_type length(size_t pos) const
+        {
+            return (*this)[pos].length();
+        }
+
+        //- Retrieve element at pos, as a string
+        std::string str(size_t pos) const
         {
             return (*this)[pos].str();
+        }
+
+        //- Return element at pos as a string_view
+        std::string_view view(size_t pos) const
+        {
+            return view((*this)[pos]);
         }
 
         //- Append sub-string defined by begin/end iterators
         void append
         (
-            const typename StringType::const_iterator& b,
-            const typename StringType::const_iterator& e
+            std::string::const_iterator b,
+            std::string::const_iterator e
         )
         {
-            value_type range;
+            auto& range = this->emplace_back();
             range.first = b;
             range.second = e;
             range.matched = true;
-
-            this->push_back(range);
         }
-
 
         //- Reduce size by 1 or more elements. Can be called on an empty list.
         void pop_back(size_t n = 1)
@@ -135,16 +154,6 @@ public:
                 this->resize(this->size() - n);
             }
         }
-
-
-    // FUTURE?
-    //  #if __cplusplus >= 201703L
-    //  std::string_view view(size_t pos) const
-    //  {}
-    //  #else
-    //  stdFoam::span<const char> view(size_t pos) const
-    //  {}
-    //  #endif
 };
 
 

@@ -40,7 +40,7 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::CaCO3::CaCO3()
+Foam::CaCO3::CaCO3() noexcept
 :
     solidProperties(2710, 850, 1.3, 0.0, 1.0, 100.086, 0.0, 0.0)
 {

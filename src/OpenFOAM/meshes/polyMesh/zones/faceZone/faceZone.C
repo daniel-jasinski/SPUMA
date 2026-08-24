@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,12 +27,11 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "faceZone.H"
-#include "addToRunTimeSelectionTable.H"
 #include "faceZoneMesh.H"
 #include "polyMesh.H"
-#include "primitiveMesh.H"
 #include "mapPolyMesh.H"
 #include "syncTools.H"
+#include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -42,8 +41,6 @@ namespace Foam
     defineRunTimeSelectionTable(faceZone, dictionary);
     addToRunTimeSelectionTable(faceZone, faceZone, dictionary);
 }
-
-const char* const Foam::faceZone::labelsName = "faceLabels";
 
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
@@ -220,7 +217,8 @@ void Foam::faceZone::checkAddressing() const
 
 Foam::faceZone::faceZone(const faceZoneMesh& zm)
 :
-    faceZone(word::null, 0, zm)
+    zone(),
+    zoneMesh_(zm)
 {}
 
 
@@ -329,10 +327,10 @@ Foam::faceZone::faceZone
     const faceZoneMesh& zm
 )
 :
-    zone(name, dict, this->labelsName, index),
-    flipMap_(dict.lookup("flipMap")),  // OR: dict.get<boolList>("flipMap")
+    zone(name, dict, faceZone::labelsName(), index),
     zoneMesh_(zm)
 {
+    dict.readEntry("flipMap", flipMap_, keyType::LITERAL);
     checkAddressing();
 }
 
@@ -340,7 +338,21 @@ Foam::faceZone::faceZone
 Foam::faceZone::faceZone
 (
     const faceZone& originalZone,
-    const Foam::zero,
+    const faceZoneMesh& zm,
+    const label newIndex
+)
+:
+    zone(originalZone, newIndex),
+    zoneMesh_(zm)
+{
+    flipMap_ = originalZone.flipMap();
+}
+
+
+Foam::faceZone::faceZone
+(
+    const faceZone& originalZone,
+    Foam::zero,
     const faceZoneMesh& zm,
     const label newIndex
 )
@@ -353,7 +365,7 @@ Foam::faceZone::faceZone
 Foam::faceZone::faceZone
 (
     const faceZone& originalZone,
-    const Foam::zero,
+    Foam::zero,
     const label index,
     const faceZoneMesh& zm
 )
@@ -401,10 +413,21 @@ Foam::faceZone::faceZone
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::label Foam::faceZone::whichFace(const label globalFaceID) const
+Foam::label Foam::faceZone::max_index() const noexcept
 {
-    return zone::localID(globalFaceID);
+    return zoneMesh_.mesh().nFaces();
 }
+
+
+// void Foam::faceZone::sort()
+// {
+//    clearAddressing();
+//    auto& addr = static_cast<labelList&>(*this);
+//
+//    auto order = Foam::sortedOrder(addr);
+//    addr = labelList(addr, order);
+//    flipMap_ = boolList(flipMap_, order);
+// }
 
 
 const Foam::primitiveFacePatch& Foam::faceZone::patch() const
@@ -483,7 +506,6 @@ void Foam::faceZone::clearPrimitives()
 
 void Foam::faceZone::resetAddressing(faceZone&& zn)
 {
-    // TDB: clearGeom();
     if (this == &zn)
     {
         return;  // Self-assignment is a no-op
@@ -498,7 +520,6 @@ void Foam::faceZone::resetAddressing(faceZone&& zn)
 
 void Foam::faceZone::resetAddressing(const faceZone& zn)
 {
-    // TDB: clearGeom();
     if (this == &zn)
     {
         return;  // Self-assignment is a no-op
@@ -575,12 +596,6 @@ void Foam::faceZone::updateMesh(const mapPolyMesh& mpm)
 
     labelList::transfer(newAddressing);
     flipMap_.transfer(newFlipMap);
-}
-
-
-bool Foam::faceZone::checkDefinition(const bool report) const
-{
-    return zone::checkDefinition(zoneMesh().mesh().faces().size(), report);
 }
 
 
@@ -683,24 +698,12 @@ void Foam::faceZone::movePoints(const pointField& pts)
     }
 }
 
+
 void Foam::faceZone::write(Ostream& os) const
 {
-    os  << nl << name()
-        << nl << static_cast<const labelList&>(*this)
-        << nl << flipMap();
-}
-
-
-void Foam::faceZone::writeDict(Ostream& os) const
-{
-    os.beginBlock(name());
-
-    os.writeEntry("type", type());
-    zoneIdentifier::write(os);
-    writeEntry(this->labelsName, os);
-    flipMap().writeEntry("flipMap", os);
-
-    os.endBlock();
+    zone::write(os);
+    labelList::writeEntry(faceZone::labelsName(), os);
+    flipMap_.writeEntry("flipMap", os);
 }
 
 

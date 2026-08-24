@@ -32,8 +32,8 @@ Description
     situations than using the normal list find/found methods.
 
 SourceFiles
+    hashedWordList.cxx
     hashedWordListI.H
-    hashedWordList.C
 
 \*---------------------------------------------------------------------------*/
 
@@ -193,7 +193,7 @@ public:
         void push_back(const word& val) { this->push_uniq(val); }
 
         //- Same as push_uniq()
-        FOAM_DEPRECATED_STRICT(2022-10, "push_uniq method")
+        FOAM_DEPRECATED_FOR(2022-10, "push_uniq method")
         label appendUniq(const word& val) { return this->push_uniq(val); }
 };
 

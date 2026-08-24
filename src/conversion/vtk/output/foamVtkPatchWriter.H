@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2021 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -43,7 +43,7 @@ See Also
     Foam::vtk::patchMeshWriter
 
 SourceFiles
-    foamVtkPatchWriterTemplates.C
+    foamVtkPatchWriter.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -75,8 +75,9 @@ class patchWriter
         //- Use internal field value instead of patch value
         bool useNearCellValue_;
 
+public:
 
-    // Private Member Functions
+    // Generated Methods
 
         //- No copy construct
         patchWriter(const patchWriter&) = delete;
@@ -85,18 +86,15 @@ class patchWriter
         void operator=(const patchWriter&) = delete;
 
 
-public:
-
     // Constructors
 
         //- Construct from components (default format INLINE_BASE64)
-        //
-        //  \param useNearCellValue to use cell instead of patch values
         patchWriter
         (
             const polyMesh& mesh,
-            const labelList& patchIDs,
+            const labelUList& patchIDs,
             const vtk::outputOptions opts = vtk::formatType::INLINE_BASE64,
+            //! Use patch internal instead of patch face values
             const bool useNearCellValue = false
         )
         :
@@ -110,9 +108,9 @@ public:
         patchWriter
         (
             const polyMesh& mesh,
-            const labelList& patchIDs,
+            const labelUList& patchIDs,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         )
         :
             vtk::patchMeshWriter(mesh, patchIDs, file, parallel),
@@ -125,32 +123,14 @@ public:
         patchWriter
         (
             const polyMesh& mesh,
-            const labelList& patchIDs,
+            const labelUList& patchIDs,
             const vtk::outputOptions opts,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         )
         :
             vtk::patchMeshWriter(mesh, patchIDs, opts, file, parallel),
             useNearCellValue_(false)
-        {}
-
-        //- Construct from components and open the file for writing.
-        //  The file name is with/without an extension.
-        //
-        //  \param useNearCellValue to use cell instead of patch values
-        patchWriter
-        (
-            const polyMesh& mesh,
-            const labelList& patchIDs,
-            const vtk::outputOptions opts,
-            const bool useNearCellValue,
-            const fileName& file,
-            bool parallel = Pstream::parRun()
-        )
-        :
-            vtk::patchMeshWriter(mesh, patchIDs, opts, file, parallel),
-            useNearCellValue_(useNearCellValue)
         {}
 
 
@@ -159,6 +139,24 @@ public:
 
 
     // Member Functions
+
+    // Access / Edit
+
+        //- Use patch internal field values?
+        bool useCellValue() const noexcept
+        {
+            return useNearCellValue_;
+        }
+
+        //- Select use of patch internal field values
+        //  \returns the previous state
+        bool useCellValue(bool on) noexcept
+        {
+            bool old(useNearCellValue_);
+            useNearCellValue_ = on;
+            return old;
+        }
+
 
     // Write
 
@@ -191,6 +189,27 @@ public:
             const GeometricField<Type, fvPatchField, volMesh>& field,
             const PrimitivePatchInterpolation<primitivePatch>* pInterp
         );
+
+
+    // Housekeeping
+
+        //- Construct with \p useNearCellValue setting
+        //  \deprecated
+        FOAM_DEPRECATED_FOR(2025-11, "use useCellValue() after construction")
+        patchWriter
+        (
+            const polyMesh& mesh,
+            const labelUList& patchIDs,
+            const vtk::outputOptions opts,
+            //! Use patch internal instead of patch face values
+            const bool useNearCellValue,
+            const fileName& file,
+            bool parallel = UPstream::parRun()
+        )
+        :
+            vtk::patchMeshWriter(mesh, patchIDs, opts, file, parallel),
+            useNearCellValue_(useNearCellValue)
+        {}
 };
 
 
@@ -202,7 +221,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "foamVtkPatchWriterTemplates.C"
+    #include "foamVtkPatchWriter.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

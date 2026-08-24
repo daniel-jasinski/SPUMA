@@ -35,8 +35,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_runTimeConditions_maxDurationCondition_H
-#define functionObjects_runTimeConditions_maxDurationCondition_H
+#ifndef Foam_functionObjects_runTimeConditions_maxDurationCondition_H
+#define Foam_functionObjects_runTimeConditions_maxDurationCondition_H
 
 #include "runTimeCondition.H"
 

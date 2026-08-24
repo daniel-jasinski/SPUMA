@@ -73,7 +73,7 @@ void Foam::binModels::singleDirectionUniformBin::writeFileHeader
         if (decomposePatchValues_)
         {
             writeTabbed(os, writeComponents<Type>("normal" + ibin));
-            writeTabbed(os, writeComponents<Type>("tangenial" + ibin));
+            writeTabbed(os, writeComponents<Type>("tangential" + ibin));
         }
         else
         {
@@ -171,8 +171,6 @@ bool Foam::binModels::singleDirectionUniformBin::processField
 
         const auto& pts = pp.faceCentres();
 
-        const scalarField dd(pp.faceCentres() & binDir_);
-
         forAll(pts, facei)
         {
             const label bini = whichBin(pts[facei] & binDir_);
@@ -189,9 +187,12 @@ bool Foam::binModels::singleDirectionUniformBin::processField
         }
     }
 
-    for (auto& binList : data)
+    if (Pstream::parRun())
     {
-        reduce(binList, sumOp<List<Type>>());
+        for (auto& binList : data)
+        {
+            reduce(binList, sumOp<List<Type>>());
+        }
     }
 
     if (writeToFile())

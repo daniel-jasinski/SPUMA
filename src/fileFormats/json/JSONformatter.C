@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2023 OpenCFD Ltd.
+    Copyright (C) 2023-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -45,8 +45,12 @@ bool Foam::JSONformatter::writeToken(const token& t)
             write(t.boolToken());
             break;
 
-        case token::tokenType::LABEL:
-            write(t.labelToken());
+        case token::tokenType::INTEGER_32 :
+            write(t.int32Token());
+            break;
+
+        case token::tokenType::INTEGER_64 :
+            write(t.int64Token());
             break;
 
         case token::tokenType::FLOAT:
@@ -143,9 +147,15 @@ Foam::Ostream& Foam::JSONformatter::writeDict(const dictionary& dict)
 
         const auto& tokens = e.stream();
 
-        if (tokens.empty()) continue; // error?
+        if (tokens.empty())
+        {
+            WarningInFunction
+                << "Empty entry for keyword " << keyword << nl
+                << "    - treating value as null" << endl;
 
-        if (tokens.size() == 1)
+            os_  << "null";
+        }
+        else if (tokens.size() == 1)
         {
             writeToken(tokens[0]);
         }

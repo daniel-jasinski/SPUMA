@@ -33,7 +33,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    binField1
+    binFieldFO
     {
         // Other binField entries
         ...
@@ -190,7 +190,7 @@ public:
 
     // Member Functions
 
-        //- Read the dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
         //- Apply bins

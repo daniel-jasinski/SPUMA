@@ -36,12 +36,13 @@ Description
     Operands:
     \table
       Operand      | Type                     | Location
-      input      | {vol,surface}\<Type\>Field | $FOAM_CASE/\<time\>/\<inpField\>
+      input        | {vol,surface}<Type>Field | <time>/inputField
       output file  | -                        | -
-      output field | {vol,surface}ScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field | {vol,surface}ScalarField | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
     With the \c subRegion option, also supports fields on functionObject
     surface output (e.g. sampledSurfaces).
@@ -49,42 +50,28 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    magSqr1
+    magSqrFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            magSqr;
         libs            (fieldFunctionObjects);
+        field           <word>;
 
-        // Mandatory (inherited) entries (runtime modifiable)
-        field           <field>;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: magSqr                  | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       field        | Name of the operand field          | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func "magSqr(<field>)"
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::fieldExpression
-    - ExtendedCodeGuide::functionObjects::field::magSqr
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     magSqr.C
@@ -92,8 +79,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_magSqr_H
-#define functionObjects_magSqr_H
+#ifndef Foam_functionObjects_magSqr_H
+#define Foam_functionObjects_magSqr_H
 
 #include "fieldExpression.H"
 
@@ -132,7 +119,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         magSqr
         (
             const word& name,

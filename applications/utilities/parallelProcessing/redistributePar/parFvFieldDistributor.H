@@ -35,9 +35,9 @@ Description
     baseMesh is non-zero cells on processor0 only.
 
 SourceFiles
-    parFvFieldDistributor.C
-    parFvFieldDistributorFields.C
-    parFvFieldDistributorTemplates.C
+    parFvFieldDistributor.cxx
+    parFvFieldDistributor.txx
+    parFvFieldDistributorFields.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -228,7 +228,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-#   include "parFvFieldDistributorTemplates.C"
+#   include "parFvFieldDistributor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

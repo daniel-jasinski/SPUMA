@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
+    Copyright (C) 2023-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -69,17 +70,6 @@ template<class Type>
 Foam::fixedValueFaPatchField<Type>::fixedValueFaPatchField
 (
     const fixedValueFaPatchField<Type>& ptf,
-    const DimensionedField<Type, areaMesh>& iF
-)
-:
-    faPatchField<Type>(ptf, iF)
-{}
-
-
-template<class Type>
-Foam::fixedValueFaPatchField<Type>::fixedValueFaPatchField
-(
-    const fixedValueFaPatchField<Type>& ptf,
     const faPatch& p,
     const DimensionedField<Type, areaMesh>& iF,
     const faPatchFieldMapper& mapper
@@ -92,10 +82,24 @@ Foam::fixedValueFaPatchField<Type>::fixedValueFaPatchField
 template<class Type>
 Foam::fixedValueFaPatchField<Type>::fixedValueFaPatchField
 (
-    const fixedValueFaPatchField<Type>& ptf
+    const fixedValueFaPatchField<Type>& pfld,
+    const faPatch& p,
+    const DimensionedField<Type, areaMesh>& iF,
+    const Type& value
 )
 :
-    faPatchField<Type>(ptf)
+    faPatchField<Type>(pfld, p, iF, value)
+{}
+
+
+template<class Type>
+Foam::fixedValueFaPatchField<Type>::fixedValueFaPatchField
+(
+    const fixedValueFaPatchField<Type>& pfld,
+    const DimensionedField<Type, areaMesh>& iF
+)
+:
+    faPatchField<Type>(pfld, iF)
 {}
 
 
@@ -108,6 +112,7 @@ Foam::fixedValueFaPatchField<Type>::valueInternalCoeffs
     const tmp<scalarField>&
 ) const
 {
+    // No contribution from internal values
     return tmp<Field<Type>>::New(this->size(), Foam::zero{});
 }
 

@@ -85,7 +85,7 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//- Return \a code from an application main().
+//- Return  code from an application main().
 //  On Windows the process is terminated with TerminateProcess() after
 //  shutting down the device runtime: the static-destructor / DLL-detach
 //  chain crashes at exit due to cross-DLL destruction order, after all
@@ -101,12 +101,7 @@ public:
     extern "C" __declspec(dllimport) int __stdcall
         TerminateProcess(void* hProcess, unsigned int uExitCode);
 
-    #define FOAM_EXIT_MAIN(code)                                               \
-        do                                                                     \
-        {                                                                      \
-            ::Foam::foamDeviceInit::shutdown();                                \
-            TerminateProcess(GetCurrentProcess(), (code));                     \
-        } while (false)
+    #define FOAM_EXIT_MAIN(code)                                                       do                                                                             {                                                                                  ::Foam::foamDeviceInit::shutdown();                                            TerminateProcess(GetCurrentProcess(), (code));                             } while (false)
 #else
     #define FOAM_EXIT_MAIN(code) return (code)
 #endif

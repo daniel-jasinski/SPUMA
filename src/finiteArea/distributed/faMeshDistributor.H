@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -32,9 +32,9 @@ Description
     with mapping lists for points, faces, and cells.
 
 SourceFiles
-    faMeshDistributor.C
-    faMeshDistributorNew.C
-    faMeshDistributorTemplates.C
+    faMeshDistributor.cxx
+    faMeshDistributor.txx
+    faMeshDistributorNew.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -239,7 +239,7 @@ public:
 
 
 #ifdef NoRepository
-#   include "faMeshDistributorTemplates.C"
+#   include "faMeshDistributor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2013-2016 OpenFOAM Foundation
-    Copyright (C) 2020-2024 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,7 +29,6 @@ License
 #include "CourantNo.H"
 #include "surfaceFields.H"
 #include "fvcSurfaceIntegrate.H"
-#include "zeroGradientFvPatchFields.H"
 #include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -46,37 +45,24 @@ namespace functionObjects
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-Foam::tmp<Foam::volScalarField::Internal>
-Foam::functionObjects::CourantNo::byRho
-(
-    const tmp<volScalarField::Internal>& Co
-) const
-{
-    if (Co().dimensions() == dimDensity)
-    {
-        return Co/obr_.lookupObject<volScalarField>(rhoName_);
-    }
-
-    return Co;
-}
-
-
 bool Foam::functionObjects::CourantNo::calc()
 {
     if (foundObject<surfaceScalarField>(fieldName_))
     {
-        const surfaceScalarField& phi =
-            lookupObject<surfaceScalarField>(fieldName_);
+        const auto& phi = lookupObject<surfaceScalarField>(fieldName_);
 
-        tmp<volScalarField::Internal> Coi
+        tmp<volScalarField::Internal> tCo
         (
-            byRho
-            (
-                (0.5*mesh_.time().deltaT())
-               *fvc::surfaceSum(mag(phi))()()
-               /mesh_.V()
-            )
+            (0.5*mesh_.time().deltaT())
+          * fvc::surfaceSum(Foam::mag(phi))().internalField()
+          / mesh_.V()
         );
+
+        if (tCo().dimensions() == dimDensity)
+        {
+            tCo.ref() /= obr_.lookupObject<volScalarField>(rhoName_);
+        }
+
 
         auto* resultPtr = getObjectPtr<volScalarField>(resultName_);
 
@@ -99,10 +85,10 @@ bool Foam::functionObjects::CourantNo::calc()
             );
             regIOobject::store(resultPtr);
         }
-        auto& Co = *resultPtr;
+        auto& result = *resultPtr;
 
-        Co.internalFieldRef() = Coi;
-        Co.correctBoundaryConditions();
+        result.internalFieldRef() = tCo;
+        result.correctBoundaryConditions();
 
         return true;
     }

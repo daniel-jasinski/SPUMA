@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2014 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,6 +40,7 @@ SourceFiles
 
 #include "fileName.H"
 #include "instantList.H"
+#include "IOobjectOption.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -57,13 +58,25 @@ class TimePaths
 {
     // Private Data
 
+        //- True if this is a processor case
         bool processorCase_;
+
+        //- True running with distributed directories
         bool distributed_;
 
+        //- The root path
         const fileName rootPath_;
+
+        //- The global case name
         fileName globalCaseName_;
-        fileName case_;
+
+        //- The local (processor) case name
+        fileName caseName_;
+
+        //- The name for the "system" directory
         const word system_;
+
+        //- The name for the "constant" directory
         const word constant_;
 
 
@@ -132,11 +145,17 @@ public:
         //- The case name for modification (use with caution)
         inline fileName& caseName() noexcept;
 
+        //- Return caseName() or globalCaseName()
+        inline const fileName& caseName(IOobjectOption::Layout) const noexcept;
+
         //- Return path for the case = rootPath/caseName
         inline fileName path() const;
 
         //- Return global path for the case = rootPath/globalCaseName
         inline fileName globalPath() const;
+
+        //- Return path() or globalPath()
+        inline fileName path(IOobjectOption::Layout) const;
 
         //- Return the input relative to the globalPath by stripping off
         //- a leading value of the globalPath
@@ -173,18 +192,27 @@ public:
         inline fileName systemPath() const;
 
 
-    // Searching
+    // Searching (Static Methods)
 
         //- Search a given directory for valid time directories
-        //  Forwards to the current fileHandler
+        //  \note forwards to the current fileHandler
         static instantList findTimes
         (
             const fileName& directory,
             const word& constantDirName = "constant"
         );
 
-        //- Search instantList for the time index closest to the specified time
+        //- Search instant list for the time index closest to the specified time
+        //  \returns -1 if nothing close is found
         static label findClosestTimeIndex
+        (
+            const UList<instant>& timeDirs,
+            const scalar t,
+            const word& constantDirName = "constant"
+        );
+
+        //- Search instant list for the instant closest to the specified time
+        static instant findClosestTime
         (
             const UList<instant>& timeDirs,
             const scalar t,
@@ -199,15 +227,44 @@ public:
             const instant& t
         );
 
+        //- Search the given directory for matching time value,
+        //- return the instance name or word::null if nothing is equal.
+        static word findInstancePath
+        (
+            const fileName& directory,
+            const instant& t,
+            const word& constantDirName = "constant"
+        );
+
+
+    // Searching
+
         //- Search the case for valid time directories
+        //  \note forwards to the current fileHandler
         instantList times() const;
 
+        //- Search local or global locations for valid time directories
+        //  \note forwards to the current fileHandler
+        instantList times(IOobjectOption::Layout) const;
+
         //- Search the case for the time closest to the given time
+        //  \note forwards to the current fileHandler
         instant findClosestTime(const scalar t) const;
+
+        //- Search local or global locations for the time closest to
+        //- the given time
+        //  \note forwards to the current fileHandler
+        instant findClosestTime(IOobjectOption::Layout, const scalar t) const;
 
         //- Search the case for the time directory path
         //- corresponding to the given instance
+        //  \note forwards to the current fileHandler
         word findInstancePath(const instant& t) const;
+
+        //- Search local or global locations for the time directory path
+        //- corresponding to the given instance
+        //  \note forwards to the current fileHandler
+        word findInstancePath(IOobjectOption::Layout, const instant& t) const;
 };
 
 

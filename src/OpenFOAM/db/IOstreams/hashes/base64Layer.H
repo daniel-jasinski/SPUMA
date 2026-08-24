@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2020 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -66,9 +66,6 @@ class base64Layer
         //- Current length of the encode buffer
         unsigned char groupLen_;
 
-        //- Track if anything has been encoded.
-        bool dirty_;
-
 
     // Private Member Functions
 
@@ -77,6 +74,8 @@ class base64Layer
         inline unsigned char encode2() const noexcept;
         inline unsigned char encode3() const noexcept;
 
+        //- Add a character to the group, outputting when the group is full.
+        inline void add_char(char c);
 
 protected:
 
@@ -85,6 +84,13 @@ protected:
         //- Add a character to the group, outputting when the group is full.
         void add(char c);
 
+public:
+
+    // Constructors
+
+        //- Attach to an output stream
+        explicit base64Layer(std::ostream& os) noexcept;
+
         //- No copy construct
         base64Layer(const base64Layer&) = delete;
 
@@ -92,29 +98,29 @@ protected:
         void operator=(const base64Layer&) = delete;
 
 
-public:
-
-    // Constructors
-
-        //- Construct and attach to an output stream
-        explicit base64Layer(std::ostream& os);
-
-
     //- Destructor. Performs close()
     ~base64Layer();
 
 
+    // Static Functions
+
+        //- The encoded length has 4 bytes out for every 3 bytes and
+        //- any trailing bytes are padded with '='.
+        //
+        //  The output length is (4*ceil(len / 3.0))
+        static constexpr std::size_t encodedLength(std::size_t len) noexcept
+        {
+            return (4*((len+2)/3));
+        }
+
+
     // Member Functions
-
-        //- The encoded length has 4 bytes out for every 3 bytes in.
-        static std::size_t encodedLength(std::size_t n);
-
 
         //- Encode the character sequence, writing when possible.
         void write(const char* s, std::streamsize n);
 
         //- Restart a new encoding sequence.
-        void reset();
+        void reset() noexcept;
 
         //- End the encoding sequence, padding the final characters with '='.
         //  \return false if no encoding was actually performed.

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,7 +26,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "PackedList.H"
-#include "labelRange.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -188,12 +187,12 @@ Foam::PackedList<Width>::unpack() const
 {
     static_assert
     (
-        std::is_integral<IntType>::value,
+        std::is_integral_v<IntType>,
         "Integral required for output."
     );
     static_assert
     (
-        std::numeric_limits<IntType>::digits >= Width,
+        Width < std::numeric_limits<IntType>::digits,
         "Width of IntType is too small to hold result"
     );
 
@@ -244,12 +243,12 @@ Foam::PackedList<Width>::unpack(const labelRange& range) const
 {
     static_assert
     (
-        std::is_integral<IntType>::value,
+        std::is_integral_v<IntType>,
         "Integral required for unpack output."
     );
     static_assert
     (
-        std::numeric_limits<IntType>::digits >= Width,
+        Width < std::numeric_limits<IntType>::digits,
         "Width of IntType is too small to hold unpack output."
     );
 
@@ -278,12 +277,12 @@ Foam::PackedList<Width>::unpack(const labelUList& locations) const
 {
     static_assert
     (
-        std::is_integral<IntType>::value,
+        std::is_integral_v<IntType>,
         "Integral required for unpack output."
     );
     static_assert
     (
-        std::numeric_limits<IntType>::digits >= Width,
+        Width < std::numeric_limits<IntType>::digits,
         "Width of IntType is too small to hold unpack output."
     );
 

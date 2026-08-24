@@ -275,9 +275,11 @@ const std::istream& Foam::IFstream::stdStream() const
 
 void Foam::IFstream::rewind()
 {
+    Istream::rewind();  // Drop any putback
+    lineNumber_ = 1;    // Reset line number
+
     if (IOstreamOption::COMPRESSED == ifstreamPointer::whichCompression())
     {
-        lineNumber_ = 1;  // Reset line number
         ifstreamPointer::reopen_gz(this->name());
         setState(ifstreamPointer::get()->rdstate());
     }

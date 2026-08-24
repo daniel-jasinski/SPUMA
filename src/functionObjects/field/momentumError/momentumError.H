@@ -37,22 +37,22 @@ Description
       Operand       | Type           | Location
       input         | -              | -
       output file   | -              | -
-      output field  | volVectorField | $FOAM_CASE/\<time\>/\<file\>
+      output field  | volVectorField | <time>/file
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    momentumError1
+    momentumErrorFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        momentumError;
         libs        (fieldFunctionObjects);
 
-        // Optional entries (runtime modifiable)
-        p           <pName>;
-        U           <UName>;
-        phi         <phiName>;
+        // Optional entries
+        p           <word>;
+        U           <word>;
+        phi         <word>;
 
         // Inherited entries
         ...
@@ -70,27 +70,20 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link zoneSubSet.H \endlink
-
-    Usage by the \c postProcess utility is not available.
+      - \link functionObject.H \endlink
+      - \link zoneSubSet.H \endlink
 
 Note
   - Optionally the user can specify \c cellZones to create a sub-mesh for the
     \c momentumError calculation.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::momentumError
 
 SourceFiles
     momentumError.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_momentumError_H
-#define functionObjects_momentumError_H
+#ifndef Foam_functionObjects_momentumError_H
+#define Foam_functionObjects_momentumError_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFieldsFwd.H"
@@ -144,7 +137,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         momentumError
         (
             const word& name,
@@ -165,13 +158,13 @@ public:
 
     // Member Functions
 
-        //- Read the forces data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write
+        //- Write the function-object results
         virtual bool write();
 
         //- Calculate the momentum error

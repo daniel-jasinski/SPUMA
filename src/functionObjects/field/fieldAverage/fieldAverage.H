@@ -75,30 +75,26 @@ Description
     Operands:
     \table
       Operand      | Type                          | Location
-      input        | {vol,surface}\<Type\>Field(s) <!--
-               --> |$FOAM_CASE/\<time\>/\<inpField\>s
+      input        | {vol,surface}<Type>Field(s)   | <time>/inputFields
       output file  | -                             | -
-      output field | {vol,surface}\<Type\>Field(s) <!--
-               --> | $FOAM_CASE/\<time\>/\<outField\>s
+      output field | {vol,surface}<Type>Field(s)   | <time>/outputFields
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
-
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    fieldAverage1
+    fieldAverageFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type                fieldAverage;
         libs                (fieldFunctionObjects);
-
-        // Mandatory entries (runtime modifiable)
         fields
         (
             <field1>
             {
-                // Optional (inherited) entries
+                // Inherited entries
                 ...
             }
 
@@ -110,20 +106,20 @@ Usage
             }
         );
 
-        // Optional entries (runtime modifiable)
+        // Optional entries
         restartOnRestart    false;
         restartOnOutput     false;
         periodicRestart     false;
         restartPeriod       0.002;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: fieldAverage            | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       fields       | Names of the operand fields and averaging options <!--
@@ -137,16 +133,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldAverageItem.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldAverageItem
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::fieldAverage
+      - \link functionObject.H \endlink
+      - \link fieldAverageItem.H \endlink
 
 SourceFiles
     fieldAverage.C
@@ -155,8 +143,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_fieldAverage_H
-#define functionObjects_fieldAverage_H
+#ifndef Foam_functionObjects_fieldAverage_H
+#define Foam_functionObjects_fieldAverage_H
 
 #include "fvMeshFunctionObject.H"
 #include "FIFOStack.H"
@@ -168,7 +156,7 @@ namespace Foam
 namespace functionObjects
 {
 
-// Forward declaration of classes
+// Forward Declarations
 class fieldAverageItem;
 
 /*---------------------------------------------------------------------------*\
@@ -205,7 +193,7 @@ protected:
         scalar restartTime_;
 
         //- List of field average items, describing what averages to be
-        //  calculated and output
+        //- calculated and output
         List<fieldAverageItem> faItems_;
 
         // Counters
@@ -309,7 +297,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         fieldAverage
         (
             const word& name,
@@ -330,13 +318,13 @@ public:
 
     // Member Functions
 
-        //- Read the field average data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the field averages
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the field averages
+        //- Write the function-object results
         virtual bool write();
 };
 

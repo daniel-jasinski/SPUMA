@@ -98,7 +98,7 @@ public:
     // Constructors
 
         //- Construct initialized to zero
-        FOAM_DEVICE inline Vector(const Foam::zero);
+        FOAM_DEVICE inline Vector(Foam::zero);
 
         //- Copy construct from VectorSpace of the same rank
         template<class Cmpt2>
@@ -116,22 +116,22 @@ public:
     // Component Access
 
         //- Access to the vector x component
-        FOAM_DEVICE const Cmpt& x() const noexcept { return this->v_[X]; }
+        FOAM_DEVICE const Cmpt& x() const noexcept { return this->v_[components::X]; }
 
         //- Access to the vector y component
-        FOAM_DEVICE const Cmpt& y() const noexcept { return this->v_[Y]; }
+        FOAM_DEVICE const Cmpt& y() const noexcept { return this->v_[components::Y]; }
 
         //- Access to the vector z component
-        FOAM_DEVICE const Cmpt& z() const noexcept { return this->v_[Z]; }
+        FOAM_DEVICE const Cmpt& z() const noexcept { return this->v_[components::Z]; }
 
         //- Access to the vector x component
-        FOAM_DEVICE Cmpt& x() noexcept { return this->v_[X]; }
+        FOAM_DEVICE Cmpt& x() noexcept { return this->v_[components::X]; }
 
         //- Access to the vector y component
-        FOAM_DEVICE Cmpt& y() noexcept { return this->v_[Y]; }
+        FOAM_DEVICE Cmpt& y() noexcept { return this->v_[components::Y]; }
 
         //- Access to the vector z component
-        FOAM_DEVICE Cmpt& z() noexcept { return this->v_[Z]; }
+        FOAM_DEVICE Cmpt& z() noexcept { return this->v_[components::Z]; }
 
 
     // Vector Operations
@@ -194,6 +194,35 @@ public:
             const Vector<Cmpt>& a,
             const Vector<Cmpt>& b
         );
+
+
+    // Member Operators
+
+        //- Inherit VectorSpace += operations
+        using Vector::vsType::operator+=;
+
+        //- Inherit VectorSpace -= operations
+        using Vector::vsType::operator-=;
+
+        //- Add compatible vector to this
+        template<class Cmpt2>
+        FOAM_DEVICE std::enable_if_t<std::is_convertible_v<Cmpt2, Cmpt>, void>
+        inline operator+=(const Vector<Cmpt2>& b)
+        {
+            this->x() += b.x();
+            this->y() += b.y();
+            this->z() += b.z();
+        }
+
+        //- Subtract compatible vector from this
+        template<class Cmpt2>
+        FOAM_DEVICE std::enable_if_t<std::is_convertible_v<Cmpt2, Cmpt>, void>
+        inline operator-=(const Vector<Cmpt2>& b)
+        {
+            this->x() -= b.x();
+            this->y() -= b.y();
+            this->z() -= b.z();
+        }
 };
 
 

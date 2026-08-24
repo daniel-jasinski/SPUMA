@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -146,6 +146,10 @@ public:
         //- Set addressed size to be inconsistent with allocated storage.
         //  Use with care
         inline void setAddressableSize(const label n) noexcept;
+
+        //- Write pointer values to Ostream (debugging only).
+        //  Optionally allow addressing beyond the regular range
+        Ostream& printAddresses(Ostream& os, label maxLen = -1) const;
 
         //- Write output, optionally silently trimming nullptrs
         Ostream& write(Ostream& os, const bool trimNull=false) const;

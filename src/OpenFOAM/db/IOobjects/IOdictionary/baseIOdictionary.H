@@ -123,11 +123,20 @@ public:
 
     // Member Operators
 
-        //- Copy assignment of dictionary entries (leave regIOobject untouched)
-        void operator=(const baseIOdictionary& rhs);
-
         //- Copy assignment of dictionary entries
         using dictionary::operator=;
+
+        //- Copy assignment of dictionary entries
+        void operator=(const baseIOdictionary& rhs)
+        {
+            dictionary::operator=(rhs);
+        }
+
+        //- Move assignment of dictionary entries
+        void operator=(baseIOdictionary&& rhs)
+        {
+            dictionary::operator=(std::move(static_cast<dictionary&>(rhs)));
+        }
 };
 
 

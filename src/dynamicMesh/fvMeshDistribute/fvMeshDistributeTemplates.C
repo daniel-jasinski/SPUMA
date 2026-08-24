@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,7 +30,7 @@ License
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-template<class ZoneType, class ZoneMesh>
+template<class ZoneMesh>
 void Foam::fvMeshDistribute::reorderZones
 (
     const wordList& zoneNames,
@@ -39,41 +39,50 @@ void Foam::fvMeshDistribute::reorderZones
 {
     zones.clearAddressing();
 
+    typedef typename ZoneMesh::zone_type zone_type;
+
     // Shift old ones to new position
-    UPtrList<ZoneType> newZonePtrs(zoneNames.size());
+    PtrList<zone_type>& oldPtrs = zones;
+    PtrList<zone_type> newPtrs(zoneNames.size());
+
     forAll(zones, zonei)
     {
-        auto* zonePtr = zones.get(zonei);
-        if (!zonePtr)
+        if (!zones.get(zonei))
         {
-            FatalErrorInFunction << "Problem with zones " << zones.names()
+            FatalErrorInFunction
+                << "Problem with zone[" << zonei << "] " << zones.names()
                 << exit(FatalError);
         }
-        const label newIndex = zoneNames.find(zonePtr->name());
-        zonePtr->index() = newIndex;
-        newZonePtrs.set(newIndex, zonePtr);
+    }
+
+    forAll(zones, zonei)
+    {
+        // Take ownership
+        auto ptr = oldPtrs.release(zonei);
+        if (!ptr)
+        {
+            FatalErrorInFunction
+                << "Problem with zone[" << zonei << "] == nullptr" << nl
+                << exit(FatalError);
+        }
+
+        const label newIndex = zoneNames.find(ptr->name());
+        // Check if not found?
+        ptr->index() = newIndex;
+        newPtrs.set(newIndex, std::move(ptr));
     }
 
     // Add empty zones for unknown ones
-    forAll(newZonePtrs, i)
+    forAll(newPtrs, i)
     {
-        if (!newZonePtrs.get(i))
+        if (!newPtrs.get(i))
         {
-            newZonePtrs.set
-            (
-                i,
-                new ZoneType
-                (
-                    zoneNames[i],
-                    i,
-                    zones
-                )
-            );
+            newPtrs.emplace_set(i, zoneNames[i], i, zones);
         }
     }
 
     // Transfer
-    zones.swap(newZonePtrs);
+    oldPtrs = std::move(newPtrs);
 }
 
 
@@ -221,7 +230,12 @@ void Foam::fvMeshDistribute::saveInternalFields
 
     forAll(fields, fieldi)
     {
-        iflds.set(fieldi, fields[fieldi].primitiveField().clone());
+        // Bypass DynamicField level, save as Field
+        iflds.set
+        (
+            fieldi,
+            static_cast<const Field<T>&>(fields[fieldi]).clone()
+        );
     }
 }
 

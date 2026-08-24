@@ -37,8 +37,8 @@ See also
     Test-Tensor.C
 
 SourceFiles
-    floatTensors.C
-    tensor.C
+    floatTensors.cxx
+    tensor.cxx
 
 \*---------------------------------------------------------------------------*/
 

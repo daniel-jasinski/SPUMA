@@ -35,8 +35,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef IjkField_H
-#define IjkField_H
+#ifndef Foam_IjkField_H
+#define Foam_IjkField_H
 
 #include "ijkAddressing.H"
 #include "Field.H"
@@ -81,7 +81,7 @@ public:
         inline IjkField(const labelVector& ijk, const Type& val);
 
         //- Construct with sizing information and initial values of zero
-        inline IjkField(const labelVector& ijk, const Foam::zero);
+        inline IjkField(const labelVector& ijk, Foam::zero);
 
         //- Copy construct from components
         inline IjkField(const labelVector& ijk, const UList<Type>& list);
@@ -95,22 +95,22 @@ public:
     // Access
 
         //- Return i,j,k addressing
-        inline const ijkAddressing& ijk() const;
+        const ijkAddressing& ijk() const noexcept { return ijk_; }
 
         //- Return i,j,k addressing for modification
-        inline ijkAddressing& ijk();
+        ijkAddressing& ijk() noexcept { return ijk_; }
 
         //- Return i,j,k addressing sizes
-        inline const labelVector& sizes() const;
+        const labelVector& sizes() const noexcept { return ijk_.sizes(); }
 
         //- Return i,j,k addressing sizes for modification
-        inline labelVector& sizes();
+        labelVector& sizes() noexcept { return ijk_.sizes(); }
 
         //- The field size
         using Field<Type>::size;
 
         //- The addressing dimension in the given direction
-        inline const label& size(const vector::components cmpt) const;
+        inline label size(const vector::components cmpt) const;
 
 
     // Edit
@@ -118,7 +118,7 @@ public:
         //- Clear dimensions and field
         inline void clear();
 
-        //- Change dimensions. Fill new values with Zero
+        //- Change dimensions. Fill new values with zero
         void resize(const labelVector& newSizes);
 
         //- Change dimensions
@@ -161,7 +161,7 @@ public:
 
         //- Value assignment
         inline void operator=(const Type& val);
-        inline void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
 };
 

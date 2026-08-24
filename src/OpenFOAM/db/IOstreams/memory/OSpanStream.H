@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,7 +27,7 @@ Class
     Foam::OSpanStream
 
 Description
-    Similar to OStringStream but using an externally managed buffer for
+    Similar to OCharStream but using an externally managed buffer for
     its output.
 
     This allows the output buffer to be reused and can make it easier when
@@ -152,6 +152,32 @@ public:
             return buffer_type::span_capacity();
         }
 
+        //- Rewind the stream, clearing any old errors
+        void rewind()
+        {
+            buffer_type::pubseekpos(0, std::ios_base::out);
+            stream_type::clear();  // Clear old errors
+        }
+
+        //- Reposition the stream from the start
+        void seek(std::streampos pos)
+        {
+            if (buffer_type::in_range(pos))
+            {
+                buffer_type::pubseekpos(pos, std::ios_base::out);
+                stream_type::clear();  // Clear old errors
+            }
+        }
+
+        //- A string_view of buffer contents
+        auto view() const { return buffer_type::view(); }
+
+        //- A sub-slice string view of the buffer contents
+        auto view(size_t pos, size_t len = std::string::npos) const
+        {
+            return buffer_type::view(pos, len);
+        }
+
         //- Span of the current output characters (is modifiable!)
         UList<char> list() const
         {
@@ -160,12 +186,6 @@ public:
                 buffer_type::data_bytes(),
                 label(buffer_type::size_bytes())
             );
-        }
-
-        //- A string_view (c++17) or span view (older c++) of buffer contents
-        auto view() const -> decltype(buffer_type::view())
-        {
-            return buffer_type::view();
         }
 
         //- For ostringstream compatibility, return the buffer as string copy.
@@ -179,33 +199,58 @@ public:
             );
         }
 
-        //- Rewind the stream, clearing any old errors
-        void rewind()
-        {
-            buffer_type::pubseekpos(0, std::ios_base::out);
-            stream_type::clear();  // Clear any old errors
-        }
-
         //- Reset the put buffer area
         void reset(char* buffer, size_t nbytes)
         {
             buffer_type::resetp(buffer, nbytes);
-            stream_type::clear();  // Clear any old errors
+            stream_type::clear();  // Clear old errors
         }
 
         //- Reset the put buffer area to use the data area from a string
         void reset(std::string& s)
         {
             s.resize(s.capacity());
-            buffer_type::resetp(&s[0], s.size());
-            stream_type::clear();  // Clear any old errors
+            buffer_type::resetp(s.data(), s.size());
+            stream_type::clear();  // Clear old errors
         }
 
         //- Some information about the output buffer position/capacity
         void debug_info(Ostream& os) const
         {
-            os  << "put=" << output_pos() << '/' << capacity();
+            os << "put=" << output_pos() << '/' << capacity();
         }
+
+        //- Information about stream
+        void print(Ostream& os) const { debug_info(os); os << '\n'; }
+
+
+    // Extra/Convenience Methods
+
+        //- Overwrite a single character
+        void overwrite(std::streampos pos, char c)
+        {
+            buffer_type::overwrite(pos, c);
+        }
+
+        //- Overwrite a sub-slice with character content
+        void overwrite
+        (
+            std::streampos pos,
+            const char* data,
+            std::streamsize count
+        )
+        {
+            buffer_type::overwrite(pos, data, count);
+        }
+
+        //- The output data (start of output characters)
+        const char* cdata_bytes() const { return buffer_type::data_bytes(); }
+
+        //- The output data (start of output characters)
+        char* data_bytes() { return buffer_type::data_bytes(); }
+
+        //- The current number of output characters
+        std::streamsize size_bytes() const { return buffer_type::size_bytes(); }
 };
 
 
@@ -302,21 +347,21 @@ public:
         //- The put buffer capacity
         std::streamsize capacity() const { return stream_.capacity(); }
 
+        //- A string_view of buffer contents
+        auto view() const { return stream_.view(); }
+
+        //- A sub-slice string view of the buffer contents
+        auto view(size_t pos, size_t len = std::string::npos) const
+        {
+            return stream_.view(pos, len);
+        }
+
         //- Span of the current output characters (is modifiable!)
         UList<char> list() const { return stream_.list(); }
 
-        //- A string_view (c++17) or span view (older c++) of buffer contents
-        auto view() const -> decltype(stream_.view())
-        {
-            return stream_.view();
-        }
-
         //- For OStringStream compatibility, return buffer as string copy.
         //  Use sparingly - it creates a full copy!!
-        auto str() const -> decltype(stream_.str())
-        {
-            return stream_.str();
-        }
+        auto str() const { return stream_.str(); }
 
         //- Reset the put area
         void reset(char* buffer, size_t nbytes)
@@ -339,8 +384,61 @@ public:
             syncState();
         }
 
-        //- Print stream description to Ostream
-        virtual void print(Ostream& os) const override;
+        //- Reposition the stream from the start
+        void seek(std::streampos pos)
+        {
+            stream_.seek(pos);
+            syncState();
+        }
+
+        //- Print stream description
+        virtual void print(Ostream& os) const override
+        {
+            os << "ospanstream: ";
+            stream_.debug_info(os);
+            os << '\n';
+        }
+
+
+    // Extra/Convenience Methods
+
+        //- Append character content - same as writeRaw()
+        void append(const char* data, std::streamsize count)
+        {
+            if (data && count > 0)
+            {
+                writeRaw(data, count);
+            }
+        }
+
+        //- Append character content - same as writeRaw()
+        void append(std::string_view sv)
+        {
+            append(sv.data(), sv.size());
+        }
+
+        //- Overwrite a single character
+        void overwrite(std::streampos pos, char c)
+        {
+            stream_.overwrite(pos, c);
+        }
+
+        //- Overwrite a sub-slice with character content
+        void overwrite
+        (
+            std::streampos pos,
+            const char* data,
+            std::streamsize count
+        )
+        {
+            stream_.overwrite(pos, data, count);
+        }
+
+        //- Overwrite a sub-slice with character content
+        void overwrite(std::streampos pos, std::string_view sv)
+        {
+            stream_.overwrite(pos, sv.data(), sv.size());
+        }
 };
 
 

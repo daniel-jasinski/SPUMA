@@ -40,37 +40,40 @@ Description
     etc.
 
 Usage
-    Example of function object specification to manipulate the time step:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    setTimeStep1
+    setTimeStepFO
     {
+        // Mandatory entries
         type        setTimeStep;
         libs        (utilityFunctionObjects);
 
-        deltaT      table ((0 5e-4)(0.01 1e-3));
+        deltaT      <Function1<scalar>>;  // table ((0 5e-4)(0.01 1e-3));
 
+        // Inherited entries
         ...
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property     | Description             | Required    | Default value
-        type         | Type name: setTimeStep  | yes         |
-        enabled      | On/off switch           | no          | yes
-        deltaT       | Time step value         | yes         |
-        timeStart    | Start time              | no          | 0
-        timeEnd      | End time                | no          | GREAT
-        deltaTCoeff  | Time step change limit  | no          | GREAT
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: setTimeStep             | word | yes  | -
+      libs     | Library name: utilityFunctionObjects | word | yes | -
+      deltaT   | Time-step values               | Function1\<scalar\> | yes | -
     \endtable
+
+    The inherited entries are elaborated in:
+      - \link timeFunctionObject.H \endlink
+      - \link Function1.H \endlink
 
 SourceFiles
     setTimeStepFunctionObject.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_setTimeStepFunctionObject_H
-#define functionObjects_setTimeStepFunctionObject_H
+#ifndef Foam_functionObjects_setTimeStepFunctionObject_H
+#define Foam_functionObjects_setTimeStepFunctionObject_H
 
 #include "timeFunctionObject.H"
 #include "Function1.H"
@@ -131,13 +134,13 @@ public:
         //- Called at the end of Time::adjustDeltaT() if adjustTime is true
         virtual bool adjustTimeStep();
 
-        //- Read and set the function object if its data have changed
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute does nothing
+        //- Execute the function-object operations (no-op)
         virtual bool execute();
 
-        //- Write does nothing
+        //- Write the function-object results (no-op)
         virtual bool write();
 };
 

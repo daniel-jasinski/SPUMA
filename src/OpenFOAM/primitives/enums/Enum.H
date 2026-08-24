@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -72,7 +72,7 @@ class Enum
     // Allow enums and integrals (should fit within an int)
     static_assert
     (
-        std::is_enum<EnumType>::value || std::is_integral<EnumType>::value,
+        std::is_enum_v<EnumType> || std::is_integral_v<EnumType>,
         "Enum must be enum or an integral type"
     );
 
@@ -242,12 +242,12 @@ public:
         //- Return the enumeration corresponding to the given name
         //  FatalError if the name is not found.
         //  Identical to get()
-        inline EnumType operator[](const word& enumName) const;
+        EnumType operator[](const word& k) const { return get(k); }
 
         //- Return the first name corresponding to the given enumeration,
-        //- or an empty word on failure.
+        //- or an empty word if not found.
         //  Identical to get()
-        inline const word& operator[](const EnumType e) const;
+        const word& operator[](EnumType e) const { return get(e); }
 
 
     // Iteration
@@ -256,11 +256,8 @@ public:
         //  \note The iterator dereference returns the \b key
         class const_iterator
         {
-            //- The list being iterated
-            const Enum* ptr_;
-
-            //- Index in the list
-            label idx_;
+            const Enum* ptr_;   //!< The list being iterated upon
+            label idx_;         //!< Index in the list
 
         public:
 
@@ -279,6 +276,9 @@ public:
 
             //- Enumeration value at the current index
             inline EnumType val() const;
+
+            //- True if iterator points to an entry
+            explicit operator bool() const noexcept { return good(); }
 
             //- De-referencing returns the name (key)
             //  This is similar to HashSet (not HashTable!) and allows
@@ -374,6 +374,8 @@ public:
         bool found(const EnumType e) const { return contains(e); }
 };
 
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // Ostream Operator
 

@@ -135,26 +135,25 @@ void Foam::displacementInterpolationMotionSolver::calcInterpolation()
             const word& zoneName = faceZoneToTable[i][0];
             const faceZone& fz = fZones[zoneName];
 
-            scalar minCoord = VGREAT;
-            scalar maxCoord = -VGREAT;
+            scalarMinMax limits;
 
-            forAll(fz().meshPoints(), localI)
+            for (const label pointi : fz().meshPoints())
             {
-                label pointi = fz().meshPoints()[localI];
                 const scalar coord = points0()[pointi][dir];
-                minCoord = min(minCoord, coord);
-                maxCoord = max(maxCoord, coord);
+                limits.add(coord);
             }
 
-            zoneCoordinates[2*i] = returnReduce(minCoord, minOp<scalar>());
-            zoneCoordinates[2*i+1] = returnReduce(maxCoord, maxOp<scalar>());
+            reduce(limits, sumOp<scalarMinMax>());
+
+            zoneCoordinates[2*i] = limits.min();
+            zoneCoordinates[2*i+1] = limits.max();
 
             if (debug)
             {
                 Pout<< "direction " << dir << " : "
                     << "zone " << zoneName
-                    << " ranges from coordinate " << zoneCoordinates[2*i]
-                    << " to " << zoneCoordinates[2*i+1]
+                    << " ranges from coordinate "
+                    << limits.min() << " to " << limits.max()
                     << endl;
             }
         }
@@ -167,14 +166,20 @@ void Foam::displacementInterpolationMotionSolver::calcInterpolation()
         // Check if we have static min and max mesh bounds
         const scalarField meshCoords(points0().component(dir));
 
-        scalar minCoord = gMin(meshCoords);
-        scalar maxCoord = gMax(meshCoords);
+        scalar minCoord, maxCoord;
+        {
+            auto limits = gMinMax(meshCoords);
+
+            minCoord = limits.min();
+            maxCoord = limits.max();
+        }
 
         if (debug)
         {
             Pout<< "direction " << dir << " : "
-                << "mesh ranges from coordinate " << minCoord << " to "
-                << maxCoord << endl;
+                << "mesh ranges from coordinate "
+                << minCoord << " to " << maxCoord
+                << endl;
         }
 
         // Make copy of zoneCoordinates; include min and max of mesh

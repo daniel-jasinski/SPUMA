@@ -27,8 +27,8 @@ Class
     Foam::heatTransferCoeffModels::fixedReferenceTemperature
 
 Description
-    Heat transfer coefficient calculation
-    that employs a fixed reference temperature.
+    Heat transfer coefficient calculation that employs a fixed reference
+    temperature.
 
     The heat transfer coefficient is calculated by:
 
@@ -47,7 +47,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    heatTransferCoeff1
+    heatTransferCoeffFO
     {
         // Inherited entries
         ...
@@ -137,7 +137,7 @@ public:
 
     // Member Functions
 
-        //- Read from dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 };
 

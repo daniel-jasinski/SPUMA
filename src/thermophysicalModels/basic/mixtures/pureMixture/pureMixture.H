@@ -58,7 +58,7 @@ class pureMixture
         ThermoType mixture_;
 
         //- Construct as copy (not implemented)
-        pureMixture(const pureMixture<ThermoType>&);
+        // pureMixture(const pureMixture<ThermoType>&);
 
 
 public:
@@ -86,12 +86,12 @@ public:
             return mixture_;
         }
 
-        const ThermoType& cellMixture(const label) const
+        FOAM_DEVICE const ThermoType& cellMixture(const label) const
         {
             return mixture_;
         }
 
-        const ThermoType& patchFaceMixture
+        FOAM_DEVICE const ThermoType& patchFaceMixture
         (
             const label,
             const label

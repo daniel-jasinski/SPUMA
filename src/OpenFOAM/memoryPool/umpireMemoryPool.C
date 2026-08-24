@@ -41,7 +41,7 @@ namespace Foam
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
 
 Foam::umpireMemoryPool::umpireMemoryPool(const uint64_t size):
-    Foam::MemoryPool::MemoryPool(),
+    Foam::Spuma::MemoryPool::MemoryPool(),
     rm_(umpire::ResourceManager::getInstance()),
     inspector_()
 {

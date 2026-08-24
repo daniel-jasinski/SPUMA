@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -175,7 +175,10 @@ public:
         virtual bool ready() const;
 
         //- Return neighbour field given internal field
-        tmp<Field<Type>> patchNeighbourField() const;
+        virtual tmp<Field<Type>> patchNeighbourField() const;
+
+        //- Retrieve neighbour field
+        virtual void patchNeighbourField(UList<Type>& pnf) const;
 
 
     // Evaluation
@@ -206,6 +209,9 @@ public:
 
         //- Return patch-normal gradient
         virtual tmp<Field<Type>> snGrad() const;
+
+        //- Retrieve patch-normal gradient
+        virtual void snGrad(UList<Type>& result) const;
 
 
         // Coupled interface functionality
@@ -284,7 +290,11 @@ public:
         //- Does the patch field perform the transformation
         virtual bool doTransform() const
         {
-            return (pTraits<Type>::rank && !procPatch_.parallel());
+            return
+            (
+                is_rotational_vectorspace_v<Type>
+             && !procPatch_.parallel()
+            );
         }
 
         //- Return face transformation tensor

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,6 +30,14 @@ License
 inline char* Foam::CStringList::stringCopy(char* dest, const char* src)
 {
     dest = std::copy_n(src, (src ? strlen(src) : 0), dest);
+    *(dest++) = '\0';
+    return dest;
+}
+
+
+inline char* Foam::CStringList::stringCopy(char *dest, std::string_view src)
+{
+    dest = std::copy_n(src.data(), src.size(), dest);
     *(dest++) = '\0';
     return dest;
 }
@@ -86,16 +94,34 @@ inline Foam::CStringList::CStringList(const UList<StringType>& input)
 :
     CStringList()
 {
-    reset(input);
+    resetContent(input);
 }
 
 
-template<class StringType>
-inline Foam::CStringList::CStringList(const SubStrings<StringType>& input)
+inline Foam::CStringList::CStringList(const UList<std::string_view>& input)
 :
     CStringList()
 {
-    reset(input);
+    resetContent(input);
+}
+
+
+inline Foam::CStringList::CStringList
+(
+    const std::vector<std::string_view>& input
+)
+:
+    CStringList()
+{
+    resetContent(input);
+}
+
+
+inline Foam::CStringList::CStringList(const SubStrings& input)
+:
+    CStringList()
+{
+    resetContent(input);
 }
 
 
@@ -108,6 +134,12 @@ inline Foam::CStringList::~CStringList()
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+inline std::string_view Foam::CStringList::view() const
+{
+    return std::string_view(data_, nbytes_);
+}
+
 
 inline void Foam::CStringList::clear()
 {
@@ -127,55 +159,9 @@ inline void Foam::CStringList::clear()
 }
 
 
-inline bool Foam::CStringList::empty() const noexcept
-{
-    return !argc_;
-}
-
-
-inline int Foam::CStringList::size() const noexcept
-{
-    return argc_;
-}
-
-
-inline char** Foam::CStringList::strings() const noexcept
-{
-    return argv_;
-}
-
-
 inline char** Foam::CStringList::strings(int start) const
 {
     return &(argv_[start]);
-}
-
-
-template<class StringType>
-inline int Foam::CStringList::reset(const UList<StringType>& input)
-{
-    return resetContent(input);
-}
-
-
-template<class StringType>
-inline int Foam::CStringList::reset(const SubStrings<StringType>& input)
-{
-    return resetContent(input);
-}
-
-
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-inline const char* Foam::CStringList::get(int i) const
-{
-    return argv_[i];
-}
-
-
-inline const char* Foam::CStringList::operator[](int i) const
-{
-    return argv_[i];
 }
 
 

@@ -105,7 +105,7 @@ void Foam::fv::variableHeatTransfer::calculateHtc()
 
     const auto& UNbr = nbrMesh.lookupObject<volVectorField>(UNbrName_);
 
-    tmp<volScalarField> ReNbr(mag(UNbr)*ds_*nbrThermo.rho()/nbrTurb.mut());
+    tmp<volScalarField> ReNbr(mag(UNbr)*ds_*nbrThermo.rho()/nbrTurb.muEff());
 
     tmp<volScalarField> NuNbr(a_*pow(ReNbr, b_)*pow(Pr_, c_));
 

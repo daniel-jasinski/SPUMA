@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2022 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,10 +27,24 @@ Namespace
     Foam::vtk
 
 Description
-    Namespace for handling VTK input/output.
+    Namespace for handling VTK output.
+    Contains classes and functions for writing VTK file content.
+
+Namespace
+    Foam::vtk::legacy
+
+Description
+    Namespace for legacy VTK output constants and functions.
+
+Namespace
+    Foam::vtk::Tools
+
+Description
+    A collection of static methods to help with conversion to/from VTK data.
 
 SourceFiles
-    foamVtkCore.C
+    foamVtkCore.cxx
+    foamVtkCore.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -38,18 +52,24 @@ SourceFiles
 #define Foam_vtk_core_H
 
 #include <cstdint>
+
 #include "Enum.H"
+#include "pTraits.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+
+// Forward Declarations
+template<class Cmpt> class SymmTensor;
+
 namespace vtk
 {
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-  // Enumerations
+    // Enumerations
 
     //- The context when outputting a VTK file (XML or legacy).
     enum OutputContext : uint8_t
@@ -70,6 +90,7 @@ namespace vtk
         APPEND_BINARY = 0x12, //!< XML append raw binary, appendRawFormatter
         LEGACY_ASCII  = 0x20, //!< Legacy ASCII, legacyAsciiFormatter
         LEGACY_BINARY = 0x22, //!< Legacy raw binary, legacyRawFormatter
+        HDF_FORMAT = 0x40,    //!< VTKHDF format
     };
 
     //- Test for vtk append format (xml)
@@ -82,6 +103,12 @@ namespace vtk
     inline bool isLegacy(enum formatType fmt) noexcept
     {
         return (uint8_t(fmt) & 0x20);
+    }
+
+    //- Test for HDF format
+    inline bool isHDF(enum formatType fmt) noexcept
+    {
+        return (formatType::HDF_FORMAT == fmt);
     }
 
 
@@ -112,6 +139,7 @@ namespace vtk
     //- Some common XML tags for vtk files
     enum class fileTag : uint8_t
     {
+        UNKNOWN,                //!< placeholder
         VTK_FILE,               //!< "VTKFile"
         DATA_ARRAY,             //!< "DataArray"
         BLOCK,                  //!< "Block"
@@ -128,6 +156,7 @@ namespace vtk
         POLY_DATA,              //!< "PolyData"
         UNSTRUCTURED_GRID,      //!< "UnstructuredGrid"
         MULTI_BLOCK,            //!< "vtkMultiBlockDataSet"
+        VTK_HDF,                //!< "VTKHDF" - used for the extension
     };
 
     //- File extension (without ".") for some vtk XML file content types
@@ -189,15 +218,72 @@ namespace legacy
     //- Legacy attributes (eg, OFFSETS)
     extern const Foam::Enum<dataArrayAttr> dataArrayAttrNames;
 
+} // End namespace Foam::vtk::legacy
 
-} // End namespace legacy
 
+/*---------------------------------------------------------------------------*\
+                               Namespace Tools
+\*---------------------------------------------------------------------------*/
+
+namespace Tools
+{
+
+//- Return a copy of the \p value, with components changed
+//- from OpenFOAM order to VTK order (for symmTensor)
+template<class Type>
+Type copyTuple(const Type& value);
+
+//- Implementation detail - not for general use!
+template<class FloatType, class Type>
+const FloatType* copyTuple_impl(FloatType output[], const Type& value);
+
+
+//- Copy/transcribe components of OpenFOAM \p value to the \p output buffer
+//- (which must be large enough to contain all components)
+//
+//  \note When copying, the components of Foam::symmTensor are reordering
+//  to match the VTK order:
+//   - OpenFOAM : (XX, XY, XZ, YY, YZ, ZZ)
+//   - VTK order: (XX, YY, ZZ, XY, YZ, XZ)
+//
+//  \returns the pointer to \p output buffer, which allows this routine
+//  to act as pass-through filter.
+template<class Type>
+const double* copyTuple
+(
+    double output[],  //!< [out] the output/work buffer
+    const Type& value
+);
+
+//- Copy/transcribe components of OpenFOAM \p value to the \p output buffer
+//- (which must be large enough to contain all components)
+template<class Type>
+const float* copyTuple
+(
+    float output[],  //!< [out] the output/work buffer
+    const Type& value
+);
+
+//- Inplace component reordering of \p value from OpenFOAM order to VTK order
+//  Reordering is currently only applied for Foam::symmTensor,
+//  all other types are a no-op.
+//
+//  \sa copyTuple
+template<class Type>
+void reorderTuple(Type& value);
+
+} // End namespace Foam::vtk::Tools
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace vtk
-
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "foamVtkCore.txx"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

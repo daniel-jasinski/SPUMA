@@ -29,6 +29,7 @@ License
 #include "kEpsilon.H"
 #include "fvOptions.H"
 #include "bound.H"
+#include "wallDist.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -43,6 +44,33 @@ template<class BasicTurbulenceModel>
 void kEpsilon<BasicTurbulenceModel>::correctNut()
 {
     this->nut_ = Cmu_*sqr(k_)/epsilon_;
+
+    if (twoLayerTreatment_)
+    {
+        const volScalarField& y = wallDist::New(this->mesh_).y();
+
+        // Using the TKE of previous time-step to freeze the turbulent Reynolds
+        // number during the current time-step and hence freeze the separation
+        // of inner and outer layer.
+        const volScalarField Rey(mag(y*sqrt(k_.oldTime())/this->nu()));
+
+        const dimensionedScalar ClStar(0.41*pow(Cmu_, -0.75));
+        auto& lEps = *lEpsPtr_;
+        lEps = y*ClStar*(1.0 - exp(-1.0*Rey/(2*ClStar)));
+
+        const dimensionedScalar A(ReyFactor_*ReyStar_/atanh(0.98));
+        auto& lambdaEps = *lambdaEpsPtr_;
+        lambdaEps = 0.5*(1.0 + tanh((Rey - ReyStar_)/A));
+
+        // High-Re part
+        this->nut_ *= lambdaEps;
+
+        // Low-Re part
+        const scalar Amu = 70.0;
+        const volScalarField lMu(y*ClStar*(1.0 - exp(-1.0*Rey/Amu)));
+        this->nut_ += (1.0-lambdaEps)*Cmu_*lMu*sqrt(k_);
+    }
+
     this->nut_.correctBoundaryConditions();
     fv::options::New(this->mesh_).correct(this->nut_);
 
@@ -53,6 +81,25 @@ void kEpsilon<BasicTurbulenceModel>::correctNut()
 template<class BasicTurbulenceModel>
 tmp<fvScalarMatrix> kEpsilon<BasicTurbulenceModel>::kSource() const
 {
+    // Source term for k equation (added to RHS)
+
+    if (twoLayerTreatment_)
+    {
+        // Local references
+        const alphaField& alpha = this->alpha_;
+        const rhoField& rho = this->rho_;
+        const volScalarField::Internal& lEps = *lEpsPtr_;
+        const volScalarField& lambdaEps = *lambdaEpsPtr_;
+
+        return
+           -fvm::Sp
+            (
+                alpha()*rho()*(1.0-lambdaEps())
+               *(sqrt(k_())/lEps - epsilon_()/k_()),
+                k_
+            );
+    }
+
     return tmp<fvScalarMatrix>::New
     (
         k_,
@@ -153,7 +200,6 @@ kEpsilon<BasicTurbulenceModel>::kEpsilon
             1.3
         )
     ),
-
     k_
     (
         IOobject
@@ -177,8 +223,68 @@ kEpsilon<BasicTurbulenceModel>::kEpsilon
             IOobject::AUTO_WRITE
         ),
         this->mesh_
+    ),
+    twoLayerTreatment_
+    (
+        Switch::getOrAddToDict
+        (
+            "twoLayerTreatment",
+            this->coeffDict_,
+            false
+        )
+    ),
+    ReyStar_
+    (
+        dimensioned<scalar>::getOrAddToDict
+        (
+            "ReyStar",
+            this->coeffDict_,
+            200.0
+        )
+    ),
+    ReyFactor_
+    (
+        dimensioned<scalar>::getOrAddToDict
+        (
+            "ReyFactor",
+            this->coeffDict_,
+            0.05
+        )
     )
 {
+    if (twoLayerTreatment_)
+    {
+        Info<< "Two-layer wall treatment activated" << endl;
+
+        lEpsPtr_ = std::make_unique<volScalarField::Internal>
+        (
+            IOobject
+            (
+                "lEps",
+                this->runTime_.name(),
+                this->mesh_,
+                IOobject::READ_IF_PRESENT,
+                IOobject::AUTO_WRITE
+            ),
+            this->mesh_,
+            dimensionedScalar(dimLength, Zero)
+        );
+
+        lambdaEpsPtr_ = std::make_unique<volScalarField>
+        (
+            IOobject
+            (
+                "lambdaEps",
+                this->runTime_.name(),
+                this->mesh_,
+                IOobject::READ_IF_PRESENT,
+                IOobject::AUTO_WRITE
+            ),
+            this->mesh_,
+            dimensionedScalar("lambdaEps", dimless, 1.0)
+        );
+    }
+
     bound(k_, this->kMin_);
     bound(epsilon_, this->epsilonMin_);
 
@@ -202,6 +308,11 @@ bool kEpsilon<BasicTurbulenceModel>::read()
         C3_.readIfPresent(this->coeffDict());
         sigmak_.readIfPresent(this->coeffDict());
         sigmaEps_.readIfPresent(this->coeffDict());
+
+        // Two-layer wall treatment
+        // Note: these are the only parameters that can be changed at runtime
+        ReyStar_.readIfPresent(this->coeffDict());
+        ReyFactor_.readIfPresent(this->coeffDict());
 
         return true;
     }

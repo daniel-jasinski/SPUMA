@@ -182,8 +182,8 @@ bool Foam::masterCoarsestGAMGProcAgglomeration::agglomerate()
                         for (const auto& p : masterToProcs)
                         {
                             Info<< '\t' << p[0]
-                                << '\t' << p.size()
-                                << '\t'
+                                << "\t\t" << p.size()
+                                << "\t\t"
                                 << flatOutput(SubList<label>(p, p.size()-1, 1))
                                 << endl;
                         }
@@ -194,7 +194,7 @@ bool Foam::masterCoarsestGAMGProcAgglomeration::agglomerate()
                 // Communicator for the processor-agglomerated matrix
                 comms_.push_back
                 (
-                    UPstream::allocateCommunicator
+                    UPstream::newCommunicator
                     (
                         levelComm,
                         masterProcs

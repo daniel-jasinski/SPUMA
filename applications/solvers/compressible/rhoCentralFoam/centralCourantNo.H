@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,13 +36,36 @@ if (mesh.nInternalFaces())
 {
     scalarField sumAmaxSf(fvc::surfaceSum(amaxSf)().primitiveField());
 
-    CoNum = 0.5*gMax(sumAmaxSf/mesh.V().field())*runTime.deltaTValue();
+    if (LTS)
+    {
+        const volScalarField& rDeltaT = trDeltaT.cref();
+        const scalarField fldCo
+        (
+            sumAmaxSf/mesh.V().field()/rDeltaT.primitiveField()
+        );
 
-    meanCoNum =
-        0.5*(gSum(sumAmaxSf)/gSum(mesh.V().field()))*runTime.deltaTValue();
+        auto CoLimits = gMinMax(fldCo);
+
+        minCoNum = 0.5*CoLimits.min();
+        CoNum = 0.5*CoLimits.max();
+        meanCoNum = 0.5*gAverage(fldCo);
+
+        Info<< "Courant Numbers: "
+            << "min = " << minCoNum << ", "
+            << "average = " << meanCoNum << ", "
+            << "max = " << CoNum
+            << endl;
+    }
+    else
+    {
+        CoNum = 0.5*gMax(sumAmaxSf/mesh.V().field())*runTime.deltaTValue();
+
+        meanCoNum =
+            0.5*(gSum(sumAmaxSf)/gSum(mesh.V().field()))*runTime.deltaTValue();
+
+        Info<< "Mean and max Courant Numbers = "
+            << meanCoNum << " " << CoNum << endl;
+    }
 }
-
-Info<< "Mean and max Courant Numbers = "
-    << meanCoNum << " " << CoNum << endl;
 
 // ************************************************************************* //

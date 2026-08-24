@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,6 +30,45 @@ License
 #include "Ostream.H"
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+template<class T>
+Foam::Ostream& Foam::Detail::PtrListDetail<T>::printAddresses
+(
+    Ostream& os,
+    label maxLen
+) const
+{
+    if (maxLen <= 0)
+    {
+        maxLen = this->size();
+    }
+
+    const label len = Foam::min(this->size(), maxLen);
+
+    // The (output) size and start delimiter
+    os  << nl << indent << maxLen << nl
+        << indent << token::BEGIN_LIST << nl;
+
+    // const T* const * iter = this->cdata();
+    const auto* iter = this->cdata();
+
+    // Contents
+    for (label i = 0; i < len; ++i)
+    {
+        os << indent << "    " << Foam::name(iter[i]) << nl;
+    }
+    for (label i = len; i < maxLen; ++i)
+    {
+        os << indent << "    [" << Foam::name(iter[i]) << ']' << nl;
+    }
+
+    // End delimiter
+    os << indent << token::END_LIST << nl;
+
+    os.check(FUNCTION_NAME);
+    return os;
+}
+
 
 template<class T>
 Foam::Ostream& Foam::Detail::PtrListDetail<T>::write

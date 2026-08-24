@@ -46,13 +46,19 @@ wmake -all $targetType utilities/thermophysical
 # wmake -all $targetType solvers
 wmake $targetType solvers/basic/laplacianFoam
 wmake $targetType solvers/basic/potentialFoam
-wmake $targetType solvers/compressible/rhoSimpleFoam
-wmake $targetType solvers/compressible/rhoPimpleFoam
+
 wmake $targetType solvers/incompressible/icoFoam
 wmake $targetType solvers/incompressible/pisoFoam
 wmake $targetType solvers/incompressible/simpleFoam
 wmake $targetType solvers/incompressible/simpleFoam/SRFSimpleFoam
 wmake $targetType solvers/incompressible/pimpleFoam
+
+wmake $targetType solvers/compressible/rhoSimpleFoam
+wmake $targetType solvers/compressible/rhoPimpleFoam
+
+wmake $targetType solvers/heatTransfer/simpleEnergyFoam
+wmake $targetType solvers/heatTransfer/buoyantSimpleFoam
+wmake $targetType solvers/heatTransfer/buoyantPimpleFoam
 
 # Extra tools (optional)
 wmake -all $targetType tools

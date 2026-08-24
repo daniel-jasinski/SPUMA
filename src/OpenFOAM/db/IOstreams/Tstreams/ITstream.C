@@ -5,8 +5,8 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011-2015 OpenFOAM Foundation
-    Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2011-2015,2024 OpenFOAM Foundation
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -31,11 +31,6 @@ License
 #include "SpanStream.H"
 #include <algorithm>
 #include <memory>
-
-// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
-
-static std::unique_ptr<Foam::ITstream> emptyStreamPtr_;
-
 
 // * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
 
@@ -74,20 +69,22 @@ static label parseStream(ISstream& is, tokenList& tokens)
 
 Foam::ITstream& Foam::ITstream::empty_stream()
 {
-    if (emptyStreamPtr_)
+    static std::unique_ptr<ITstream> singleton;
+
+    if (!singleton)
     {
-        emptyStreamPtr_->ITstream::clear();  // Ensure it really is empty
-        emptyStreamPtr_->ITstream::seek(0);  // rewind() bypassing virtual
+        singleton = std::make_unique<ITstream>(Foam::zero{}, "empty-stream");
     }
     else
     {
-        emptyStreamPtr_.reset(new ITstream(Foam::zero{}, "empty-stream"));
+        singleton->ITstream::clear();  // Ensure it really is empty
+        singleton->ITstream::seek(0);  // rewind() bypassing virtual
     }
 
-    // Set stream as bad to indicate that this is an invald stream
-    emptyStreamPtr_->setBad();
+    // Set stream as bad - indicates it is not a valid stream
+    singleton->setBad();
 
-    return *emptyStreamPtr_;
+    return *singleton;
 }
 
 
@@ -98,10 +95,12 @@ Foam::tokenList Foam::ITstream::parse_chars
     IOstreamOption streamOpt
 )
 {
-    ISpanStream is(s, nbytes, streamOpt);
-
     tokenList tokens;
-    parseStream(is, tokens);
+    if (s && nbytes > 0)  // extra safety
+    {
+        ISpanStream is(s, nbytes, streamOpt);
+        parseStream(is, tokens);
+    }
     return tokens;
 }
 
@@ -110,10 +109,19 @@ Foam::tokenList Foam::ITstream::parse_chars
 
 void Foam::ITstream::reset(const char* input, size_t nbytes)
 {
-    ISpanStream is(input, nbytes, static_cast<IOstreamOption>(*this));
+    tokenList tokens;
+    if (input && nbytes > 0)  // extra safety
+    {
+        ISpanStream is(input, nbytes, static_cast<IOstreamOption>(*this));
 
-    parseStream(is, static_cast<tokenList&>(*this));
-    ITstream::seek(0);  // rewind() bypassing virtual
+        parseStream(is, static_cast<tokenList&>(*this));
+        ITstream::seek(0);  // rewind() bypassing virtual
+    }
+    else
+    {
+        ITstream::seek(0);  // rewind() bypassing virtual
+        tokenList::clear();
+    }
 }
 
 
@@ -186,7 +194,7 @@ Foam::ITstream::ITstream
 
 Foam::ITstream::ITstream
 (
-    const Foam::zero,
+    Foam::zero,
     const string& name,
     IOstreamOption streamOpt
 )
@@ -244,19 +252,6 @@ Foam::ITstream::ITstream
 
 Foam::ITstream::ITstream
 (
-    const std::string& input,
-    IOstreamOption streamOpt,
-    const string& name
-)
-:
-    ITstream(streamOpt, name)
-{
-    reset(input.data(), input.size());
-}
-
-
-Foam::ITstream::ITstream
-(
     const char* input,
     IOstreamOption streamOpt,
     const string& name
@@ -264,7 +259,10 @@ Foam::ITstream::ITstream
 :
     ITstream(streamOpt, name)
 {
-    reset(input, strlen(input));
+    if (input)
+    {
+        reset(input, strlen(input));
+    }
 }
 
 
@@ -659,7 +657,28 @@ Foam::Istream& Foam::ITstream::read(string&)
 }
 
 
-Foam::Istream& Foam::ITstream::read(label&)
+Foam::Istream& Foam::ITstream::read(int32_t&)
+{
+    NotImplemented;
+    return *this;
+}
+
+
+Foam::Istream& Foam::ITstream::read(int64_t&)
+{
+    NotImplemented;
+    return *this;
+}
+
+
+Foam::Istream& Foam::ITstream::read(uint32_t&)
+{
+    NotImplemented;
+    return *this;
+}
+
+
+Foam::Istream& Foam::ITstream::read(uint64_t&)
 {
     NotImplemented;
     return *this;

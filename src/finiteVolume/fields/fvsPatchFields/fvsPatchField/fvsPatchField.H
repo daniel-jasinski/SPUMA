@@ -81,6 +81,13 @@ class fvsPatchFieldBase
         //- Reference to patch
         const fvPatch& patch_;
 
+        //- Optional patch type
+        //  Used to allow specified boundary conditions to be applied
+        //  to constraint patches by providing the constraint
+        //  patch type as 'patchType'
+        word patchType_;
+
+
 protected:
 
     // Protected Member Functions
@@ -88,14 +95,6 @@ protected:
         //- Read dictionary entries.
         //  Useful when initially constructed without a dictionary
         virtual void readDict(const dictionary& dict);
-
-        //- Set updated state. This is a no-op for fvsPatchField
-        void setUpdated(bool state) noexcept
-        {}
-
-        //- Set matrix manipulated state. This is a no-op for fvsPatchField
-        void setManipulated(bool state) noexcept
-        {}
 
 
 public:
@@ -140,10 +139,22 @@ public:
             return Foam::fieldTypes::calculatedType;
         }
 
+        //- The type name for \c zeroValue patch fields
+        static const word& zeroValueType() noexcept
+        {
+            return Foam::fieldTypes::zeroValueType;
+        }
+
 
     // Member Functions
 
     // Attributes
+
+        //- True if the value of the patch field is altered by assignment
+        virtual bool assignable() const
+        {
+            return true;
+        }
 
         //- True if the patch field fixes a value.
         //  Needed to check if a level has to be specified while solving
@@ -171,6 +182,24 @@ public:
             return patch_;
         }
 
+        //- The optional patch type
+        const word& patchType() const noexcept
+        {
+            return patchType_;
+        }
+
+        //- The optional patch type
+        word& patchType() noexcept
+        {
+            return patchType_;
+        }
+
+        //- True if the type does not correspond to the constraint type
+        virtual bool constraintOverride() const
+        {
+            return !patchType_.empty() && patchType_ != type();
+        }
+
 
     // Solution
 
@@ -181,11 +210,21 @@ public:
             return true;
         }
 
+        //- Set updated state. This is a no-op for fvsPatchField
+        void setUpdated(bool state) noexcept
+        {}
+
         //- True if the matrix has already been manipulated
+        //- Always false for fvsPatchField
         bool manipulatedMatrix() const noexcept
         {
             return false;
         }
+
+        //- Set matrix manipulated state.
+        //- This is a no-op for fvsPatchField
+        void setManipulated(bool state) noexcept
+        {}
 
 
     // Check
@@ -214,6 +253,9 @@ public:
 
         //- The value_type for the patch field
         typedef Type value_type;
+
+        //- The component type for patch field
+        typedef typename pTraits<Type>::cmptType cmptType;
 
         //- The internal field type associated with the patch field
         typedef DimensionedField<Type, surfaceMesh> Internal;
@@ -362,15 +404,29 @@ public:
             const fvPatchFieldMapper&
         );
 
-        //- Construct as copy
-        fvsPatchField(const fvsPatchField<Type>&);
+        //- Construct onto new patch with internal field reference
+        //- and specified value
+        fvsPatchField
+        (
+            const fvsPatchField<Type>& pfld,
+            const fvPatch& p,
+            const DimensionedField<Type, surfaceMesh>& iF,
+            const Type& value
+        );
 
-        //- Construct as copy setting internal field reference
+        //- Copy construct with internal field reference
         fvsPatchField
         (
             const fvsPatchField<Type>&,
             const DimensionedField<Type, surfaceMesh>&
         );
+
+        //- Copy construct
+        fvsPatchField(const fvsPatchField<Type>& pfld)
+        :
+            fvsPatchField<Type>(pfld, pfld.internalField())
+        {}
+
 
         //- Clone patch field with its own internal field reference
         virtual tmp<fvsPatchField<Type>> clone() const
@@ -505,41 +561,39 @@ public:
         );
 
 
-        // Evaluation Functions
+    // Evaluation Functions
 
-            //- Initialise the evaluation of the patch field
-            virtual void initEvaluate
-            (
-                const Pstream::commsTypes commsType =
-                    Pstream::commsTypes::buffered
-            )
-            {}
+        //- Initialise the evaluation of the patch field
+        virtual void initEvaluate
+        (
+            const Pstream::commsTypes commsType = Pstream::commsTypes::buffered
+        )
+        {}
 
-            //- Evaluate the patch field, sets Updated to false
-            virtual void evaluate
-            (
-                const Pstream::commsTypes commsType =
-                    Pstream::commsTypes::buffered
-            )
-            {}
+        //- Evaluate the patch field, sets Updated to false
+        virtual void evaluate
+        (
+            const Pstream::commsTypes commsType = Pstream::commsTypes::buffered
+        )
+        {}
 
-            //- Initialise the evaluation of the patch field after a local
-            //  operation
-            virtual void initEvaluateLocal
-            (
-                const Pstream::commsTypes commsType =
-                    Pstream::commsTypes::buffered
-            )
-            {}
+        //- Initialise the evaluation of the patch field after a local
+        //  operation
+        virtual void initEvaluateLocal
+        (
+            const Pstream::commsTypes commsType = Pstream::commsTypes::buffered
+        )
+        {}
 
-            //- Evaluate the patch field after a local operation (e.g. *=)
-            virtual void evaluateLocal
-            (
-                const Pstream::commsTypes commsType =
-                    Pstream::commsTypes::buffered
-            )
-            {}
+        //- Evaluate the patch field after a local operation (e.g. *=)
+        virtual void evaluateLocal
+        (
+            const Pstream::commsTypes commsType = Pstream::commsTypes::buffered
+        )
+        {}
 
+
+    // Other
 
         //- Write the patch "type"
         virtual void write(Ostream& os) const;

@@ -47,12 +47,14 @@ Foam::solverPerformance Foam::GAMGSolver::solve
 
     ConstPrecisionAdaptor<solveScalar, scalar> tsource(source);
 
+    const bool useLowerCSR = controlDict_.getOrDefault<bool>("useLowerCSR", false);
+
     // Setup class containing solver performance data
     solverPerformance solverPerf(typeName, fieldName_);
 
     // Calculate A.psi used to calculate the initial residual
     solveScalarField Apsi(psi.size());
-    matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
+    matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
 
     // Create the storage for the finestCorrection which may be used as a
     // temporary in normFactor
@@ -137,7 +139,7 @@ Foam::solverPerformance Foam::GAMGSolver::solve
             );
 
             // Calculate finest level residual field
-            matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
+            matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
             finestResidual = tsource();
             finestResidual -= Apsi;
 
@@ -240,7 +242,7 @@ void Foam::GAMGSolver::Vcycle
                         coarseCorrFields[leveli],
                         const_cast<solveScalarField&>
                         (
-                            ACf.operator const solveScalarField&()
+                            static_cast<const solveScalarField&>(ACf)
                         ),
                         matrixLevels_[leveli],
                         interfaceLevelsBouCoeffs_[leveli],
@@ -347,11 +349,10 @@ void Foam::GAMGSolver::Vcycle
                 scratch1,
                 coarseCorrFields[leveli].size()
             );
-            solveScalarField& ACfRef =
-                const_cast<solveScalarField&>
-                (
-                    ACf.operator const solveScalarField&()
-                );
+            auto& ACfRef = const_cast<solveScalarField&>
+            (
+                static_cast<const solveScalarField&>(ACf)
+            );
 
             if (interpolateCorrection_)
             {

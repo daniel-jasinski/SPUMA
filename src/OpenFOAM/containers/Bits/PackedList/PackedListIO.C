@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2022 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -178,11 +178,13 @@ template<unsigned Width>
 Foam::Ostream& Foam::PackedList<Width>::writeList
 (
     Ostream& os,
-    const label shortLen
+    label shortLen
 ) const
 {
     const PackedList<Width>& list = *this;
     const label len = list.size();
+
+    if (shortLen < 0) shortLen = 1;  // <- sanity
 
     if (os.format() == IOstreamOption::BINARY)
     {
@@ -209,7 +211,7 @@ Foam::Ostream& Foam::PackedList<Width>::writeList
         os << len << token::BEGIN_LIST;
 
         // Contents
-        for (label i=0; i < len; ++i)
+        for (label i = 0; i < len; ++i)
         {
             if (i) os << token::SPACE;
             os << label(list.get(i));
@@ -226,9 +228,33 @@ Foam::Ostream& Foam::PackedList<Width>::writeList
         os << nl << len << nl << token::BEGIN_LIST << nl;
 
         // Contents
-        for (label i=0; i < len; ++i)
+        if (shortLen <= 1)
         {
-            os << label(list.get(i)) << nl;
+            // simple multi-line
+            for (label i = 0; i < len; ++i)
+            {
+                os << label(list.get(i)) << nl;
+            }
+        }
+        else
+        {
+            // 'matrix' of values
+            label line = 0;
+
+            for (label i = 0; i < len; ++i, ++line)
+            {
+                if (line == shortLen)
+                {
+                    os << nl;
+                    line = 0;
+                }
+                else if (line)
+                {
+                    os << token::SPACE;
+                }
+                os << label(list.get(i));
+            }
+            if (line) os << nl;
         }
 
         // End delimiter

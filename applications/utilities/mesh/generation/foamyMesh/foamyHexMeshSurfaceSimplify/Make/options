@@ -3,8 +3,8 @@ MarchingCubes = fastdualoctree_sgp
 include $(GENERAL_RULES)/cgal
 
 EXE_INC = \
+    $(c++LESSWARN) \
     -DUNIX \
-    -Wno-old-style-cast \
     /* -IMarchingCubes */ \
     -I$(FASTDUALOCTREE_SRC_PATH) \
     -I../conformalVoronoiMesh/lnInclude \

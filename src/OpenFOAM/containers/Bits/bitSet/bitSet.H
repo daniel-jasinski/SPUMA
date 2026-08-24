@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,7 +35,7 @@ SourceFiles
     bitSetI.H
     bitSet.C
     bitSetIO.C
-    bitSetTemplates.C
+    bitSet.txx
 
 See also
     Foam::BitOps
@@ -46,7 +46,6 @@ See also
 #ifndef Foam_bitSet_H
 #define Foam_bitSet_H
 
-#include "className.H"
 #include "PackedList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -111,7 +110,11 @@ protected:
 
 public:
 
-    // Forward declaration of access classes
+    //- A bitSet acts like a packed boolList
+    typedef bool value_type;
+
+
+    // Forward Declarations
 
         class reference;
         class const_iterator;
@@ -331,6 +334,13 @@ public:
         //      set(pos) on individual bits.
         void set(const labelRange& range);
 
+        //- Test for \em True value at specified position
+        //- and change the value at that position.
+        //  Does auto-vivify for non-existent, non-zero entries.
+        //
+        //  \note Method name compatibility with std::bitset
+        bool test_set(const label i, const bool val = true);
+
 
     // Unsetting single or multiple values
 
@@ -475,10 +485,10 @@ public:
         public:
 
             //- Copy construct
-            reference(const reference&) = default;
+            reference(const reference&) noexcept = default;
 
             //- Move construct
-            reference(reference&&) = default;
+            reference(reference&&) noexcept = default;
 
             //- Flip the bit at the position, no range-checking
             inline void flip();
@@ -595,7 +605,21 @@ public:
         inline bitSet& operator-=(const bitSet& other);
 
 
-    // IOstream Operators
+    // Reading/writing
+
+
+        //- Read contents in "compact" format, which is the listing
+        //- of the 'on' bits (toc)
+        //  This function mostly useful for relatively sparse sets.
+        //  \note currently ASCII only.
+        Istream& readListToc(Istream& is);
+
+        //- Write contents in "compact" format, which is the listing
+        //- of the 'on' bits (toc), with line-breaks in ASCII guided
+        //- by shortLen parameter ('0' suppresses line-breaks entirely).
+        //  This function mostly useful for relatively sparse sets.
+        //  \note currently ASCII only.
+        Ostream& writeListToc(Ostream& os, label shortLen=0) const;
 
         //- Return info proxy,
         //- used to print information to a stream
@@ -603,6 +627,70 @@ public:
         {
             return *this;
         }
+
+
+    // Parallel Operations
+
+        //- Broadcast the contents
+        void broadcast
+        (
+            //! The UPstream communicator (default is worldComm)
+            int communicator = -1,
+            //! False: sizes already consistent. True: adjust sizes.
+            bool syncSizes = true
+        );
+
+        //- Broadcast the contents using the specified communicator/root
+        void broadcast
+        (
+            //! UPstream communicator and broadcast root
+            std::pair<int,int> communicator_root,
+            //! False: sizes already consistent. True: adjust sizes.
+            bool syncSizes = true
+        );
+
+        //- Inplace \c bit_and parallel reduction
+        void reduceAnd
+        (
+            //! The UPstream communicator (default is worldComm)
+            int communicator = -1,
+            //! False: sizes already consistent. True: adjust (shrink) sizes.
+            bool syncSizes = true
+        );
+
+        //- Inplace \c bit_or parallel reduction
+        void reduceOr
+        (
+            //! The UPstream communicator (default is worldComm)
+            int communicator = -1,
+            //! False: sizes already consistent. True: adjust (extend) sizes.
+            bool syncSizes = true
+        );
+
+        //- Gather individual values into bitSet locations.
+        //  On master, the resulting bitSet has size == nProcs,
+        //  otherwise zero length.
+        //  \n
+        //  For \b non-parallel :
+        //  the length of the returned set is 1 with localValue.
+        static bitSet gatherValues
+        (
+            //! The processor-local value
+            bool localValue,
+            //! The UPstream communicator (default is worldComm)
+            int communicator = -1
+        );
+
+        //- Allgather individual values into bitSet locations.
+        //  The resulting bitSet has size nProcs, identical on all ranks.
+        //  Behaves like Pstream::allGatherValues() but returning a bitSet.
+        static bitSet allGather
+        (
+            //! The processor-local value
+            bool localValue,
+            //! The UPstream communicator (default is worldComm)
+            int communicator = -1
+        );
 
 
     // Housekeeping
@@ -662,7 +750,7 @@ inline bitSet operator-(const bitSet& a, const bitSet& b);
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "bitSetTemplates.C"
+    #include "bitSet.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

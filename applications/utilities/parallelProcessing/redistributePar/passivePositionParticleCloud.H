@@ -30,7 +30,7 @@ Description
     A Cloud of passive position particles
 
 SourceFiles
-    passivePositionParticleCloud.C
+    passivePositionParticleCloud.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -79,7 +79,7 @@ public:
         passivePositionParticleCloud
         (
             const polyMesh& mesh,
-            const Foam::zero,
+            Foam::zero,
             const word& cloudName = cloud::defaultName
         )
         :

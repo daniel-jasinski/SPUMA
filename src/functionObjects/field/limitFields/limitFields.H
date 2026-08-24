@@ -35,39 +35,41 @@ Description
     Operands:
     \table
       Operand          | Type             | Location
-      input            | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<inpField\>
+      input            | vol<Type>Field   | <time>/inputField
       output file      | -                | -
-      output field     | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<outField\>
+      output field     | vol<Type>Field   | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
-
-Note
-    For non-scalar types of input field, the user limit is used to create a
-    scaling factor using the field magnitudes.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    limitFields1
+    limitFieldsFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            limitFields;
         libs            (fieldFunctionObjects);
+        fields          <wordList>;       // (field1 field2 ... fieldN)
+        limit           <word>;
 
-        // Mandatory entries (runtime modifiable)
-        fields          (U);
-        limit           max;
-        max             100;
+        // Conditional entries
 
-        // Optional (inherited) entries
+            // when limit = min or both
+            min             <scalar>;
+
+            // when limit = max or both
+            max             <scalar>;
+
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: limitFields             | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       fields       | List of fields to process          | wordList | yes | -
@@ -76,22 +78,19 @@ Usage
       max          | Max limit value                  | scalar | conditional | -
     \endtable
 
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
+
     Options for the \c limit entry:
     \verbatim
-        min  : specify a minimum value
-        max  : specify a maximum value
-        both : specify a minimum value and a maximum value
+        min  | specify a minimum value
+        max  | specify a maximum value
+        both | specify a minimum value and a maximum value
     \endverbatim
 
-    The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::limitFields
+Note
+    For non-scalar types of input field, the user limit is used to create a
+    scaling factor using the field magnitudes.
 
 SourceFiles
     limitFields.C
@@ -99,8 +98,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_limitFields_H
-#define functionObjects_limitFields_H
+#ifndef Foam_functionObjects_limitFields_H
+#define Foam_functionObjects_limitFields_H
 
 #include "Enum.H"
 #include "fvMeshFunctionObject.H"
@@ -174,7 +173,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         limitFields
         (
             const word& name,
@@ -195,13 +194,13 @@ public:
 
     // Member Functions
 
-        //- Read the field min/max data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the limitFields
+        //- Write the function-object results
         virtual bool write();
 };
 

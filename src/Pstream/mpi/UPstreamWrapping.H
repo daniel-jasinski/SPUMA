@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2012-2016 OpenFOAM Foundation
-    Copyright (C) 2022-2024 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -47,28 +47,32 @@ namespace Foam
 namespace PstreamDetail
 {
 
-// MPI_Bcast, using root=0
+// MPI_Bcast (default from root=0)
+// No fail/abort handling
 template<class Type>
-void broadcast0
+bool broadcast
 (
     Type* values,
     int count,
     MPI_Datatype datatype,
-    const label comm
+    const int communicator,
+    const int root = 0
 );
 
 // MPI_Reduce, using root=0
 template<class Type>
-void reduce0
+void reduce
 (
+    const Type* sendData,   // Use nullptr for in-place operation
     Type* values,
     int count,
     MPI_Datatype datatype,
     MPI_Op optype,
-    const label comm
+    const int communicator,             // Communicator
+    UPstream::Request* req = nullptr    // Non-null for non-blocking
 );
 
-// MPI_Allreduce or MPI_Iallreduce
+// MPI_Allreduce or MPI_Iallreduce : in-place operation
 template<class Type>
 void allReduce
 (
@@ -76,11 +80,22 @@ void allReduce
     int count,
     MPI_Datatype datatype,
     MPI_Op optype,
-    const label comm,                   // Communicator
-    UPstream::Request* req = nullptr,   // Non-null for non-blocking
-    label* requestID = nullptr          // (alternative to UPstream::Request)
+    const int communicator,             // Communicator
+    UPstream::Request* req = nullptr    // Non-null for non-blocking
 );
 
+// MPI_Scan or MPI_Exscan
+template<class Type>
+void scanReduce
+(
+    const Type* sendData,
+    Type* recvData,
+    int count,
+    MPI_Datatype datatype,
+    MPI_Op optype,
+    const int communicator,             // Communicator
+    const int exclusive                 // Use Exscan instead of Scan
+);
 
 // MPI_Alltoall or MPI_Ialltoall with one element per rank
 template<class Type>
@@ -89,9 +104,8 @@ void allToAll
     const UList<Type>& sendData,
     UList<Type>& recvData,
     MPI_Datatype datatype,
-    const label comm,                   // Communicator
-    UPstream::Request* req = nullptr,   // Non-null for non-blocking
-    label* requestID = nullptr          // (alternative to UPstream::Request)
+    const int communicator,             // Communicator
+    UPstream::Request* req = nullptr    // Non-null for non-blocking
 );
 
 
@@ -108,9 +122,8 @@ void allToAllv
     const UList<int>& recvOffsets,
 
     MPI_Datatype datatype,
-    const label comm,                   // Communicator
-    UPstream::Request* req = nullptr,   // Non-null for non-blocking
-    label* requestID = nullptr          // (alternative to UPstream::Request)
+    const int communicator,             // Communicator
+    UPstream::Request* req = nullptr    // Non-null for non-blocking
 );
 
 
@@ -122,7 +135,7 @@ void allToAllConsensus
     UList<Type>& recvData,
     MPI_Datatype datatype,
     const int tag,                      // Message tag
-    const label comm                    // Communicator
+    const int communicator              // Communicator
 );
 
 
@@ -134,11 +147,12 @@ void allToAllConsensus
     Map<Type>& recvData,
     MPI_Datatype datatype,
     const int tag,                      // Message tag
-    const label comm                    // Communicator
+    const int communicator              // Communicator
 );
 
 
 // MPI_Gather or MPI_Igather
+// Uses recvData as send/recv when sendData is nullptr
 template<class Type>
 void gather
 (
@@ -146,13 +160,13 @@ void gather
     Type* recvData,         // On master: recv buffer. Ignored elsewhere
     int count,              // Per rank send/recv count. Globally consistent!
     MPI_Datatype datatype,              // The send/recv data type
-    const label comm,                   // Communicator
-    UPstream::Request* req = nullptr,   // Non-null for non-blocking
-    label* requestID = nullptr          // (alternative to UPstream::Request)
+    const int communicator,             // Communicator
+    UPstream::Request* req = nullptr    // Non-null for non-blocking
 );
 
 
 // MPI_Scatter or MPI_Iscatter
+// Uses recvData as send/recv when sendData is nullptr
 template<class Type>
 void scatter
 (
@@ -160,9 +174,8 @@ void scatter
     Type* recvData,         // Local recv value
     int count,              // Per rank send/recv count. Globally consistent!
     MPI_Datatype datatype,              // The send/recv data type
-    const label comm,                   // Communicator
-    UPstream::Request* req = nullptr,   // Non-null for non-blocking
-    label* requestID = nullptr          // (alternative to UPstream::Request)
+    const int communicator,             // Communicator
+    UPstream::Request* req = nullptr    // Non-null for non-blocking
 );
 
 
@@ -178,9 +191,8 @@ void gatherv
     const UList<int>& recvOffsets,      // Ignored on non-root rank
 
     MPI_Datatype datatype,              // The send/recv data type
-    const label comm,                   // Communicator
-    UPstream::Request* req = nullptr,   // Non-null for non-blocking
-    label* requestID = nullptr          // (alternative to UPstream::Request)
+    const int communicator,             // Communicator
+    UPstream::Request* req = nullptr    // Non-null for non-blocking
 );
 
 
@@ -196,9 +208,8 @@ void scatterv
     int recvCount,
 
     MPI_Datatype datatype,              // The send/recv data type
-    const label comm,                   // Communicator
-    UPstream::Request* req = nullptr,   // Non-null for non-blocking
-    label* requestID = nullptr          // (alternative to UPstream::Request)
+    const int communicator,             // Communicator
+    UPstream::Request* req = nullptr    // Non-null for non-blocking
 );
 
 
@@ -210,9 +221,8 @@ void allGather
     int count,                          // The send/recv count per element
 
     MPI_Datatype datatype,              // The send/recv data type
-    const label comm,                   // Communicator
-    UPstream::Request* req = nullptr,   // Non-null for non-blocking
-    label* requestID = nullptr          // (alternative to UPstream::Request)
+    const int communicator,             // Communicator
+    UPstream::Request* req = nullptr    // Non-null for non-blocking
 );
 
 

@@ -39,47 +39,40 @@ Description
       Operand        | Type           | Location
       input          | -              | -
       output file    | -              | -
-      output field   | volScalarField | $FOAM_CASE/\<time\>/{St,wdot}
+      output field   | volScalarField | <time>/{St,wdot}
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    XiReactionRate1
+    XiReactionRateFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        XiReactionRate;
         libs        (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property   | Description                        | Type | Req'd | Dflt
+      Property   | Description                        | Type | Reqd  | Deflt
       type       | Type name: XiReactionRate          | word |  yes  | -
       libs       | Library name: fieldFunctionObjects | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::XiReactionRate
+      - \link functionObject.H \endlink
 
 SourceFiles
     XiReactionRate.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_XiReactionRate_H
-#define functionObjects_XiReactionRate_H
+#ifndef Foam_functionObjects_XiReactionRate_H
+#define Foam_functionObjects_XiReactionRate_H
 
 #include "fvMeshFunctionObject.H"
 
@@ -106,7 +99,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         XiReactionRate
         (
             const word& name,
@@ -127,13 +120,13 @@ public:
 
     // Member Functions
 
-        //- Read the reaction rate data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Do nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the reaction rate fields
+        //- Write the function-object results
         virtual bool write();
 };
 

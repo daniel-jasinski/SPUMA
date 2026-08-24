@@ -155,6 +155,12 @@ public:
         static constexpr direction nComponents = 1;
 
 
+    // Limits
+
+        static constexpr uint64_t min_ = 0;
+        static constexpr uint64_t max_ = UINT64_MAX;
+
+
     // Static Data Members
 
         FOAM_EXPORT_DATA static const char* const typeName;
@@ -175,10 +181,7 @@ public:
     // Constructors
 
         //- Copy construct from primitive
-        explicit pTraits(uint64_t val) noexcept
-        :
-            p_(val)
-        {}
+        explicit pTraits(uint64_t val) noexcept : p_(val) {}
 
         //- Read construct from Istream
         explicit pTraits(Istream& is);
@@ -193,6 +196,11 @@ public:
         operator uint64_t&() noexcept { return p_; }
 };
 
+
+#ifdef __APPLE__
+//- On Darwin: unsigned long is not unambiguously (uint64_t)
+template<> class pTraits<unsigned long> : pTraits<uint64_t> {};
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

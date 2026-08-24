@@ -44,7 +44,7 @@ See Also
     Foam::vtk::internalMeshWriter
 
 SourceFiles
-    foamVtkInternalWriterTemplates.C
+    foamVtkInternalWriter.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -74,7 +74,9 @@ class internalWriter
 :
     public vtk::internalMeshWriter
 {
-    // Private Member Functions
+public:
+
+    // Generated Methods
 
         //- No copy construct
         internalWriter(const internalWriter&) = delete;
@@ -82,8 +84,6 @@ class internalWriter
         //- No copy assignment
         void operator=(const internalWriter&) = delete;
 
-
-public:
 
     // Constructors
 
@@ -106,7 +106,7 @@ public:
             const polyMesh& mesh,
             const vtk::vtuCells& cells,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         )
         :
             vtk::internalMeshWriter(mesh, cells, file, parallel)
@@ -120,7 +120,7 @@ public:
             const vtk::vtuCells& cells,
             const vtk::outputOptions opts,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         )
         :
             vtk::internalMeshWriter(mesh, cells, opts, file, parallel)
@@ -183,7 +183,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "foamVtkInternalWriterTemplates.C"
+    #include "foamVtkInternalWriter.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

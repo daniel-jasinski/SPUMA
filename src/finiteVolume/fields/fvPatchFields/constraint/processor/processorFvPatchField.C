@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -210,6 +210,22 @@ Foam::processorFvPatchField<Type>::patchNeighbourField() const
 
 
 template<class Type>
+void Foam::processorFvPatchField<Type>::patchNeighbourField
+(
+    UList<Type>& pnf
+) const
+{
+    if (debug && !this->ready())
+    {
+        FatalErrorInFunction
+            << "Outstanding request on patch " << procPatch_.name()
+            << abort(FatalError);
+    }
+    pnf.deepCopy(*this);
+}
+
+
+template<class Type>
 void Foam::processorFvPatchField<Type>::initEvaluate
 (
     const Pstream::commsTypes commsType
@@ -217,15 +233,16 @@ void Foam::processorFvPatchField<Type>::initEvaluate
 {
     if (UPstream::parRun())
     {
+        sendBuf_.resize_nocopy(this->patch().size());
         this->patchInternalField(sendBuf_);
 
         if
         (
             commsType == UPstream::commsTypes::nonBlocking
-         && (std::is_integral<Type>::value || !UPstream::floatTransfer)
+         && (std::is_integral_v<Type> || !UPstream::floatTransfer)
         )
         {
-            if (!is_contiguous<Type>::value)
+            if constexpr (!is_contiguous_v<Type>)
             {
                 FatalErrorInFunction
                     << "Invalid for non-contiguous data types"
@@ -233,15 +250,15 @@ void Foam::processorFvPatchField<Type>::initEvaluate
             }
 
             // Receive straight into *this
-            this->resize_nocopy(sendBuf_.size());
+            Field<Type>& self = *this;
+            self.resize_nocopy(sendBuf_.size());
 
             recvRequest_ = UPstream::nRequests();
             UIPstream::read
             (
                 UPstream::commsTypes::nonBlocking,
                 procPatch_.neighbProcNo(),
-                this->data_bytes(),
-                this->size_bytes(),
+                self,
                 procPatch_.tag(),
                 procPatch_.comm()
             );
@@ -251,8 +268,7 @@ void Foam::processorFvPatchField<Type>::initEvaluate
             (
                 UPstream::commsTypes::nonBlocking,
                 procPatch_.neighbProcNo(),
-                sendBuf_.cdata_bytes(),
-                sendBuf_.size_bytes(),
+                sendBuf_,
                 procPatch_.tag(),
                 procPatch_.comm()
             );
@@ -276,7 +292,7 @@ void Foam::processorFvPatchField<Type>::evaluate
         if
         (
             commsType == UPstream::commsTypes::nonBlocking
-         && (std::is_integral<Type>::value || !UPstream::floatTransfer)
+         && (std::is_integral_v<Type> || !UPstream::floatTransfer)
         )
         {
             // Fast path: received into *this
@@ -300,12 +316,38 @@ void Foam::processorFvPatchField<Type>::evaluate
 
 
 template<class Type>
+void Foam::processorFvPatchField<Type>::snGrad
+(
+    const scalarField& deltaCoeffs,
+    UList<Type>& result
+) const
+{
+    // Get patch internal field, store temporarily in result
+    this->patchInternalField(result);
+    const auto& pif = result;
+
+    const auto& pnf = *this;
+
+    const label len = result.size();
+
+    for (label i = 0; i < len; ++i)
+    {
+        result[i] = deltaCoeffs[i]*(pnf[i] - pif[i]);
+    }
+}
+
+
+template<class Type>
 Foam::tmp<Foam::Field<Type>>
 Foam::processorFvPatchField<Type>::snGrad
 (
     const scalarField& deltaCoeffs
 ) const
 {
+    // OR
+    // auto tfld = tmp<Field<Type>>::New(this->size());
+    // this->snGrad(deltaCoeffs, tfld.ref());
+    // return tfld;
     return deltaCoeffs*(*this - this->patchInternalField());
 }
 
@@ -323,21 +365,21 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
     const Pstream::commsTypes commsType
 ) const
 {
-    //this->patch().patchInternalField(psiInternal, scalarSendBuf_);
-
     const labelUList& faceCells = lduAddr.patchAddr(patchId);
 
-    scalarSendBuf_.resize_nocopy(this->patch().size());
-
-    foamExecutor exec;
-    auto sSendBufp = scalarSendBuf_.begin();
-    const auto psiInternalp = psiInternal.cbegin();
-    const auto faceCellsp = faceCells.cbegin();
-    auto Lambda = [=](label facei)
     {
-        sSendBufp[facei] = psiInternalp[faceCellsp[facei]];
-    };
-    exec.parallelFor(Lambda, scalarSendBuf_.size());
+        scalarSendBuf_.resize_nocopy(faceCells.size());
+        scalarRecvBuf_.resize_nocopy(faceCells.size());
+        foamExecutor exec;
+        auto sSendBufp = scalarSendBuf_.begin();
+        const auto psiInternalp = psiInternal.cbegin();
+        const auto faceCellsp = faceCells.cbegin();
+        auto Lambda = [=](label facei)
+        {
+            sSendBufp[facei] = psiInternalp[faceCellsp[facei]];
+        };
+        exec.parallelFor(Lambda, faceCells.size());
+    }
 
     if
     (
@@ -353,15 +395,12 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
                 << abort(FatalError);
         }
 
-        scalarRecvBuf_.resize_nocopy(scalarSendBuf_.size());
-
         recvRequest_ = UPstream::nRequests();
         UIPstream::read
         (
             UPstream::commsTypes::nonBlocking,
             procPatch_.neighbProcNo(),
-            scalarRecvBuf_.data_bytes(),
-            scalarRecvBuf_.size_bytes(),
+            scalarRecvBuf_,
             procPatch_.tag(),
             procPatch_.comm()
         );
@@ -371,8 +410,7 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
         (
             UPstream::commsTypes::nonBlocking,
             procPatch_.neighbProcNo(),
-            scalarSendBuf_.cdata_bytes(),
-            scalarSendBuf_.size_bytes(),
+            scalarSendBuf_,
             procPatch_.tag(),
             procPatch_.comm()
         );
@@ -421,7 +459,7 @@ void Foam::processorFvPatchField<Type>::updateInterfaceMatrix
     }
     else
     {
-        scalarRecvBuf_.resize_nocopy(this->size());
+        scalarRecvBuf_.resize_nocopy(faceCells.size());  // In general a no-op
         procPatch_.compressedReceive(commsType, scalarRecvBuf_);
     }
 
@@ -451,24 +489,26 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
     const Pstream::commsTypes commsType
 ) const
 {
-    sendBuf_.resize_nocopy(this->patch().size());
-
     const labelUList& faceCells = lduAddr.patchAddr(patchId);
 
-    foamExecutor exec;
-    auto sendBufp = sendBuf_.begin();
-    const auto psiInternalp = psiInternal.cbegin();
-    const auto faceCellsp = faceCells.cbegin();
-    auto Lambda = [=](label facei)
     {
-        sendBufp[facei] = psiInternalp[faceCellsp[facei]];
-    };
-    exec.parallelFor(Lambda, sendBuf_.size());
+        sendBuf_.resize_nocopy(faceCells.size());
+        recvBuf_.resize_nocopy(faceCells.size());
+        foamExecutor exec;
+        auto sendBufp = sendBuf_.begin();
+        const auto psiInternalp = psiInternal.cbegin();
+        const auto faceCellsp = faceCells.cbegin();
+        auto Lambda = [=](label facei)
+        {
+            sendBufp[facei] = psiInternalp[faceCellsp[facei]];
+        };
+        exec.parallelFor(Lambda, faceCells.size());
+    }
 
     if
     (
         commsType == UPstream::commsTypes::nonBlocking
-     && (std::is_integral<Type>::value || !UPstream::floatTransfer)
+     && (std::is_integral_v<Type> || !UPstream::floatTransfer)
     )
     {
         // Fast path.
@@ -479,15 +519,12 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
                 << abort(FatalError);
         }
 
-        recvBuf_.resize_nocopy(sendBuf_.size());
-
         recvRequest_ = UPstream::nRequests();
         UIPstream::read
         (
             UPstream::commsTypes::nonBlocking,
             procPatch_.neighbProcNo(),
-            recvBuf_.data_bytes(),
-            recvBuf_.size_bytes(),
+            recvBuf_,
             procPatch_.tag(),
             procPatch_.comm()
         );
@@ -497,8 +534,7 @@ void Foam::processorFvPatchField<Type>::initInterfaceMatrixUpdate
         (
             UPstream::commsTypes::nonBlocking,
             procPatch_.neighbProcNo(),
-            sendBuf_.cdata_bytes(),
-            sendBuf_.size_bytes(),
+            sendBuf_,
             procPatch_.tag(),
             procPatch_.comm()
         );
@@ -534,7 +570,7 @@ void Foam::processorFvPatchField<Type>::updateInterfaceMatrix
     if
     (
         commsType == UPstream::commsTypes::nonBlocking
-     && (std::is_integral<Type>::value || !UPstream::floatTransfer)
+     && (std::is_integral_v<Type> || !UPstream::floatTransfer)
     )
     {
         // Fast path: consume straight from receive buffer
@@ -546,7 +582,7 @@ void Foam::processorFvPatchField<Type>::updateInterfaceMatrix
     }
     else
     {
-        recvBuf_.resize_nocopy(this->size());
+        recvBuf_.resize_nocopy(faceCells.size());  // In general a no-op
         procPatch_.compressedReceive(commsType, recvBuf_);
     }
 

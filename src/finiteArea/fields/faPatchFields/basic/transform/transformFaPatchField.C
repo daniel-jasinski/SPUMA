@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
+    Copyright (C) 2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -37,7 +38,7 @@ Foam::transformFaPatchField<Type>::transformFaPatchField
     const DimensionedField<Type, areaMesh>& iF
 )
 :
-   faPatchField<Type>(p, iF)
+    faPatchField<Type>(p, iF)
 {}
 
 
@@ -86,7 +87,15 @@ Foam::transformFaPatchField<Type>::valueInternalCoeffs
     const tmp<scalarField>&
 ) const
 {
-    return pTraits<Type>::one - snGradTransformDiag();
+    if constexpr (!is_rotational_vectorspace_v<Type>)
+    {
+        // Rotational-invariant type
+        return tmp<Field<Type>>::New(this->size(), pTraits<Type>::one);
+    }
+    else
+    {
+        return pTraits<Type>::one - snGradTransformDiag();
+    }
 }
 
 
@@ -111,7 +120,15 @@ template<class Type>
 Foam::tmp<Foam::Field<Type>>
 Foam::transformFaPatchField<Type>::gradientInternalCoeffs() const
 {
-    return -this->patch().deltaCoeffs()*snGradTransformDiag();
+    if constexpr (!is_rotational_vectorspace_v<Type>)
+    {
+        // Rotational-invariant type
+        return tmp<Field<Type>>::New(this->size(), Foam::zero{});
+    }
+    else
+    {
+        return -this->patch().deltaCoeffs()*snGradTransformDiag();
+    }
 }
 
 

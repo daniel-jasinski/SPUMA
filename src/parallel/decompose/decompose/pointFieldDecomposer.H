@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2021-2022 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -31,9 +31,9 @@ Description
     Point field decomposer.
 
 SourceFiles
-    pointFieldDecomposer.C
-    pointFieldDecomposerCache.C
-    pointFieldDecomposerTemplates.C
+    pointFieldDecomposer.cxx
+    pointFieldDecomposer.txx
+    pointFieldDecomposerCache.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -41,8 +41,8 @@ SourceFiles
 #define Foam_pointFieldDecomposer_H
 
 #include "pointMesh.H"
-#include "pointPatchFieldMapperPatchRef.H"
 #include "pointFields.H"
+#include "pointPatchFieldMapper.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -62,12 +62,15 @@ public:
 
     // Public Classes
 
+        //- Internal caching for field reading
+        class fieldsCache;
+
         //- Point patch field decomposer class
         class patchFieldDecomposer
         :
-            public pointPatchFieldMapperPatchRef
+            public pointPatchFieldMapper
         {
-            // Private data
+            // Private Data
 
                 labelList directAddressing_;
 
@@ -83,28 +86,28 @@ public:
                 (
                     const pointPatch& completeMeshPatch,
                     const pointPatch& procMeshPatch,
-                    const labelList& directAddr
+                    const labelUList& directAddr
                 );
 
 
-            // Member functions
+            // Member Functions
 
-                label size() const
+                label size() const noexcept
                 {
                     return directAddressing_.size();
                 }
 
-                bool direct() const
+                bool direct() const noexcept
                 {
                     return true;
                 }
 
-                bool hasUnmapped() const
+                bool hasUnmapped() const noexcept
                 {
                     return hasUnmapped_;
                 }
 
-                const labelUList& directAddressing() const
+                const labelUList& directAddressing() const noexcept
                 {
                     return directAddressing_;
                 }
@@ -119,27 +122,22 @@ private:
         const pointMesh& procMesh_;
 
         //- Reference to point addressing
-        const labelList& pointAddressing_;
+        const labelUList& pointAddressing_;
 
         //- Reference to boundary addressing
-        const labelList& boundaryAddressing_;
+        const labelUList& boundaryAddressing_;
 
         //- List of patch field decomposers
         PtrList<patchFieldDecomposer> patchFieldDecomposerPtrs_;
 
 
-    // Private Member Functions
-
-        //- No copy construct
-        pointFieldDecomposer(const pointFieldDecomposer&) = delete;
-
-        //- No copy assignment
-        void operator=(const pointFieldDecomposer&) = delete;
-
 public:
 
-    // Public Classes
-    class fieldsCache;
+    //- No copy construct
+    pointFieldDecomposer(const pointFieldDecomposer&) = delete;
+
+    //- No copy assignment
+    void operator=(const pointFieldDecomposer&) = delete;
 
 
     // Constructors
@@ -147,10 +145,10 @@ public:
         //- Construct without mappers, added later with reset()
         pointFieldDecomposer
         (
-            const Foam::zero,
+            Foam::zero,
             const pointMesh& procMesh,
-            const labelList& pointAddressing,
-            const labelList& boundaryAddressing
+            const labelUList& pointAddressing,
+            const labelUList& boundaryAddressing
         );
 
         //- Construct from components
@@ -158,8 +156,8 @@ public:
         (
             const pointMesh& completeMesh,
             const pointMesh& procMesh,
-            const labelList& pointAddressing,
-            const labelList& boundaryAddressing
+            const labelUList& pointAddressing,
+            const labelUList& boundaryAddressing
         );
 
 
@@ -170,7 +168,7 @@ public:
     // Member Functions
 
         //- True if no mappers have been allocated
-        bool empty() const;
+        bool empty() const noexcept;
 
         //- Remove all mappers
         void clear();
@@ -191,7 +189,7 @@ public:
 
         //- Decompose list of fields
         template<class GeoField>
-        void decomposeFields(const PtrList<GeoField>& fields) const;
+        void decomposeFields(const UPtrList<GeoField>& fields) const;
 };
 
 
@@ -201,21 +199,14 @@ public:
 
 class pointFieldDecomposer::fieldsCache
 {
-    // Private Data
+    class privateCache;
+    std::unique_ptr<privateCache> cache_;
 
-        class privateCache;
+    //- No copy construct
+    fieldsCache(const fieldsCache&) = delete;
 
-        //- All field and field-field types for lagrangian
-        std::unique_ptr<privateCache> cache_;
-
-
-    // Private Member Functions
-
-        //- No copy construct
-        fieldsCache(const fieldsCache&) = delete;
-
-        //- No copy assignment
-        void operator=(const fieldsCache&) = delete;
+    //- No copy assignment
+    void operator=(const fieldsCache&) = delete;
 
 
 public:
@@ -233,10 +224,10 @@ public:
     // Member Functions
 
         //- No fields
-        bool empty() const;
+        bool empty() const noexcept;
 
         //- Total number of fields
-        label size() const;
+        label size() const noexcept;
 
         //- Clear out
         void clear();
@@ -265,7 +256,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "pointFieldDecomposerTemplates.C"
+    #include "pointFieldDecomposer.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

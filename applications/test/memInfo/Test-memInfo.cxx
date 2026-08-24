@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
+    Copyright (C) 2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,8 +25,10 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Application
+    Test-memInfo
 
 Description
+    Very basic test for memInfo values
 
 \*---------------------------------------------------------------------------*/
 
@@ -33,6 +36,7 @@ Description
 #include "IOstreams.H"
 #include "List.H"
 #include "vector.H"
+#include "Switch.H"
 
 using namespace Foam;
 
@@ -41,8 +45,12 @@ using namespace Foam;
 
 int main(int argc, char *argv[])
 {
-    const int n = 10000000;
+    constexpr int n = 10000000;
     const char* const memTags = "peak/size/rss/free mem: ";
+
+    Info<< nl
+        << "memInfo::supported() = " << Switch(memInfo::supported()) << nl
+        << nl;
 
     memInfo mem;
 

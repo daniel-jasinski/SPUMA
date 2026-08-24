@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -30,9 +30,9 @@ License
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 template<class T>
-inline void Foam::List<T>::doAlloc()
+inline void Foam::List<T>::doAlloc(const label len)
 {
-    if (this->size_ > 0)
+    if (len > 0)
     {
         // With sign-check to avoid spurious -Walloc-size-larger-than
 #ifndef SYCL_DEVICE_ONLY
@@ -40,30 +40,31 @@ inline void Foam::List<T>::doAlloc()
         {
             this->v_ = reinterpret_cast<T*>
             (
-                MemoryPool::getInstance()->allocate(this->size_*sizeof(T))
+                Spuma::MemoryPool::getInstance()->allocate(len*sizeof(T))
             );
+
+            // mimimc placement new
+            // default-initialize memory
+            // use it just for ranges type T
+            if constexpr(Foam::is_range<T>::value && !Foam::is_vectorspace<T>::value)
+            {
+                const T* value = new T;
+                Spuma::MemoryPool::getInstance()->memSet(this->v_,value,sizeof(T),len*sizeof(T));
+
+                // delete temporary object
+                delete value;
+            }
         }
         else
 #endif
         {
-            this->v_ = new T[this->size_];
+            this->v_ = new T[len];
         }
-    }
-}
-
-
-template<class T>
-inline void Foam::List<T>::reAlloc(const label len)
-{
-    if (this->size_ != len)
-    {
-        clear();
         this->size_ = len;
-        doAlloc();
     }
 }
 
-//TODO memoryPool
+
 template<class T>
 template<class ListType>
 inline void Foam::List<T>::copyList(const ListType& list)
@@ -108,23 +109,26 @@ template<class T>
 template<class InputIterator>
 inline Foam::List<T>::List
 (
-    InputIterator firstIter,
-    InputIterator lastIter,  // (unused)
+    InputIterator input,
+    InputIterator inputEnd,  // (unused)
     const label len
 )
 :
-    UList<T>(nullptr, len)
+    UList<T>()
 {
-    if (this->size_)
+    if (len > 0)
     {
-        doAlloc();
+        doAlloc(len);
 
         // Like std::copy() or std::copy_n()
         // but without any requirements on the iterator category
 
-        for (label i = 0; i < len; (void)++i, (void)++firstIter)
+        auto iter = this->v_;
+        const auto endIter = (iter + len);
+
+        for (; iter != endIter; (void)++iter, (void)++input)
         {
-            this->v_[i] = *firstIter;
+            *iter = *input;
         }
     }
 }
@@ -135,6 +139,17 @@ inline Foam::List<T>::List
 template<class T>
 inline constexpr Foam::List<T>::List() noexcept
 {}
+
+
+template<class T>
+inline Foam::List<T>::List(List<T>&& list) noexcept
+:
+    UList<T>(list.data(), list.size(), list.usePool())
+{
+    // Stole content
+    list.size_ = 0;
+    list.v_ = nullptr;
+}
 
 
 template<class T>
@@ -154,7 +169,10 @@ inline void Foam::List<T>::clear()
 #ifndef SYCL_DEVICE_ONLY
         if (this->usePool_)
         {
-            MemoryPool::getInstance()->free((void*)this->v_);
+            Spuma::MemoryPool::getInstance()->free
+            (
+                reinterpret_cast<void*>(this->v_)
+            );
         }
         else
 #endif
@@ -171,9 +189,9 @@ namespace Foam
 {
     // Template specialization for bool. Fills new entries with false
     template<>
-    inline void List<bool>::resize(const label newLen)
+    inline void List<bool>::resize(const label len)
     {
-        this->resize(newLen, false);
+        this->resize(len, false);
     }
 }
 
@@ -181,14 +199,17 @@ namespace Foam
 template<class T>
 inline void Foam::List<T>::resize(const label len)
 {
-    this->doResize(len);
+    if (this->size_ != len)
+    {
+        resize_copy(this->size_, len);
+    }
 }
 
 
 template<class T>
 inline void Foam::List<T>::resize_fill(const label len, const T& val)
 {
-    this->reAlloc(len);
+    resize_nocopy(len);
     UList<T>::operator=(val);
 }
 
@@ -196,14 +217,12 @@ inline void Foam::List<T>::resize_fill(const label len, const T& val)
 template<class T>
 inline void Foam::List<T>::resize_nocopy(const label len)
 {
-    this->reAlloc(len);
-}
-
-
-template<class T>
-inline void Foam::List<T>::resize_unsafe(const label len) noexcept
-{
-    UList<T>::setAddressableSize(len);
+    // Same as resize_copy(0, len);
+    if (this->size_ != len)
+    {
+        clear();
+        doAlloc(len);
+    }
 }
 
 
@@ -293,7 +312,6 @@ inline void Foam::List<T>::push_back(const IndirectListBase<T, Addr>& list)
 
     const label idx = this->size();
     const label n = list.size();
-
     resize(idx + n);
 
     auto iter = this->begin(idx);
@@ -344,7 +362,7 @@ inline void Foam::List<T>::operator=(const T& val)
 
 
 template<class T>
-inline void Foam::List<T>::operator=(const Foam::zero)
+inline void Foam::List<T>::operator=(Foam::zero)
 {
     UList<T>::operator=(Foam::zero{});
 }

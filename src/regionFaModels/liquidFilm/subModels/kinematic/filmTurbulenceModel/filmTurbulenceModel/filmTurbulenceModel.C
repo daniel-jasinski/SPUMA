@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -82,11 +82,52 @@ filmTurbulenceModel::filmTurbulenceModel
     method_(frictionMethodTypeNames_.get("friction", dict_)),
     shearMethod_(shearMethodTypeNames_.get("shearStress", dict_)),
     rhoName_(dict_.getOrDefault<word>("rho", "rho")),
-    rhoRef_(VGREAT)
+    rhoRef_(VGREAT),
+    CwPtr_(nullptr),
+    dwfPtr_(nullptr)
 {
     if (rhoName_ == "rhoInf")
     {
         rhoRef_ = dict_.get<scalar>("rhoInf");
+    }
+
+    const auto& regionMesh = film_.regionMesh();
+    CwPtr_.reset
+    (
+        new areaScalarField
+        (
+            IOobject
+            (
+                IOobject::scopedName(typeName, "Cw"),
+                regionMesh.time().timeName(),
+                regionMesh.thisDb(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE,
+                IOobject::NO_REGISTER
+            ),
+            regionMesh,
+            dimensionedScalar(dimVelocity, Zero)
+        )
+    );
+
+    auto* dwfNamePtr = dict_.findEntry("DarcyWeisbachField");
+    if (dwfNamePtr)
+    {
+        dwfPtr_.reset
+        (
+            new areaScalarField
+            (
+                IOobject
+                (
+                    word(dwfNamePtr->stream()),
+                    regionMesh.time().timeName(),
+                    regionMesh.thisDb(),
+                    IOobject::MUST_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                regionMesh
+            )
+        );
     }
 }
 
@@ -101,15 +142,7 @@ const liquidFilmBase& filmTurbulenceModel::film() const
 
 tmp<areaScalarField> filmTurbulenceModel::Cw() const
 {
-    auto tCw = areaScalarField::New
-    (
-        "tCw",
-        IOobject::NO_REGISTER,
-        film_.regionMesh(),
-        dimensionedScalar(dimVelocity, Zero)
-    );
-    auto& Cw = tCw.ref();
-
+    auto& Cw = CwPtr_.ref();
 
     switch (method_)
     {
@@ -140,21 +173,32 @@ tmp<areaScalarField> filmTurbulenceModel::Cw() const
         }
         case mDarcyWeisbach:
         {
-            const uniformDimensionedVectorField& g =
-                meshObjects::gravity::New(film_.primaryMesh().time());
+            const auto& primaryMesh = film_.primaryMesh();
+            const auto& g = meshObjects::gravity::New(primaryMesh.time());
+            const auto magG(mag(g.value()));
+
             const vectorField& Uf = film_.Uf().primitiveField();
             const scalarField& rho = film_.rho().primitiveField();
 
-            const scalar Cf = dict_.get<scalar>("DarcyWeisbach");
+            auto& Cwp = Cw.primitiveFieldRef();
 
-            Cw.primitiveFieldRef() = Cf*mag(g.value())*mag(Uf)/rho;
+            auto* dwfNamePtr = dict_.findEntry("DarcyWeisbachField");
+            if (dwfNamePtr)
+            {
+                Cwp = dwfPtr_.ref().primitiveField()*magG*mag(Uf)/rho;
+            }
+            else
+            {
+                const scalar Cf = dict_.get<scalar>("DarcyWeisbach");
+                Cwp = Cf*magG*mag(Uf)/rho;
+            }
 
             break;
         }
         case mManningStrickler:
         {
-            const uniformDimensionedVectorField& g =
-                meshObjects::gravity::New(film_.primaryMesh().time());
+            const auto& primaryMesh = film_.primaryMesh();
+            const auto& g = meshObjects::gravity::New(primaryMesh.time());
 
             const vectorField& Uf = film_.Uf().primitiveField();
             const scalarField& h = film_.h().primitiveField();
@@ -180,7 +224,7 @@ tmp<areaScalarField> filmTurbulenceModel::Cw() const
         }
     }
 
-    return tCw;
+    return CwPtr_();
 }
 
 

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -29,7 +29,7 @@ License
 
 #include "error.H"
 // <algorithm> already included by stdFoam.H
-#include "MemoryPool.H"
+#include "MemoryPoolBase.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -43,10 +43,10 @@ inline constexpr Foam::UList<T>::UList() noexcept
 
 
 template<class T>
-inline Foam::UList<T>::UList(T* __restrict__ v, const label len, bool usePool) noexcept
+inline Foam::UList<T>::UList(T* __restrict__ ptr, const label len, bool usePool) noexcept
 :
     size_(len),
-    v_(v),
+    v_(ptr),
     usePool_(usePool)
 {}
 
@@ -57,8 +57,8 @@ template<class T>
 inline void Foam::UList<T>::fill_uniform(const T& val)
 {
     // Can dispatch with
-    // - std::execution::parallel_unsequenced_policy
-    // - std::execution::unsequenced_policy
+    // - std::execution::parallel_unseq
+    // - std::execution::unseq
     /*std::fill_n
     (
         this->v_, this->size_, val
@@ -67,10 +67,10 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
 #ifndef SYCL_DEVICE_ONLY
     if(this->usePool_)
     {
-        Foam::MemoryPool::getInstance()->memSet
+        Foam::Spuma::MemoryPool::getInstance()->memSet
         (
             this->v_,
-            (void*)&val,
+            reinterpret_cast<const void*>(&val),
             sizeof(T),
             this->size_bytes()
         );
@@ -88,17 +88,22 @@ inline void Foam::UList<T>::fill_uniform(const T& val)
 
 // TODO MemmoryPool
 template<class T>
-inline void Foam::UList<T>::fill_uniform(const Foam::zero)
+inline void Foam::UList<T>::fill_uniform(Foam::zero)
 {
-    // Note: ambiguous conversions for char can still cause compilation
-    // issues.
-    // May also have special triggers when assigning non-contiguous from zero...
-
-    if (is_contiguous<T>::value)
+    /*if constexpr (std::is_arithmetic_v<T>)
     {
         // Can dispatch with
-        // - std::execution::parallel_unsequenced_policy
-        // - std::execution::unsequenced_policy
+        // - std::execution::par_unseq
+        // - std::execution::unseq
+        std::fill_n
+        (
+            this->v_, this->size_, T(0)
+        );
+    }*/
+    if constexpr (is_contiguous_v<T>)
+    {
+        // - std::execution::parallel_unseq
+        // - std::execution::unseq
         /*std::fill_n
         (
             this->data_bytes(), this->size_bytes(), char(0)
@@ -107,7 +112,7 @@ inline void Foam::UList<T>::fill_uniform(const Foam::zero)
 #ifndef SYCL_DEVICE_ONLY
         if(this->usePool_)
         {
-            Foam::MemoryPool::getInstance()->memSet
+            Foam::Spuma::MemoryPool::getInstance()->memSet
             (
                 this->v_,
                 0,
@@ -126,6 +131,9 @@ inline void Foam::UList<T>::fill_uniform(const Foam::zero)
     }
     else
     {
+        // May also have special triggers when assigning non-contiguous
+        // from zero...
+
         const auto last = (this->v_ + this->size_);
 
         for (auto first = this->v_; (first != last); (void)++first)
@@ -144,7 +152,7 @@ inline bool Foam::UList<T>::usePool() const
     #ifdef FULLDEBUG
     if(this->usePool_)
     {
-        if(!MemoryPool::getInstance()->isValid(v_))
+        if(!Spuma::MemoryPool::getInstance()->isValid(v_))
             FatalErrorInFunction
                 <<"Ulist use Pool but pointer is not allocated with pool"
                 <<abort(FatalError);
@@ -375,11 +383,13 @@ template<class T>
 inline void Foam::UList<T>::shallowCopy
 (
     T* __restrict__ ptr,
-    const label len
+    const label len,
+    const bool usePool
 ) noexcept
 {
     size_ = len;
     v_ = ptr;
+    usePool_ = usePool;
 }
 
 
@@ -388,6 +398,7 @@ inline void Foam::UList<T>::shallowCopy(std::nullptr_t) noexcept
 {
     size_ = 0;
     v_ = nullptr;
+    usePool_ = false;
 }
 
 
@@ -398,18 +409,18 @@ inline void Foam::UList<T>::shallowCopy(const UList<T>& list) noexcept
     if(this->usePool_){
         if (!list.usePool())
         {
-            WarningInFunction<<"Error shallow copy from non-pool to pool"<<endl;
+            DebugInFunction<<"Error shallow copy from non-pool to pool"<<endl;
         }
     }else{
         if (list.usePool())
         {
-            WarningInFunction<<"Error shallow copy from pool to non-pool"<<endl;
+            DebugInFunction<<"Error shallow copy from pool to non-pool"<<endl;
         }
     }
     if
     (
-        !MemoryPool::getInstance()->isValid(list.v_) &&
-        !MemoryPool::getInstance()->isInBlockRange(list.v_)
+        !Spuma::MemoryPool::getInstance()->isValid(list.v_) &&
+        !Spuma::MemoryPool::getInstance()->isInBlockRange(list.v_)
     )
     {
         FatalErrorInFunction<<"Error shallow copy of non valid ptr"<<abort(FatalError);
@@ -418,6 +429,7 @@ inline void Foam::UList<T>::shallowCopy(const UList<T>& list) noexcept
 
     size_ = list.size_;
     v_ = list.v_;
+    usePool_ = list.usePool_;
 }
 
 
@@ -430,68 +442,77 @@ inline void Foam::UList<T>::operator=(const T& val)
 }
 
 
-namespace Foam
+// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
+
+template<class T>
+inline void Foam::UList<T>::operator=(Foam::zero)
 {
-    // Template specialization for bool
-    template<>
-    inline const bool& Foam::UList<bool>::operator[](const label i) const
+    this->fill_uniform(Foam::zero{});
+}
+
+
+template<class T>
+FOAM_DEVICE inline T& Foam::UList<T>::operator[](const label i)
+{
+    if constexpr (std::is_same_v<bool, std::remove_cv_t<T>>)
     {
         // Lazy evaluation - return false for out-of-range
-        if (i >= 0 && i < size_)
+        // Note: strictly speaking should not be modifiable but we cannot
+        // alway control which signature (const or non-const) is called
+        if (i < 0 || i >= size_)
         {
-            return v_[i];
+            return const_cast<bool&>(Foam::pTraits<bool>::null());
         }
-
-        return Foam::pTraits<bool>::zero;
     }
-} // End namespace Foam
-
-
-template<class T>
-inline T& Foam::UList<T>::operator[](const label i)
-{
-    #ifdef FULLDEBUG
-    checkIndex(i);
-    #endif
+    else
+    {
+        #ifdef FULLDEBUG
+        checkIndex(i);
+        #endif
+    }
     return v_[i];
 }
 
 
 template<class T>
-inline const T& Foam::UList<T>::operator[](const label i) const
+FOAM_DEVICE inline const T& Foam::UList<T>::operator[](const label i) const
 {
-    #ifdef FULLDEBUG
-    checkIndex(i);
-    #endif
+    if constexpr (std::is_same_v<bool, std::remove_cv_t<T>>)
+    {
+        // Lazy evaluation - return false for out-of-range
+        if (i < 0 || i >= size_)
+        {
+            return Foam::pTraits<bool>::null();
+        }
+    }
+    else
+    {
+        #ifdef FULLDEBUG
+        checkIndex(i);
+        #endif
+    }
     return v_[i];
-}
-
-
-template<class T>
-inline Foam::UList<T>::operator const Foam::List<T>&() const
-{
-    return *reinterpret_cast<const List<T>*>(this);
 }
 
 
 // * * * * * * * * * * * * * * STL Member Functions  * * * * * * * * * * * * //
 
 template<class T>
-inline typename Foam::UList<T>::iterator
+FOAM_DEVICE_I typename Foam::UList<T>::iterator
 Foam::UList<T>::begin() noexcept
 {
     return v_;
 }
 
 template<class T>
-inline typename Foam::UList<T>::const_iterator
+FOAM_DEVICE_I typename Foam::UList<T>::const_iterator
 Foam::UList<T>::begin() const noexcept
 {
     return v_;
 }
 
 template<class T>
-inline typename Foam::UList<T>::const_iterator
+FOAM_DEVICE_I typename Foam::UList<T>::const_iterator
 Foam::UList<T>::cbegin() const noexcept
 {
     return v_;
@@ -601,6 +622,7 @@ inline void Foam::UList<T>::swap(UList<T>& list) noexcept
 
     std::swap(size_, list.size_);
     std::swap(v_, list.v_);
+    std::swap(usePool_, list.usePool_);
 }
 
 

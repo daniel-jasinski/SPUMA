@@ -47,7 +47,7 @@ namespace Foam
 
 Foam::autoPtr<Foam::mapDistribute> Foam::backgroundMeshDecomposition::buildMap
 (
-    const List<label>& toProc
+    const labelUList& toProc
 )
 {
     // Determine send map
@@ -608,12 +608,7 @@ void Foam::backgroundMeshDecomposition::buildPatchAndTree()
 {
     primitivePatch tmpBoundaryFaces
     (
-        SubList<face>
-        (
-            mesh_.faces(),
-            mesh_.nBoundaryFaces(),
-            mesh_.nInternalFaces()
-        ),
+        mesh_.boundaryMesh().faces(),
         mesh_.points()
     );
 

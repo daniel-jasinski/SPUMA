@@ -49,37 +49,35 @@ Description
 
     \table
       Operand       | Type           | Location
-      input         | volScalarField | $FOAM_CASE/\<time\>/\<inpField\>
+      input         | volScalarField | <time>/inputField
       output file   | -              | -
-      output field  | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field  | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    log1
+    logFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            log;
         libs            (fieldFunctionObjects);
+        field           <word>;
 
-        // Mandatory (inherited) entry (runtime modifiable)
-        field           <inpField>;
+        // Optional entries
+        clip            <scalar>;
+        checkDimensions <bool>;
+        scale           <scalar>;
+        offset          <scalar>;
 
-        // Optional entries (runtime modifiable)
-        clip            1e-3;
-        checkDimensions false;
-        scale           1.0;
-        offset          0.0;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: log                     | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       field        | Name of the operand field          | word |  yes  | -
@@ -92,13 +90,7 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func "log(<inpField>)" -scale 1.0 -offset 0.0
-    \endverbatim
+      - \link fieldExpression.H \endlink
 
 Note
     - Performs \f$\ln(max(x, a))\f$ where \f$x\f$ is a \c volScalarField, and
@@ -106,19 +98,13 @@ Note
     negative input \f$x\f$, hence the domain error in the natural logarithm.
     - Dimension checking can optionally be suspended if \f$x\f$ is dimensioned.
 
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::log
-
 SourceFiles
     log.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_log_H
-#define functionObjects_log_H
+#ifndef Foam_functionObjects_log_H
+#define Foam_functionObjects_log_H
 
 #include "fieldExpression.H"
 
@@ -167,7 +153,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         log
         (
             const word& name,
@@ -188,8 +174,8 @@ public:
 
     // Member Functions
 
-        //- Read the randomise data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 };
 
 

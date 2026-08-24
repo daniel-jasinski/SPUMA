@@ -47,10 +47,10 @@ Description
       Operand           | Type             | Location
       input             | -                | -
       output file       | -                | -
-      output field      | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<outField\>
+      output field      | vol<Type>Field   | <time>/outputFields
     \endtable
 
-    where \c \<Type\>=Scalar/SymmTensor.
+    where \c Type can be one of: \c Scalar or \c SymmTensor.
 
     References:
     \verbatim
@@ -64,13 +64,13 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    turbulenceFields1
+    turbulenceFieldsFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        turbulenceFields;
         libs        (fieldFunctionObjects);
 
-        // Mandatory entries (runtime modifiable)
+        // Conditional entries
 
             // Either of the below
             // Option-1
@@ -79,7 +79,7 @@ Usage
             // Option-2
             field       R;
 
-        // Optional entries (runtime modifiable)
+        // Optional entries
         prefix          <word>;
 
         // Inherited entries
@@ -117,22 +117,12 @@ Usage
     \endverbatim
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        <solver> -postProcess -func turbulenceFields
-    \endverbatim
+      - \link functionObject.H \endlink
 
 Note
   - Multiphase applications are not supported.
   - The governing expression of \c nuTilda is
     an approximation based on a dimensional analysis.
-
-See also
-  - Foam::functionObject
-  - Foam::functionObjects::fvMeshFunctionObject
-  - ExtendedCodeGuide::functionObjects::field::turbulenceFields
 
 SourceFiles
     turbulenceFields.C
@@ -140,8 +130,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_turbulenceFields_H
-#define functionObjects_turbulenceFields_H
+#ifndef Foam_functionObjects_turbulenceFields_H
+#define Foam_functionObjects_turbulenceFields_H
 
 #include "fvMeshFunctionObject.H"
 #include "HashSet.H"
@@ -265,7 +255,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         turbulenceFields
         (
             const word& name,
@@ -286,13 +276,13 @@ public:
 
     // Member Functions
 
-        //- Read the controls
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate turbulence fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Do nothing.
+        //- Write the function-object results
         //  The turbulence fields are registered and written automatically
         virtual bool write();
 };

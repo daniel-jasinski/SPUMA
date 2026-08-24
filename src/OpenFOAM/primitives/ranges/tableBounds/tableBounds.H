@@ -31,12 +31,12 @@ Description
     At the moment, mostly for tables.
 
 SourceFiles
-    tableBounds.C
+    tableBounds.cxx
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef tableBounds_H
-#define tableBounds_H
+#ifndef Foam_tableBounds_H
+#define Foam_tableBounds_H
 
 #include "Enum.H"
 

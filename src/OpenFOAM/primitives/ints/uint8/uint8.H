@@ -108,6 +108,12 @@ public:
         static constexpr direction nComponents = 1;
 
 
+    // Limits
+
+        static constexpr uint8_t min_ = 0;
+        static constexpr uint8_t max_ = UINT8_MAX;
+
+
     // Static Data Members
 
         FOAM_EXPORT_DATA static const char* const typeName;
@@ -124,10 +130,7 @@ public:
     // Constructors
 
         //- Copy construct from primitive
-        explicit pTraits(uint8_t val) noexcept
-        :
-            p_(val)
-        {}
+        explicit pTraits(uint8_t val) noexcept : p_(val) {}
 
         //- Read construct from Istream
         explicit pTraits(Istream& is);
@@ -136,16 +139,10 @@ public:
     // Member Functions
 
         //- Return the value
-        operator uint8_t() const noexcept
-        {
-            return p_;
-        }
+        operator uint8_t() const noexcept { return p_; }
 
         //- Access the value
-        operator uint8_t&() noexcept
-        {
-            return p_;
-        }
+        operator uint8_t&() noexcept { return p_; }
 };
 
 

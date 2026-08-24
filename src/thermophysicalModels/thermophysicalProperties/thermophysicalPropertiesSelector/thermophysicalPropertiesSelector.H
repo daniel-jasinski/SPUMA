@@ -128,7 +128,7 @@ public:
             inline scalar Ha(const scalar p, const scalar T) const;
 
             //- Sensible enthalpy [J/kg]
-            inline scalar Hs(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar Hs(const scalar p, const scalar T) const;
 
             //- Chemical enthalpy [J/kg]
             inline scalar Hc() const;
@@ -137,7 +137,7 @@ public:
             inline scalar Cv(const scalar p, const scalar T) const;
 
             //- Sensible internal energy [J/kg]
-            inline scalar Es(const scalar p, const scalar T) const;
+            FOAM_DEVICE inline scalar Es(const scalar p, const scalar T) const;
 
             //- Absolute internal energy [J/kg]
             inline scalar Ea(const scalar p, const scalar T) const;

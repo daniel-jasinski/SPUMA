@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,7 +33,8 @@ License
 #include "profiling.H"
 #include "triangle.H"
 #include "OFstream.H"
-#include <numeric>  // For std::iota
+#include "registerSwitch.H"
+#include "ListOps.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -46,14 +47,40 @@ namespace Foam
 
 bool Foam::AMIInterpolation::cacheIntersections_ = false;
 
+int Foam::AMIInterpolation::useLocalComm_
+(
+    debug::optimisationSwitch("localAMIComm", 1)
+);
+registerOptSwitch
+(
+    "localAMIComm",
+    int,
+    Foam::AMIInterpolation::useLocalComm_
+);
+
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
+void Foam::AMIInterpolation::addToCache(const point& refPt)
+{
+    DebugInfo<< "-- addToCache" << endl;
+
+    cache_.addToCache(*this, refPt);
+}
+
+
+bool Foam::AMIInterpolation::restoreCache(const point& refPt)
+{
+    DebugInfo<< "-- restoreCache" << endl;
+
+    upToDate_ = cache_.restoreCache(refPt);
+
+    return upToDate_;
+}
+
+
 Foam::autoPtr<Foam::indexedOctree<Foam::AMIInterpolation::treeType>>
-Foam::AMIInterpolation::createTree
-(
-    const primitivePatch& patch
-) const
+Foam::AMIInterpolation::createTree(const primitivePatch &patch) const
 {
     treeBoundBox bb(patch.points(), patch.meshPoints());
     bb.inflate(0.01);
@@ -77,39 +104,141 @@ Foam::AMIInterpolation::createTree
 Foam::label Foam::AMIInterpolation::calcDistribution
 (
     const primitivePatch& srcPatch,
-    const primitivePatch& tgtPatch
+    const primitivePatch& tgtPatch,
+    const label comm,
+    autoPtr<UPstream::communicator>& geomComm
 ) const
 {
     // Either not parallel or no faces on any processor
     label proci = 0;
 
-    if (Pstream::parRun())
+    if (UPstream::parRun())
     {
-        const bitSet hasFaces
+        // Involved in communication pattern?
+        bool inCommGroup = (srcPatch.size() > 0 || tgtPatch.size() > 0);
+
+        // Track which procs are involved
+        const List<bool> hasFaces
         (
-            UPstream::listGatherValues<bool>
-            (
-                (srcPatch.size() > 0 || tgtPatch.size() > 0),
-                comm_
-            )
+            UPstream::allGatherValues<bool>(inCommGroup, comm)
         );
 
-        const auto nHaveFaces = hasFaces.count();
-
-        if (nHaveFaces == 1)
+        // Always include master (0) in comm-group?
+        // - so messages come from master
+        if (useLocalComm_ > 1 && UPstream::master(comm))
         {
-            proci = hasFaces.find_first();
+            inCommGroup = true;
+        }
+
+        // Number of communicating procs (ie, they have local faces)
+        label nCommProcs(0);
+
+        // First proc with local faces (when nCommProcs == 1)
+        label whichProci(-1);
+
+        // Could use UPstream::splitCommunicator(), but that also incurs
+        // global communication to determine who belongs to the same set.
+        // Instead, an Allgather of the members and compare with the
+        // existing communicator to decide if a new communicator is
+        // required.
+
+        DynamicList<label> subProcs(hasFaces.size());
+        forAll(hasFaces, i)
+        {
+            if (hasFaces.test(i))
+            {
+                whichProci = i;
+                ++nCommProcs;
+                subProcs.push_back(i);
+            }
+            else if
+            (
+                inCommGroup
+             && (useLocalComm_ > 1) && (i == UPstream::masterNo())
+            )
+            {
+                // Also include master (0) in comm-group?
+                // - so messages come from master
+                subProcs.push_back(UPstream::masterNo());
+            }
+        }
+
+        //
+        // Define the AMI communication style
+        //
+
+        if (nCommProcs == 0)
+        {
+            // Probably does not happen. No AMI faces? => no communicator
+            geomComm.reset();
+        }
+        else if (nCommProcs == 1)
+        {
+            proci = whichProci;
+
+            // No local communicator needed
+            geomComm.reset();
+
             DebugInFunction
                 << "AMI local to processor" << proci << endl;
         }
-        else if (nHaveFaces > 1)
+        else  // (nCommProcs > 1)
         {
             proci = -1;
-            DebugInFunction
-                << "AMI split across multiple processors" << endl;
+
+            const label currComm = (geomComm.good() ? geomComm().comm() : -1);
+
+            if (useLocalComm_ == 0)
+            {
+                // Backwards compatible : no local communicator
+                geomComm.reset();
+            }
+            else if (nCommProcs == UPstream::nProcs(comm))
+            {
+                // Everyone is involved : no local communicator
+                geomComm.reset();
+            }
+            else if (inCommGroup)
+            {
+                if (UPstream::sameProcs(currComm, subProcs))
+                {
+                    // Keep geomComm
+                    if (debug)
+                    {
+                        Pout<< "Retained geomComm:" << currComm
+                            << " with " << subProcs.size()
+                            << " processors out of " << UPstream::nProcs(comm)
+                            << endl;
+                    }
+                }
+                else
+                {
+                    geomComm.reset(new UPstream::communicator(comm, subProcs));
+                    if (debug)
+                    {
+                        Pout<< "Allocated geomComm:" << geomComm().comm()
+                            << " from " << subProcs.size()
+                            << " processors out of " << UPstream::nProcs(comm)
+                            << endl;
+                    }
+                }
+            }
+            else
+            {
+                // Not inCommGroup, but with local communicator elsewhere
+                geomComm.reset(new UPstream::communicator());
+                if (debug & 2)
+                {
+                    Pout<< "Allocated dummy geomComm:" << geomComm().comm()
+                        << " src-size:" << srcPatch.size()
+                        << " tgt-size:" << tgtPatch.size() << endl;
+                }
+            }
         }
 
-        Pstream::broadcast(proci, comm_);
+        DebugInFunction
+            << "AMI split across multiple processors "
+            << flatOutput(subProcs) << endl;
     }
 
     return proci;
@@ -207,35 +336,127 @@ void Foam::AMIInterpolation::normaliseWeights
         }
     }
 
-    if (output)
+    if (output && comm != -1 && returnReduceOr(wght.size(), comm))
     {
-        // Note: change global communicator since gMin,gAverage etc don't
-        // support user communicator
-        const label oldWorldComm(UPstream::worldComm);
-        UPstream::worldComm = comm;
+        auto limits = gMinMax(wghtSum, comm);
+        auto avg = gAverage(wghtSum, comm);
 
-        if (returnReduceOr(wght.size()))
+        label nLow =
+            returnReduce(nLowWeight, sumOp<label>(), UPstream::msgType(), comm);
+
+        Info.masterStream(comm)
+            << indent
+            << "AMI: Patch " << patchName
+            << " sum(weights)"
+            << " min:" << limits.min()
+            << " max:" << limits.max()
+            << " average:" << avg << nl;
+
+        if (nLow)
         {
-            Info<< indent
+            Info.masterStream(comm)
+                << indent
                 << "AMI: Patch " << patchName
-                << " sum(weights)"
-                << " min:" << gMin(wghtSum)
-                << " max:" << gMax(wghtSum)
-                << " average:" << gAverage(wghtSum) << nl;
+                << " identified " << nLow
+                << " faces with weights less than " << lowWeightTol
+                << endl;
+        }
+    }
+}
 
-            const label nLow = returnReduce(nLowWeight, sumOp<label>());
 
-            if (nLow)
+void Foam::AMIInterpolation::normaliseWeights
+(
+    const scalarList& patchAreas,
+    const word& patchName,
+    const ListListAddr<labelList>& addrAddr,
+    ListListAddr<scalarList>& wghtAddr,
+    const labelListList& addr,
+    scalarListList& wght,
+    scalarField& wghtSum,
+    const bool conformal,
+    const bool output,
+    const scalar lowWeightTol,
+    const label comm
+)
+{
+    addProfiling(ami, "AMIInterpolation::normaliseWeights");
+
+    // Normalise the weights
+    wghtSum.resize_nocopy(wght.size());
+
+    const auto patchAreasPtr = patchAreas.cbegin();
+    auto wghtSumPtr = wghtSum.begin();
+    scalar** wghtPtrsPtr = const_cast<scalar**>(wghtAddr.begins().begin());
+    const auto wghtSizesPtr = wghtAddr.sizes().cbegin();
+    labelField nLowWeightField(1,Zero);
+    auto nLowWeightPtr = nLowWeightField.begin();
+    foamExecutor exec;
+    auto Lambda = [=](label facei)
+    {
+        scalar* w = wghtPtrsPtr[facei];
+        if (wghtSizesPtr[facei])
+        {
+            scalar denom = patchAreasPtr[facei];
+
+            //scalar s = sum(w);
+            scalar s = 0;
+            for(label i = 0; i<wghtSizesPtr[facei]; i++)
             {
-                Info<< indent
-                    << "AMI: Patch " << patchName
-                    << " identified " << nLow
-                    << " faces with weights less than " << lowWeightTol
-                    << endl;
+                s+=w[i];
+            }
+
+            scalar t = s/denom;
+            if (conformal)
+            {
+                denom = s;
+            }
+
+            for(label i = 0; i<wghtSizesPtr[facei]; i++)
+            {
+                w[i] /= denom;
+            }
+
+            wghtSumPtr[facei] = t;
+            if (t < lowWeightTol)
+            {
+                nLowWeightPtr[0] +=1;
             }
         }
+        else
+        {
+            wghtSumPtr[facei] = 0;
+        }
+        
+    };
+    exec.parallelFor(Lambda,wght.size());
 
-        UPstream::worldComm = oldWorldComm;
+    if (output && comm != -1 && returnReduceOr(wght.size(), comm))
+    {
+        const label nLowWeight = nLowWeightField[0];
+        auto limits = gMinMax(wghtSum, comm);
+        auto avg = gAverage(wghtSum, comm);
+
+        label nLow =
+            returnReduce(nLowWeight, sumOp<label>(), UPstream::msgType(), comm);
+
+        Info.masterStream(comm)
+            << indent
+            << "AMI: Patch " << patchName
+            << " sum(weights)"
+            << " min:" << limits.min()
+            << " max:" << limits.max()
+            << " average:" << avg << nl;
+
+        if (nLow)
+        {
+            Info.masterStream(comm)
+                << indent
+                << "AMI: Patch " << patchName
+                << " identified " << nLow
+                << " faces with weights less than " << lowWeightTol
+                << endl;
+        }
     }
 }
 
@@ -251,8 +472,8 @@ void Foam::AMIInterpolation::agglomerate
     const labelList& targetRestrictAddressing,
 
     scalarList& srcMagSf,
-    labelListList& srcAddress,
-    scalarListList& srcWeights,
+    labelListList& srcAddressNew,
+    scalarListList& srcWeightsNew,
     scalarField& srcWeightsSum,
     autoPtr<mapDistribute>& tgtMap,
     const label comm
@@ -260,14 +481,14 @@ void Foam::AMIInterpolation::agglomerate
 {
     addProfiling(ami, "AMIInterpolation::agglomerate");
 
-    label sourceCoarseSize =
+    const label sourceCoarseSize =
     (
         sourceRestrictAddressing.size()
       ? max(sourceRestrictAddressing)+1
       : 0
     );
 
-    label targetCoarseSize =
+    const label targetCoarseSize =
     (
         targetRestrictAddressing.size()
       ? max(targetRestrictAddressing)+1
@@ -286,10 +507,28 @@ void Foam::AMIInterpolation::agglomerate
         }
     }
 
+    // allocate with memory pool
+    labelListList srcAddress(sourceCoarseSize,labelList(poolSwitch(1)),poolSwitch(1));
+    scalarListList srcWeights(sourceCoarseSize,scalarList(poolSwitch(1)),poolSwitch(1));
+
     // Agglomerate weights and indices
     if (targetMapPtr)
     {
+        // We are involved in the communicator but our maps are still empty.
+        // Fix 'm up so they are the same size as the communicator.
         const mapDistribute& map = *targetMapPtr;
+
+        if (map.constructMap().empty())
+        {
+            auto& cMap = const_cast<labelListList&>(map.constructMap());
+            cMap.resize_nocopy(UPstream::nProcs(map.comm()));
+        }
+        if (map.subMap().empty())
+        {
+            auto& cMap = const_cast<labelListList&>(map.subMap());
+            cMap.resize_nocopy(UPstream::nProcs(map.comm()));
+        }
+
 
         // Get all restriction addressing.
         labelList allRestrict(targetRestrictAddressing);
@@ -451,8 +690,6 @@ void Foam::AMIInterpolation::agglomerate
             }
         }
 
-        srcAddress.setSize(sourceCoarseSize);
-        srcWeights.setSize(sourceCoarseSize);
 
         forAll(fineSrcAddress, facei)
         {
@@ -500,8 +737,6 @@ void Foam::AMIInterpolation::agglomerate
     }
     else
     {
-        srcAddress.setSize(sourceCoarseSize);
-        srcWeights.setSize(sourceCoarseSize);
 
         forAll(fineSrcAddress, facei)
         {
@@ -548,7 +783,357 @@ void Foam::AMIInterpolation::agglomerate
         -1,
         comm
     );
+
+    // transfer data to persistent storage
+    srcAddressNew.clear();
+    srcAddressNew.swap(srcAddress);
+    srcWeightsNew.clear();
+    srcWeightsNew.swap(srcWeights);
 }
+
+
+void Foam::AMIInterpolation::agglomerate
+(
+    const autoPtr<mapDistribute>& targetMapPtr,
+    const scalarList& fineSrcMagSf,
+    const ListListAddr<labelList>& fineSrcAddressAddr,
+    const ListListAddr<scalarList>& fineSrcWeightsAddr,
+    const labelListList& fineSrcAddress,
+    const scalarListList& fineSrcWeights,
+
+    const labelList& sourceRestrictAddressing,
+    const labelList& targetRestrictAddressing,
+
+    scalarList& srcMagSf,
+    autoPtr<ListListAddr<labelList>>& srcAddressNewAddr,
+    autoPtr<ListListAddr<scalarList>>& srcWeightsNewAddr,
+    labelListList& srcAddressNew,
+    scalarListList& srcWeightsNew,
+    scalarField& srcWeightsSum,
+    autoPtr<mapDistribute>& tgtMap,
+    const label comm
+)
+{
+    addProfiling(ami, "AMIInterpolation::agglomerate");
+
+    const label sourceCoarseSize =
+    (
+        sourceRestrictAddressing.size()
+      ? max(sourceRestrictAddressing)+1
+      : 0
+    );
+
+    const label targetCoarseSize =
+    (
+        targetRestrictAddressing.size()
+      ? max(targetRestrictAddressing)+1
+      : 0
+    );
+
+    // Agglomerate face areas
+    {
+        //srcMagSf.setSize(sourceRestrictAddressing.size(), 0.0);
+        srcMagSf.setSize(sourceCoarseSize, 0.0);
+
+        forAll(sourceRestrictAddressing, facei)
+        {
+            label coarseFacei = sourceRestrictAddressing[facei];
+            srcMagSf[coarseFacei] += fineSrcMagSf[facei];
+        }
+    }
+
+    labelListList srcAddress(sourceCoarseSize,labelList(poolSwitch(1)),poolSwitch(1));
+    scalarListList srcWeights(sourceCoarseSize,scalarList(poolSwitch(1)),poolSwitch(1));
+    // Agglomerate weights and indices
+    if (targetMapPtr)
+    {
+        // We are involved in the communicator but our maps are still empty.
+        // Fix 'm up so they are the same size as the communicator.
+        const mapDistribute& map = *targetMapPtr;
+
+        if (map.constructMap().empty())
+        {
+            auto& cMap = const_cast<labelListList&>(map.constructMap());
+            cMap.resize_nocopy(UPstream::nProcs(map.comm()));
+        }
+        if (map.subMap().empty())
+        {
+            auto& cMap = const_cast<labelListList&>(map.subMap());
+            cMap.resize_nocopy(UPstream::nProcs(map.comm()));
+        }
+
+
+        // Get all restriction addressing.
+        labelList allRestrict(targetRestrictAddressing);
+        map.distribute(allRestrict);
+
+        // So now we have agglomeration of the target side in
+        // allRestrict:
+        //  0..size-1 : local agglomeration (= targetRestrictAddressing
+        //              (but potentially permutated))
+        //  size..    : agglomeration data from other processors
+
+
+        // The trickiness in this algorithm is finding out the compaction
+        // of the remote data (i.e. allocation of the coarse 'slots'). We could
+        // either send across the slot compaction maps or just make sure
+        // that we allocate the slots in exactly the same order on both sending
+        // and receiving side (e.g. if the submap is set up to send 4 items,
+        // the constructMap is also set up to receive 4 items.
+
+
+        // Short note about the various types of indices:
+        // - face indices : indices into the geometry.
+        // - coarse face indices : how the faces get agglomerated
+        // - transferred data : how mapDistribute sends/receives data,
+        // - slots : indices into data after distribution (e.g. stencil,
+        //           srcAddress/tgtAddress). Note: for fully local addressing
+        //           the slots are equal to face indices.
+        // A mapDistribute has:
+        // - a subMap : these are face indices
+        // - a constructMap : these are from 'transferred-data' to slots
+
+        labelListList tgtSubMap(Pstream::nProcs(comm));
+
+        // Local subMap is just identity
+        {
+            tgtSubMap[Pstream::myProcNo(comm)] = identity(targetCoarseSize);
+        }
+
+        forAll(map.subMap(), proci)
+        {
+            if (proci != Pstream::myProcNo(comm))
+            {
+                // Combine entries that point to the same coarse element.
+                // The important bit is to loop over the data (and hand out
+                // compact indices ) in 'transferred data' order. This
+                // guarantees that we're doing exactly the
+                // same on sending and receiving side - e.g. the fourth element
+                // in the subMap is the fourth element received in the
+                // constructMap
+
+                const labelList& elems = map.subMap()[proci];
+                const labelList& elemsMap =
+                    map.constructMap()[Pstream::myProcNo(comm)];
+                labelList& newSubMap = tgtSubMap[proci];
+                newSubMap.resize_nocopy(elems.size());
+
+                labelList oldToNew(targetCoarseSize, -1);
+                label newi = 0;
+
+                for (const label elemi : elems)
+                {
+                    label fineElem = elemsMap[elemi];
+                    label coarseElem = allRestrict[fineElem];
+                    if (oldToNew[coarseElem] == -1)
+                    {
+                        oldToNew[coarseElem] = newi;
+                        newSubMap[newi] = coarseElem;
+                        ++newi;
+                    }
+                }
+                newSubMap.resize(newi);
+            }
+        }
+
+        // Reconstruct constructMap by combining entries. Note that order
+        // of handing out indices should be the same as loop above to compact
+        // the sending map
+
+        labelListList tgtConstructMap(Pstream::nProcs(comm));
+
+        // Local constructMap is just identity
+        {
+            tgtConstructMap[Pstream::myProcNo(comm)] =
+                identity(targetCoarseSize);
+        }
+
+        labelList tgtCompactMap(map.constructSize());
+
+        {
+            // Note that in special cases (e.g. 'appending' two AMIs) the
+            // local size after distributing can be longer than the number
+            // of faces. I.e. it duplicates elements.
+            // Since we don't know this size instead we loop over all
+            // reachable elements (using the local constructMap)
+
+            const labelList& elemsMap =
+                map.constructMap()[Pstream::myProcNo(comm)];
+            for (const label fineElem : elemsMap)
+            {
+                label coarseElem = allRestrict[fineElem];
+                tgtCompactMap[fineElem] = coarseElem;
+            }
+        }
+
+        label compacti = targetCoarseSize;
+
+        // Compact data from other processors
+        forAll(map.constructMap(), proci)
+        {
+            if (proci != Pstream::myProcNo(comm))
+            {
+                // Combine entries that point to the same coarse element. All
+                // elements now are remote data so we cannot use any local
+                // data here - use allRestrict instead.
+                const labelList& elems = map.constructMap()[proci];
+
+                labelList& newConstructMap = tgtConstructMap[proci];
+                newConstructMap.resize_nocopy(elems.size());
+
+                if (elems.size())
+                {
+                    // Get the maximum target coarse size for this set of
+                    // received data.
+                    label remoteTargetCoarseSize = labelMin;
+                    for (const label elemi : elems)
+                    {
+                        remoteTargetCoarseSize = max
+                        (
+                            remoteTargetCoarseSize,
+                            allRestrict[elemi]
+                        );
+                    }
+                    remoteTargetCoarseSize += 1;
+
+                    // Combine locally data coming from proci
+                    labelList oldToNew(remoteTargetCoarseSize, -1);
+                    label newi = 0;
+
+                    for (const label fineElem : elems)
+                    {
+                        // fineElem now points to section from proci
+                        label coarseElem = allRestrict[fineElem];
+                        if (oldToNew[coarseElem] == -1)
+                        {
+                            oldToNew[coarseElem] = newi;
+                            tgtCompactMap[fineElem] = compacti;
+                            newConstructMap[newi] = compacti++;
+                            ++newi;
+                        }
+                        else
+                        {
+                            // Get compact index
+                            label compacti = oldToNew[coarseElem];
+                            tgtCompactMap[fineElem] = newConstructMap[compacti];
+                        }
+                    }
+                    newConstructMap.resize(newi);
+                }
+            }
+        }
+
+
+        forAll(fineSrcAddress, facei)
+        {
+            // All the elements contributing to facei. Are slots in
+            // mapDistribute'd data.
+            const labelList& elems = fineSrcAddress[facei];
+            const scalarList& weights = fineSrcWeights[facei];
+            const scalar fineArea = fineSrcMagSf[facei];
+
+            label coarseFacei = sourceRestrictAddressing[facei];
+
+            labelList& newElems = srcAddress[coarseFacei];
+            scalarList& newWeights = srcWeights[coarseFacei];
+
+            forAll(elems, i)
+            {
+                label elemi = elems[i];
+                label coarseElemi = tgtCompactMap[elemi];
+
+                label index = newElems.find(coarseElemi);
+                if (index == -1)
+                {
+                    newElems.append(coarseElemi);
+                    newWeights.append(fineArea*weights[i]);
+                }
+                else
+                {
+                    newWeights[index] += fineArea*weights[i];
+                }
+            }
+        }
+
+        tgtMap.reset
+        (
+            new mapDistribute
+            (
+                compacti,
+                std::move(tgtSubMap),
+                std::move(tgtConstructMap),
+                false,      //subHasFlip
+                false,      //constructHasFlip
+                comm
+            )
+        );
+    }
+    else
+    {
+
+        //Info << "agglomerate 2 new singleproc" << endl;
+
+        // TODO
+        forAll(fineSrcAddress, facei)
+        {
+            // All the elements contributing to facei. Are slots in
+            // mapDistribute'd data.
+            const labelList& elems = fineSrcAddress[facei];
+            const scalarList& weights = fineSrcWeights[facei];
+            const scalar fineArea = fineSrcMagSf[facei];
+
+            label coarseFacei = sourceRestrictAddressing[facei];
+
+            labelList& newElems = srcAddress[coarseFacei];
+            scalarList& newWeights = srcWeights[coarseFacei];
+
+            forAll(elems, i)
+            {
+                const label elemi = elems[i];
+                const label coarseElemi = targetRestrictAddressing[elemi];
+
+                const label index = newElems.find(coarseElemi);
+                if (index == -1)
+                {
+                    newElems.append(coarseElemi);
+                    newWeights.append(fineArea*weights[i]);
+                }
+                else
+                {
+                    newWeights[index] += fineArea*weights[i];
+                }
+            }
+        }
+    }
+
+
+    // transfer data to persistent storage
+    srcAddressNew.clear();
+    srcAddressNew.swap(srcAddress);
+    srcWeightsNew.clear();
+    srcWeightsNew.swap(srcWeights);
+
+    srcAddressNewAddr.reset(new ListListAddr<labelList>(srcAddressNew));
+    srcWeightsNewAddr.reset(new ListListAddr<scalarList>(srcWeightsNew));
+    // Weights normalisation
+    normaliseWeights
+    (
+        srcMagSf,
+        "source",
+        srcAddressNewAddr(),
+        srcWeightsNewAddr.ref(),
+        srcAddressNew,
+        srcWeightsNew,
+        srcWeightsSum,
+        true,
+        false,
+        -1,
+        comm
+    );
+
+}
+
+
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -564,19 +1149,20 @@ Foam::AMIInterpolation::AMIInterpolation
     lowWeightCorrection_(dict.getOrDefault<scalar>("lowWeightCorrection", -1)),
     singlePatchProc_(-999),
     comm_(UPstream::worldComm),
-    srcMagSf_(),
-    srcAddress_(),
-    srcWeights_(),
+    srcMagSf_(poolSwitch(1)),
+    srcAddress_(poolSwitch(1)),
+    srcWeights_(poolSwitch(1)),
     srcWeightsSum_(),
-    srcCentroids_(),
+    srcCentroids_(poolSwitch(1)),
     srcMapPtr_(nullptr),
-    tgtMagSf_(),
-    tgtAddress_(),
-    tgtWeights_(),
+    tgtMagSf_(poolSwitch(1)),
+    tgtAddress_(poolSwitch(1)),
+    tgtWeights_(poolSwitch(1)),
     tgtWeightsSum_(),
-    tgtCentroids_(),
+    tgtCentroids_(poolSwitch(1)),
     tgtMapPtr_(nullptr),
-    upToDate_(false)
+    upToDate_(false),
+    cache_(dict)
 {}
 
 
@@ -592,21 +1178,22 @@ Foam::AMIInterpolation::AMIInterpolation
     lowWeightCorrection_(lowWeightCorrection),
     singlePatchProc_(-999),
     comm_(UPstream::worldComm),
-    srcMagSf_(),
-    srcAddress_(),
-    srcWeights_(),
+    srcMagSf_(poolSwitch(1)),//srcMagSf_(poolSwitch(1))
+    srcAddress_(poolSwitch(1)),
+    srcWeights_(poolSwitch(1)),
     srcWeightsSum_(),
-    srcCentroids_(),
+    srcCentroids_(poolSwitch(1)),
     srcPatchPts_(),
     srcMapPtr_(nullptr),
-    tgtMagSf_(),
-    tgtAddress_(),
-    tgtWeights_(),
+    tgtMagSf_(poolSwitch(1)),//tgtMagSf_(poolSwitch(1))
+    tgtAddress_(poolSwitch(1)),
+    tgtWeights_(poolSwitch(1)),
     tgtWeightsSum_(),
-    tgtCentroids_(),
+    tgtCentroids_(poolSwitch(1)),
     tgtPatchPts_(),
     tgtMapPtr_(nullptr),
-    upToDate_(false)
+    upToDate_(false),
+    cache_()
 {}
 
 
@@ -619,31 +1206,39 @@ Foam::AMIInterpolation::AMIInterpolation
 :
     requireMatch_(fineAMI.requireMatch_),
     reverseTarget_(fineAMI.reverseTarget_),
-    lowWeightCorrection_(-1.0),
+    lowWeightCorrection_(-1.0), // Deactivated?
     singlePatchProc_(fineAMI.singlePatchProc_),
-    comm_(fineAMI.comm_),
-    srcMagSf_(),
-    srcAddress_(),
-    srcWeights_(),
+    comm_(fineAMI.comm()),  // use fineAMI geomComm if present, comm otherwise
+    geomComm_(),
+    srcMagSf_(poolSwitch(1)),//srcMagSf_(poolSwitch(1))
+    srcAddress_(poolSwitch(1)),
+    srcWeights_(poolSwitch(1)),
     srcWeightsSum_(),
     srcPatchPts_(),
     srcMapPtr_(nullptr),
-    tgtMagSf_(),
-    tgtAddress_(),
-    tgtWeights_(),
+    tgtMagSf_(poolSwitch(1)), //tgtMagSf_(poolSwitch(1))
+    tgtAddress_(poolSwitch(1)),
+    tgtWeights_(poolSwitch(1)),
     tgtWeightsSum_(),
     tgtPatchPts_(),
     tgtMapPtr_(nullptr),
-    upToDate_(false)
+    upToDate_(false),
+    cache_
+    (
+        fineAMI.cache(),
+        fineAMI,
+        sourceRestrictAddressing,
+        targetRestrictAddressing
+    )
 {
-    label sourceCoarseSize =
+    const label sourceCoarseSize =
     (
         sourceRestrictAddressing.size()
       ? max(sourceRestrictAddressing)+1
       : 0
     );
 
-    label neighbourCoarseSize =
+    const label neighbourCoarseSize =
     (
         targetRestrictAddressing.size()
       ? max(targetRestrictAddressing)+1
@@ -681,41 +1276,96 @@ Foam::AMIInterpolation::AMIInterpolation
 
     // Agglomerate addresses and weights
 
-    agglomerate
-    (
-        fineAMI.tgtMapPtr_,
-        fineAMI.srcMagSf(),
-        fineAMI.srcAddress(),
-        fineAMI.srcWeights(),
+    if (comm() != -1)
+    {
+        //Pout<< "** agglomerating srcAddress, tgtMap" << endl;
+        //if (fineAMI.tgtMapPtr_.valid())
+        //{
+        //    const auto& fineTgtMap = fineAMI.tgtMapPtr_();
+        //    Pout<< "    fineAMI.tgtMapPtr_ comm:" << fineTgtMap.comm()
+        //        << "   procs:"
+        //        <<  (
+        //                fineTgtMap.comm() != -1
+        //              ? UPstream::procID(fineTgtMap.comm())
+        //              : labelList::null()
+        //            )
+        //        << endl;
+        //}
+        //else
+        //{
+        //    Pout<< "    NO fineAMI.tgtMapPtr_" << endl;
+        //}
+        //
 
-        sourceRestrictAddressing,
-        targetRestrictAddressing,
 
-        srcMagSf_,
-        srcAddress_,
-        srcWeights_,
-        srcWeightsSum_,
-        tgtMapPtr_,
-        comm_
-    );
+        // evaluate listlist addressing
+        agglomerate
+        (
+            fineAMI.tgtMapPtr_,
+            fineAMI.srcMagSf(),
+            fineAMI.srcListAddr(),
+            fineAMI.srcListWeights(),
+            fineAMI.srcAddress(),
+            fineAMI.srcWeights(),
 
-    agglomerate
-    (
-        fineAMI.srcMapPtr_,
-        fineAMI.tgtMagSf(),
-        fineAMI.tgtAddress(),
-        fineAMI.tgtWeights(),
+            sourceRestrictAddressing,
+            targetRestrictAddressing,
 
-        targetRestrictAddressing,
-        sourceRestrictAddressing,
+            srcMagSf_,
+            srcListAddr_,
+            srcListWeights_,
+            srcAddress_,
+            srcWeights_,
+            srcWeightsSum_,
+            tgtMapPtr_,
+            comm()
+        );
 
-        tgtMagSf_,
-        tgtAddress_,
-        tgtWeights_,
-        tgtWeightsSum_,
-        srcMapPtr_,
-        comm_
-    );
+        //Pout<< "** agglomerating tgtAddress, srcMap" << endl;
+        //if (fineAMI.srcMapPtr_.valid())
+        //{
+        //    const auto& fineSrcMap = fineAMI.srcMapPtr_();
+        //    Pout<< "    fineAMI.srcMapPtr_ comm:" << fineSrcMap.comm()
+        //        << "   procs:"
+        //        <<  (
+        //                fineSrcMap.comm() != -1
+        //              ? UPstream::procID(fineSrcMap.comm())
+        //              : labelList::null()
+        //            )
+        //        << endl;
+        //}
+        //else
+        //{
+        //    Pout<< "    NO fineAMI.srcMapPtr_" << endl;
+        //}
+        agglomerate
+        (
+            fineAMI.srcMapPtr_,
+            fineAMI.tgtMagSf(),
+            fineAMI.tgtListAddr(),
+            fineAMI.tgtListWeights(),
+            fineAMI.tgtAddress(),
+            fineAMI.tgtWeights(),
+
+            targetRestrictAddressing,
+            sourceRestrictAddressing,
+
+            tgtMagSf_,
+            tgtListAddr_,
+            tgtListWeights_,
+            tgtAddress_,
+            tgtWeights_,
+            tgtWeightsSum_,
+            srcMapPtr_,
+            comm()
+        );
+    }
+
+    // evaluate listlist addressing
+    this->srcListAddr_.reset(new ListListAddr<labelList>(srcAddress_));
+    this->srcListWeights_.reset(new ListListAddr<scalarList>(srcWeights_));
+    this->tgtListAddr_.reset(new ListListAddr<labelList>(tgtAddress_));
+    this->tgtListWeights_.reset(new ListListAddr<scalarList>(tgtWeights_));
 }
 
 
@@ -726,19 +1376,25 @@ Foam::AMIInterpolation::AMIInterpolation(const AMIInterpolation& ami)
     lowWeightCorrection_(ami.lowWeightCorrection_),
     singlePatchProc_(ami.singlePatchProc_),
     comm_(ami.comm_),
+    geomComm_(ami.geomComm_),   // ? steals communicator
     srcMagSf_(ami.srcMagSf_),
     srcAddress_(ami.srcAddress_),
     srcWeights_(ami.srcWeights_),
     srcWeightsSum_(ami.srcWeightsSum_),
     srcCentroids_(ami.srcCentroids_),
-    srcMapPtr_(nullptr),
+    srcMapPtr_(ami.srcMapPtr_.clone()),
+    srcListAddr_(ami.srcListAddr_.clone()),
+    srcListWeights_(ami.srcListWeights_.clone()),
     tgtMagSf_(ami.tgtMagSf_),
     tgtAddress_(ami.tgtAddress_),
     tgtWeights_(ami.tgtWeights_),
     tgtWeightsSum_(ami.tgtWeightsSum_),
     tgtCentroids_(ami.tgtCentroids_),
-    tgtMapPtr_(nullptr),
-    upToDate_(false)
+    tgtMapPtr_(ami.tgtMapPtr_.clone()),
+    tgtListAddr_(ami.tgtListAddr_.clone()),
+    tgtListWeights_(ami.tgtListWeights_.clone()),
+    upToDate_(ami.upToDate_),
+    cache_(ami.cache_)
 {}
 
 
@@ -748,7 +1404,7 @@ Foam::AMIInterpolation::AMIInterpolation(Istream& is)
     reverseTarget_(readBool(is)),
     lowWeightCorrection_(readScalar(is)),
     singlePatchProc_(readLabel(is)),
-    comm_(readLabel(is)),
+    comm_(readLabel(is)),   // either geomComm_ or comm_ from sending side
 
     srcMagSf_(is),
     srcAddress_(is),
@@ -766,9 +1422,14 @@ Foam::AMIInterpolation::AMIInterpolation(Istream& is)
     //tgtPatchPts_(is),
     tgtMapPtr_(nullptr),
 
-    upToDate_(readBool(is))
+    upToDate_(readBool(is)),
+
+    cache_(is)
 {
-    if (singlePatchProc_ == -1)
+    // Hopefully no need to stream geomComm_ since only used in processor
+    // agglomeration?
+
+    if (singlePatchProc_ == -1 && comm_ != -1)
     {
         srcMapPtr_.reset(new mapDistribute(is));
         tgtMapPtr_.reset(new mapDistribute(is));
@@ -791,6 +1452,36 @@ bool Foam::AMIInterpolation::calculate
     }
 
     addProfiling(ami, "AMIInterpolation::calculate");
+
+
+    // Clear storage (only needed if src/tgt become zero size)
+    {
+        if (srcMagSf_.size())
+        {
+            srcMagSf_.resize_nocopy(srcPatch.size());
+        }
+        srcAddress_.resize_nocopy(srcPatch.size());
+        srcWeights_.resize_nocopy(srcPatch.size());
+        srcWeightsSum_.resize_nocopy(srcPatch.size());
+        if (srcCentroids_.size())
+        {
+            srcCentroids_.resize_nocopy(srcPatch.size());
+        }
+
+        if (tgtMagSf_.size())
+        {
+            tgtMagSf_.resize_nocopy(tgtPatch.size());
+        }
+        tgtAddress_.resize_nocopy(tgtPatch.size());
+        tgtWeights_.resize_nocopy(tgtPatch.size());
+        tgtWeightsSum_.resize_nocopy(tgtPatch.size());
+
+        if (tgtCentroids_.size())
+        {
+            tgtCentroids_.resize_nocopy(tgtPatch.size());
+        }
+    }
+
 
     if (surfPtr)
     {
@@ -816,16 +1507,10 @@ bool Foam::AMIInterpolation::calculate
         ttgtPatch0_.cref(tgtPatch);
     }
 
-    label srcTotalSize = returnReduce
+    // Note: use original communicator for statistics
+    const label srcTotalSize = returnReduce
     (
         srcPatch.size(),
-        sumOp<label>(),
-        UPstream::msgType(),
-        comm_
-    );
-    label tgtTotalSize = returnReduce
-    (
-        tgtPatch.size(),
         sumOp<label>(),
         UPstream::msgType(),
         comm_
@@ -842,7 +1527,19 @@ bool Foam::AMIInterpolation::calculate
         return false;
     }
 
-    singlePatchProc_ = calcDistribution(srcPatch, tgtPatch);
+    const label tgtTotalSize = returnReduce
+    (
+        tgtPatch.size(),
+        sumOp<label>(),
+        UPstream::msgType(),
+        comm_
+    );
+
+    // Calculate:
+    // - which processors have faces
+    // - allocates a communicator (geomComm_) for those
+    // - if it is only one processor that holds all faces
+    singlePatchProc_ = calcDistribution(srcPatch, tgtPatch, comm_, geomComm_);
 
     Info<< indent << "AMI: Patch source faces: " << srcTotalSize << nl
         << indent << "AMI: Patch target faces: " << tgtTotalSize << nl;
@@ -878,6 +1575,12 @@ void Foam::AMIInterpolation::reset
     tgtAddress_.transfer(tgtAddress);
     tgtWeights_.transfer(tgtWeights);
 
+    // evaluate the indexing for the ListListAddr objects
+    this->srcListAddr_.reset(new ListListAddr<labelList>(srcAddress_));
+    this->srcListWeights_.reset(new ListListAddr<scalarList>(srcWeights_));
+    this->tgtListAddr_.reset(new ListListAddr<labelList>(tgtAddress_));
+    this->tgtListWeights_.reset(new ListListAddr<scalarList>(tgtWeights_));
+
     // Reset the sums of the weights
     srcWeightsSum_.resize_nocopy(srcWeights_.size());
     forAll(srcWeights_, facei)
@@ -909,11 +1612,14 @@ void Foam::AMIInterpolation::append
     addProfiling(ami, "AMIInterpolation::append");
 
     // Create a new interpolation
+    // Note: set upToDate to false to force the cloned AMI to recalculate
     auto newPtr = clone();
+    newPtr->upToDate(false);
+
     newPtr->calculate(srcPatch, tgtPatch);
 
     // If parallel then combine the mapDistribution and re-index
-    if (distributed())
+    if (distributed() && comm() != -1)
     {
         labelListList& srcSubMap = srcMapPtr_->subMap();
         labelListList& srcConstructMap = srcMapPtr_->constructMap();
@@ -1101,26 +1807,30 @@ void Foam::AMIInterpolation::normaliseWeights
     (
         srcMagSf_,
         "source",
+        srcListAddr_.ref(),
+        srcListWeights_.ref(),
         srcAddress_,
         srcWeights_,
         srcWeightsSum_,
         conformal,
         output,
         lowWeightCorrection_,
-        comm_
+        comm()
     );
 
     normaliseWeights
     (
         tgtMagSf_,
         "target",
+        tgtListAddr_.ref(),
+        tgtListWeights_.ref(),
         tgtAddress_,
         tgtWeights_,
         tgtWeightsSum_,
         conformal,
         output,
         lowWeightCorrection_,
-        comm_
+        comm()
     );
 }
 
@@ -1158,7 +1868,6 @@ const
         }
         else if (ray.distance() < nearest.distance())
         {
-
             nearest = ray;
             nearestFacei = srcFacei;
         }
@@ -1336,6 +2045,8 @@ void Foam::AMIInterpolation::write(Ostream& os) const
     {
         os.writeEntry("lowWeightCorrection", lowWeightCorrection_);
     }
+
+    cache_.write(os);
 }
 
 
@@ -1345,7 +2056,7 @@ bool Foam::AMIInterpolation::writeData(Ostream& os) const
         << token::SPACE<< reverseTarget()
         << token::SPACE<< lowWeightCorrection()
         << token::SPACE<< singlePatchProc()
-        << token::SPACE<< comm()
+        << token::SPACE<< comm()    // either geomComm_ or comm_
 
         << token::SPACE<< srcMagSf()
         << token::SPACE<< srcAddress()
@@ -1361,7 +2072,9 @@ bool Foam::AMIInterpolation::writeData(Ostream& os) const
 
         << token::SPACE<< upToDate();
 
-    if (distributed())
+    cache_.writeData(os);
+
+    if (distributed() && comm() != -1)
     {
         os  << token::SPACE<< srcMap()
             << token::SPACE<< tgtMap();

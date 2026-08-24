@@ -136,13 +136,10 @@ void Foam::unwatchedIOdictionary::addWatch()
         const bool masterOnly
         (
             global()
-         && (
-                IOobject::fileModificationChecking == IOobject::timeStampMaster
-             || IOobject::fileModificationChecking == IOobject::inotifyMaster
-            )
+         && IOobject::fileModificationChecking_masterOnly()
         );
 
-        if (masterOnly && Pstream::parRun())
+        if (masterOnly && UPstream::parRun())
         {
             Pstream::broadcast(files_);
         }

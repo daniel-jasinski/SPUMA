@@ -6,8 +6,8 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2018-2025 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -94,7 +94,11 @@ void Foam::polyBoundaryMesh::calcGroupIDs() const
     // Remove groups that clash with patch names
     forAll(patches, patchi)
     {
-        if (groupLookup.erase(patches[patchi].name()))
+        if (groupLookup.empty())
+        {
+            break;  // Early termination
+        }
+        else if (groupLookup.erase(patches[patchi].name()))
         {
             WarningInFunction
                 << "Removed group '" << patches[patchi].name()
@@ -280,6 +284,7 @@ void Foam::polyBoundaryMesh::clearLocalAddressing()
 {
     neighbourEdgesPtr_.reset(nullptr);
     patchIDPtr_.reset(nullptr);
+    patchOffsetPtr_.reset(nullptr);
     groupIDsPtr_.reset(nullptr);
 }
 
@@ -657,6 +662,26 @@ Foam::label Foam::polyBoundaryMesh::nProcessorPatches() const
 }
 
 
+Foam::label Foam::polyBoundaryMesh::nNonProcessorFaces() const
+{
+    const polyPatchList& patches = *this;
+
+    label count = 0;
+
+    for (const polyPatch& p : patches)
+    {
+        if (isA<processorPolyPatch>(p))
+        {
+            break;
+        }
+
+        count += p.nFaces();
+    }
+
+    return count;
+}
+
+
 Foam::wordList Foam::polyBoundaryMesh::names() const
 {
     return PtrListOps::get<word>(*this, nameOp<polyPatch>());
@@ -688,6 +713,25 @@ Foam::labelList Foam::polyBoundaryMesh::patchStarts() const
             *this,
             [](const polyPatch& p) { return p.start(); }
         );
+}
+
+
+const Foam::labelList& Foam::polyBoundaryMesh::patchOffsets() const
+{
+    if (!patchOffsetPtr_)
+    {
+        patchOffsetPtr_.emplace(mesh_.nBoundaryFaces(), poolSwitch(1));
+        auto& list = *patchOffsetPtr_;
+
+        const polyPatchList& patches = *this;
+
+        forAll(patches, patchi)
+        {
+            list[patchi] = patches[patchi].offset();
+        }
+    }
+
+    return *patchOffsetPtr_;
 }
 
 
@@ -763,7 +807,7 @@ Foam::labelList Foam::polyBoundaryMesh::indices
     // Only check groups if requested and they exist
     const bool checkGroups = (useGroups && this->hasGroupIDs());
 
-    labelHashSet ids(0);
+    labelHashSet ids;
 
     if (matcher.isPattern())
     {
@@ -831,7 +875,7 @@ Foam::labelList Foam::polyBoundaryMesh::indices
         return this->indices(matcher.front(), useGroups);
     }
 
-    labelHashSet ids(0);
+    labelHashSet ids;
 
     // Only check groups if requested and they exist
     if (useGroups && this->hasGroupIDs())
@@ -864,19 +908,20 @@ Foam::labelList Foam::polyBoundaryMesh::indices
 
 Foam::labelList Foam::polyBoundaryMesh::indices
 (
-    const wordRes& select,
-    const wordRes& ignore,
+    const wordRes& allow,
+    const wordRes& deny,
     const bool useGroups
 ) const
 {
-    if (ignore.empty())
+    if (allow.empty() && deny.empty())
     {
-        return this->indices(select, useGroups);
+        // Fast-path: select all
+        return identity(this->size());
     }
 
-    const wordRes::filter matcher(select, ignore);
+    const wordRes::filter matcher(allow, deny);
 
-    labelHashSet ids(0);
+    labelHashSet ids;
 
     // Only check groups if requested and they exist
     if (useGroups && this->hasGroupIDs())
@@ -965,6 +1010,21 @@ Foam::label Foam::polyBoundaryMesh::findPatchID
 }
 
 
+const Foam::polyPatch*
+Foam::polyBoundaryMesh::cfindPatch(const word& patchName) const
+{
+    const polyPatchList& patches = *this;
+
+    if (!patchName.empty())
+    {
+        // Note: get() handles out-of-range access properly
+        return patches.get(PtrListOps::firstMatching(patches, patchName));
+    }
+
+    return nullptr;
+}
+
+
 Foam::labelPair
 Foam::polyBoundaryMesh::whichPatchFace(const label meshFacei) const
 {
@@ -1050,7 +1110,7 @@ Foam::labelHashSet Foam::polyBoundaryMesh::patchSet
     const bool useGroups
 ) const
 {
-    labelHashSet ids(0);
+    labelHashSet ids;
     if (select.empty())
     {
         return ids;
@@ -1356,6 +1416,7 @@ void Foam::polyBoundaryMesh::updateMesh()
 {
     neighbourEdgesPtr_.reset(nullptr);
     patchIDPtr_.reset(nullptr);
+    patchOffsetPtr_.reset(nullptr);
     groupIDsPtr_.reset(nullptr);
 
     PstreamBuffers pBufs(Pstream::defaultCommsType);

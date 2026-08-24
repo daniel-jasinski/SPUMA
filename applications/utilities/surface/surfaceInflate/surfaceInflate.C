@@ -79,6 +79,7 @@ scalar calcVertexNormalWeight
     {
         FatalErrorInFunction
             << "Point not in face" << abort(FatalError);
+        return 0;
     }
 
     const vector e1 = points[f[index]] - points[f[f.fcIndex(index)]];

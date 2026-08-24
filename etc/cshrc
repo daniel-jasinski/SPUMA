@@ -6,7 +6,7 @@
 #    \\/     M anipulation  |
 #------------------------------------------------------------------------------
 #     Copyright (C) 2011-2016 OpenFOAM Foundation
-#     Copyright (C) 2016-2024 OpenCFD Ltd.
+#     Copyright (C) 2016-2025 OpenCFD Ltd.
 #------------------------------------------------------------------------------
 # License
 #     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -55,7 +55,7 @@
 
 # [WM_PROJECT_VERSION] - A human-readable version name
 # A development version is often named 'com' - as in www.openfoam.com
-setenv WM_PROJECT_VERSION v2412
+setenv WM_PROJECT_VERSION v2512
 
 #------------------------------------------------------------------------------
 # Configuration environment variables.
@@ -94,8 +94,10 @@ setenv WM_COMPILE_OPTION Opt
 #   +ccache : use ccache
 #   +xcrun  : use xcrun and native compilers [MacOS]
 #   +strict : more deprecation warnings (may generate *many* warnings)
+#   ++strict : even more deprecation warnings
 #   ccache=... : ccache command (unquoted, single/double or <> quoted)
 #   version=... : compiler suffix (eg, version=11 -> gcc-11)
+#   lnInclude-extra : add '-extra' option for wmakeLnInclude
 #setenv WM_COMPILE_CONTROL "+strict"
 
 # [WM_MPLIB] - MPI implementation:
@@ -131,6 +133,11 @@ set projectDir=`lsof +p $$ |& sed -ne 's#^[^/]*##;\@/'"$projectName"'[^/]*/etc/c
 ################################################################################
 # Or optionally hard-coded (eg, with autoconfig)
 # set projectDir="@PROJECT_DIR@"
+
+# [FOAM_MEMORY_POOL] - Optional memory management
+#                    - overrides the 'memory_pool' etc/controlDict entry
+# = "true | false | host [size=nn] [incr=nn]"
+#setenv FOAM_MEMORY_POOL "host"
 
 # [FOAM_SIGFPE] - Trap floating-point exceptions.
 #               - overrides the 'trapFpe' controlDict entry

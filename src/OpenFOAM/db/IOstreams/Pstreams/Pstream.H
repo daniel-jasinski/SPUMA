@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -32,12 +32,11 @@ Description
 
 SourceFiles
     Pstream.C
-    PstreamBroadcast.C
-    PstreamGather.C
-    PstreamCombineGather.C
-    PstreamGatherList.C
-    PstreamExchangeConsensus.C
-    PstreamExchange.C
+    PstreamBroadcast.txx
+    PstreamGather.txx
+    PstreamGatherList.txx
+    PstreamExchange.txx
+    PstreamExchangeConsensus.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -51,6 +50,9 @@ SourceFiles
 
 namespace Foam
 {
+
+// Forward Declarations
+class bitSet;
 
 /*---------------------------------------------------------------------------*\
                            Class Pstream Declaration
@@ -76,18 +78,20 @@ public:
 
     // Constructors
 
-        //- Construct for given communication type, with optional buffer size
-        explicit Pstream
-        (
-            const UPstream::commsTypes commsType,
-            const label bufSize = 0
-        )
+        //- Construct for communication type with empty buffer
+        explicit Pstream(const UPstream::commsTypes commsType) noexcept
+        :
+            UPstream(commsType)
+        {}
+
+        //- Construct for communication type with given buffer size
+        Pstream(const UPstream::commsTypes commsType, int bufferSize)
         :
             UPstream(commsType)
         {
-            if (bufSize > 0)
+            if (bufferSize > 0)
             {
-                transferBuf_.setCapacity(bufSize + 2*sizeof(scalar) + 1);
+                transferBuf_.setCapacity(bufferSize + 2*sizeof(scalar) + 1);
             }
         }
 
@@ -105,13 +109,27 @@ public:
         static void broadcast
         (
             Type& value,
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
+        );
+
+        //- Broadcast fixed-list content (contiguous or non-contiguous) to all
+        //- communicator ranks. Does nothing in \b non-parallel.
+        template<class Type, unsigned N>
+        static void broadcast
+        (
+            FixedList<Type, N>& list,
+            const int communicator = UPstream::worldComm
         );
 
         //- Broadcast multiple items to all communicator ranks.
         //- Does nothing in \b non-parallel.
         template<class Type, class... Args>
-        static void broadcasts(const label comm, Type& arg1, Args&&... args);
+        static void broadcasts
+        (
+            const int communicator,
+            Type& value,
+            Args&&... values
+        );
 
         //- Broadcast list content (contiguous or non-contiguous) to all
         //- communicator ranks. Does nothing in \b non-parallel.
@@ -121,22 +139,52 @@ public:
         static void broadcastList
         (
             ListType& list,
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         );
 
 
-    // Gather
+    // Gather/scatter : single value
+
+        //- Implementation: gather (reduce) single element data onto
+        //- UPstream::masterNo()
+        template<class T, class BinaryOp, bool InplaceMode>
+        static void gather_algorithm
+        (
+            const UPstream::commsStructList& comms,  //!< Communication order
+            //! [in,out]
+            T& value,
+            BinaryOp bop,
+            const int tag,
+            const int communicator
+        );
+
+        //- Implementation: gather (reduce) single element data onto
+        //- UPstream::masterNo() using a topo algorithm.
+        //  \returns True if topo algorithm was applied
+        template<class T, class BinaryOp, bool InplaceMode>
+        static bool gather_topo_algorithm
+        (
+            //! [in,out]
+            T& value,
+            BinaryOp bop,
+            const int tag,
+            const int communicator
+        );
 
         //- Gather (reduce) data, applying \c bop to combine \c value
         //- from different processors. The basis for Foam::reduce().
-        //  Uses linear/tree communication (with parallel guard).
-        template<class T, class BinaryOp>
+        //  A no-op for non-parallel.
+        //
+        //  \tparam InplaceMode indicates that the binary operator
+        //      modifies values in-place, not using assignment
+        template<class T, class BinaryOp, bool InplaceMode=false>
         static void gather
         (
+            //! [in,out] the result is only reliable on rank=0
             T& value,
-            const BinaryOp& bop,
+            BinaryOp bop,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         );
 
         //- Gather individual values into list locations.
@@ -148,7 +196,7 @@ public:
         static List<T> listGatherValues
         (
             const T& localValue,
-            const label comm = UPstream::worldComm,
+            const int communicator = UPstream::worldComm,
             //! Only used for non-contiguous types
             const int tag = UPstream::msgType()
         );
@@ -162,142 +210,239 @@ public:
         static T listScatterValues
         (
             const UList<T>& allValues,
-            const label comm = UPstream::worldComm,
+            const int communicator = UPstream::worldComm,
             //! Only used for non-contiguous types
             const int tag = UPstream::msgType()
         );
 
 
-    // Gather/combine data
-    // Inplace combine values from processors.
-    // (Uses construct from Istream instead of \c << operator)
+    // Inplace combine (gather) : single value
 
-        //- Gather data, applying \c cop to inplace combine \c value
-        //- from different processors.
-        //  Uses linear/tree communication (with parallel guard).
+        //- Forwards to Pstream::gather with an \em in-place \c cop
         template<class T, class CombineOp>
         static void combineGather
         (
-            //! [in,out]
+            //! [in,out] the result is only reliable on rank=0
             T& value,
-            const CombineOp& cop,
+            CombineOp cop,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         );
 
         //- Reduce inplace (cf. MPI Allreduce)
         //- applying \c cop to inplace combine \c value
         //- from different processors.
-        //- After completion all processors have the same data.
-        //  Uses linear/tree communication.
-        //  Wraps combineGather/broadcast (may change in the future).
         template<class T, class CombineOp>
         static void combineReduce
         (
-            //! [in,out]
+            //! [in,out] the result is consistent on all ranks
             T& value,
-            const CombineOp& cop,
+            CombineOp cop,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         );
 
         //- Same as Pstream::combineReduce
         template<class T, class CombineOp>
         static void combineAllGather
         (
+            //! [in,out] the result is consistent on all ranks
             T& value,
-            const CombineOp& cop,
+            CombineOp cop,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         )
         {
-            Pstream::combineReduce(value, cop, tag, comm);
+            Pstream::combineReduce(value, cop, tag, communicator);
         }
 
 
-    // Combine variants working on whole List at a time.
+    // Gather/combine variants working on entire List
 
-        //- Combines List elements.
-        //  Uses linear/tree communication (with parallel guard).
-        template<class T, class CombineOp>
-        static void listCombineGather
+        //- Implementation: gather (reduce) list element data onto
+        //- UPstream::masterNo()
+        template<class T, class BinaryOp, bool InplaceMode>
+        static void listGather_algorithm
+        (
+            const UPstream::commsStructList& comms,  //!< Communication order
+            //! [in,out]
+            UList<T>& values,
+            BinaryOp bop,
+            const int tag,
+            const int communicator
+        );
+
+        //- Implementation: gather (reduce) list element data onto
+        //- UPstream::masterNo() using a topo algorithm.
+        //  \returns True if topo algorithm was applied
+        template<class T, class BinaryOp, bool InplaceMode>
+        static bool listGather_topo_algorithm
         (
             //! [in,out]
             UList<T>& values,
-            const CombineOp& cop,
-            const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            BinaryOp bop,
+            const int tag,
+            const int communicator
         );
 
-        //- Combines List elements.
-        //- After completion all processors have the same data.
-        //  Uses linear/tree communication (with parallel guard).
+        //- Gather (reduce) list elements,
+        //- applying \c bop to each list element
+        //
+        //  \tparam InplaceMode indicates that the binary operator
+        //      modifies values in-place, not using assignment
+        template<class T, class BinaryOp, bool InplaceMode=false>
+        static void listGather
+        (
+            //! [in,out] the result is only reliable on rank=0
+            UList<T>& values,
+            BinaryOp bop,
+            const int tag = UPstream::msgType(),
+            const int communicator = UPstream::worldComm
+        );
+
+        //- Forwards to Pstream::listGather with an \em in-place \c cop
+        template<class T, class CombineOp>
+        static void listCombineGather
+        (
+            //! [in,out] the result is only reliable on rank=0
+            UList<T>& values,
+            CombineOp cop,
+            const int tag = UPstream::msgType(),
+            const int communicator = UPstream::worldComm
+        );
+
+        //- Reduce list elements (list must be equal size on all ranks),
+        //- applying \c bop to each list element.
+        //
+        //  \tparam InplaceMode indicates that the binary operator
+        //      modifies values in-place, not using assignment
+        template<class T, class BinaryOp, bool InplaceMode=false>
+        static void listReduce
+        (
+            //! [in,out] the result is consistent on all ranks
+            UList<T>& values,
+            BinaryOp bop,
+            const int tag = UPstream::msgType(),
+            const int communicator = UPstream::worldComm
+        );
+
+        //- Forwards to Pstream::listReduce with an \em in-place \c cop
         template<class T, class CombineOp>
         static void listCombineReduce
         (
-            //! [in,out] - List (not UList) due to broadcast()
-            List<T>& values,
-            const CombineOp& cop,
+            //! [in,out] the result is consistent on all ranks
+            UList<T>& values,
+            CombineOp cop,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         );
 
         //- Same as Pstream::listCombineReduce
         template<class T, class CombineOp>
         static void listCombineAllGather
         (
-            //! [in,out] - List (not UList) due to broadcast()
-            List<T>& values,
-            const CombineOp& cop,
+            //! [in,out] the result is consistent on all ranks
+            UList<T>& values,
+            CombineOp cop,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         )
         {
-            Pstream::listCombineReduce(values, cop, tag, comm);
+            Pstream::listCombineReduce(values, cop, tag, communicator);
         }
 
 
-    // Combine variants working on whole map at a time.
-    // Container needs iterators, find() and insert methods defined.
+    // Gather/combine variants working on Map/HashTable containers
 
-        //- Combine Map elements.
-        //  Uses linear/tree communication (with parallel guard).
+        //- Implementation: gather (reduce) Map/HashTable containers onto
+        //- UPstream::masterNo()
+        template<class Container, class BinaryOp, bool InplaceMode>
+        static void mapGather_algorithm
+        (
+            const UPstream::commsStructList& comms,  //!< Communication order
+            Container& values,
+            BinaryOp bop,
+            const int tag,
+            const int communicator
+        );
+
+        //- Implementation: gather (reduce) Map/HashTable containers onto
+        //- UPstream::masterNo() using a topo algorithm.
+        //  \returns True if topo algorithm was applied
+        template<class Container, class BinaryOp, bool InplaceMode>
+        static bool mapGather_topo_algorithm
+        (
+            Container& values,
+            BinaryOp bop,
+            const int tag,
+            const int communicator
+        );
+
+        //- Gather (reduce) Map/HashTable containers,
+        //- applying \c bop to combine entries from different processors.
+        //
+        //  \tparam InplaceMode indicates that the binary operator
+        //      modifies values in-place, not using assignment
+        template<class Container, class BinaryOp, bool InplaceMode=false>
+        static void mapGather
+        (
+            //! [in,out] the result is only reliable on rank=0
+            Container& values,
+            BinaryOp bop,
+            const int tag = UPstream::msgType(),
+            const int communicator = UPstream::worldComm
+        );
+
+        //- Forwards to Pstream::mapGather with an \em in-place \c cop
         template<class Container, class CombineOp>
         static void mapCombineGather
         (
+            //! [in,out] the result is only reliable on rank=0
             Container& values,
-            const CombineOp& cop,
+            CombineOp cop,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         );
 
         //- Reduce inplace (cf. MPI Allreduce)
-        //- applying \c cop to inplace combine map \c values
+        //- applying \c bop to combine map \c values
         //- from different processors.
         //- After completion all processors have the same data.
-        //  Uses the specified communication schedule.
+        //
         //  Wraps mapCombineGather/broadcast (may change in the future).
-        //- After completion all processors have the same data.
+        template<class Container, class BinaryOp, bool InplaceMode=false>
+        static void mapReduce
+        (
+            //! [in,out] the result is consistent on all ranks
+            Container& values,
+            BinaryOp bop,
+            const int tag = UPstream::msgType(),
+            const int communicator = UPstream::worldComm
+        );
+
+        //- Forwards to Pstream::mapReduce with an \em in-place \c cop
         template<class Container, class CombineOp>
         static void mapCombineReduce
         (
+            //! [in,out] the result is consistent on all ranks
             Container& values,
-            const CombineOp& cop,
+            CombineOp cop,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         );
 
         //- Same as Pstream::mapCombineReduce
         template<class Container, class CombineOp>
         static void mapCombineAllGather
         (
+            //! [in,out] the result is consistent on all ranks
             Container& values,
-            const CombineOp& cop,
+            CombineOp cop,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         )
         {
-            Pstream::mapCombineReduce(values, cop, tag, comm);
+            Pstream::mapCombineReduce(values, cop, tag, communicator);
         }
 
 
@@ -305,31 +450,52 @@ public:
     // The values is a List of size UPstream::nProcs() where
     // values[UPstream::myProcNo()] is the data for the current processor.
 
-        //- Gather data, but keep individual values separate.
-        //- Uses the specified communication schedule.
+        //- Implementation: gather data, keeping individual values separate.
+        //- Output is only valid (consistent) on UPstream::masterNo()
         template<class T>
-        static void gatherList
+        static void gatherList_algorithm
         (
-            const UList<commsStruct>& comms,
+            const UPstream::commsStructList& comms,  //!< Communication order
             //! [in,out]
             UList<T>& values,
             const int tag,
-            const label comm
+            const int communicator
+        );
+
+        //- Gather data, keeping individual values separate.
+        //  \returns True if topo algorithm was applied
+        template<class T>
+        static bool gatherList_topo_algorithm
+        (
+            //! [in,out]
+            UList<T>& values,
+            const int tag,
+            const int communicator
+        );
+
+        //- Implementation: inverse of gatherList_algorithm
+        template<class T>
+        static void scatterList_algorithm
+        (
+            const UPstream::commsStructList& comms,  //!< Communication order
+            //! [in,out]
+            UList<T>& values,
+            const int tag,
+            const int communicator
         );
 
         //- Gather data, but keep individual values separate.
-        //- Uses linear/tree communication.
         template<class T>
         static void gatherList
         (
             //! [in,out]
             UList<T>& values,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         );
 
         //- Gather data, but keep individual values separate.
-        //- Uses MPI_Allgather or manual linear/tree communication.
+        //- Uses MPI_Allgather or manual communication.
         //  After completion all processors have the same data.
         //  Wraps gatherList/scatterList (may change in the future).
         template<class T>
@@ -338,31 +504,7 @@ public:
             //! [in,out]
             UList<T>& values,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
-        );
-
-
-    // Scatter
-
-        //- Inverse of gatherList.
-        //- Uses the specified communication schedule.
-        template<class T>
-        static void scatterList
-        (
-            const UList<commsStruct>& comms,
-            UList<T>& values,
-            const int tag,
-            const label comm
-        );
-
-        //- Inverse of gatherList.
-        //- Uses linear/tree communication.
-        template<class T>
-        static void scatterList
-        (
-            UList<T>& values,
-            const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int communicator = UPstream::worldComm
         );
 
 
@@ -376,8 +518,8 @@ public:
             const labelUList& recvProcs,
             const Container& sendBufs,
             labelList& sizes,
-            const label tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int tag = UPstream::msgType(),
+            const int comm = UPstream::worldComm
         );
 
         //- Helper: exchange sizes of sendBufs for specified neighbour ranks
@@ -387,8 +529,8 @@ public:
             const labelUList& neighProcs,
             const Container& sendBufs,
             labelList& sizes,
-            const label tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int tag = UPstream::msgType(),
+            const int comm = UPstream::worldComm
         );
 
         //- Helper: exchange sizes of sendBufs.
@@ -401,7 +543,7 @@ public:
         (
             const Container& sendBufs,
             labelList& recvSizes,
-            const label comm = UPstream::worldComm
+            const int comm = UPstream::worldComm
         );
 
         //- Exchange the \b non-zero sizes of sendBufs entries (sparse map)
@@ -421,8 +563,8 @@ public:
         (
             const Map<Container>& sendBufs,
             Map<label>& recvSizes,
-            const label tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm
+            const int tag = UPstream::msgType(),
+            const int comm = UPstream::worldComm
         );
 
         //- Helper: exchange \em contiguous data.
@@ -436,7 +578,7 @@ public:
             const labelUList& recvSizes,
             List<Container>& recvBufs,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm,
+            const int comm = UPstream::worldComm,
             const bool wait = true  //!< Wait for requests to complete
         );
 
@@ -452,7 +594,7 @@ public:
             const Map<label>& recvSizes,  //!< Num of recv elements (not bytes)
             Map<Container>& recvBufs,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm,
+            const int comm = UPstream::worldComm,
             const bool wait = true  //!< Wait for requests to complete
         );
 
@@ -466,7 +608,7 @@ public:
             const UList<Container>& sendBufs,
             List<Container>& recvBufs,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm,
+            const int comm = UPstream::worldComm,
             const bool wait = true  //!< Wait for requests to complete
         );
 
@@ -480,7 +622,7 @@ public:
             const Map<Container>& sendBufs,
             Map<Container>& recvBufs,
             const int tag = UPstream::msgType(),
-            const label comm = UPstream::worldComm,
+            const int comm = UPstream::worldComm,
             const bool wait = true  //!< Wait for requests to complete
         );
 
@@ -501,7 +643,7 @@ public:
             const UList<Container>& sendBufs,
             List<Container>& recvBufs,
             const int tag,
-            const label comm,
+            const int comm,
             const bool wait = true  //!< (ignored)
         );
 
@@ -523,7 +665,7 @@ public:
             const Map<Container>& sendBufs,
             Map<Container>& recvBufs,
             const int tag,
-            const label comm,
+            const int comm,
             const bool wait = true  //!< (ignored)
         );
 
@@ -539,7 +681,7 @@ public:
         (
             const Map<Container>& sendBufs,
             const int tag,
-            const label comm,
+            const int comm,
             const bool wait = true  //!< (ignored)
         );
 
@@ -553,7 +695,7 @@ public:
         (
             T& value,
             const int tag = UPstream::msgType(),  //!< ignored
-            const label comm = UPstream::worldComm
+            const int comm = UPstream::worldComm
         )
         {
             Pstream::broadcast(value, comm);
@@ -566,7 +708,7 @@ public:
         (
             T& value,
             const int tag = UPstream::msgType(),  //!< ignored
-            const label comm = UPstream::worldComm
+            const int comm = UPstream::worldComm
         )
         {
             Pstream::broadcast(value, comm);
@@ -579,7 +721,7 @@ public:
         (
             List<T>& value,
             const int tag = UPstream::msgType(),  //!< ignored
-            const label comm = UPstream::worldComm
+            const int comm = UPstream::worldComm
         )
         {
             Pstream::broadcast(value, comm);
@@ -592,10 +734,35 @@ public:
         (
             Container& values,
             const int tag = UPstream::msgType(),  //!< ignored
-            const label comm = UPstream::worldComm
+            const int comm = UPstream::worldComm
         )
         {
             Pstream::broadcast(values, comm);
+        }
+
+        //- The inverse of gatherList, but when combined with gatherList
+        //- it effectively acts like a partial broadcast...
+        //  \deprecated(2025-03) Normally prefer broadcast
+        template<class T>
+        FOAM_DEPRECATED_FOR(2025-03, "broadcast() or broadcastList()")
+        static void scatterList
+        (
+            //! [in,out]
+            UList<T>& values,
+            const int tag = UPstream::msgType(),
+            const int communicator = UPstream::worldComm
+        )
+        {
+            if (UPstream::is_parallel(communicator))
+            {
+                Pstream::scatterList_algorithm
+                (
+                    UPstream::whichCommunication(communicator),
+                    values,
+                    tag,
+                    communicator
+                );
+            }
         }
 };
 
@@ -607,11 +774,10 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "PstreamBroadcast.C"
-    #include "PstreamGather.C"
-    #include "PstreamCombineGather.C"
-    #include "PstreamGatherList.C"
-    #include "PstreamExchange.C"
+    #include "PstreamBroadcast.txx"
+    #include "PstreamGather.txx"
+    #include "PstreamGatherList.txx"
+    #include "PstreamExchange.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -86,9 +86,9 @@ inline void Foam::Enum<EnumType>::clear()
 
 
 template<class EnumType>
-inline bool Foam::Enum<EnumType>::contains(const word& enumName) const
+inline bool Foam::Enum<EnumType>::contains(const word& key) const
 {
-    return keys_.contains(enumName);
+    return (!key.empty() && keys_.contains(key));
 }
 
 
@@ -242,7 +242,7 @@ template<class EnumType>
 inline typename Foam::Enum<EnumType>::const_iterator
 Foam::Enum<EnumType>::cfind(const word& key) const
 {
-    const label idx = keys_.find(key);
+    const label idx = (key.empty() ? -1 : keys_.find(key));
 
     return typename Enum<EnumType>::const_iterator
     (
@@ -263,28 +263,6 @@ Foam::Enum<EnumType>::cfind(const EnumType e) const
         this,
         (idx >= 0 ? idx : this->size())
     );
-}
-
-
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-template<class EnumType>
-inline EnumType Foam::Enum<EnumType>::operator[]
-(
-    const word& enumName
-) const
-{
-    return get(enumName);
-}
-
-
-template<class EnumType>
-inline const Foam::word& Foam::Enum<EnumType>::operator[]
-(
-    const EnumType e
-) const
-{
-    return get(e);
 }
 
 

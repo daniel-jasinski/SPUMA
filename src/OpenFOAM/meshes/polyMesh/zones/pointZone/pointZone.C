@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,11 +27,10 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "pointZone.H"
-#include "addToRunTimeSelectionTable.H"
 #include "pointZoneMesh.H"
 #include "polyMesh.H"
-#include "primitiveMesh.H"
 #include "syncTools.H"
+#include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -42,14 +41,13 @@ namespace Foam
     addToRunTimeSelectionTable(pointZone, pointZone, dictionary);
 }
 
-const char* const Foam::pointZone::labelsName = "pointLabels";
-
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::pointZone::pointZone(const pointZoneMesh& zm)
 :
-    pointZone(word::null, 0, zm)
+    zone(),
+    zoneMesh_(zm)
 {}
 
 
@@ -99,7 +97,7 @@ Foam::pointZone::pointZone
     const pointZoneMesh& zm
 )
 :
-    zone(name, dict, this->labelsName, index),
+    zone(name, dict, pointZone::labelsName(), index),
     zoneMesh_(zm)
 {}
 
@@ -107,7 +105,19 @@ Foam::pointZone::pointZone
 Foam::pointZone::pointZone
 (
     const pointZone& originalZone,
-    const Foam::zero,
+    const pointZoneMesh& zm,
+    const label newIndex
+)
+:
+    zone(originalZone, newIndex),
+    zoneMesh_(zm)
+{}
+
+
+Foam::pointZone::pointZone
+(
+    const pointZone& originalZone,
+    Foam::zero,
     const pointZoneMesh& zm,
     const label newIndex
 )
@@ -120,12 +130,12 @@ Foam::pointZone::pointZone
 Foam::pointZone::pointZone
 (
     const pointZone& originalZone,
-    const Foam::zero,
-    const label index,
+    Foam::zero,
+    const label newIndex,
     const pointZoneMesh& zm
 )
 :
-    zone(originalZone, labelList(), index),
+    zone(originalZone, labelList(), newIndex),
     zoneMesh_(zm)
 {}
 
@@ -160,16 +170,17 @@ Foam::pointZone::pointZone
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::label Foam::pointZone::whichPoint(const label globalPointID) const
+Foam::label Foam::pointZone::max_index() const noexcept
 {
-    return zone::localID(globalPointID);
+    return zoneMesh_.mesh().nPoints();
 }
 
 
-bool Foam::pointZone::checkDefinition(const bool report) const
-{
-    return zone::checkDefinition(zoneMesh_.mesh().points().size(), report);
-}
+// void Foam::pointZone::sort()
+// {
+//     clearAddressing();
+//     Foam::sort(static_cast<labelList&>(*this));
+// }
 
 
 bool Foam::pointZone::checkParallelSync(const bool report) const
@@ -226,18 +237,6 @@ bool Foam::pointZone::checkParallelSync(const bool report) const
 }
 
 
-void Foam::pointZone::writeDict(Ostream& os) const
-{
-    os.beginBlock(name());
-
-    os.writeEntry("type", type());
-    zoneIdentifier::write(os);
-    writeEntry(this->labelsName, os);
-
-    os.endBlock();
-}
-
-
 void Foam::pointZone::resetAddressing(pointZone&& zn)
 {
     if (this == &zn)
@@ -274,6 +273,13 @@ void Foam::pointZone::resetAddressing(labelList&& addr)
 {
     clearAddressing();
     labelList::transfer(addr);
+}
+
+
+void Foam::pointZone::write(Ostream& os) const
+{
+    zone::write(os);
+    labelList::writeEntry(pointZone::labelsName(), os);
 }
 
 

@@ -45,7 +45,6 @@ SourceFiles
 
 #include "Matrix.H"
 #include "Identity.H"
-#include <numeric>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -54,7 +53,6 @@ namespace Foam
 
 // Forward Declarations
 template<class Type> class RectangularMatrix;
-
 
 /*---------------------------------------------------------------------------*\
                         Class SquareMatrix Declaration
@@ -86,7 +84,7 @@ public:
 
         //- Construct for given size (rows == cols)
         //- initializing all elements to zero
-        inline SquareMatrix(const label n, const Foam::zero);
+        inline SquareMatrix(const label n, Foam::zero);
 
         //- Construct for given size (rows == cols)
         //- initializing all elements to the given value
@@ -111,7 +109,7 @@ public:
         //- by using a labelPair (checked to be equal)
         //- and initializing all elements to zero
         //  For constructor consistency with rectangular matrices
-        inline SquareMatrix(const labelPair& dims, const Foam::zero);
+        inline SquareMatrix(const labelPair& dims, Foam::zero);
 
         //- Construct given number of rows/columns
         //- by using a labelPair (checked to be equal)
@@ -121,7 +119,7 @@ public:
 
         //- Construct given number of rows/columns (checked to be equal)
         //- initializing all elements to zero
-        inline SquareMatrix(const label m, const label n, const Foam::zero);
+        inline SquareMatrix(const label m, const label n, Foam::zero);
 
         //- Construct from const sub-matrix block
         template<class MatrixType>
@@ -186,7 +184,7 @@ public:
         inline void operator=(SquareMatrix<Type>&& mat);
 
         //- Assign all elements to zero
-        inline void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
         //- Assign all elements to value
         inline void operator=(const Type& val);

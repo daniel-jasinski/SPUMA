@@ -34,18 +34,15 @@ Description
 
     The operation is applied to all results of each object.
 
-Note
-    Each object must generate the same number and type of results.
-
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    multiFieldValue1
+    multiFieldValueFO
     {
         // Mandatory entries
         type        multiFieldValue;
         libs        (fieldFunctionObjects);
-        operation   average;
+        operation   <word>;  // average;
 
         // List of fieldValue function objects as dictionaries
         functions
@@ -105,6 +102,9 @@ Usage
     The inherited entries are elaborated in:
       - \link stateFunctionObject.H \endlink
       - \link writeFile.H \endlink
+
+Note
+    Each object must generate the same number and type of results.
 
 SourceFiles
     multiFieldValue.C
@@ -207,7 +207,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         multiFieldValue
         (
             const word& name,
@@ -228,13 +228,13 @@ public:
 
     // Public Member Functions
 
-        //- Read from dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Do nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Calculate and write
+        //- Write the function-object results
         virtual bool write();
 };
 

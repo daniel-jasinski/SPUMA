@@ -98,7 +98,7 @@ void thermoSingleLayer::resetPrimaryRegionSourceTerms()
 
     kinematicSingleLayer::resetPrimaryRegionSourceTerms();
 
-    hsSpPrimary_ == dimensionedScalar(hsSp_.dimensions(), Zero);
+    hsSpPrimary_ == Zero;
 }
 
 
@@ -607,7 +607,7 @@ void thermoSingleLayer::preEvolveRegion()
     DebugInFunction << endl;
 
     kinematicSingleLayer::preEvolveRegion();
-    primaryEnergyTrans_ == dimensionedScalar(dimEnergy, Zero);
+    primaryEnergyTrans_ == Zero;
 }
 
 
@@ -697,10 +697,11 @@ void thermoSingleLayer::info()
 
     const scalarField& Tinternal = T_;
 
+    auto limits = gMinMax(Tinternal);
+    auto avg = gAverage(Tinternal);
+
     Info<< indent << "min/mean/max(T)    = "
-        << gMin(Tinternal) << ", "
-        << gAverage(Tinternal) << ", "
-        << gMax(Tinternal) << nl;
+        << limits.min() << ", " << avg << ", " << limits.max() << nl;
 
     phaseChange_->info(Info);
 }

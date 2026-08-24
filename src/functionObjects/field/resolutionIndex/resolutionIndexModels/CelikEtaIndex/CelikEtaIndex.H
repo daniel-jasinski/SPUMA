@@ -97,7 +97,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    resolutionIndex1
+    resolutionIndexFO
     {
         // Inherited entries
         ...
@@ -234,13 +234,13 @@ public:
 
     // Member Functions
 
-        //- Read top-level dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the result field
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the result field
+        //- Write the function-object results
         virtual bool write();
 };
 

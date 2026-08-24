@@ -5,10 +5,10 @@
       ? g & (cmptMag(g.value())/mag(g.value()))*hRef
       : dimensionedScalar("ghRef", g.dimensions()*dimLength, 0)
     );
-    const int oldLocal = volVectorField::Boundary::localConsistencyRef();
-    volVectorField::Boundary::localConsistencyRef() = 0;
+
+    const auto oldConsistency = FieldBase::localBoundaryConsistency(0);
 
     volScalarField gh("gh", (g & mesh.C()) - ghRef);
     surfaceScalarField ghf("ghf", (g & mesh.Cf()) - ghRef);
 
-    volVectorField::Boundary::localConsistencyRef() = oldLocal;
+    FieldBase::localBoundaryConsistency(oldConsistency);

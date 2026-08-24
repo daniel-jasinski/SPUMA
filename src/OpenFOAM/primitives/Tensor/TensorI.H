@@ -34,9 +34,9 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt>::Tensor(const Foam::zero)
+FOAM_DEVICE inline Foam::Tensor<Cmpt>::Tensor(Foam::zero)
 :
-    Tensor::msType(Zero)
+    Tensor::msType(Foam::zero{})
 {}
 
 
@@ -411,12 +411,12 @@ inline bool Foam::Tensor<Cmpt>::is_identity(const scalar tol) const
 {
     return
     (
-        mag(xx() - pTraits<Cmpt>::one) < tol
-     && mag(yy() - pTraits<Cmpt>::one) < tol
-     && mag(zz() - pTraits<Cmpt>::one) < tol
-     && mag(xy()) < tol && mag(xz()) < tol
-     && mag(yx()) < tol && mag(yz()) < tol
-     && mag(zx()) < tol && mag(zy()) < tol
+        Foam::mag(xx() - pTraits<Cmpt>::one) < tol
+     && Foam::mag(yy() - pTraits<Cmpt>::one) < tol
+     && Foam::mag(zz() - pTraits<Cmpt>::one) < tol
+     && Foam::mag(xy()) < tol && Foam::mag(xz()) < tol
+     && Foam::mag(yx()) < tol && Foam::mag(yz()) < tol
+     && Foam::mag(zx()) < tol && Foam::mag(zy()) < tol
     );
 }
 
@@ -448,7 +448,7 @@ FOAM_DEVICE inline Cmpt Foam::Tensor<Cmpt>::det() const
 
 
 template<class Cmpt>
-inline Cmpt Foam::Tensor<Cmpt>::det2D(const direction excludeCmpt) const
+FOAM_DEVICE inline Cmpt Foam::Tensor<Cmpt>::det2D(const direction excludeCmpt) const
 {
     switch (excludeCmpt)
     {
@@ -488,7 +488,7 @@ FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::cof() const
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct2D
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct2D
 (
     const direction excludeCmpt
 ) const
@@ -527,7 +527,7 @@ inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::adjunct2D
 
 
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv2D
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv2D
 (
     const direction excludeCmpt
 ) const
@@ -570,7 +570,7 @@ template<class Cmpt>
 // Workaround for gcc (11+) that fails to handle tensor dot vector
 __attribute__((optimize("no-tree-vectorize")))
 #endif
-inline Foam::Tensor<Cmpt>
+FOAM_DEVICE inline Foam::Tensor<Cmpt>
 Foam::Tensor<Cmpt>::schur(const Tensor<Cmpt>& t2) const
 {
     const Tensor<Cmpt>& t1 = *this;
@@ -606,11 +606,14 @@ FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::inv() const
 
 // Invert with some error handling
 template<class Cmpt>
-inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::safeInv() const
+FOAM_DEVICE inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::safeInv() const
 {
+    static const Cmpt localOne(1);
+
     {
         // Attempt to identify and handle 2-D cases
         // - use diagSqr instead of magSqr for fewer operations
+        const Cmpt localOne(1);
 
         const scalar magSqr_xx = Foam::magSqr(xx());
         const scalar magSqr_yy = Foam::magSqr(yy());
@@ -628,9 +631,9 @@ inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::safeInv() const
         {
             Tensor<Cmpt> work(*this);
 
-            if (small_xx) { work.xx() += pTraits<Cmpt>::one; }
-            if (small_yy) { work.yy() += pTraits<Cmpt>::one; }
-            if (small_zz) { work.zz() += pTraits<Cmpt>::one; }
+            if (small_xx) { work.xx() += localOne; }
+            if (small_yy) { work.yy() += localOne; }
+            if (small_zz) { work.zz() += localOne; }
 
             const Cmpt detval = work.det();
 
@@ -642,9 +645,9 @@ inline Foam::Tensor<Cmpt> Foam::Tensor<Cmpt>::safeInv() const
 
             work = work.adjunct()/detval;
 
-            if (small_xx) { work.xx() -= pTraits<Cmpt>::one; }
-            if (small_yy) { work.yy() -= pTraits<Cmpt>::one; }
-            if (small_zz) { work.zz() -= pTraits<Cmpt>::one; }
+            if (small_xx) { work.xx() -= localOne; }
+            if (small_yy) { work.yy() -= localOne; }
+            if (small_zz) { work.zz() -= localOne; }
 
             return work;
         }

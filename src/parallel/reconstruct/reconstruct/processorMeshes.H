@@ -31,7 +31,7 @@ Description
     Container for processor mesh addressing.
 
 SourceFiles
-    processorMeshes.C
+    processorMeshes.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -40,7 +40,6 @@ SourceFiles
 
 #include "PtrList.H"
 #include "fvMesh.H"
-#include "IOobjectList.H"
 #include "labelIOList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -56,10 +55,11 @@ class processorMeshes
 {
     // Private Data
 
+        //- The (volume) mesh-region name
         const word meshName_;
 
         //- Processor databases
-        PtrList<Time>& databases_;
+        const UPtrList<Time>& databases_;
 
         //- List of processor meshes
         PtrList<fvMesh> meshes_;
@@ -76,14 +76,11 @@ class processorMeshes
         //- List of processor boundary addressing lists
         PtrList<labelIOList> boundaryProcAddressing_;
 
+        //- List of pointMesh processor meshes
+        PtrList<pointMesh> pMeshes_;
 
-        // pointMesh
-
-            //- List of processor meshes
-            PtrList<pointMesh> pMeshes_;
-
-            //- List of processor boundary addressing lists for pointMeshes
-            PtrList<labelIOList> pBoundaryProcAddressing_;
+        //- List of processor boundary addressing lists for pointMeshes
+        PtrList<labelIOList> pBoundaryProcAddressing_;
 
 
     // Private Member Functions
@@ -107,22 +104,30 @@ public:
     // Constructors
 
         //- Construct from components
-        processorMeshes(PtrList<Time>& databases, const word& meshName);
+        processorMeshes(const UPtrList<Time>& databases, const word& meshName);
 
 
     // Member Functions
 
-        //- Update the meshes based on the mesh files saved in time directories
+        //- Update meshes based on the mesh files saved in time directories
         polyMesh::readUpdateState readUpdate();
 
         //- Reconstruct point position after motion in parallel
         void reconstructPoints(fvMesh&);
 
+        //- The (volume) mesh-region name
+        const word& name() const noexcept { return meshName_; }
+
+        //- The number of processors used
+        label nProcs() const noexcept { return databases_.size(); }
+
+        //- The processor meshes
         const PtrList<fvMesh>& meshes() const noexcept
         {
             return meshes_;
         }
 
+        //- The processor meshes
         PtrList<fvMesh>& meshes() noexcept
         {
             return meshes_;
@@ -149,18 +154,17 @@ public:
         }
 
 
-        // pointMesh
+        //- The processor point meshes
+        const PtrList<pointMesh>& pointMeshes() const noexcept
+        {
+            return pMeshes_;
+        }
 
-            const PtrList<pointMesh>& pointMeshes() const noexcept
-            {
-                return pMeshes_;
-            }
-
-            const PtrList<labelIOList>& pointMeshBoundaryProcAddressing()
-            const noexcept
-            {
-                return pBoundaryProcAddressing_;
-            }
+        const PtrList<labelIOList>& pointMeshBoundaryProcAddressing()
+        const noexcept
+        {
+            return pBoundaryProcAddressing_;
+        }
 
 
         //- Helper: remove all procAddressing files from mesh instance

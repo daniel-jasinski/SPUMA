@@ -119,21 +119,20 @@ public:
 
     // Member Functions
 
-        // Evaluation functions
+        //- Retrieve patch-normal gradient at boundary
+        virtual tmp<Field<Type>> snGrad() const;
 
-            //- Return gradient at boundary
-            virtual tmp<Field<Type>> snGrad() const;
+        //- Retrieve patch-normal gradient at boundary
+        virtual void snGrad(UList<Type>& result) const;
 
-            //- Evaluate the patch field
-            //  Default argument needed to allow call in constructors
-            //  HJ, 30/Jun/2009
-            virtual void evaluate
-            (
-                const Pstream::commsTypes commsType = Pstream::commsTypes::buffered
-            );
+        //- Evaluate the patch field
+        virtual void evaluate
+        (
+            const Pstream::commsTypes commsType = Pstream::commsTypes::buffered
+        );
 
-            //- Return face-gradient transform diagonal
-            virtual tmp<Field<Type>> snGradTransformDiag() const;
+        //- Return face-gradient transform diagonal
+        virtual tmp<Field<Type>> snGradTransformDiag() const;
 
 
     // Member Operators
@@ -141,18 +140,6 @@ public:
         //- Inherit assignment operators
         using transformFaPatchField<Type>::operator=;
 };
-
-
-// * * * * * * * * * * * Template Specialisations  * * * * * * * * * * * * * //
-
-template<>
-tmp<scalarField> basicSymmetryFaPatchField<scalar>::snGrad() const;
-
-template<>
-void basicSymmetryFaPatchField<scalar>::evaluate
-(
-    const Pstream::commsTypes commsType
-);
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

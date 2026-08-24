@@ -38,56 +38,44 @@ Description
       Operand           | Type           | Location
       input             | -              | -
       output file       | -              | -
-      output field      | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field      | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    CourantNo1
+    CourantNoFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        CourantNo;
         libs        (fieldFunctionObjects);
 
-        // Optional entries (runtime modifiable)
-        rho         rho;
+        // Optional entries
+        rho         <word>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property   | Description                        | Type | Req'd | Dflt
+      Property   | Description                        | Type | Reqd  | Deflt
       type       | Type name: CourantNo               | word |  yes  | -
       libs       | Library name: fieldFunctionObjects | word |  yes  | -
       rho        | Name of density field              | word |  no   | rho
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func CourantNo
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::CourantNo
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     CourantNo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_CourantNo_H
-#define functionObjects_CourantNo_H
+#ifndef Foam_functionObjects_CourantNo_H
+#define Foam_functionObjects_CourantNo_H
 
 #include "fieldExpression.H"
 #include "volFields.H"
@@ -115,12 +103,6 @@ class CourantNo
 
     // Private Member Functions
 
-        //- Divide the Courant number by rho if required
-        tmp<volScalarField::Internal> byRho
-        (
-            const tmp<volScalarField::Internal>& Co
-        ) const;
-
         //- Calculate the Courant number field and return true if successful
         virtual bool calc();
 
@@ -133,7 +115,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         CourantNo
         (
             const word& name,
@@ -154,8 +136,8 @@ public:
 
     // Member Functions
 
-        //- Read the CourantNo data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 };
 
 

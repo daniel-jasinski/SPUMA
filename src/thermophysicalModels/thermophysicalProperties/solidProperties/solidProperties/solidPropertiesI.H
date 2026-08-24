@@ -30,57 +30,9 @@ License
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-inline Foam::scalar Foam::solidProperties::rho() const
-{
-    return rho_;
-}
-
-
-inline Foam::scalar Foam::solidProperties::Cp() const
-{
-    return Cp_;
-}
-
-
-inline Foam::scalar Foam::solidProperties::kappa() const
-{
-    return kappa_;
-}
-
-
-inline Foam::scalar Foam::solidProperties::Hf() const
-{
-    return Hf_;
-}
-
-
 inline Foam::scalar Foam::solidProperties::Hs(const scalar T) const
 {
     return Cp_*(T - Tstd);
-}
-
-
-inline Foam::scalar Foam::solidProperties::emissivity() const
-{
-    return emissivity_;
-}
-
-
-inline Foam::scalar Foam::solidProperties::W() const
-{
-    return W_;
-}
-
-
-inline Foam::scalar Foam::solidProperties::nu() const
-{
-    return nu_;
-}
-
-
-inline Foam::scalar Foam::solidProperties::E() const
-{
-    return E_;
 }
 
 

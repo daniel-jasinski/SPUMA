@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -822,6 +822,24 @@ Foam::entry* Foam::dictionary::set(const entry& e)
 Foam::entry* Foam::dictionary::set(const keyType& k, const dictionary& v)
 {
     return set(new dictionaryEntry(k, *this, v));
+}
+
+
+Foam::entry* Foam::dictionary::set(const keyType& k, std::nullptr_t)
+{
+    return set(new primitiveEntry(k));
+}
+
+
+Foam::entry* Foam::dictionary::set(const keyType& k, const UList<token>& tokens)
+{
+    return set(new primitiveEntry(k, tokens));
+}
+
+
+Foam::entry* Foam::dictionary::set(const keyType& k, List<token>&& tokens)
+{
+    return set(new primitiveEntry(k, std::move(tokens)));
 }
 
 

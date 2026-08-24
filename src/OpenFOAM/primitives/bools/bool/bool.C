@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2021 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -38,6 +38,16 @@ const char* const Foam::pTraits<bool>::componentNames[] = { "" };
 
 const bool Foam::pTraits<bool>::zero = false;
 const bool Foam::pTraits<bool>::one = true;
+bool Foam::pTraits<bool>::dummy = false;
+
+
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+
+const bool& Foam::pTraits<bool>::null() noexcept
+{
+    dummy = false;
+    return dummy;
+}
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //

@@ -35,14 +35,24 @@ Description
 Usage
     A minimal example:
     \verbatim
-    <name1>
+    exprFieldFO
     {
-        type    exprField;
-        libs    (fieldFunctionObjects);
-        field   pTotal;
+        // Mandatory entries
+        type            exprField;
+        libs            (fieldFunctionObjects);
+        field           <word>;  // pTotal;
+        expression      "p + 0.5*(rho*magSqr(U))";
 
-        expression  "p + 0.5*(rho*magSqr(U))";
-        dimensions  [ Pa ];
+        // Optional entries
+        action          <word>;            // none, new, modify
+        autowrite       <bool>;
+        store           <bool>;
+        dimensions      [ Pa ];         // for new field only
+        readFields      (<wordList>);   // (p U rho), for post-process mode only
+        useNamePrefix   false;          // for new field only
+
+        // Inherited entries
+        ...
     }
 
     // Modify an existing field
@@ -61,7 +71,7 @@ Usage
 
     where the entries mean:
     \table
-      Property     | Description                        | Type   | Reqd | Dflt
+      Property     | Description                        | Type   | Reqd | Deflt
       type         | Type name: exprField               | word   | yes  |
       libs         | Libraries: fieldFunctionObjects    | wordList | yes |
       field        | Name of input or output field      | word   | yes |
@@ -70,7 +80,7 @@ Usage
       autowrite    | Add AUTO_WRITE to created field    | bool   | no  | false
       store        | Store calculated field             | bool   | no  | true
       fieldMask    | Masking as logical expression      | string | no  | ""
-      dimensions   | Apply specified dimensions to created field | dim-spec | no |
+      dimensions | Apply specified dimensions to created field | dim-spec | no |
       readFields   | Preload named fields (post-process mode) | wordList | no |
       useNamePrefix | Add prefix scoping to output name | bool   | no  | false
     \endtable
@@ -82,6 +92,9 @@ Usage
       modify        | Adjust field according to expression and fieldMask
     \endplaintable
 
+    The inherited entries are elaborated in:
+      - \link fieldExpression.H \endlink
+
 Note
     The \c useNamePrefix entry is always ignored for the \c modify action.
 
@@ -90,8 +103,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_fvExpressionField_H
-#define functionObjects_fvExpressionField_H
+#ifndef Foam_functionObjects_fvExpressionField_H
+#define Foam_functionObjects_fvExpressionField_H
 
 #include "fvMeshFunctionObject.H"
 #include "volumeExprDriver.H"
@@ -182,6 +195,7 @@ protected:
         //- Attempt to load specified fields
         label loadFields(const UList<word>& fieldSet_);
 
+        //- Sets the values of the output field based on a condition
         template<class GeoField>
         bool setField
         (
@@ -190,6 +204,7 @@ protected:
             const boolField& cond
         );
 
+        //- Execute the requested action
         bool performAction(bool doWrite);
 
 public:
@@ -200,7 +215,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         fvExpressionField
         (
             const word& name,
@@ -225,13 +240,13 @@ public:
         //- Qualified/unqualified field name (depends on action)
         virtual word fieldName() const;
 
-        //- Read the data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write
+        //- Write the function-object results
         virtual bool write();
 };
 

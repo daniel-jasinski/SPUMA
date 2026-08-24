@@ -34,8 +34,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef solid_C_H
-#define solid_C_H
+#ifndef Foam_solid_C_H
+#define Foam_solid_C_H
 
 #include "solidProperties.H"
 
@@ -52,7 +52,6 @@ class C
 :
     public solidProperties
 {
-
 public:
 
     //- Runtime type information
@@ -61,11 +60,11 @@ public:
 
     // Constructors
 
-        //- Construct null
-        C();
+        //- Default construct
+        C() noexcept;
 
         //- Construct from dictionary
-        C(const dictionary& dict);
+        explicit C(const dictionary& dict);
 
         //- Return a clone
         virtual autoPtr<solidProperties> clone() const

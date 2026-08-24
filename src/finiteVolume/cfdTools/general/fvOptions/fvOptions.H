@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
-    Copyright (C) 2019 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,19 +28,33 @@ Class
     Foam::fv::options
 
 Description
-    Finite-volume options
+    Finite-volume options, which is an IOdictionary of values and
+    a fv::optionList
+
+    Possible file locations (default region):
+    \verbatim
+    .
+    |-- constant/fvOptions
+    |-- system/fvOptions
+    \endverbatim
+
+    Possible file locations (multi-region):
+    \verbatim
+    .
+    |-- constant/<region>/fvOptions
+    |-- system/<region>/fvOptions
+    \endverbatim
 
 SourceFiles
-    options.C
+    fvOptions.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef fv_options_H
-#define fv_options_H
+#ifndef Foam_fvOptions_H
+#define Foam_fvOptions_H
 
 #include "fvOptionList.H"
 #include "IOdictionary.H"
-#include "autoPtr.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,18 +70,13 @@ namespace fv
 class options
 :
     public IOdictionary,
-    public optionList
+    public fv::optionList
 {
     // Private Member Functions
 
-        //- Create IO object if dictionary is present
-        IOobject createIOobject(const fvMesh& mesh) const;
-
-        //- No copy construct
-        options(const options&) = delete;
-
-        //- No copy assignment
-        void operator=(const options&) = delete;
+        //- Construct with specified IOobject for the IOdictionary
+        //- (somewhat fragile)
+        options(const fvMesh& mesh, const IOobject& io);
 
 
 public:
@@ -79,10 +88,19 @@ public:
     // Constructors
 
         //- Construct from components with list of field names
-        options(const fvMesh& mesh);
+        explicit options(const fvMesh& mesh);
+
+        //- No copy construct
+        options(const options&) = delete;
+
+        //- No copy assignment
+        void operator=(const options&) = delete;
+
+
+    // Factory Methods
 
         //- Construct fvOptions and register to database if not present
-        //  otherwise lookup and return
+        //- otherwise lookup and return
         static options& New(const fvMesh& mesh);
 
 
@@ -92,8 +110,8 @@ public:
 
     // Member Functions
 
-        //- Inherit read from optionList
-        using optionList::read;
+        //- Inherit read from fv::optionList
+        using fv::optionList::read;
 
         //- Read dictionary
         virtual bool read();

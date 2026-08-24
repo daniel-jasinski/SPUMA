@@ -512,7 +512,7 @@ Foam::labelList Foam::decompositionMethod::decompose
     const bool hasUnblocked =
         returnReduceOr
         (
-            !blockedFace.empty() && !BitOps::all(blockedFace)
+            !blockedFace.empty() && !blockedFace.all()
         );
 
 

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022-2023 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,109 +26,324 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "Pstream.H"
+#include "PstreamGlobals.H"
 #include "UPstreamWrapping.H"
+#include "vector.H"  // for debugging
 
-#include <cinttypes>
+#undef STRINGIFY
+#undef STRING_QUOTE
+
+#define STRINGIFY(content) #content
+#define STRING_QUOTE(input) STRINGIFY(input)
+
+// * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
+
+namespace
+{
+
+inline bool is_nonAggregate(Foam::UPstream::dataTypes id) noexcept
+{
+    return
+    (
+        int(id) >= int(Foam::UPstream::dataTypes::Basic_begin)
+     && int(id)  < int(Foam::UPstream::dataTypes::Basic_end)
+    )
+    ||
+    (
+        int(id) >= int(Foam::UPstream::dataTypes::User_begin)
+     && int(id)  < int(Foam::UPstream::dataTypes::User_end)
+    );
+}
+
+// Local function to print some error information
+inline void printErrorNonIntrinsic
+(
+    const char* context,
+    Foam::UPstream::dataTypes dataTypeId
+)
+{
+    using namespace Foam;
+
+    FatalError
+        << "Bad input for " << context << ": likely a programming problem\n"
+        << "    Non-intrinsic/non-user data (type:" << int(dataTypeId) << ")\n"
+        << Foam::endl;
+}
+
+} // End anonymous namespace
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#undef  Pstream_CommonRoutines
-#define Pstream_CommonRoutines(Native, TaggedType)                            \
-                                                                              \
-void Foam::UPstream::mpiGather                                                \
-(                                                                             \
-    const Native* sendData,                                                   \
-    Native* recvData,                                                         \
-    int count,                                                                \
-    const label comm                                                          \
-)                                                                             \
-{                                                                             \
-    PstreamDetail::gather                                                     \
-    (                                                                         \
-        sendData, recvData, count,                                            \
-        TaggedType, comm                                                      \
-    );                                                                        \
-}                                                                             \
-                                                                              \
-                                                                              \
-void Foam::UPstream::mpiScatter                                               \
-(                                                                             \
-    const Native* sendData,                                                   \
-    Native* recvData,                                                         \
-    int count,                                                                \
-    const label comm                                                          \
-)                                                                             \
-{                                                                             \
-    PstreamDetail::scatter                                                    \
-    (                                                                         \
-        sendData, recvData, count,                                            \
-        TaggedType, comm                                                      \
-    );                                                                        \
-}                                                                             \
-                                                                              \
-                                                                              \
-void Foam::UPstream::mpiAllGather                                             \
-(                                                                             \
-    Native* allData,                                                          \
-    int count,                                                                \
-    const label comm                                                          \
-)                                                                             \
-{                                                                             \
-    PstreamDetail::allGather                                                  \
-    (                                                                         \
-        allData, count,                                                       \
-        TaggedType, comm                                                      \
-    );                                                                        \
-}                                                                             \
-                                                                              \
-void Foam::UPstream::gather                                                   \
-(                                                                             \
-    const Native* sendData,                                                   \
-    int sendCount,                                                            \
-                                                                              \
-    Native* recvData,                                                         \
-    const UList<int>& recvCounts,                                             \
-    const UList<int>& recvOffsets,                                            \
-    const label comm                                                          \
-)                                                                             \
-{                                                                             \
-    PstreamDetail::gatherv                                                    \
-    (                                                                         \
-        sendData, sendCount,                                                  \
-        recvData, recvCounts, recvOffsets,                                    \
-        TaggedType, comm                                                      \
-    );                                                                        \
-}                                                                             \
-                                                                              \
-void Foam::UPstream::scatter                                                  \
-(                                                                             \
-    const Native* sendData,                                                   \
-    const UList<int>& sendCounts,                                             \
-    const UList<int>& sendOffsets,                                            \
-                                                                              \
-    Native* recvData,                                                         \
-    int recvCount,                                                            \
-    const label comm                                                          \
-)                                                                             \
-{                                                                             \
-    PstreamDetail::scatterv                                                   \
-    (                                                                         \
-        sendData, sendCounts, sendOffsets,                                    \
-        recvData, recvCount,                                                  \
-        TaggedType, comm                                                      \
-    );                                                                        \
+void Foam::UPstream::mpi_gather
+(
+    const void* sendData,       // Type checking done by caller
+    void* recvData,             // Type checking done by caller
+    int count,
+    const UPstream::dataTypes dataTypeId,  // Proper type passed by caller
+
+    const int communicator,     // Index into MPICommunicators_
+    UPstream::Request* req
+)
+{
+    MPI_Datatype datatype = PstreamGlobals::getDataType(dataTypeId);
+
+    if (FOAM_UNLIKELY(UPstream::debug))
+    {
+        Perr<< "[mpi_gather] :";
+
+        // Appears to be an in-place request
+        if
+        (
+            UPstream::master(communicator)
+         && (!sendData || (sendData == recvData))
+        )
+        {
+            Perr<< " (inplace)";
+        }
+
+        Perr<< " type:" << int(dataTypeId) << " count:" << count
+            << " comm:" << communicator
+            << Foam::endl;
+    }
+
+    {
+        // Regular gather
+
+        PstreamDetail::gather
+        (
+            sendData,
+            recvData,
+            count,
+            datatype,
+            communicator,
+            req
+        );
+    }
 }
 
 
-//TDB: Pstream_CommonRoutines(bool, MPI_C_BOOL);
-Pstream_CommonRoutines(char, MPI_BYTE);
-Pstream_CommonRoutines(int32_t, MPI_INT32_T);
-Pstream_CommonRoutines(int64_t, MPI_INT64_T);
-Pstream_CommonRoutines(uint32_t, MPI_UINT32_T);
-Pstream_CommonRoutines(uint64_t, MPI_UINT64_T);
-Pstream_CommonRoutines(float,   MPI_FLOAT);
-Pstream_CommonRoutines(double,  MPI_DOUBLE);
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#undef Pstream_CommonRoutines
+void Foam::UPstream::mpi_scatter
+(
+    const void* sendData,       // Type checking done by caller
+    void* recvData,             // Type checking done by caller
+    int count,
+    const UPstream::dataTypes dataTypeId,  // Proper type passed by caller
+
+    const int communicator,     // Index into MPICommunicators_
+    UPstream::Request* req
+)
+{
+    MPI_Datatype datatype = PstreamGlobals::getDataType(dataTypeId);
+
+    if (FOAM_UNLIKELY(UPstream::debug))
+    {
+        Perr<< "[mpi_scatter] :";
+
+        // Appears to be an in-place request
+        if
+        (
+            UPstream::master(communicator)
+         && (!recvData || (sendData == recvData))
+        )
+        {
+            Perr<< " (inplace)";
+        }
+
+        Perr<< " type:" << int(dataTypeId) << " count:" << count
+            << " comm:" << communicator
+            << Foam::endl;
+    }
+
+    {
+        // Regular scatter
+
+        PstreamDetail::scatter
+        (
+            sendData,
+            recvData,
+            count,
+            datatype,
+            communicator,
+            req
+        );
+    }
+}
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+void Foam::UPstream::mpi_allgather
+(
+    void* allData,        // Type checking done by caller
+    int count,
+    const UPstream::dataTypes dataTypeId,  // Proper type passed by caller
+
+    const int communicator,     // Index into MPICommunicators_
+    UPstream::Request* req
+)
+{
+    MPI_Datatype datatype = PstreamGlobals::getDataType(dataTypeId);
+
+    if (FOAM_UNLIKELY(UPstream::debug))
+    {
+        Perr<< "[mpi_allgather] :"
+            << " type:" << int(dataTypeId) << " count:" << count
+            << " comm:" << communicator
+            << Foam::endl;
+    }
+
+    {
+        // Regular all gather
+
+        PstreamDetail::allGather
+        (
+            allData,
+            count,
+            datatype,
+            communicator,
+            req
+        );
+    }
+}
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+void Foam::UPstream::mpi_gatherv
+(
+    const void* sendData,
+    int sendCount,
+    void* recvData,
+    const UList<int>& recvCounts,
+    const UList<int>& recvOffsets,
+
+    const UPstream::dataTypes dataTypeId,  // Proper type passed by caller
+    const int communicator
+)
+{
+    MPI_Datatype datatype = PstreamGlobals::getDataType(dataTypeId);
+
+    // Runtime assert that we are not using aggregated data types
+    if (FOAM_UNLIKELY(!is_nonAggregate(dataTypeId)))
+    {
+        FatalErrorInFunction;
+        printErrorNonIntrinsic("MPI_Gatherv()", dataTypeId);
+        FatalError << Foam::abort(FatalError);
+    }
+
+    const label np = UPstream::nProcs(communicator);
+
+    // For total-size calculation,
+    // don't rely on recvOffsets being (np+1)
+    const int totalSize =
+    (
+        (UPstream::master(communicator) && np > 1)
+      ? (recvOffsets[np-1] + recvCounts[np-1])
+      : 0
+    );
+
+    if (FOAM_UNLIKELY(UPstream::debug))
+    {
+        Perr<< "[mpi_gatherv] :"
+            << " type:" << int(dataTypeId)
+            << " count:" << sendCount
+            << " total:" << totalSize
+            << " comm:" << communicator
+            << " recvCounts:" << flatOutput(recvCounts)
+            << " recvOffsets:" << flatOutput(recvOffsets)
+            << Foam::endl;
+    }
+
+    {
+        PstreamDetail::gatherv
+        (
+            sendData, sendCount,
+            recvData, recvCounts, recvOffsets,
+            datatype, communicator
+        );
+    }
+
+    // Extended debugging. Limit to master:
+
+    #if 0
+    if (FOAM_UNLIKELY(UPstream::debug))
+    {
+        if (UPstream::master(communicator))
+        {
+            switch (dataTypeId)
+            {
+                #undef  dataPrinter
+                #define dataPrinter(enumType, nativeType)           \
+                case UPstream::dataTypes::enumType :                \
+                {                                                   \
+                    UList<nativeType> combined                      \
+                    (                                               \
+                        static_cast<nativeType*>(recvData),         \
+                        totalSize                                   \
+                    );                                              \
+                                                                    \
+                    Info<< "[mpi_gatherv] => "                      \
+                    "List<" STRING_QUOTE(nativeType) "> ";          \
+                    combined.writeList(Info) << Foam::endl;         \
+                                                                    \
+                    break;                                          \
+                }
+
+                // Some common types
+                dataPrinter(type_int32, int32_t);
+                dataPrinter(type_int64, int64_t);
+                dataPrinter(type_float, float);
+                dataPrinter(type_double, double);
+                dataPrinter(type_3float, floatVector);
+                dataPrinter(type_3double, doubleVector);
+
+                // Some other type
+                default: break;
+                #undef dataPrinter
+            }
+        }
+    }
+    #endif
+}
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+void Foam::UPstream::mpi_scatterv
+(
+    const void* sendData,
+    const UList<int>& sendCounts,
+    const UList<int>& sendOffsets,
+
+    void* recvData,
+    int recvCount,
+
+    const UPstream::dataTypes dataTypeId,  // Proper type passed by caller
+    const int communicator
+)
+{
+    MPI_Datatype datatype = PstreamGlobals::getDataType(dataTypeId);
+
+    // Runtime assert that we are not using aggregated data types
+    if (FOAM_UNLIKELY(!is_nonAggregate(dataTypeId)))
+    {
+        FatalErrorInFunction;
+        printErrorNonIntrinsic("MPI_Scatterv()", dataTypeId);
+        FatalError << Foam::abort(FatalError);
+    }
+
+    {
+        PstreamDetail::scatterv
+        (
+            sendData, sendCounts, sendOffsets,
+            recvData, recvCount,
+            datatype, communicator
+        );
+    }
+}
+
 
 // ************************************************************************* //

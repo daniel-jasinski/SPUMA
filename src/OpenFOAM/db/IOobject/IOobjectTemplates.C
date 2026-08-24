@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2015-2017 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -42,20 +42,42 @@ bool Foam::IOobject::typeHeaderOk
     const bool verbose
 )
 {
-    // Use staticTypeName() instead of typeName to avoid cross-DLL data
-    // access issues on Windows. typeName is a static word (data), which gets
-    // a local uninitialized copy via FOAM_TYPENAME_EXPORT dllexport.
-    // staticTypeName() is a function (thunk works) and, unlike typeName_(),
-    // returns the per-specialization name (e.g. "labelList", not "List") so
-    // the exact header class-name check keeps matching what writes emit.
-    return readAndCheckHeader
-    (
-        is_globalIOobject<Type>::value,
-        Type::staticTypeName(),
-        checkType,
-        search,
-        verbose
-    );
+    if constexpr (std::is_void_v<Type>)
+    {
+        return readAndCheckHeader
+        (
+            false,      // isGlobal (false)
+            word::null, // typeName (n/a)
+            false,      // checkType (false)
+            search,
+            verbose
+        );
+    }
+    else
+    {
+        // Use staticTypeName() instead of typeName to avoid cross-DLL data
+        // access issues on Windows. typeName is a static word (data), which
+        // gets a local uninitialized copy via FOAM_TYPENAME_EXPORT dllexport.
+        // staticTypeName() is a function (thunk works) and, unlike
+        // typeName_(), returns the per-specialization name (e.g. "labelList",
+        // not "List") so the exact header class-name check keeps matching
+        // what writes emit.
+        return readAndCheckHeader
+        (
+            is_globalIOobject<Type>::value,
+            Type::staticTypeName(),
+            checkType,
+            search,
+            verbose
+        );
+    }
+}
+
+
+template<class Type, bool Searching>
+bool Foam::IOobject::typeHeaderOk(const bool checkType, const bool verbose)
+{
+    return typeHeaderOk<Type>(checkType, Searching, verbose);
 }
 
 
@@ -64,13 +86,14 @@ Foam::fileName Foam::IOobject::typeFilePath(const bool search) const
 {
     // Use staticTypeName() to avoid cross-DLL data access issues on Windows
     // while preserving the per-specialization name (see typeHeaderOk above)
-    const Foam::word& tName = Type::staticTypeName();
-    return
-    (
-        is_globalIOobject<Type>::value
-      ? this->globalFilePath(tName, search)
-      : this->localFilePath(tName, search)
-    );
+    if constexpr (is_globalIOobject<Type>::value)
+    {
+        return this->globalFilePath(Type::staticTypeName(), search);
+    }
+    else
+    {
+        return this->localFilePath(Type::staticTypeName(), search);
+    }
 }
 
 

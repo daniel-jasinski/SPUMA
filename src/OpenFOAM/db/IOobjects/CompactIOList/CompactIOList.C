@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,41 +27,39 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "CompactIOList.H"
-#include "labelList.H"
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-template<class T, class BaseType>
-bool Foam::CompactIOList<T, BaseType>::readIOcontents()
+template<class T>
+bool Foam::CompactIOList<T>::readIOcontents()
 {
-    if
-    (
-        readOpt() == IOobject::MUST_READ
-     || (isReadOptional() && headerOk())
-    )
+    typedef IOList<T> plain_type;
+
+    if (isReadRequired() || (isReadOptional() && headerOk()))
     {
         Istream& is = readStream(word::null);
 
-        if (headerClassName() == IOList<T>::staticTypeName())
+        if (isHeaderClass(staticTypeName()))
         {
-            is >> static_cast<List<T>&>(*this);
-            close();
+            // Compact form
+            is >> *this;  // or: this->readCompact(is);
         }
-        else if (headerClassName() == staticTypeName())
+        else if (isHeaderClass<plain_type>())
         {
-            is >> *this;
-            close();
+            // Non-compact form
+            is >> static_cast<content_type&>(*this);
         }
         else
         {
             FatalIOErrorInFunction(is)
                 << "Unexpected class name " << headerClassName()
                 << " expected " << staticTypeName()
-                << " or " << IOList<T>::staticTypeName() << endl
+                << " or " << plain_type::staticTypeName() << endl
                 << "    while reading object " << name()
                 << exit(FatalIOError);
         }
 
+        close();
         return true;
     }
 
@@ -69,19 +67,83 @@ bool Foam::CompactIOList<T, BaseType>::readIOcontents()
 }
 
 
-template<class T, class BaseType>
-bool Foam::CompactIOList<T, BaseType>::overflows() const
+template<class T>
+Foam::label Foam::CompactIOList<T>::readIOsize()
 {
-    const List<T>& lists = *this;
+    typedef IOList<T> plain_type;
 
-    label total = 0;
-    for (const auto& sublist : lists)
+    label count(-1);
+
+    if (isReadRequired() || (isReadOptional() && headerOk()))
     {
-        const label prev = total;
-        total += sublist.size();
-        if (total < prev)
+        Istream& is = readStream(word::null);
+
+        token tok(is);
+
+        if (tok.isLabel())
         {
-            return true;
+            // The majority of files will have lists with sizing prefix
+            count = tok.labelToken();
+
+            if (isHeaderClass(staticTypeName()))
+            {
+                // Compact form: read offsets, not content
+                if (--count < 0)
+                {
+                    count = 0;
+                }
+            }
+        }
+        else
+        {
+            is.putBack(tok);
+
+            if (isHeaderClass(staticTypeName()))
+            {
+                // Compact form: can just read the offsets
+                labelList offsets(is);
+                count = Foam::max(0, (offsets.size()-1));
+            }
+            else if (isHeaderClass<plain_type>())
+            {
+                // Non-compact form: need to read everything
+                List<T> list(is);
+                count = list.size();
+            }
+            else
+            {
+                FatalIOErrorInFunction(is)
+                    << "Unexpected class name " << headerClassName()
+                    << " expected " << staticTypeName()
+                    << " or " << plain_type::staticTypeName() << endl
+                    << "    while reading object " << name()
+                    << exit(FatalIOError);
+            }
+        }
+        close();
+    }
+
+    return count;
+}
+
+
+template<class T>
+bool Foam::CompactIOList<T>::overflows() const
+{
+    // Can safely assume that int64 will not overflow
+    if constexpr (sizeof(label) < sizeof(int64_t))
+    {
+        const UList<T>& lists = *this;
+
+        label total = 0;
+        for (const auto& list : lists)
+        {
+            const label prev = total;
+            total += list.size();
+            if (total < prev)
+            {
+                return true;
+            }
         }
     }
     return false;
@@ -90,8 +152,8 @@ bool Foam::CompactIOList<T, BaseType>::overflows() const
 
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
 
-template<class T, class BaseType>
-Foam::CompactIOList<T, BaseType>::CompactIOList(const IOobject& io)
+template<class T>
+Foam::CompactIOList<T>::CompactIOList(const IOobject& io)
 :
     regIOobject(io)
 {
@@ -99,8 +161,8 @@ Foam::CompactIOList<T, BaseType>::CompactIOList(const IOobject& io)
 }
 
 
-template<class T, class BaseType>
-Foam::CompactIOList<T, BaseType>::CompactIOList
+template<class T>
+Foam::CompactIOList<T>::CompactIOList
 (
     const IOobject& io,
     Foam::zero
@@ -112,8 +174,8 @@ Foam::CompactIOList<T, BaseType>::CompactIOList
 }
 
 
-template<class T, class BaseType>
-Foam::CompactIOList<T, BaseType>::CompactIOList
+template<class T>
+Foam::CompactIOList<T>::CompactIOList
 (
     const IOobject& io,
     const label len
@@ -128,8 +190,8 @@ Foam::CompactIOList<T, BaseType>::CompactIOList
 }
 
 
-template<class T, class BaseType>
-Foam::CompactIOList<T, BaseType>::CompactIOList
+template<class T>
+Foam::CompactIOList<T>::CompactIOList
 (
     const IOobject& io,
     const UList<T>& content
@@ -144,8 +206,8 @@ Foam::CompactIOList<T, BaseType>::CompactIOList
 }
 
 
-template<class T, class BaseType>
-Foam::CompactIOList<T, BaseType>::CompactIOList
+template<class T>
+Foam::CompactIOList<T>::CompactIOList
 (
     const IOobject& io,
     List<T>&& content
@@ -159,10 +221,48 @@ Foam::CompactIOList<T, BaseType>::CompactIOList
 }
 
 
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+
+template<class T>
+Foam::label Foam::CompactIOList<T>::readContentsSize(const IOobject& io)
+{
+    IOobject rio(io, IOobjectOption::NO_REGISTER);
+    if (rio.readOpt() == IOobjectOption::READ_MODIFIED)
+    {
+        rio.readOpt(IOobjectOption::MUST_READ);
+    }
+    rio.resetHeader();
+
+    // Construct NO_READ, changing after construction
+    const auto rOpt = rio.readOpt(IOobjectOption::NO_READ);
+
+    CompactIOList<T> reader(rio);
+    reader.readOpt(rOpt);
+
+    return reader.readIOsize();
+}
+
+
+template<class T>
+Foam::List<T> Foam::CompactIOList<T>::readContents(const IOobject& io)
+{
+    IOobject rio(io, IOobjectOption::NO_REGISTER);
+    if (rio.readOpt() == IOobjectOption::READ_MODIFIED)
+    {
+        rio.readOpt(IOobjectOption::MUST_READ);
+    }
+    rio.resetHeader();
+
+    CompactIOList<T> reader(rio);
+
+    return List<T>(std::move(static_cast<List<T>&>(reader)));
+}
+
+
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-template<class T, class BaseType>
-bool Foam::CompactIOList<T, BaseType>::writeObject
+template<class T>
+bool Foam::CompactIOList<T>::writeObject
 (
     IOstreamOption streamOpt,
     const bool writeOnProc
@@ -177,9 +277,10 @@ bool Foam::CompactIOList<T, BaseType>::writeObject
         streamOpt.format(IOstreamOption::ASCII);
 
         WarningInFunction
-            << "Overall number of elements of CompactIOList of size "
-            << this->size() << " overflows the representation of a label"
-            << nl << "    Switching to ascii writing" << endl;
+            << "Overall number of elements of CompactIOList (size:"
+            << this->size() << ") overflows a label (int"
+            << (8*sizeof(label)) << ')' << nl
+            << "    Switching to ascii writing" << endl;
     }
 
     // Set headerClassName so writeHeader uses the correct typedef name
@@ -189,7 +290,7 @@ bool Foam::CompactIOList<T, BaseType>::writeObject
     // member) to avoid cross-DLL JMP-thunk data reads on Windows.
     const word savedHdrClass(headerClassName());
 
-    if (streamOpt.format() == IOstreamOption::ASCII)
+    if (streamOpt.format() != IOstreamOption::BINARY)
     {
         // Write as non-compact (IOList) format.
         const_cast<CompactIOList&>(*this).headerClassName() =
@@ -210,105 +311,136 @@ bool Foam::CompactIOList<T, BaseType>::writeObject
 }
 
 
-template<class T, class BaseType>
-bool Foam::CompactIOList<T, BaseType>::writeData(Ostream& os) const
+template<class T>
+bool Foam::CompactIOList<T>::writeData(Ostream& os) const
 {
     return (os << *this).good();
 }
 
 
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-template<class T, class BaseType>
-void Foam::CompactIOList<T, BaseType>::operator=
-(
-    const CompactIOList<T, BaseType>& rhs
-)
+template<class T>
+Foam::Istream& Foam::CompactIOList<T>::readCompact(Istream& is)
 {
-    List<T>::operator=(rhs);
-}
+    List<T>& lists = *this;
 
+    // The base type for packed values
+    typedef typename T::value_type base_type;
 
-// * * * * * * * * * * * * * * * Friend Operators  * * * * * * * * * * * * * //
+    // Read compact: offsets + packed values
+    const labelList offsets(is);
+    List<base_type> values(is);
 
-template<class T, class BaseType>
-Foam::Istream& Foam::operator>>
-(
-    Foam::Istream& is,
-    Foam::CompactIOList<T, BaseType>& L
-)
-{
-    // Read compact
-    const labelList start(is);
-    const List<BaseType> elems(is);
+    // Transcribe
+    const label len = Foam::max(0, (offsets.size()-1));
+    lists.resize_nocopy(len);
 
-    // Convert
-    L.setSize(start.size()-1);
+    auto iter = values.begin();
 
-    forAll(L, i)
+    for (label i = 0; i < len; ++i)
     {
-        T& subList = L[i];
+        auto& list = lists[i];
+        const label count = (offsets[i+1] - offsets[i]);
 
-        label index = start[i];
-        subList.setSize(start[i+1] - index);
+        list.resize_nocopy(count);
 
-        forAll(subList, j)
-        {
-            subList[j] = elems[index++];
-        }
+        std::move(iter, iter + count, list.begin());
+
+        iter += count;
     }
 
     return is;
 }
 
 
-template<class T, class BaseType>
-Foam::Ostream& Foam::operator<<
-(
-    Foam::Ostream& os,
-    const Foam::CompactIOList<T, BaseType>& L
-)
+template<class T>
+Foam::Ostream& Foam::CompactIOList<T>::writeCompact(Ostream& os) const
 {
-    // Keep ASCII writing same
-    if (os.format() == IOstreamOption::ASCII)
-    {
-        os << static_cast<const List<T>&>(L);
-    }
-    else
-    {
-        // Convert to compact format
-        labelList start(L.size()+1);
+    const List<T>& lists = *this;
 
-        start[0] = 0;
-        for (label i = 1; i < start.size(); i++)
+    // The base type for packed values
+    typedef typename T::value_type base_type;
+
+    // Convert to compact format
+    label total = 0;
+    const label len = lists.size();
+
+    // offsets
+    {
+        labelList offsets(len+1);
+
+        for (label i = 0; i < len; ++i)
         {
-            const label prev = start[i-1];
-            start[i] = prev+L[i-1].size();
+            offsets[i] = total;
+            total += lists[i].size();
 
-            if (start[i] < prev)
+            if (total < offsets[i])
             {
                 FatalIOErrorInFunction(os)
-                    << "Overall number of elements " << start[i]
-                    << " of CompactIOList of size "
-                    << L.size() << " overflows the representation of a label"
-                    << endl << "Please recompile with a larger representation"
+                    << "Overall number of elements of CompactIOList (size:"
+                    << len
+                    << ") overflows the representation of a label" << nl
+                    << "Please recompile with a larger representation"
                     << " for label" << exit(FatalIOError);
             }
         }
+        offsets[len] = total;
+        os << offsets;
+    }
 
-        List<BaseType> elems(start[start.size()-1]);
+    // packed values: make deepCopy for writing
+    {
+        List<base_type> values(total);
 
-        label elemI = 0;
-        forAll(L, i)
+        auto iter = values.begin();
+
+        for (const auto& list : lists)
         {
-            const T& subList = L[i];
+            iter = std::copy_n(list.begin(), list.size(), iter);
 
-            forAll(subList, j)
-            {
-                elems[elemI++] = subList[j];
-            }
+            // With IndirectList? [unlikely]
+            // const label count = list.size();
+            // for (label i = 0; i < count; (void)++i, (void)++iter)
+            // {
+            //     *iter = list[i];
+            // }
         }
-        os << start << elems;
+        os << values;
+    }
+
+    return os;
+}
+
+
+// * * * * * * * * * * * * * * * Friend Operators  * * * * * * * * * * * * * //
+
+template<class T>
+Foam::Istream& Foam::operator>>
+(
+    Foam::Istream& is,
+    Foam::CompactIOList<T>& lists
+)
+{
+    return lists.readCompact(is);
+}
+
+
+template<class T>
+Foam::Ostream& Foam::operator<<
+(
+    Foam::Ostream& os,
+    const Foam::CompactIOList<T>& lists
+)
+{
+    // Keep ASCII writing same
+    if (os.format() != IOstreamOption::BINARY)
+    {
+        os << static_cast<const List<T>&>(lists);
+    }
+    else
+    {
+        lists.writeCompact(os);
     }
 
     return os;

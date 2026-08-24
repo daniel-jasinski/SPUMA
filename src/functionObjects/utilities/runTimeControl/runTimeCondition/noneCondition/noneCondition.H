@@ -34,8 +34,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_runTimeControls_noneCondition_H
-#define functionObjects_runTimeControls_noneCondition_H
+#ifndef Foam_functionObjects_runTimeControls_noneCondition_H
+#define Foam_functionObjects_runTimeControls_noneCondition_H
 
 #include "runTimeCondition.H"
 

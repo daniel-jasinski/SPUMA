@@ -311,10 +311,10 @@ void Foam::hipExecutor::_backendReductionSum(
 
     resultT* dPtrResult = static_cast<resultT*>
     (
-        MemoryPool::getInstance()->allocate(sizeof(resultT))
+        Spuma::MemoryPool::getInstance()->allocate(sizeof(resultT))
     );
 
-    MemoryPool::getInstance()->memSet
+    Spuma::MemoryPool::getInstance()->memSet
     (
         (void*) dPtrResult,
         (const void*) result,
@@ -360,8 +360,8 @@ void Foam::hipExecutor::_backendReductionSum(
     hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 
-    MemoryPool::getInstance()->copyOut(dPtrResult, result, sizeof(resultT));
-    MemoryPool::getInstance()->free(dPtrResult);
+    Spuma::MemoryPool::getInstance()->copyOut(dPtrResult, result, sizeof(resultT));
+    Spuma::MemoryPool::getInstance()->free(dPtrResult);
 };
 
 template <typename F, typename Op, typename resultT>
@@ -377,10 +377,10 @@ void Foam::hipExecutor::_backendReductionCompare
 
     resultT* dPtrResult = static_cast<resultT*>
     (
-        MemoryPool::getInstance()->allocate(sizeof(resultT))
+        Spuma::MemoryPool::getInstance()->allocate(sizeof(resultT))
     );
 
-    MemoryPool::getInstance()->memSet
+    Spuma::MemoryPool::getInstance()->memSet
     (
         (void*) dPtrResult,
         (const void*) result,
@@ -427,8 +427,8 @@ void Foam::hipExecutor::_backendReductionCompare
     hipDeviceSynchronize();
     CHECK_LAST_HIP_ERROR();
 
-    MemoryPool::getInstance()->copyOut(dPtrResult, result, sizeof(resultT));
-    MemoryPool::getInstance()->free(dPtrResult);
+    Spuma::MemoryPool::getInstance()->copyOut(dPtrResult, result, sizeof(resultT));
+    Spuma::MemoryPool::getInstance()->free(dPtrResult);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

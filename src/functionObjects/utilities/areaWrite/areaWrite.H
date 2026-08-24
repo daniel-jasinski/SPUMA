@@ -29,24 +29,18 @@ Class
 Description
     Write finite area mesh/fields to standard output formats.
 
-    Example of function object specification:
-
+Usage
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    surfaces
+    areaWriteFO
     {
-        type    areaWrite;
-        libs    (utilityFunctionObjects);
-
-        // Write at same frequency as fields
-        writeControl    writeTime;
-        writeInterval   1;
-
-        // Fields to be sampled
-        fields          (p U);
+        // Mandatory entries
+        type            areaWrite;
+        libs            (utilityFunctionObjects);
+        fields          (<wordRes>);  // (p U);
+        surfaceFormat   <word>;       // vtk;
 
         // Output surface format
-        surfaceFormat   vtk;
-
         formatOptions
         {
             vtk
@@ -54,24 +48,42 @@ Description
                 precision  10;
             }
         }
+
+        // Optional entries
+        verbose         <word>;
+
+        // Conditional entries
+
+            // Option-1
+            areas           (<wordRes>);
+
+            // Option-2
+            area            <word>;
+
+        // Inherited entries
+        ...
     }
     \endverbatim
 
-    Entries:
+    where the entries mean:
     \table
-        Property | Description                              | Required | Default
-        type    | Type-name: \c areaWrite                   | yes |
-        region  | name for a single region                  | no  | region0
-        area    | select a single area                      | no  |
-        areas   | wordRe list of multiple areas             | no  |
-        fields  | wordRe list of fields                     | yes |
-        surfaceFormat | output surface format               | yes |
-        formatOptions | dictionary of format options        | no  |
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: areaWrite               | word | yes  | -
+      libs     | Library name: utilityFunctionObjects | word | yes | -
+      fields   | Name of operand fields             | wordRes | yes | -
+      surfaceFormat | Output surface format         | word | yes | -
+      areas   | Names of finite-area regions        | wordRes | no  | -
+      area    | Name of finite-area region          | word | no  | -
+      formatOptions | Dictionary of format options  | dict | no  | -
     \endtable
 
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
+      - \link surfaceWriter.H \endlink
+
 SourceFiles
-    areaWrite.C
-    areaWriteTemplates.C
+    areaWrite.cxx
+    areaWriteImpl.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -83,7 +95,6 @@ SourceFiles
 #include "areaFieldsFwd.H"
 #include "surfaceWriter.H"
 #include "HashPtrTable.H"
-#include "IOobjectList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -93,6 +104,7 @@ namespace Foam
 // Forward Declarations
 class faMesh;
 class polySurface;
+class IOobjectList;
 
 /*---------------------------------------------------------------------------*\
                           Class areaWrite Declaration
@@ -133,7 +145,7 @@ class areaWrite
 
         //- Hold intermediate surfaces.
         //  The faMesh has an indirect face list but we require real ones.
-        autoPtr<objectRegistry> surfaces_;
+        std::unique_ptr<objectRegistry> surfaces_;
 
 
     // Output control
@@ -143,6 +155,9 @@ class areaWrite
 
 
     // Private Member Functions
+
+        //- Mark intermediate surfaces and writers as needing an update.
+        void expire();
 
         //- Write fieldName on surface and on outputDir path.
         //  Can have a field nullptr for partially missing fields,
@@ -165,8 +180,13 @@ class areaWrite
             const IOobjectList& objects
         );
 
-        //- Mark intermediate surfaces and writers as needing an update.
-        void expire();
+public:
+
+    //- Runtime type information
+    TypeName("areaWrite");
+
+
+    // Generated Methods
 
         //- No copy construct
         areaWrite(const areaWrite&) = delete;
@@ -175,15 +195,9 @@ class areaWrite
         void operator=(const areaWrite&) = delete;
 
 
-public:
-
-    //- Runtime type information
-    TypeName("areaWrite");
-
-
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         areaWrite
         (
             const word& name,
@@ -203,22 +217,22 @@ public:
 
 
     //- Destructor
-    virtual ~areaWrite() = default;
+    virtual ~areaWrite();
 
 
     // Member Functions
 
         //- Enable/disable verbose output
         //  \return old value
-        bool verbose(const bool on) noexcept;
+        bool verbose(bool on) noexcept;
 
-        //- Read the areaWrite dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations (no-op)
         virtual bool execute();
 
-        //- Sample and write
+        //- Write the function-object results
         virtual bool write();
 
         //- Update for changes of mesh - expires the surfaces
@@ -234,7 +248,7 @@ public:
         static scalar mergeTol() noexcept;
 
         //- Set merge tolerance and return old value
-        static scalar mergeTol(const scalar tol) noexcept;
+        static scalar mergeTol(scalar tol) noexcept;
 };
 
 

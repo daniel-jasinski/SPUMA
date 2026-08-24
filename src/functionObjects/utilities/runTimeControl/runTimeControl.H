@@ -38,13 +38,57 @@ Description
     terminated.  Here, a write is performed each time that all conditions are
     satisfied.
 
+Usage
+    Minimal example by using \c system/controlDict.functions:
+    \verbatim
+    runTimeControlFO
+    {
+        // Mandatory entries
+        type            runTimeControl;
+        libs            (utilityFunctionObjects);
+        conditions      <dictionary>;
+
+        // Optional entries
+        nWriteStep      <label>;
+        satisfiedAction <satisfiedAction>;
+
+        // Conditional entries
+
+            // when 'satisfiedAction' is 'setTrigger'
+            trigger     <label>;
+
+        // Inherited entries
+        ...
+    }
+    \endverbatim
+
+    where the entries mean:
+    \table
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: runTimeControl          | word | yes  | -
+      libs     | Library name: utilityFunctionObjects | word | yes | -
+      conditions | List of conditions to satisfy    | dictionary | yes | -
+      nWriteStep | Number of write steps before exiting | label | no | 0
+      satisfiedAction | Operand action              | word | no | end
+    \endtable
+
+    Options for the \c satisfiedAction entry:
+    \verbatim
+      abort      | Write and emit a FatalError, terminating the run abnormally
+      end        | Write and exit cleanly, terminating the run normally
+      setTrigger | Trigger another condition, allowing chained control logic
+    \endverbatim
+
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
+
 SourceFiles
     runTimeControl.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_runTimeControl_H
-#define functionObjects_runTimeControl_H
+#ifndef Foam_functionObjects_runTimeControl_H
+#define Foam_functionObjects_runTimeControl_H
 
 #include "fvMeshFunctionObject.H"
 #include "Map.H"
@@ -59,7 +103,7 @@ namespace functionObjects
 namespace runTimeControls
 {
 
-// Forward declaration of classes
+// Forward Declarations
 class runTimeCondition;
 
 /*---------------------------------------------------------------------------*\
@@ -72,7 +116,7 @@ class runTimeControl
 {
 public:
 
-    // Public enumerations
+    // Public Enumerations
 
         enum class satisfiedAction
         {

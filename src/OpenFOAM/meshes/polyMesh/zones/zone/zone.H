@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -80,7 +80,7 @@ public:
 
     // Constructors
 
-        //- Default construct
+        //- Default construct: empty zone with name="", index=0
         zone();
 
         //- Construct an empty zone with specified name and index
@@ -107,25 +107,36 @@ public:
         (
             const word& name,
             const dictionary& dict,
+            //! The lookup name for the labelList. Ignored if empty
             const word& labelsName,
             const label index
         );
 
-        //- Construct given the name of the original zone (name is used)
-        //- with new addressing and index (-ve: retain zone index).
+        //- Copy construct with new index
         zone
         (
             const zone& originalZone,
-            const labelUList& addr,
+            //! The new index (-1 retains the original value)
             const label index
         );
 
         //- Construct given the name of the original zone (name is used)
-        //- and (move) resetting addressing and index (-ve: retain zone index).
+        //- with new addressing and index
+        zone
+        (
+            const zone& originalZone,
+            const labelUList& addr,
+            //! The new index (-1 retains the original value)
+            const label index
+        );
+
+        //- Construct given the name of the original zone (name is used)
+        //- and (move) resetting addressing and index
         zone
         (
             const zone& originalZone,
             labelList&& addr,
+            //! The new index (-1 retains the original value)
             const label index
         );
 
@@ -166,18 +177,18 @@ public:
             const bool report = false
         ) const;
 
-        //- Correct patch after moving points
-        virtual void movePoints(const pointField& pts)
+
+    // Mesh Changes
+
+        //- Corrections after moving points
+        virtual void movePoints(const pointField&)
         {}
-
-        //- Write
-        virtual void write(Ostream& os) const;
-
-        //- Write dictionary
-        virtual void writeDict(Ostream& os) const = 0;
 
 
     // I-O
+
+        //- Write (dictionary entries)
+        virtual void write(Ostream& os) const;
 
         //- Ostream Operator
         friend Ostream& operator<<(Ostream& os, const zone& zn);

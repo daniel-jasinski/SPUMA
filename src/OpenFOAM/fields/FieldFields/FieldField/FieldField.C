@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -309,6 +309,36 @@ void FieldField<Field, Type>::clamp_max
 
 
 template<template<class> class Field, class Type>
+void FieldField<Field, Type>::clamp_min
+(
+    const FieldField<Field, Type>& lower
+)
+{
+    const label loopLen = this->size();
+
+    for (label i = 0; i < loopLen; ++i)
+    {
+        (*this)[i].clamp_min(lower[i]);
+    }
+}
+
+
+template<template<class> class Field, class Type>
+void FieldField<Field, Type>::clamp_max
+(
+    const FieldField<Field, Type>& upper
+)
+{
+    const label loopLen = this->size();
+
+    for (label i = 0; i < loopLen; ++i)
+    {
+        (*this)[i].clamp_max(upper[i]);
+    }
+}
+
+
+template<template<class> class Field, class Type>
 void FieldField<Field, Type>::clamp_range
 (
     const Type& lower,
@@ -420,19 +450,19 @@ void FieldField<Field, Type>::operator=(const tmp<FieldField>& tf)
 template<template<class> class Field, class Type>
 void FieldField<Field, Type>::operator=(const Type& val)
 {
-    forAll(*this, i)
+    for (auto& pfld : *this)
     {
-        this->operator[](i) = val;
+        pfld = val;
     }
 }
 
 
 template<template<class> class Field, class Type>
-void FieldField<Field, Type>::operator=(const Foam::zero)
+void FieldField<Field, Type>::operator=(Foam::zero)
 {
-    forAll(*this, i)
+    for (auto& pfld : *this)
     {
-        this->operator[](i) = Foam::zero{};
+        pfld = Foam::zero{};
     }
 }
 
@@ -459,11 +489,11 @@ void FieldField<Field, Type>::operator op                                      \
 }                                                                              \
                                                                                \
 template<template<class> class Field, class Type>                              \
-void FieldField<Field, Type>::operator op(const TYPE& t)                       \
+void FieldField<Field, Type>::operator op(const TYPE& val)                     \
 {                                                                              \
-    forAll(*this, i)                                                           \
+    for (auto& pfld : *this)                                                   \
     {                                                                          \
-        this->operator[](i) op t;                                              \
+        pfld op val;                                                           \
     }                                                                          \
 }
 

@@ -31,9 +31,10 @@ Group
     grpForcesFunctionObjects
 
 Description
-    Computes force and moment coefficients over a given
-    list of patches, and optionally over given porous zones.
-    The following coefficients can be selected and output:
+    Computes force and moment coefficients over a given list of patches, and
+    optionally over given porous zones. The following coefficients can be
+    selected and output:
+
     \verbatim
       Cd      | Drag coefficient
       Cs      | Side-force coefficient
@@ -43,8 +44,8 @@ Description
       CmYaw   | Yaw-moment coefficient
     \endverbatim
 
-    The force coefficients can also be optionally output
-    in terms of their front and rear axle constituents:
+    The force coefficients can also be optionally output in terms of their
+    front and rear axle constituents:
     \verbatim
         Cd{f,r} = 0.5*Cd {+,-} CmRoll
         Cs{f,r} = 0.5*Cs {+,-} CmYaw
@@ -52,8 +53,8 @@ Description
     \endverbatim
     where \c f and \c r represent front and rear axles, respectively.
 
-    Force and moment coefficients are output
-    in their total and constituent components:
+    Force and moment coefficients are output in their total and constituent
+    components:
     - total force and moment coefficients
     - pressure contributions
     - viscous contributions
@@ -67,16 +68,16 @@ Description
     \table
       Operand       | Type           | Location
       input         | -              | -
-      output file   | dat            | postProcessing/\<FO\>/\<time\>/\<file\>s
-      output field  | volVectorField | \<time\>/\<outField\>s
+      output file   | dat            | postProcessing/<FO>/<time>/files
+      output field  | volVectorField | <time>/outputFields
     \endtable
 
-    where \c \<file\>s:
+    where \c files:
     \verbatim
       coefficient.dat  | Integrated coefficients over all patches
     \endverbatim
 
-    where \c \<outField\>s:
+    where \c outputFields:
     \verbatim
       <namePrefix>:forceCoeff   | Force coefficient field
       <namePrefix>:momentCoeff  | Moment coefficient field
@@ -85,7 +86,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    forceCoeffs1
+    forceCoeffsFO
     {
         // Mandatory entries
         type                forceCoeffs;
@@ -518,7 +519,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         forceCoeffs
         (
             const word& name,
@@ -540,13 +541,13 @@ public:
 
     // Member Functions
 
-        //- Read the dictionary
-        virtual bool read(const dictionary& dict);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary&);
 
-        //- Execute the function object
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write to data files/fields and to streams
+        //- Write the function-object results
         virtual bool write();
 };
 

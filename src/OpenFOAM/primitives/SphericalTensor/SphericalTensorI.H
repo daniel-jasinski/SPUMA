@@ -32,9 +32,9 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Cmpt>
-FOAM_DEVICE inline Foam::SphericalTensor<Cmpt>::SphericalTensor(const Foam::zero)
+FOAM_DEVICE inline Foam::SphericalTensor<Cmpt>::SphericalTensor(Foam::zero)
 :
-    SphericalTensor::vsType(Zero)
+    SphericalTensor::vsType(Foam::zero{})
 {}
 
 

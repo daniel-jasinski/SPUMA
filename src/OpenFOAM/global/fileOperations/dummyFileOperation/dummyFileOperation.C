@@ -327,7 +327,7 @@ Foam::fileOperations::dummyFileOperation::readStream
 ) const
 {
     NotImplemented;
-    return autoPtr<ISstream>(new dummyISstream());
+    return dummyISstream::New();
 }
 
 
@@ -351,7 +351,7 @@ Foam::fileOperations::dummyFileOperation::NewIFstream
 ) const
 {
     NotImplemented;
-    return autoPtr<ISstream>(new dummyISstream());
+    return dummyISstream::New();
 }
 
 

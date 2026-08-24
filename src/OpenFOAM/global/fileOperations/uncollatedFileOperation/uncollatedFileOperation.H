@@ -243,19 +243,20 @@ public:
 
         // (reg)IOobject functionality
 
-            //- Search for an object. checkGlobal : also check undecomposed case
+            //- Search for an object
             virtual fileName filePath
             (
+                //! also check undecomposed case
                 const bool checkGlobal,
                 const IOobject& io,
-                const word& typeName,
+                const word& typeName,  //!< currently unused
                 const bool search
             ) const;
 
-            //- Search for a directory. checkGlobal : also check undecomposed
-            //  case
+            //- Search for a directory
             virtual fileName dirPath
             (
+                //! also check undecomposed case
                 const bool checkGlobal,
                 const IOobject& io,
                 const bool search
@@ -275,16 +276,16 @@ public:
             (
                 IOobject&,
                 const fileName&,
-                const word& typeName
+                const word& typeName  //!< currently only for debug info
             ) const;
 
             //- Reads header for regIOobject and returns an ISstream
-            //  to read the contents.
+            //- to read the contents.
             virtual autoPtr<ISstream> readStream
             (
                 regIOobject&,
                 const fileName&,
-                const word& typeName,
+                const word& typeName,  //!< currently unused
                 const bool readOnProc = true
             ) const;
 
@@ -293,7 +294,9 @@ public:
             (
                 regIOobject&,
                 const bool masterOnly,
+                //! The format for parallel send/recv
                 const IOstreamOption::streamFormat format,
+                //! forwards to regIOobject
                 const word& typeName
             ) const;
 

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022-2023 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,7 +27,6 @@ License
 
 #include "DynamicList.H"
 #include "Istream.H"
-#include "contiguous.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -103,7 +102,7 @@ Foam::Ostream& Foam::CircularBuffer<T>::writeList
     }
     #endif
 
-    if (os.format() == IOstreamOption::BINARY && is_contiguous<T>::value)
+    if (os.format() == IOstreamOption::BINARY && is_contiguous_v<T>)
     {
         // Binary and contiguous
 
@@ -136,11 +135,7 @@ Foam::Ostream& Foam::CircularBuffer<T>::writeList
      ||
         (
             (len <= shortLen)
-         &&
-            (
-                is_contiguous<T>::value
-             || Detail::ListPolicy::no_linebreak<T>::value
-            )
+         && (is_contiguous_v<T> || Foam::ListPolicy::no_linebreak<T>::value)
         )
     )
     {

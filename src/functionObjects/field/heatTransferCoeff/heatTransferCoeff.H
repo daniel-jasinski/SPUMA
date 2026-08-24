@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2022 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,15 +30,14 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Computes the heat transfer coefficient [W/(m^2 K)]
-    as a \c volScalarField for a given set of patches.
+    Computes the heat transfer coefficient [W/(m^2 K)] as a \c volScalarField
+    for a given set of patches.
 
-    The heat transfer coefficient is definition dependent;
-    therefore, different coefficient values could be
-    obtained based on different definitions.
+    The heat transfer coefficient is definition dependent; therefore, different
+    7 coefficient values could be obtained based on different definitions.
 
-    Optionally, the Nusselt number (i.e. the ratio of convective
-    to conductive heat transfer at a boundary in a fluid) can be output:
+    Optionally, the Nusselt number (i.e. the ratio of convective to conductive
+    heat transfer at a boundary in a fluid) can be output:
 
     \f[
         Nu = \frac{h L}{\kappa}
@@ -57,13 +56,13 @@ Description
       Operand           | Type           | Location
       input             | -              | -
       output file       | -              | -
-      output field      | volScalarField | \<time\>/\<outField\>
+      output field      | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    heatTransferCoeff1
+    heatTransferCoeffFO
     {
         // Mandatory entries
         type        heatTransferCoeff;
@@ -102,7 +101,6 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-      - \link functionObject.H \endlink
       - \link fieldExpression.H \endlink
       - \link heatTransferCoeffModel.H \endlink
 
@@ -119,8 +117,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_heatTransferCoeff_H
-#define functionObjects_heatTransferCoeff_H
+#ifndef Foam_functionObjects_heatTransferCoeff_H
+#define Foam_functionObjects_heatTransferCoeff_H
 
 #include "fieldExpression.H"
 
@@ -170,7 +168,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         heatTransferCoeff
         (
             const word& name,
@@ -191,7 +189,7 @@ public:
 
     // Member Functions
 
-        //- Read the top-level dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 };
 

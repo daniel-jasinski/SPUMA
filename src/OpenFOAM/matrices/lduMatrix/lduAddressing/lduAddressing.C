@@ -82,7 +82,7 @@ void Foam::lduAddressing::calcLosort() const
 
     forAll(cellNbrFaces, celli)
     {
-        const labelList& curNbr = cellNbrFaces[celli];
+        const labelUList& curNbr = cellNbrFaces[celli];
 
         forAll(curNbr, curNbrI)
         {
@@ -102,7 +102,7 @@ void Foam::lduAddressing::calcOwnerStart() const
             << abort(FatalError);
     }
 
-    const labelList& own = lowerAddr();
+    const labelUList& own = lowerAddr();
 
     ownerStartPtr_ = std::make_unique<labelList>(size() + 1, own.size(), poolSwitch(1));
     auto& ownStart = *ownerStartPtr_;
@@ -138,13 +138,11 @@ void Foam::lduAddressing::calcLosortStart() const
             << abort(FatalError);
     }
 
-
-    losortStartPtr_ = std::make_unique<labelList>(size() + 1, Foam::zero{}, poolSwitch(1));
+    const labelUList& nbr = upperAddr();
+    losortStartPtr_ = std::make_unique<labelList>(size() + 1, nbr.size(), poolSwitch(1));
     auto& lsrtStart = *losortStartPtr_;
 
-    const labelList& nbr = upperAddr();
-
-    const labelList& lsrt = losortAddr();
+    const labelUList& lsrt = losortAddr();
 
     // Set up first lookup by hand
     lsrtStart[0] = 0;

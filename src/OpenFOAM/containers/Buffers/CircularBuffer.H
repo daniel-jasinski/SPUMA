@@ -94,7 +94,6 @@ SourceFiles
 #ifndef Foam_CircularBuffer_H
 #define Foam_CircularBuffer_H
 
-#include "labelRange.H"
 #include "List.H"
 #include "SubList.H"
 
@@ -369,7 +368,7 @@ public:
         inline void operator=(const T& val);
 
         //- Assignment of all entries to zero
-        inline void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
         //- Deep copy values from a list of the addressed elements
         inline void operator=(const UList<T>& rhs);

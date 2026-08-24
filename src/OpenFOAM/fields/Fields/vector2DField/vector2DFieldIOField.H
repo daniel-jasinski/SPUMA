@@ -39,7 +39,7 @@ namespace Foam
     typedef IOField<vector2DField> vector2DFieldIOField;
 
     //! Compact IO for a Field of vector2DField
-    typedef CompactIOField<vector2DField, vector2D> vector2DFieldCompactIOField;
+    typedef CompactIOField<vector2DField> vector2DFieldCompactIOField;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

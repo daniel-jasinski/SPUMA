@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -45,30 +45,11 @@ namespace functionObjects
 
 void Foam::functionObjects::mapFields::createInterpolation
 (
-    const dictionary& dict
+    const dictionary& dict,
+    const fvMesh& meshTarget,
+    const fvMesh& mapRegion
 )
 {
-    const fvMesh& meshTarget = mesh_;
-    const word mapRegionName(dict.get<word>("mapRegion"));
-
-    Info<< name() << ':' << nl
-        << "    Reading mesh " << mapRegionName << endl;
-
-    mapRegionPtr_.reset
-    (
-        new fvMesh
-        (
-            IOobject
-            (
-                mapRegionName,
-                meshTarget.time().constant(),
-                meshTarget.time(),
-                IOobject::MUST_READ
-           )
-        )
-    );
-
-    const fvMesh& mapRegion = mapRegionPtr_();
     const word mapMethodName(dict.get<word>("mapMethod"));
     if (!meshToMesh::interpolationMethodNames_.found(mapMethodName))
     {
@@ -91,10 +72,12 @@ void Foam::functionObjects::mapFields::createInterpolation
     // Optionally override
     if (dict.readIfPresent("patchMapMethod", patchMapMethodName))
     {
-        Info<< "    Patch mapping method: " << patchMapMethodName << endl;
+        Info<< indent
+            << "    Patch mapping method: " << patchMapMethodName << endl;
     }
 
-    Info<< "    Creating mesh to mesh interpolation" << endl;
+    Info<< indent
+        << "    Creating mesh to mesh interpolation" << endl;
 
     if (dict.get<bool>("consistent"))
     {
@@ -249,6 +232,38 @@ void Foam::functionObjects::mapFields::createInterpolation
 }
 
 
+const Foam::fvMesh& Foam::functionObjects::mapFields::lookupMapRegion() const
+{
+    // Load & register mesh
+    const word mapRegionName(dict_.get<word>("mapRegion"));
+    const auto* mapRegionPtr = mesh_.time().findObject<fvMesh>(mapRegionName);
+    if (mapRegionPtr)
+    {
+        return *mapRegionPtr;
+    }
+    else
+    {
+        Info<< indent
+            << "    Reading mesh " << mapRegionName << endl;
+
+        fvMesh* ptr = new fvMesh
+        (
+            IOobject
+            (
+                mapRegionName,
+                mesh_.time().constant(),
+                mesh_.time(),       // objectRegistry
+                IOobject::MUST_READ
+            )
+        );
+
+        // Store new mesh on its object registry
+        ptr->objectRegistry::store();
+        return *ptr;
+    }
+}
+
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::functionObjects::mapFields::mapFields
@@ -259,7 +274,6 @@ Foam::functionObjects::mapFields::mapFields
 )
 :
     fvMeshFunctionObject(name, runTime, dict),
-    mapRegionPtr_(),
     interpPtr_(),
     fieldNames_()
 {
@@ -273,8 +287,10 @@ bool Foam::functionObjects::mapFields::read(const dictionary& dict)
 {
     if (fvMeshFunctionObject::read(dict))
     {
-        dict.readEntry("fields", fieldNames_);
-        createInterpolation(dict);
+        dict_ = dict.optionalSubDict(typeName + "Coeffs");
+        dict_.readEntry("fields", fieldNames_);
+
+        createInterpolation(dict_, mesh_, lookupMapRegion());
 
         return true;
     }
@@ -288,6 +304,14 @@ bool Foam::functionObjects::mapFields::execute()
     Log << type() << " " << name() << " execute:" << nl;
 
     bool ok = false;
+
+    const word mapRegionName(dict_.get<word>("mapRegion"));
+    const fvMesh& mapRegion = lookupMapRegion();
+
+    if (mesh_.changing() || mapRegion.changing())
+    {
+        createInterpolation(dict_, mesh_, mapRegion);
+    }
 
     ok = mapFieldType<scalar>() || ok;
     ok = mapFieldType<vector>() || ok;

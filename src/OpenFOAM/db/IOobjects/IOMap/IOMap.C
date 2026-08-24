@@ -104,6 +104,7 @@ Foam::Map<T> Foam::IOMap<T>::readContents(const IOobject& io)
     {
         rio.readOpt(IOobjectOption::MUST_READ);
     }
+    rio.resetHeader();
 
     // The object is global
     rio.globalObject(true);
@@ -121,15 +122,6 @@ bool Foam::IOMap<T>::writeData(Ostream& os) const
 {
     os << *this;
     return os.good();
-}
-
-
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-template<class T>
-void Foam::IOMap<T>::operator=(const IOMap<T>& rhs)
-{
-    Map<T>::operator=(rhs);
 }
 
 

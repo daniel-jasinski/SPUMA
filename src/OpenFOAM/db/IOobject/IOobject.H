@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -89,9 +89,10 @@ See also
 
 SourceFiles
     IOobject.C
+    IOobjectIO.C
+    IOobjectMetaData.C
     IOobjectReadHeader.C
     IOobjectWriteHeader.C
-    IOobjectPrint.C
 
 \*---------------------------------------------------------------------------*/
 
@@ -99,6 +100,7 @@ SourceFiles
 #define Foam_IOobject_H
 
 #include "fileName.H"
+#include "scalarFwd.H"
 #include "typeInfo.H"
 #include "refPtr.H"  // For autoPtr, refPtr, tmp, stdFoam
 #include "Enum.H"
@@ -127,6 +129,10 @@ Ostream& operator<<(Ostream&, const InfoProxy<IOobject>&);
 template<class T>
 struct is_globalIOobject : std::false_type {};
 
+//- Trait for specifying IOobject types that support the coherent format
+template<class T>
+struct is_coherentIOobject : std::false_type {};
+
 
 /*---------------------------------------------------------------------------*\
                            Class IOobject Declaration
@@ -148,12 +154,11 @@ public:
         };
 
         //- Enumeration defining the file checking options
+        //- (time-stamp | inotify) | (all | masterOnly)
         enum fileCheckTypes : char
         {
-            timeStamp,
-            timeStampMaster,
-            inotify,
-            inotifyMaster
+            timeStamp = 1, timeStampMaster = 3,
+            inotify = 4,   inotifyMaster = 6
         };
 
         //- Names for the fileCheckTypes
@@ -284,6 +289,9 @@ public:
             bannerEnabled_ = on;
             return old;
         }
+
+        //- Test fileModificationChecking for master-only
+        static inline bool fileModificationChecking_masterOnly() noexcept;
 
         //- Split path into instance, local, name components
         //
@@ -505,7 +513,7 @@ public:
         //- Return name of the class name read from header
         inline const word& headerClassName() const noexcept;
 
-        //- Return non-constant access to the class name read from header
+        //- Modifiable access to the class name read from header
         inline word& headerClassName() noexcept;
 
         //- Return the optional note
@@ -537,13 +545,14 @@ public:
         //- True if headerClassName() is non-empty (after reading)
         inline bool hasHeaderClass() const noexcept;
 
+        //- Check if headerClassName() equals the expected type.
+        //- Always true if the expected type is empty.
+        inline bool isHeaderClass(const word& expectedType) const;
+
         //- Check if headerClassName() equals Type::typeName
+        //- Always true for a \c void type.
         template<class Type>
         inline bool isHeaderClass() const;
-
-        //- Same as isHeaderClass()
-        template<class Type>
-        bool isHeaderClassName() const { return isHeaderClass<Type>(); }
 
 
     // Meta-data
@@ -569,20 +578,33 @@ public:
         //- Return the Time::globalCaseName()
         const fileName& globalCaseName() const noexcept;
 
+        //- Return the Time::caseName() - normal or global
+        const fileName& caseName(IOobjectOption::Layout) const noexcept;
+
         //- Read access to instance path component
         inline const fileName& instance() const noexcept;
 
-        //- Write access to instance path component
+        //- Modifiable access to instance path component
         inline fileName& instance() noexcept;
+
+        //- Return the scalar value of the instance component (or 0),
+        //- which often corresponds to a time index/value.
+        scalar instanceValue() const;
 
         //- Read access to local path component
         inline const fileName& local() const noexcept;
+
+        //- Modifiable access to the local path component
+        inline fileName& local() noexcept;
 
         //- The complete path for the object (with instance, local,...).
         fileName path() const;
 
         //- The complete global path for the object (with instance, local,...)
         fileName globalPath() const;
+
+        //- The complete path (normal or global) for the object
+        fileName path(IOobjectOption::Layout) const;
 
         //- The complete path with alternative instance and local
         fileName path
@@ -598,30 +620,52 @@ public:
             const fileName& local = fileName::null
         ) const;
 
+        //- The complete path (normal or global)
+        //- with alternative instance and local
+        fileName path
+        (
+            IOobjectOption::Layout,
+            const word& instance,
+            const fileName& local = fileName::null
+        ) const;
+
         //- The complete path + object name
         inline fileName objectPath() const;
 
         //- The complete global path + object name
         inline fileName globalObjectPath() const;
 
-        //- The object path relative to the root
+        //- The complete path (normal or global) + object name
+        inline fileName objectPath(IOobjectOption::Layout) const;
+
+        //- The complete path (normal or global) + object name
+        //- with alternative instance
+        fileName objectPath(IOobjectOption::Layout, const word& instance) const;
+
+        //- The complete path + object name
+        //- with alternative instance
+        inline fileName objectPath(const word& instance) const;
+
+        //- The complete global path + object name
+        //- with alternative instance
+        inline fileName globalObjectPath(const word& instance) const;
+
+        //- The object path relative to the case
         fileName objectRelPath() const;
 
         //- Redirect to fileHandler filePath, searching locally.
-        //  When search is false, simply use the current instance,
-        //  otherwise search previous instances.
         fileName localFilePath
         (
             const word& typeName,
+            //! False: use current instance; True: search previous instances
             const bool search=true
         ) const;
 
         //- Redirect to fileHandler filePath, searching up if in parallel.
-        //  When search is false, simply use the current instance,
-        //  otherwise search previous instances.
         fileName globalFilePath
         (
             const word& typeName,
+            //! False: use current instance; True: search previous instances
             const bool search=true
         ) const;
 
@@ -642,13 +686,25 @@ public:
         bool readHeader(dictionary& headerDict, Istream& is);
 
         //- Read header (respects is_globalIOobject trait) and check its info.
+        //- A \c void type suppresses trait and type-name checks.
         template<class Type>
         bool typeHeaderOk
         (
             //! Check headerClassName against the type-name
-            const bool checkType = true,
+            [[maybe_unused]] const bool checkType = true,
             //! Also search previous instances if not found at current instance
             const bool search = true,
+            //! Report any check-type failures
+            const bool verbose = true
+        );
+
+        //- Forwards to single-parameter version with the specified search type.
+        //- A \c void type suppresses trait and type-name checks.
+        template<class Type, bool Searching>
+        bool typeHeaderOk
+        (
+            //! Check headerClassName against the type-name
+            const bool checkType = true,
             //! Report any check-type failures
             const bool verbose = true
         );
@@ -715,17 +771,14 @@ public:
 
         //- Copy assignment, copies all values (except the registry)
         void operator=(const IOobject& io);
+
+
+    // Housekeeping
+
+        //- Same as isHeaderClass()
+        template<class Type>
+        bool isHeaderClassName() const { return isHeaderClass<Type>(); }
 };
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-//- Specialization for \c void always returns true (no headerClassName check).
-template<>
-inline bool IOobject::isHeaderClass<void>() const
-{
-    return true;
-}
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

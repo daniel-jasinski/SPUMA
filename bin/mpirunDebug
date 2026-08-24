@@ -7,7 +7,7 @@
 #    \\/     M anipulation  |
 #------------------------------------------------------------------------------
 #     Copyright (C) 2011-2015 OpenFOAM Foundation
-#     Copyright (C) 2017-2023 OpenCFD Ltd.
+#     Copyright (C) 2017-2025 OpenCFD Ltd.
 #------------------------------------------------------------------------------
 # License
 #     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -16,16 +16,13 @@
 #     mpirunDebug
 #
 # Description
-#     Invoke mpirun with separate per-processor log files
-#     or running in separate XTerms.
+#     Invoke mpirun with separate per-processor log files etc.
 #     Requires bash on all processors.
 #
 #------------------------------------------------------------------------------
 . "${WM_PROJECT_DIR:?}"/bin/tools/RunFunctions  # Run functions
 
-usage() {
-    exec 1>&2
-    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
+printHelp() {
     cat<<USAGE
 
 Usage: ${0##*/} [OPTION] -np <N> <executable> <args>
@@ -44,12 +41,15 @@ options:
   -yes          Start without additional prompting
   -local        Same as -spawn=1
   -remote       Same as -spawn=2
-  -clean        Remove old processor*.{log,sh} files, mpirun.schema etc
+  -clean        Remove log and startup files
+  -no-core      Restrict core dump to 0 size
+  -quick        Valgrind with 'summary' (not 'full') and use -no-core
   -decompose-dict=<file>   Specific decomposeParDict name
   -help         Print the usage
 
-Invoke mpirun with separate per-processor log files or running in
-separate XTerms.
+Invoke mpirun with separate per-processor log files or with separate XTerms.
+Also detects some OpenFOAM options:
+  -decomposeParDict <file>   Use specified file for decomposePar dictionary
 
 Common shortcuts. Sets default spawn to -local, add -yes.
   -normal       = -method=0
@@ -57,9 +57,6 @@ Common shortcuts. Sets default spawn to -local, add -yes.
   -xlog         = -method=4  (log + xterm)
   -valgrind     = -method=5l (valgrind + log)
   -xvalgrind    = -method=5  (valgrind + xterm)
-
-Also detects some OpenFOAM options:
-  -decomposeParDict <file>   Use specified file for decomposePar dictionary
 
 USAGE
     exit 0  # A clean exit
@@ -102,18 +99,10 @@ methodNumberToName()
 #-------------------------------------------------------------------------------
 # Basic settings
 
-case "$(uname -s)" in
-Linux)
-    ECHO='echo -e'
-    ;;
-*)
-    ECHO='echo'
-    ;;
-esac
-
 unset appName appArgs nProcs
-unset method spawn optClean optValue
+unset method spawn optClean optValue opt_nocore
 optConfirm=true
+opt_leakcheck=full
 
 decompDict="system/decomposeParDict"
 
@@ -155,6 +144,15 @@ do
             method="log-xterm"
             unset optConfirm
             : "${spawn:=local}"
+            ;;
+
+        -quick)
+            opt_leakcheck="summary"
+            opt_nocore=true
+            ;;
+
+        -no-core)
+            opt_nocore=true
             ;;
 
         -valgr*)
@@ -206,7 +204,7 @@ do
 
     # Processing application arguments
     case "$1" in
-    (-help* | --help*) usage ;;
+    (-help* | --help*) printHelp ;;
     ('') ;;  ## Ignore junk
 
     (-np)
@@ -238,13 +236,16 @@ done
 # Cleanup only
 if [ -n "$optClean" ]
 then
-    echo "Cleanup old mpirunDebug files..." 1>&2
-    rm -f gdbCommands    mpirun.schema
+    exec 1>&2
+    echo "Cleanup old mpirunDebug files..."
+    rm -f gdbCommands mpirun.schema vgcore.*
     rm -f processor*.log processor*.sh
-    echo "    gdbCommands     mpirun.schema" 1>&2
-    echo "    processor*.log  processor*.sh" 1>&2
-    echo "Done" 1>&2
-    exit 0
+    rm -rf mpirun.files mpirun.log
+    echo "    gdbCommands mpirun.schema vgcore.*"
+    echo "    processor*.{log,sh}"
+    echo "    mpirun.{files,log}/"
+    echo "Done"
+    exit 0  # A clean exit
 fi
 
 
@@ -278,7 +279,7 @@ exec=$(command -v $appName)
 if [ -z "$method" ]
 then
     echo "Choose running method: ${methodPrompt}"
-    $ECHO "[normal] > \c"
+    echo -e "[normal] > \c"
     read input
     : "${input:=0}"  # Default (0) normal
 
@@ -290,7 +291,7 @@ fi
 if [ -z "$spawn" ]
 then
     echo "Run all processes local or distributed? 1)local  2)remote"
-    $ECHO "[local] > \c"
+    echo -e "[local] > \c"
     read input
     : "${input:=1}"  # Default (1) local
 
@@ -339,22 +340,32 @@ fi
 
 case "$sourceFoam" in
 */bashrc)
-    sourceFoam=". $sourceFoam $FOAM_SETTINGS"
+    sourceFoam=". $sourceFoam $FOAM_SETTINGS || true"
     ;;
 esac
 
 echo "**sourceFoam: $sourceFoam" 1>&2
 
-rm -f "$PWD"/mpirun.schema
-touch "$PWD"/mpirun.schema
+# remove old files
+rm -rf ./mpirun.files
+rm -rf ./mpirun.log
+
+mkdir -p ./mpirun.files
+mkdir -p ./mpirun.log
+
+schema_file="$PWD/mpirun.files/mpirun.schema"
+
+rm -f "$schema_file"
+touch "$schema_file"
+
 
 proc=0
 xpos=0
 ypos=0
 for ((proc=0; proc<$nProcs; proc++))
 do
-    procCmdFile="$PWD/processor${proc}.sh"
-    procLog="processor${proc}.log"
+    procCmdFile="$PWD/mpirun.files/processor${proc}.sh"
+    procLog="./mpirun.log/processor${proc}.log"
     xterm="xterm -font fixed -title processor${proc} -geometry 120x15+$xpos+$ypos"
 
     unset node
@@ -370,10 +381,16 @@ $sourceFoam
 cd "${PWD}" || exit
 COMMANDS
 
+    if [ "$opt_nocore" = true ]
+    then
+        echo "# no coredump" >> "$procCmdFile"
+        echo "ulimit -c 0 2>/dev/null" >> "$procCmdFile"
+    fi
+
     # Add to the mpirun.schema
     case "$method" in
-    (*xterm*) echo "${node}${xterm} -e ${procCmdFile}" >> "$PWD"/mpirun.schema ;;
-    (*)       echo "${node}${procCmdFile}" >> "$PWD"/mpirun.schema ;;
+    (*xterm*) echo "${node}${xterm} -e ${procCmdFile}" >> "$schema_file" ;;
+    (*)       echo "${node}${procCmdFile}" >> "$schema_file" ;;
     esac
 
     case "$method" in
@@ -395,10 +412,16 @@ COMMANDS
         echo "read input"
         ;;
     (valgrind | valgrind-log)
-        echo "valgrind --leak-check=full --show-reachable=yes $exec $appArgs > $procLog 2>&1"
+        echo "# valgrind does not work nicely with RMA (libfabric)"
+        echo "export FI_PROVIDER=tcp"
+        echo
+        echo "valgrind --leak-check=$opt_leakcheck --show-reachable=yes $exec $appArgs > $procLog 2>&1"
         ;;
     (valgrind-xterm)
-        echo "valgrind --leak-check=full --show-reachable=yes $exec $appArgs 2>&1 | tee $procLog"
+        echo "# valgrind does not work nicely with RMA (libfabric)"
+        echo "export FI_PROVIDER=tcp"
+        echo
+        echo "valgrind --leak-check=$opt_leakcheck --show-reachable=yes $exec $appArgs 2>&1 | tee $procLog"
         echo "read input"
         ;;
     (gperf)
@@ -419,17 +442,33 @@ COMMANDS
     fi
 done
 
-for ((proc=0; proc<$nProcs; proc++))
-do
-    procLog="processor${proc}.log"
-    echo "    tail -f $procLog" 1>&2
-done
+
+if [ "$nProcs" -lt 10 ]
+then
+    for ((proc = 0; proc < $nProcs; proc++))
+    do
+        procLog="mpirun.log/processor${proc}.log"
+        echo "    tail -f $procLog" 1>&2
+    done
+else
+    for ((proc = 0; proc < 4; proc++))
+    do
+        procLog="mpirun.log/processor${proc}.log"
+        echo "    tail -f $procLog" 1>&2
+    done
+    echo "    ..." 1>&2
+    for ((proc = $nProcs-2; proc < $nProcs; proc++))
+    do
+        procLog="mpirun.log/processor${proc}.log"
+        echo "    tail -f $procLog" 1>&2
+    done
+fi
 
 unset cmd
 
 case "$WM_MPLIB" in
 *OPENMPI*)
-    cmd="mpirun --oversubscribe -app $PWD/mpirun.schema </dev/null"
+    cmd="mpirun --oversubscribe -app "$schema_file""
     ;;
 MPICH)
     cmd="mpiexec"
@@ -437,16 +476,16 @@ MPICH)
     do
         read procCmd
 
-        procXtermCmdFile="$PWD/processor${proc}Xterm.sh"
-        echo "#!/bin/sh" > $procXtermCmdFile
-        echo "$procCmd" >> $procXtermCmdFile
-        chmod +x $procXtermCmdFile
-        if [ $proc -ne 0 ]
+        procXtermCmdFile="$PWD/mpirun.files/xterm-processor${proc}.sh"
+        echo "#!/bin/sh" > "$procXtermCmdFile"
+        echo "$procCmd" >> "$procXtermCmdFile"
+        chmod +x "$procXtermCmdFile"
+        if [ "$proc" -ne 0 ]
         then
             cmd="${cmd} :"
         fi
         cmd="${cmd} -n 1 ${procXtermCmdFile}"
-    done < "$PWD"/mpirun.schema
+    done < "$schema_file"
     ;;
 *)
     die "Unsupported WM_MPLIB setting : $WM_MPLIB"
@@ -454,7 +493,7 @@ MPICH)
 esac
 
 echo 1>&2
-echo "Constructed $PWD/mpirun.schema file:" 1>&2
+echo "Constructed $schema_file file:" 1>&2
 echo 1>&2
 echo "    $cmd" 1>&2
 echo 1>&2
@@ -462,13 +501,14 @@ echo 1>&2
 if [ -n "$optConfirm" ]
 then
     # Pause before running
-    $ECHO "Press return to execute.\c"
+    echo -e "Press return to execute, or ^C to abort...\c"
     read input
-else
-    echo "starting: $(date '+%Y-%m-%d %H:%M:%S %z' 2>/dev/null)" 1>&2
     echo 1>&2
 fi
+echo "starting: $(date '+%Y-%m-%d %H:%M:%S %z' 2>/dev/null)" 1>&2
+echo 1>&2
 
+exec </dev/null
 exec $cmd
 
 #------------------------------------------------------------------------------

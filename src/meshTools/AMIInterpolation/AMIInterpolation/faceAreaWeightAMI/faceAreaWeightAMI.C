@@ -63,7 +63,7 @@ namespace Foam
         // Write out triangulated surfaces as OBJ files
         OBJstream srcTriObj("srcTris_" + Foam::name(nAMI) + ".obj");
         const pointField& srcPts = src.points();
-        for (const DynamicList<face>& faces : srcTris_)
+        for (const auto& faces : srcTris_)
         {
             for (const face& f : faces)
             {
@@ -76,7 +76,7 @@ namespace Foam
 
         OBJstream tgtTriObj("tgtTris_" + Foam::name(nAMI) + ".obj");
         const pointField& tgtPts = tgt.points();
-        for (const DynamicList<face>& faces : tgtTris_)
+        for (const auto& faces : tgtTris_)
         {
             for (const face& f : faces)
             {
@@ -111,13 +111,13 @@ void Foam::faceAreaWeightAMI::calcAddressing
     label nFacesRemaining = srcAddr.size();
 
     // List of tgt face neighbour faces
-    DynamicList<label> nbrFaces(10);
+    DynamicList<label> nbrFaces(10,poolSwitch(1));
 
     // List of faces currently visited for srcFacei to avoid multiple hits
-    DynamicList<label> visitedFaces(10);
+    DynamicList<label> visitedFaces(10,poolSwitch(1));
 
     // List to keep track of tgt faces used to seed src faces
-    labelList seedFaces(nFacesRemaining, -1);
+    labelList seedFaces(nFacesRemaining, -1,poolSwitch(1));
     seedFaces[srcFacei] = tgtFacei;
 
     // List to keep track of whether src face can be mapped
@@ -130,7 +130,7 @@ void Foam::faceAreaWeightAMI::calcAddressing
     const bool mustMatch = mustMatchFaces();
 
     bool continueWalk = true;
-    DynamicList<label> nonOverlapFaces;
+    DynamicList<label> nonOverlapFaces(poolSwitch(1));
 
     do
     {
@@ -258,7 +258,7 @@ bool Foam::faceAreaWeightAMI::setNextFaces
     label& tgtFacei,
     const bitSet& mapFlag,
     labelList& seedFaces,
-    const DynamicList<label>& visitedFaces,
+    const labelUList& visitedFaces,
     const bool errorOnNotFound
 ) const
 {
@@ -657,11 +657,11 @@ bool Foam::faceAreaWeightAMI::calculate
     const auto& tgt = this->tgtPatch(); // might be the extended patch!
 
     // Temporary storage for addressing and weights
-    List<DynamicList<label>> srcAddr(src.size());
-    List<DynamicList<scalar>> srcWght(srcAddr.size());
-    List<DynamicList<point>> srcCtr(srcAddr.size());
-    List<DynamicList<label>> tgtAddr(tgt.size());
-    List<DynamicList<scalar>> tgtWght(tgtAddr.size());
+    List<DynamicList<label>> srcAddr(src.size(),DynamicList<label>(poolSwitch(1)),poolSwitch(1));
+    List<DynamicList<scalar>> srcWght(srcAddr.size(), DynamicList<scalar>(poolSwitch(1)), poolSwitch(1));
+    List<DynamicList<point>> srcCtr(srcAddr.size(), DynamicList<point>(poolSwitch(1)),poolSwitch(1));
+    List<DynamicList<label>> tgtAddr(tgt.size(), DynamicList<label>(poolSwitch(1)), poolSwitch(1));
+    List<DynamicList<scalar>> tgtWght(tgtAddr.size(), DynamicList<scalar>(poolSwitch(1)), poolSwitch(1));
 
     if (ok)
     {
@@ -698,22 +698,30 @@ bool Foam::faceAreaWeightAMI::calculate
     }
 
     // Transfer data to persistent storage
+    // could do a clear and swap just for LISTLIST instead of every internal list?
     forAll(srcAddr, i)
     {
-        srcAddress_[i].transfer(srcAddr[i]);
-        srcWeights_[i].transfer(srcWght[i]);
-        srcCentroids_[i].transfer(srcCtr[i]);
+        srcAddress_[i].clear();
+        srcAddress_[i].swap(srcAddr[i]);
+        srcWeights_[i].clear();
+        srcWeights_[i].swap(srcWght[i]);
+        srcCentroids_[i].clear();
+        srcCentroids_[i].swap(srcCtr[i]);
     }
 
+    tgtAddress_.setSize(tgtAddr.size());
+    tgtWeights_.setSize(tgtWght.size());
     forAll(tgtAddr, i)
     {
-        tgtAddress_[i].transfer(tgtAddr[i]);
-        tgtWeights_[i].transfer(tgtWght[i]);
+        tgtAddress_[i].clear();
+        tgtAddress_[i].swap(tgtAddr[i]);
+        tgtWeights_[i].clear();
+        tgtWeights_[i].swap(tgtWght[i]);
     }
 
-    if (distributed())
+    if (distributed() && comm() != -1)
     {
-        const label myRank = UPstream::myProcNo(comm_);
+        const label myRank = UPstream::myProcNo(comm());
         // Allocate unique tag for all comms
         const int oldTag = UPstream::incrMsgType();
 
@@ -721,8 +729,8 @@ bool Foam::faceAreaWeightAMI::calculate
         const primitivePatch& tgtPatch0 = this->tgtPatch0();
 
         // Create global indexing for each original patch
-        globalIndex globalSrcFaces(srcPatch0.size(), comm_);
-        globalIndex globalTgtFaces(tgtPatch0.size(), comm_);
+        globalIndex globalSrcFaces(srcPatch0.size(), comm());
+        globalIndex globalTgtFaces(tgtPatch0.size(), comm());
 
         for (labelList& addressing : srcAddress_)
         {
@@ -750,11 +758,11 @@ bool Foam::faceAreaWeightAMI::calculate
             extendedTgtMapPtr_->subMap(),
             false,                      // has flip
             tgtAddress_,
-            labelList(),
+            labelList(poolSwitch(1)),
             ListOps::appendEqOp<label>(),
             flipOp(),                   // flip operation
             UPstream::msgType()+77431,
-            comm_
+            comm()
         );
 
         mapDistributeBase::distribute
@@ -767,11 +775,11 @@ bool Foam::faceAreaWeightAMI::calculate
             extendedTgtMapPtr_->subMap(),
             false,
             tgtWeights_,
-            scalarList(),
+            scalarList(poolSwitch(1)),
             ListOps::appendEqOp<scalar>(),
             flipOp(),
             UPstream::msgType()+77432,
-            comm_
+            comm()
         );
 
         // Note: using patch face areas calculated by the AMI method
@@ -787,7 +795,7 @@ bool Foam::faceAreaWeightAMI::calculate
                 tgtAddress_,
                 cMapSrc,
                 UPstream::msgType()+77433,
-                comm_
+                comm()
             )
         );
 
@@ -800,13 +808,19 @@ bool Foam::faceAreaWeightAMI::calculate
                 srcAddress_,
                 cMapTgt,
                 UPstream::msgType()+77434,
-                comm_
+                comm()
             )
         );
 
         // Reset tag
         UPstream::msgType(oldTag);
     }
+
+    // evaluate the indexing for the ListListAddr objects
+    this->srcListAddr_.reset(new ListListAddr<labelList>(srcAddress_));
+    this->srcListWeights_.reset(new ListListAddr<scalarList>(srcWeights_));
+    this->tgtListAddr_.reset(new ListListAddr<labelList>(tgtAddress_));
+    this->tgtListWeights_.reset(new ListListAddr<scalarList>(tgtWeights_));
 
     // Convert the weights from areas to normalised values
     normaliseWeights(requireMatch_, true);

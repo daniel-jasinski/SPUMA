@@ -43,38 +43,36 @@ Description
       output field 4    | vectorField | $OUTPUT/U
     \endtable
 
-    where \c $OUTPUT=$FOAM_CASE/\<time\>/lagrangian/eulerianParticleCloud.
+    where \c $OUTPUT=<time>/lagrangian/eulerianParticleCloud
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    extractEulerianParticles1
+    extractEulerianParticlesFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            extractEulerianParticles;
         libs            (fieldFunctionObjects);
+        faceZone        <word>;  // f0;
+        alpha           <word>;  // alpha.water;
 
-        // Mandatory entries (runtime modifiable)
-        faceZone        f0;
-        alpha           alpha.water;
+        // Optional entries
+        alphaThreshold  <scalar>;
+        nLocations      <label>;
+        U               <word>;
+        rho             <word>;
+        phi             <word>;
+        minDiameter     <scalar>;
+        maxDiameter     <scalar>;
 
-        // Optional entries (runtime modifiable)
-        alphaThreshold  0.1;
-        nLocations      0;
-        U               U;
-        rho             rho;
-        phi             phi;
-        minDiameter     1e-30;
-        maxDiameter     1e30;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property   | Description                          | Type | Req'd | Dflt
+      Property   | Description                          | Type | Reqd  | Deflt
       type       | Type name: extractEulerianParticles  | word |  yes  | -
       libs       | Library name: fieldFunctionObjects   | word |  yes  | -
       faceZone   | Name of faceZone used as collection surface | word  | yes | -
@@ -89,17 +87,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - Foam::eulerianParticle
-    - ExtendedCodeGuide::functionObjects::field::extractEulerianParticles
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 SourceFiles
     extractEulerianParticles.C
@@ -107,8 +96,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_extractEulerianParticles_H
-#define functionObjects_extractEulerianParticles_H
+#ifndef Foam_functionObjects_extractEulerianParticles_H
+#define Foam_functionObjects_extractEulerianParticles_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -142,7 +131,7 @@ protected:
         injectedParticleCloud cloud_;
 
 
-        // faceZone info
+        // Face-zone data
 
             //- Name of faceZone to sample
             word faceZoneName_;
@@ -277,10 +266,8 @@ protected:
 
 public:
 
-    // Static data members
-
-        //- Runtime type information
-        TypeName("extractEulerianParticles");
+    //- Runtime type information
+    TypeName("extractEulerianParticles");
 
 
     // Constructors
@@ -306,13 +293,13 @@ public:
 
     // Member Functions
 
-        //- Read the field min/max data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write
+        //- Write the function-object results
         virtual bool write();
 };
 

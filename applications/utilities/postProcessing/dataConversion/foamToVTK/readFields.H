@@ -31,7 +31,7 @@ Description
     a mesh subset (using fvMeshSubsetProxy).
 
 SourceFiles
-    readFields.C
+    readFields.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -117,7 +117,7 @@ PtrList<const GeoField> readFields
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "readFields.C"
+    #include "readFields.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

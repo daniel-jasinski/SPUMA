@@ -198,15 +198,19 @@ liquidFilmBase::liquidFilmBase
         dimensionedScalar(dimPressure, Zero)
     ),
     addedMassTotal_(0),
-    faOptions_(Foam::fa::options::New(primaryMesh()))
+    faOptions_
+    (
+        Foam::fa::options::New(primaryMesh(), regionFaModel::areaName())
+    )
 {
     const areaVectorField& ns = regionMesh().faceAreaNormals();
 
     gn_ = g_ & ns;
 
-    if (!faOptions_.optionList::size())
+    if (faOptions_.optionList::empty())
     {
-        Info << "No finite area options present" << endl;
+        Info<< "No finite area options present for area : "
+            << polyMesh::regionName(regionFaModel::areaName()) << endl;
     }
 }
 

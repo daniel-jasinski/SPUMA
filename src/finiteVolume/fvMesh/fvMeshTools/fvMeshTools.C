@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2012-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -369,6 +369,7 @@ void Foam::fvMeshTools::reorderPatches
 Foam::labelList Foam::fvMeshTools::removeEmptyPatches
 (
     fvMesh& mesh,
+    const wordList& keepPatches,
     const bool validBoundary
 )
 {
@@ -386,16 +387,24 @@ Foam::labelList Foam::fvMeshTools::removeEmptyPatches
 
         if (!isA<processorPolyPatch>(pp))
         {
-            label nFaces = pp.size();
-            if (validBoundary)
-            {
-                reduce(nFaces, sumOp<label>());
-            }
-
-            if (nFaces > 0)
+            if (keepPatches.found(pp.name()))
             {
                 newToOld[newI] = patchI;
                 oldToNew[patchI] = newI++;
+            }
+            else
+            {
+                label nFaces = pp.size();
+                if (validBoundary)
+                {
+                    reduce(nFaces, sumOp<label>());
+                }
+
+                if (nFaces > 0)
+                {
+                    newToOld[newI] = patchI;
+                    oldToNew[patchI] = newI++;
+                }
             }
         }
     }
@@ -405,7 +414,14 @@ Foam::labelList Foam::fvMeshTools::removeEmptyPatches
     {
         const polyPatch& pp = pbm[patchI];
 
-        if (isA<processorPolyPatch>(pp) && pp.size())
+        if
+        (
+            isA<processorPolyPatch>(pp)
+         && (
+                pp.size()
+             || keepPatches.found(pp.name())
+            )
+        )
         {
             newToOld[newI] = patchI;
             oldToNew[patchI] = newI++;
@@ -426,6 +442,16 @@ Foam::labelList Foam::fvMeshTools::removeEmptyPatches
     reorderPatches(mesh, oldToNew, newToOld.size(), validBoundary);
 
     return newToOld;
+}
+
+
+Foam::labelList Foam::fvMeshTools::removeEmptyPatches
+(
+    fvMesh& mesh,
+    const bool validBoundary
+)
+{
+    return removeEmptyPatches(mesh, wordList::null(), validBoundary);
 }
 
 
@@ -751,7 +777,7 @@ Foam::fvMeshTools::loadOrCreateMeshImpl
 
     // Patch types
     // ~~~~~~~~~~~
-    // Read and scatter master patches (without reading master mesh!)
+    // Read and broadcast master patches (without reading master mesh!)
 
     PtrList<entry> patchEntries;
     if (UPstream::master())
@@ -925,10 +951,12 @@ Foam::fvMeshTools::loadOrCreateMeshImpl
     }
     else if (readHandlerPtr && haveLocalMesh)
     {
+        const label numWorldProcs = UPstream::nProcs(UPstream::worldComm);
+        const label realWorldComm = UPstream::worldComm;
+
         const labelList meshProcIds(BitOps::sortedToc(haveMesh));
 
         UPstream::communicator newCommunicator;
-        const label oldWorldComm = UPstream::commWorld();
 
         auto& readHandler = *readHandlerPtr;
         auto oldHandler = fileOperation::fileHandler(readHandler);
@@ -937,31 +965,14 @@ Foam::fvMeshTools::loadOrCreateMeshImpl
         // only include the ranks for the current IO rank.
         // Instead allocate a new communicator for everyone with a mesh
 
-        const auto& handlerProcIds = UPstream::procID(fileHandler().comm());
-
         // Comparing global ranks in the communicator.
-        // Use std::equal for the List<label> vs List<int> comparison
-
-        if
-        (
-            meshProcIds.size() == handlerProcIds.size()
-         && std::equal
-            (
-                meshProcIds.cbegin(),
-                meshProcIds.cend(),
-                handlerProcIds.cbegin()
-            )
-        )
+        if (UPstream::sameProcs(fileHandler().comm(), meshProcIds))
         {
-            const_cast<fileOperation&>(fileHandler()).nProcs(UPstream::nProcs(oldWorldComm));
+            const_cast<fileOperation&>(fileHandler()).nProcs(numWorldProcs);
             // Can use the handler communicator as is.
             UPstream::commWorld(fileHandler().comm());
         }
-        else if
-        (
-            UPstream::nProcs(fileHandler().comm())
-         != UPstream::nProcs(UPstream::worldComm)
-        )
+        else if (UPstream::nProcs(fileHandler().comm()) != numWorldProcs)
         {
             // Need a new communicator for the fileHandler.
 
@@ -976,10 +987,10 @@ Foam::fvMeshTools::loadOrCreateMeshImpl
         meshPtr = autoPtr<fvMesh>::New(io, false);
 
         readHandler = fileOperation::fileHandler(oldHandler);
-        UPstream::commWorld(oldWorldComm);
+        UPstream::commWorld(realWorldComm);
 
         // Reset mesh communicator to the real world comm
-        meshPtr().polyMesh::comm() = UPstream::commWorld();
+        meshPtr().polyMesh::comm() = realWorldComm;
     }
 
 

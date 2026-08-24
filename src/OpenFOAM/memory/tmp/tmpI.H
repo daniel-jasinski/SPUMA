@@ -132,7 +132,7 @@ inline Foam::tmp<T>::tmp(const tmp<T>& rhs)
         if (ptr_)
         {
             ptr_->refCount::operator++();
-            this->checkUseCount();
+            //this->checkUseCount();
         }
         else
         {
@@ -163,7 +163,7 @@ inline Foam::tmp<T>::tmp(const tmp<T>& rhs, bool reuse)
             else
             {
                 ptr_->refCount::operator++();
-                this->checkUseCount();
+                //this->checkUseCount();
             }
         }
         else

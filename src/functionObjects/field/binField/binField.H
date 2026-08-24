@@ -36,20 +36,19 @@ Description
 
     Operands:
     \table
-      Operand      | Type                          | Location
-      input        | vol\<Type\>Field(s)          <!--
-               --> | \<time\>/\<inpField\>s
-      output file  | dat                           <!--
-               --> | postProcessing/\<FO\>/\<time\>/\<file\>
-      output field | -                             | -
+      Operand      | Type                    | Location
+      input        | vol<Type>Field(s)       | <time>/inputFields
+      output file  | dat                     | postProcessing/<FO>/<time>/file
+      output field | -                       | -
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    binField1
+    binFieldFO
     {
         // Mandatory entries
         type                    binField;
@@ -66,7 +65,7 @@ Usage
         cellZones               (<wordRes>);
         decomposePatchValues    <bool>;
 
-        // Conditional optional entries
+        // Conditional entries
 
             // General coordinate system specification
             coordinateSystem
@@ -112,7 +111,7 @@ Usage
     \endverbatim
 
     The inherited entries are elaborated in:
-      - \link fvMeshFunctionObject.H \endlink
+      - \link functionObject.H \endlink
       - \link writeFile.H \endlink
       - \link coordinateSystem.H \endlink
 
@@ -163,7 +162,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         binField
         (
             const word& name,
@@ -172,7 +171,7 @@ public:
             const bool readFields = true
         );
 
-        //- Construct from objectRegistry and dictionary
+        //- Construct from name, objectRegistry and dictionary
         binField
         (
             const word& name,
@@ -194,13 +193,13 @@ public:
 
     // Member Functions
 
-        //- Read the dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute the function object
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write to data files/fields and to streams
+        //- Write the function-object results
         virtual bool write();
 
         //- Update for changes of mesh

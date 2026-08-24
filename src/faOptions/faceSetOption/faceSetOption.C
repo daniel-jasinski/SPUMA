@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -116,9 +116,13 @@ void Foam::fa::faceSetOption::setArea()
     // Set area information
 
     scalar sumArea = 0;
-    for (const label facei : faces_)
     {
-        sumArea += regionMesh().S()[facei];
+        const auto& meshAreas = regionMesh().S();
+
+        for (const label facei : faces_)
+        {
+            sumArea += meshAreas[facei];
+        }
     }
     reduce(sumArea, sumOp<scalar>());
 
@@ -291,10 +295,11 @@ Foam::fa::faceSetOption::faceSetOption
     const word& name,
     const word& modelType,
     const dictionary& dict,
-    const fvMesh& mesh
+    const fvMesh& mesh,
+    const word& defaultAreaName
 )
 :
-    fa::option(name, modelType, dict, mesh),
+    fa::option(name, modelType, dict, mesh, defaultAreaName),
     timeStart_(-1),
     duration_(0),
     selectionMode_(selectionModeTypeNames_.get("selectionMode", coeffs_)),

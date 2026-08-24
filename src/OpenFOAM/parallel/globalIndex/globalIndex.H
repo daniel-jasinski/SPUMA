@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,16 +28,31 @@ Class
     Foam::globalIndex
 
 Description
-    Calculates a unique integer (label so might not have enough room - 2G max)
-    for processor + local index. E.g.
+    Calculates a non-overlapping list of offsets based on an input size
+    (eg, number of cells) from different MPI ranks.
+    These offsets can be used to define a unique (global) indexing
+    number.
 
-    globalIndex globalFaces(mesh.nFaces());
-    label globalFacei = globalFaces.toGlobal(facei);
+    For example,
+    \verbatim
+        globalIndex globalFaces(mesh.nFaces());
+        label globalFacei = globalFaces.toGlobal(facei);
+    \endverbatim
+
+Note
+    The globalIndex is generally used when the ranks need information
+    about each other's position, whereas GlobalOffset and OffsetRange
+    are used when only the local addressing information (and total Size)
+    is needed without additional information about other ranks.
+
+Warning
+    The unique integer is a Foam::label, so may be subject to overflow
+    problems (2G max) with a 32-bit label compilation.
 
 SourceFiles
-    globalIndex.C
+    globalIndex.cxx
+    globalIndex.txx
     globalIndexI.H
-    globalIndexTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
@@ -83,14 +98,6 @@ class globalIndex
             DynamicList<label>& validBins
         );
 
-        // Cannot use non-blocking for non-contiguous data.
-        // template<class Type>
-        // inline static UPstream::commsTypes getCommsType
-        // (
-        //     const UPstream::commsTypes preferred
-        //   = UPstream::commsTypes::nonBlocking
-        // );
-
         //- Report overflow at specified (non-negative) index
         static void reportOverflowAndExit
         (
@@ -99,7 +106,31 @@ class globalIndex
             const label count = 0         // The count to add to prevOffset
         );
 
+        //- Check for overflow and calls reportOverflowAndExit...
+        static inline void checkOverflowAndExit
+        (
+            const label idx,
+            const label prevOffset,     // The last valid offset value
+            const label count           // The count to add to prevOffset
+        );
+
+        //- Return start/size range addressing for proci data
+        inline labelRange range_impl(label proci) const noexcept;
+
+        //- Return start/size/total slab addressing for proci data
+        inline OffsetRange<label> slice_impl(label proci) const noexcept;
+
+
 public:
+
+    // STL type definitions
+
+        //- Type of values contained
+        typedef label value_type;
+
+        //- The type that can represent the size
+        typedef label size_type;
+
 
     // Public Data Types
 
@@ -145,7 +176,7 @@ public:
         //- No communication required
         inline globalIndex
         (
-            const globalIndex::gatherNone,
+            globalIndex::gatherNone,
             const labelUList& localSizes
         );
 
@@ -153,7 +184,7 @@ public:
         //- with default/specified communicator if parallel.
         inline explicit globalIndex
         (
-            const label localSize,
+            label localSize,
             const label comm = UPstream::worldComm,   //!< communicator
             const bool parallel = UPstream::parRun()  //!< use parallel comms
         );
@@ -161,9 +192,9 @@ public:
         //- Construct with a single (local size) entry, no communication
         inline globalIndex
         (
-            const globalIndex::gatherNone,
-            const label localSize,
-            const label comm = -1   //!< no communicator needed
+            globalIndex::gatherNone,
+            label localSize,
+            int communicator = -1   //!< (unused) no communicator needed
         );
 
         //- Construct 'one-sided' from local sizes.
@@ -173,8 +204,8 @@ public:
         //  \note can be used when Pstream::parRun() is false.
         inline globalIndex
         (
-            const globalIndex::gatherOnly,
-            const label localSize,
+            globalIndex::gatherOnly,
+            label localSize,
             const label comm = UPstream::worldComm  //!< communicator
         );
 
@@ -186,8 +217,8 @@ public:
         //  \note can be used when Pstream::parRun() is false.
         inline globalIndex
         (
-            const globalIndex::gatherNonLocal,
-            const label localSize,
+            globalIndex::gatherNonLocal,
+            label localSize,
             const label comm = UPstream::worldComm  //!< communicator
         );
 
@@ -206,7 +237,7 @@ public:
 
         //- Global sum of localSizes. Same as totalSize()
         FOAM_DEPRECATED_STRICT(2022-10, "totalSize() - unambiguous")
-        inline label size() const;
+        label size() const noexcept { return totalSize(); }
 
         //- The span size covered by the offsets, zero if empty
         inline label span() const noexcept;
@@ -283,7 +314,7 @@ public:
         //- with default/specified communicator if parallel.
         void reset
         (
-            const label localSize,
+            label localSize,
             const label comm = UPstream::worldComm,   //!< communicator
             const bool parallel = UPstream::parRun()  //!< use parallel comms
         );
@@ -300,9 +331,9 @@ public:
         //- Reset to a single (local size) entry, no communication
         inline void reset
         (
-            const globalIndex::gatherNone,
-            const label localSize,
-            const label comm = -1   //!< no communicator needed
+            globalIndex::gatherNone,
+            label localSize,
+            int communicator = -1   //!< (unused) no communicator needed
         );
 
         //- Reset as 'one-sided' from local sizes.
@@ -312,8 +343,8 @@ public:
         //  \note can be used when Pstream::parRun() is false.
         inline void reset
         (
-            const globalIndex::gatherOnly,
-            const label localSize,
+            globalIndex::gatherOnly,
+            label localSize,
             const label comm = UPstream::worldComm  //!< communicator
         );
 
@@ -325,8 +356,8 @@ public:
         //  \note can be used when Pstream::parRun() is false.
         inline void reset
         (
-            const globalIndex::gatherNonLocal,
-            const label localSize,
+            globalIndex::gatherNonLocal,
+            label localSize,
             const label comm = UPstream::worldComm  //!< communicator
         );
 
@@ -355,7 +386,10 @@ public:
         label maxNonLocalSize(const label proci) const;
 
         //- Return start/size range of proci data
-        inline labelRange range(const label proci) const;
+        inline labelRange range(label proci) const noexcept;
+
+        //- Return start/size/total slab addressing for proci data
+        inline OffsetRange<label> slice(label proci) const noexcept;
 
         //- Is on processor proci
         inline bool isLocal(const label proci, const label i) const;
@@ -420,6 +454,9 @@ public:
 
         //- Return start/size range of local (myProcNo) data
         inline labelRange range() const;
+
+        //- Return start/size/total slab addressing for local (myProcNo) data
+        inline OffsetRange<label> slice() const;
 
         //- Is on local processor
         inline bool isLocal(const label i) const;
@@ -526,26 +563,88 @@ public:
 
     // Helper Functions
 
-        //- Calculate globally-consistent local range (offset/size)
-        //- based on the local input size(s).
-        //  Effectively the same as globalIndex(localSize).range()
-        //  but without constructing an extra intermediate list of offsets
-        static labelRange calcRange
+        //- Based on the local input size(s),
+        //- calculate a globally-consistent local start offset.
+        //  No overflow checks.
+        //  \note Restricted to integral types.
+        template<class IntType>
+        static IntType calcOffset
         (
-            const label localSize,
-            const label comm = UPstream::worldComm,  //!< communicator
-            const bool checkOverflow = false
+            IntType localSize,
+            const label comm = UPstream::worldComm  //!< communicator
         );
 
-        //- Calculate globally-consistent local start offset
-        //- based on the local input size(s).
-        //  Effectively the same as globalIndex(localSize).localStart()
-        //  but without constructing an extra intermediate list of offsets
-        static label calcOffset
+        //- Based on the local input size(s),
+        //- calculate a globally-consistent local start offset.
+        //  With optional overflow checking.
+        //  \note Restricted to integral types.
+        template<class IntType>
+        static IntType calcOffset
         (
-            const label localSize,
-            const label comm = UPstream::worldComm,  //!< communicator
-            const bool checkOverflow = false
+            IntType localSize,
+            const label comm,  //!< communicator
+            [[maybe_unused]] const bool checkOverflow
+        )
+        {
+            IntType start = globalIndex::calcOffset(localSize, comm);
+            // Assume no overflow for large integrals
+            if constexpr (sizeof(IntType) < sizeof(int64_t))
+            {
+                if (checkOverflow && UPstream::is_parallel(comm))
+                {
+                    checkOverflowAndExit
+                    (
+                        UPstream::myProcNo(comm), start, localSize
+                    );
+                }
+            }
+            return start;
+        }
+
+        //- Based on the local input size(s),
+        //- calculate a globally-consistent range (offset/size).
+        //  No overflow checks.
+        //  \note Restricted to integral types.
+        template<class IntType>
+        std::enable_if_t<std::is_integral_v<IntType>, IntRange<IntType>>
+        static calcRange
+        (
+            IntType localSize,
+            const label comm = UPstream::worldComm  //!< communicator
+        )
+        {
+            IntType start = globalIndex::calcOffset(localSize, comm);
+            return IntRange<IntType>(start, localSize);
+        }
+
+        //- Based on the local input size(s),
+        //- calculate a globally-consistent range (offset/size).
+        //- With optional overflow checking.
+        //  \note Restricted to integral types.
+        template<class IntType>
+        std::enable_if_t<std::is_integral_v<IntType>, IntRange<IntType>>
+        static calcRange
+        (
+            IntType localSize,
+            const label comm,  //!< communicator
+            const bool checkOverflow
+        )
+        {
+            IntType start =
+                globalIndex::calcOffset(localSize, comm, checkOverflow);
+            return IntRange<IntType>(start, localSize);
+        }
+
+        //- Get the receive sizes.
+        //- On master the length == nProcs and element [0] corresponds
+        //- to the max of all other receive sizes.
+        //- On non-master, the list is zero-sized.
+        //  \note Restricted to integral types.
+        template<class IntType>
+        static List<IntType> calcRecvSizes
+        (
+            IntType localSize,
+            const label comm = UPstream::worldComm  //!< communicator
         );
 
         //- Calculate offsets from a list of local sizes,
@@ -582,17 +681,35 @@ public:
             const bool checkOverflow = false
         );
 
+        //- Split the top-level offsets into inter-node and local-node
+        //- components suitable to a two-stage hierarchy.
+        bool splitNodeOffsets
+        (
+            //! [out] Offsets between nodes (only non-empty on node leaders)
+            labelList& interNodeOffsets,
+            //! [out] Offsets within a node (only non-empty on node leaders)
+            labelList& localNodeOffsets,
+            //! The communicator. Must resolve to const world-comm
+            const label communicator = UPstream::worldComm,
+            //! Retain absolute values for the localNode offsets
+            const bool absoluteLocalNodeOffsets = false
+        ) const;
+
+
+    // Misc low-level gather routines
+
         //- Collect single values in processor order on master (== procIDs[0]).
         //  Handles contiguous/non-contiguous data.
+        //  non-zero output field (master only)
         template<class ProcIDsContainer, class Type>
-        static void gatherValues
+        [[nodiscard]]
+        static List<Type> listGatherValues
         (
             const label comm,           //!< communicator
             const ProcIDsContainer& procIDs,
             const Type& localValue,
-            List<Type>& allValues,      //! output field (master only)
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking
         );
 
         //- Collect data in processor order on master (== procIDs[0]).
@@ -603,10 +720,11 @@ public:
             const labelUList& offsets,  //!< offsets (master only)
             const label comm,           //!< communicator
             const ProcIDsContainer& procIDs,
-            const UList<Type>& fld,
-            List<Type>& allFld,         //! output field (master only)
+            const UList<Type>& fld,     //!< [in] all ranks
+            //! [out] result (master only). Must be adequately sized!
+            UList<Type>& allFld,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking
         );
 
         //- Collect indirect data in processor order on master
@@ -617,37 +735,24 @@ public:
             const labelUList& offsets,  //!< offsets (master only)
             const label comm,           //!< communicator
             const ProcIDsContainer& procIDs,
-            const IndirectListBase<Type, Addr>& fld,
-            List<Type>& allFld,         //! output field (master only)
+            const IndirectListBase<Type, Addr>& fld,  //!< [in] all ranks
+            //! [out] result (master only). Must be adequately sized!
+            UList<Type>& allFld,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking
         );
 
-
-    // Misc low-level gather routines
-
         //- Inplace collect in processor order on master (== procIDs[0]).
-        //  Note: adjust naming?
         template<class ProcIDsContainer, class Type>
-        static void gather
+        static void gatherInplace
         (
             const labelUList& offsets,  //!< offsets (master only)
             const label comm,           //!< communicator
             const ProcIDsContainer& procIDs,
-            List<Type>& fld,            //!< in/out field
+            List<Type>& fld,            //!< [in,out]
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes ct = UPstream::commsTypes::nonBlocking
-        )
-        {
-            List<Type> allData;
-            gather(offsets, comm, procIDs, fld, allData, tag, ct);
-
-            const int masterProci = procIDs.size() ? procIDs[0] : 0;
-            if (UPstream::myProcNo(comm) == masterProci)
-            {
-                fld.transfer(allData);
-            }
-        }
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking
+        );
 
         //- Collect data in processor order on master (== procIDs[0]).
         //  \note the globalIndex offsets needed on master only.
@@ -656,29 +761,26 @@ public:
         (
             const label comm,           //!< communicator
             const ProcIDsContainer& procIDs,
-            const UList<Type>& fld,     //!< input field
-            List<Type>& allFld,         //! output field (master only)
+            const UList<Type>& fld,     //!< [in] input field
+            //! [out] resized to have results on master, empty elsewhere.
+            List<Type>& allFld,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes ct = UPstream::commsTypes::nonBlocking
-        ) const
-        {
-            gather(offsets_, comm, procIDs, fld, allFld, tag, ct);
-        }
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking
+        ) const;
 
         //- Inplace collect in processor order on master (== procIDs[0]).
         //  \note the globalIndex offsets needed on master only.
-        //  Note: adjust naming?
         template<class ProcIDsContainer, class Type>
-        void gather
+        void gatherInplace
         (
             const label comm,           //!< communicator
             const ProcIDsContainer& procIDs,
-            List<Type>& fld,            //!< in/out field
+            List<Type>& fld,            //!< [in,out]
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes ct = UPstream::commsTypes::nonBlocking
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking
         ) const
         {
-            gather(offsets_, comm, procIDs, fld, tag, ct);
+            gatherInplace(offsets_, comm, procIDs, fld, tag, commsType);
         }
 
 
@@ -690,10 +792,12 @@ public:
         template<class Type>
         void gather
         (
+            //! [in] input on all ranks
             const UList<Type>& sendData,
+            //! [out] resized to have results on master, empty elsewhere.
             List<Type>& allData,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         ) const;
 
@@ -703,10 +807,12 @@ public:
         template<class Type, class Addr>
         void gather
         (
+            //! [in] input on all ranks
             const IndirectListBase<Type, Addr>& sendData,
+            //! [out] resized to have results on master, empty elsewhere.
             List<Type>& allData,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         ) const;
 
@@ -716,11 +822,12 @@ public:
         //
         //  \return output (master), zero-sized on non-master
         template<class Type, class OutputContainer = List<Type>>
+        [[nodiscard]]
         OutputContainer gather
         (
-            const UList<Type>& sendData,
+            const UList<Type>& sendData,  //!< [in] all ranks
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         ) const;
 
@@ -729,11 +836,12 @@ public:
         //
         //  \return output (master), zero-sized on non-master
         template<class Type, class Addr, class OutputContainer = List<Type>>
+        [[nodiscard]]
         OutputContainer gather
         (
-            const IndirectListBase<Type, Addr>& sendData,
+            const IndirectListBase<Type, Addr>& sendData, //!< [in] all ranks
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         ) const;
 
@@ -744,10 +852,9 @@ public:
         template<class Type>
         void gatherInplace
         (
-            //! [in,out]
-            List<Type>& fld,
+            List<Type>& fld,  //!< [in,out]
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         ) const;
 
@@ -765,7 +872,7 @@ public:
             const label comm = UPstream::worldComm,  //!< communicator
 
             // For fallback routines:
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const int tag = UPstream::msgType()
         ) const;
 
@@ -777,13 +884,14 @@ public:
         //
         //  \return output (master), zero-sized on non-master
         template<class Type, class OutputContainer = List<Type>>
+        [[nodiscard]]
         OutputContainer mpiGather
         (
             const UList<Type>& sendData,
             const label comm = UPstream::worldComm,  //!< communicator
 
             // For fallback routines:
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const int tag = UPstream::msgType()
         ) const;
 
@@ -803,7 +911,7 @@ public:
             const label comm = UPstream::worldComm,  //!< communicator
 
             // For fallback routines:
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const int tag = UPstream::msgType()
         ) const;
 
@@ -823,7 +931,7 @@ public:
             const label comm = UPstream::worldComm,  //!< communicator
 
             // For fallback routines:
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const int tag = UPstream::msgType()
         );
 
@@ -833,13 +941,14 @@ public:
         //
         //  \return output (master), zero-sized on non-master
         template<class Type, class OutputContainer = List<Type>>
+        [[nodiscard]]
         static OutputContainer mpiGatherOp
         (
             const UList<Type>& sendData,
             const label comm = UPstream::worldComm,  //!< communicator
 
             // For fallback routines:
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const int tag = UPstream::msgType()
         );
 
@@ -857,7 +966,7 @@ public:
             const label comm = UPstream::worldComm,  //!< communicator
 
             // For fallback routines:
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const int tag = UPstream::msgType()
         );
 
@@ -871,7 +980,7 @@ public:
             //! [out] output on master, zero-sized on non-master
             List<Type>& allData,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         );
 
@@ -885,7 +994,7 @@ public:
             //! [out] output on master, zero-sized on non-master
             List<Type>& allData,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         );
 
@@ -895,11 +1004,12 @@ public:
         //
         //  \return output (master), zero-sized on non-master
         template<class Type, class OutputContainer = List<Type>>
+        [[nodiscard]]
         static OutputContainer gatherOp
         (
             const UList<Type>& sendData,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         );
 
@@ -909,11 +1019,12 @@ public:
         //
         //  \return output (master), zero-sized on non-master
         template<class Type, class Addr, class OutputContainer = List<Type>>
+        [[nodiscard]]
         static OutputContainer gatherOp
         (
             const IndirectListBase<Type, Addr>& sendData,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         );
 
@@ -928,7 +1039,7 @@ public:
             //! [in,out]
             List<Type>& fld,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         );
 
@@ -947,7 +1058,7 @@ public:
             const UList<Type>& allFld,
             UList<Type>& fld,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking
         );
 
         //- Distribute data in processor order.
@@ -962,11 +1073,10 @@ public:
             const UList<Type>& allFld,
             UList<Type>& fld,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes ct =
-                UPstream::commsTypes::nonBlocking
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking
         ) const
         {
-            scatter(offsets_, comm, procIDs, allFld, fld, tag, ct);
+            scatter(offsets_, comm, procIDs, allFld, fld, tag, commsType);
         }
 
         //- Distribute data in processor order.
@@ -979,7 +1089,7 @@ public:
             const UList<Type>& allData,
             UList<Type>& localData,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         ) const;
 
@@ -988,11 +1098,12 @@ public:
         //  Communication with default/specified communicator, message tag.
         //  \note the globalIndex offsets needed on master only.
         template<class Type, class OutputContainer = List<Type>>
+        [[nodiscard]]
         OutputContainer scatter
         (
             const UList<Type>& allData,
             const int tag = UPstream::msgType(),
-            const UPstream::commsTypes = UPstream::commsTypes::nonBlocking,
+            UPstream::commsTypes commsType = UPstream::commsTypes::nonBlocking,
             const label comm = UPstream::worldComm  //!< communicator
         ) const;
 
@@ -1047,7 +1158,7 @@ public:
         FOAM_DEPRECATED_FOR(2022-03, "construct without message tag")
         globalIndex
         (
-            const label localSize,
+            label localSize,
             const int tag,          // message tag (unused)
             const label comm,       // communicator
             const bool parallel     // use parallel comms
@@ -1061,7 +1172,7 @@ public:
         FOAM_DEPRECATED_FOR(2022-03, "reset without message tag")
         void reset
         (
-            const label localSize,
+            label localSize,
             const int tag,          // message tag (unused)
             const label comm,       // communicator
             const bool parallel     // use parallel comms
@@ -1087,7 +1198,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "globalIndexTemplates.C"
+    #include "globalIndex.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

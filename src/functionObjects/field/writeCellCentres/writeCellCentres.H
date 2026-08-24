@@ -39,51 +39,41 @@ Description
       Operand          | Type           | Location
       input            | -              | -
       output file      | -              | -
-      output field 1   | volVectorField | $FOAM_CASE/\<time\>/C
-      output field 2   | volScalarField | $FOAM_CASE/\<time\>/{Cx,Cy,Cz}
+      output field 1   | volVectorField | <time>/C
+      output field 2   | volScalarField | <time>/{Cx,Cy,Cz}
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    writeCellCentres
+    writeCellCentresFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        writeCellCentres;
         libs        (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property   | Description                        | Type | Req'd | Dflt
+      Property   | Description                        | Type | Reqd  | Deflt
       type       | Type name: writeCellCentres        | word |  yes  | -
       libs       | Library name: fieldFunctionObjects | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func writeCellCentres
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::writeCellCentres
+      - \link functionObject.H \endlink
 
 SourceFiles
     writeCellCentres.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_writeCellCentres_H
-#define functionObjects_writeCellCentres_H
+#ifndef Foam_functionObjects_writeCellCentres_H
+#define Foam_functionObjects_writeCellCentres_H
 
 #include "fvMeshFunctionObject.H"
 
@@ -110,7 +100,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         writeCellCentres
         (
             const word& name,
@@ -131,13 +121,13 @@ public:
 
     // Member Functions
 
-        //- Read the cell-centre rate data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Do nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the cell-centre fields
+        //- Write the function-object results
         virtual bool write();
 };
 

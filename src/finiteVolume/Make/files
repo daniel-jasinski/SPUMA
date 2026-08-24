@@ -1,5 +1,6 @@
 fvMesh/fvMeshGeometry.C
 fvMesh/fvMesh.C
+fvMesh/fvMeshLduAddressing.C
 fvMesh/fvMeshCsrAddressing.C
 
 fvGeometryScheme = fvMesh/fvGeometryScheme
@@ -129,7 +130,6 @@ $(fvPatchFields)/fvPatchField/fvPatchFieldBase.C
 $(fvPatchFields)/fvPatchField/fvPatchFields.C
 
 basicFvPatchFields = $(fvPatchFields)/basic
-$(basicFvPatchFields)/basicSymmetry/basicSymmetryFvPatchFields.C
 $(basicFvPatchFields)/calculated/calculatedFvPatchFields.C
 $(basicFvPatchFields)/extrapolatedCalculated/extrapolatedCalculatedFvPatchFields.C
 $(basicFvPatchFields)/coupled/coupledFvPatchFields.C
@@ -140,6 +140,7 @@ $(basicFvPatchFields)/mixed/mixedFvPatchFields.C
 $(basicFvPatchFields)/sliced/slicedFvPatchFields.C
 $(basicFvPatchFields)/transform/transformFvPatchFields.C
 $(basicFvPatchFields)/zeroGradient/zeroGradientFvPatchFields.C
+$(basicFvPatchFields)/zeroValue/zeroValueFvPatchFields.C
 
 constraintFvPatchFields = $(fvPatchFields)/constraint
 $(constraintFvPatchFields)/cyclic/cyclicFvPatchFields.C
@@ -265,6 +266,7 @@ $(basicFvsPatchFields)/calculated/calculatedFvsPatchFields.C
 $(basicFvsPatchFields)/coupled/coupledFvsPatchFields.C
 $(basicFvsPatchFields)/fixedValue/fixedValueFvsPatchFields.C
 $(basicFvsPatchFields)/sliced/slicedFvsPatchFields.C
+$(basicFvsPatchFields)/zeroValue/zeroValueFvsPatchFields.C
 
 constraintFvsPatchFields = $(fvsPatchFields)/constraint
 $(constraintFvsPatchFields)/cyclic/cyclicFvsPatchFields.C

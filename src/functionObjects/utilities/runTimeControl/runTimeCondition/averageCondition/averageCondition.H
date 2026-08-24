@@ -39,8 +39,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_runTimeControls_averageCondition_H
-#define functionObjects_runTimeControls_averageCondition_H
+#ifndef Foam_functionObjects_runTimeControls_averageCondition_H
+#define Foam_functionObjects_runTimeControls_averageCondition_H
 
 #include "runTimeCondition.H"
 #include "valueAverageBase.H"

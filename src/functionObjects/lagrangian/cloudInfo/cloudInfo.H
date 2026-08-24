@@ -37,37 +37,49 @@ Description
     - total current number of parcels
     - total current mass of parcels
 
+    Operands:
+    \table
+      Operand      | Type     | Location
+      input        | -        | -
+      output file  | dat      | postProcessing/<FO>/<time>/<cloudName>.dat
+      output field | -        | -
+    \endtable
+
 Usage
-    Example of function object specification:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    cloudInfo1
+    cloudInfoFO
     {
+        // Mandatory entries
         type        cloudInfo;
         libs        (lagrangianFunctionObjects);
+        clouds      <wordList>;  // (kinematicCloud1 thermoCloud1)
+
+        // Optional entries
+        selection   <dictionary>;
+        sampleOnExecute <bool>;
+        verbose     <bool>;
+
+        // Inherited entries
         ...
-        clouds
-        (
-            kinematicCloud1
-            thermoCloud1
-        );
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property     | Description                          | Required | Default
-        type         | type name: cloudInfo                 | yes |
-        clouds       | list of clouds names to process      | yes |
-        selection    | Parcel selection control         | no  | empty-dict
-        sampleOnExecute| Sample/report (on execute) without writing | no | false
+      Property  | Description                        | Type | Reqd | Deflt
+      type      | Type name: cloudInfo               | word | yes  | -
+      libs      | Library name: lagrangianFunctionObjects | word | yes  | -
+      clouds    | List of clouds names to process    | yes | -   | -
+      selection | Parcel selection control           | no  | empty-dict
+      sampleOnExecute| Sample/report (on execute) without writing | no | false
+      verbose   | Additional verbosity               | bool | no   | false
     \endtable
 
-    The output data of each cloud is written to a file named \<cloudName\>.dat
-
-See also
-    Foam::functionObject
-    Foam::functionObjects::regionFunctionObject
-    Foam::functionObjects::logFiles
+    The inherited entries are elaborated in:
+      - \link regionFunctionObject.H \endlink
+      - \link logFiles.H \endlink
+      - \link parcelSelectionDetail.H \endlink
 
 SourceFiles
     cloudInfo.C
@@ -150,7 +162,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         cloudInfo
         (
             const word& name,
@@ -165,13 +177,13 @@ public:
 
     // Member Functions
 
-        //- Read the controls
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write
+        //- Write the function-object results
         virtual bool write();
 };
 

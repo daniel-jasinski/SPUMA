@@ -47,33 +47,42 @@ Description
     constant/kinematicCloudProperties dictionary in the usual manner.
 
 Usage
-    Example of function object specification:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-        tracks
-        {
-            type    icoUncoupledKinematicCloud;
-            libs    (lagrangianFunctionObjects);
-        }
+    tracksFO
+    {
+        // Mandatory entries
+        type              icoUncoupledKinematicCloud;
+        libs              (lagrangianFunctionObjects);
+
+        // Optional entries
+        U                 <word>;
+        kinematicCloud    <word>;
+
+        // Inherited entries
+        ...
+    }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property | Description                     | Required   | Default value
-        type     | Type name: icoUncoupledKinematicCloud | yes  |
-        U        | Name of the velocity field       | no        | U
-        kinematicCloud | Name of the kinematicCloud | no        | kinematicCloud
+      Property  | Description                        | Type | Reqd | Deflt
+      type      | Type name: icoUncoupledKinematicCloud | word | yes  | -
+      libs      | Library name: lagrangianFunctionObjects | word | yes  | -
+      U         | Name of the velocity field         | word | no | U
+      kinematicCloud | Name of the cloud      | word | no | kinematicCloud
     \endtable
 
-See also
-    Foam::functionObjects::fvMeshFunctionObject
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
 
 SourceFiles
     icoUncoupledKinematicCloud.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_icoUncoupledKinematicCloud_H
-#define functionObjects_icoUncoupledKinematicCloud_H
+#ifndef Foam_functionObjects_icoUncoupledKinematicCloud_H
+#define Foam_functionObjects_icoUncoupledKinematicCloud_H
 
 #include "fvMeshFunctionObject.H"
 #include "basicKinematicCollidingCloud.H"
@@ -98,7 +107,7 @@ class icoUncoupledKinematicCloud
 :
     public fvMeshFunctionObject
 {
-    // Private member data
+    // Private Data
 
         //- Optional acceleration due to gravity
         uniformDimensionedVectorField g_;
@@ -125,7 +134,7 @@ class icoUncoupledKinematicCloud
         basicKinematicCollidingCloud kinematicCloud_;
 
 
-    // Private member functions
+    // Private Member Functions
 
         //- No copy construct
         icoUncoupledKinematicCloud(const icoUncoupledKinematicCloud&) = delete;
@@ -142,7 +151,7 @@ public:
 
     // Constructors
 
-        //- Construct for given objectRegistry and dictionary.
+        //- Construct from name, Time and dictionary
         //  Allow the possibility to load fields from files
         icoUncoupledKinematicCloud
         (
@@ -158,13 +167,13 @@ public:
 
     // Member Functions
 
-        //- Read the controls
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Track the cloud
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the cloud
+        //- Write the function-object results
         virtual bool write();
 };
 

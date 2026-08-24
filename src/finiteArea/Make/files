@@ -2,6 +2,7 @@ faMesh/faGlobalMeshData/faGlobalMeshData.C
 faMesh/faMeshesRegistry.C
 faMesh/faMeshRegistry.C
 faMesh/faMesh.C
+faMesh/faMeshLduAddressing.C
 faMesh/faMeshNew.C
 faMesh/faMeshDemandDrivenData.C
 faMesh/faMeshPatches.C
@@ -11,10 +12,12 @@ faMesh/faMeshBoundaryHalo.C
 faMesh/faBoundaryMesh/faBoundaryMesh.C
 faMesh/faBoundaryMesh/faBoundaryMeshEntries.C
 
-faMesh/faMeshSubset/faMeshSubset.C
-faMesh/faMeshTools/faMeshTools.C
-faMesh/faMeshTools/faMeshToolsChecks.C
-faMesh/faMeshTools/faMeshToolsProcAddr.C
+faceZone = faMesh/zones/faceZone/faFaceZone.cxx
+
+faMesh/faMeshSubset/faMeshSubset.cxx
+faMesh/faMeshTools/faMeshTools.cxx
+faMesh/faMeshTools/faMeshToolsChecks.cxx
+faMesh/faMeshTools/faMeshToolsProcAddr.cxx
 
 faPatches = faMesh/faPatches
 $(faPatches)/faPatch/faPatch.C
@@ -28,8 +31,8 @@ $(faPatches)/constraint/cyclic/cyclicFaPatch.C
 $(faPatches)/constraint/symmetry/symmetryFaPatch.C
 $(faPatches)/other/ignore/ignoreFaPatch.C
 
-distributed/faMeshDistributor.C
-distributed/faMeshDistributorNew.C
+distributed/faMeshDistributor.cxx
+distributed/faMeshDistributorNew.cxx
 
 ensight = output/ensight
 $(ensight)/ensightFaMesh.C
@@ -45,16 +48,16 @@ $(faPatchFields)/faPatchField/faPatchFieldBase.C
 $(faPatchFields)/faPatchField/faPatchFields.C
 
 basicFaPatchFields = $(faPatchFields)/basic
-$(basicFaPatchFields)/basicSymmetry/basicSymmetryFaPatchFields.C
 $(basicFaPatchFields)/calculated/calculatedFaPatchFields.C
 $(basicFaPatchFields)/extrapolatedCalculated/extrapolatedCalculatedFaPatchFields.C
 $(basicFaPatchFields)/coupled/coupledFaPatchFields.C
-$(basicFaPatchFields)/zeroGradient/zeroGradientFaPatchFields.C
 $(basicFaPatchFields)/fixedValue/fixedValueFaPatchFields.C
 $(basicFaPatchFields)/fixedGradient/fixedGradientFaPatchFields.C
 $(basicFaPatchFields)/mixed/mixedFaPatchFields.C
 $(basicFaPatchFields)/sliced/slicedFaPatchFields.C
 $(basicFaPatchFields)/transform/transformFaPatchFields.C
+$(basicFaPatchFields)/zeroGradient/zeroGradientFaPatchFields.C
+$(basicFaPatchFields)/zeroValue/zeroValueFaPatchFields.C
 
 constraintFaPatchFields = $(faPatchFields)/constraint
 $(constraintFaPatchFields)/empty/emptyFaPatchFields.C
@@ -85,6 +88,7 @@ $(basicFaePatchFields)/calculated/calculatedFaePatchFields.C
 $(basicFaePatchFields)/coupled/coupledFaePatchFields.C
 $(basicFaePatchFields)/fixedValue/fixedValueFaePatchFields.C
 $(basicFaePatchFields)/sliced/slicedFaePatchFields.C
+$(basicFaePatchFields)/zeroValue/zeroValueFaePatchFields.C
 
 constraintFaePatchFields = $(faePatchFields)/constraint
 $(constraintFaePatchFields)/empty/emptyFaePatchFields.C

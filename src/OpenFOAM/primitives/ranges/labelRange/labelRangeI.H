@@ -34,17 +34,13 @@ inline constexpr Foam::labelRange::labelRange() noexcept
 {}
 
 
-inline constexpr Foam::labelRange::labelRange(const label len) noexcept
+inline constexpr Foam::labelRange::labelRange(label len) noexcept
 :
     IntRange<label>(len)
 {}
 
 
-inline Foam::labelRange::labelRange
-(
-    const label beg,
-    const label len
-) noexcept
+inline Foam::labelRange::labelRange(label beg, label len) noexcept
 :
     IntRange<label>(beg, len)
 {
@@ -54,9 +50,9 @@ inline Foam::labelRange::labelRange
 
 inline Foam::labelRange::labelRange
 (
-    const label beg,
-    const label len,
-    const bool adjustStart
+    label beg,
+    label len,
+    bool adjustStart
 ) noexcept
 :
     IntRange<label>(beg, len)
@@ -76,12 +72,12 @@ inline Foam::labelRange::labelRange
 
 inline void Foam::labelRange::reset
 (
-    const label beg,
-    const label len,
-    const bool adjustStart
+    label beg,
+    label len,
+    bool adjustStart
 ) noexcept
 {
-    reset(beg, len);
+    IntRange<label>::reset(beg, len);
 
     if (adjustStart)
     {
@@ -91,6 +87,13 @@ inline void Foam::labelRange::reset
     {
         clampSize();
     }
+}
+
+
+inline Foam::labelRange
+Foam::labelRange::subset0(label len) const
+{
+    return this->subset(0, len);
 }
 
 

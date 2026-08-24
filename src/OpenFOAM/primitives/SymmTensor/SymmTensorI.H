@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -32,9 +32,9 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Cmpt>
-inline Foam::SymmTensor<Cmpt>::SymmTensor(const Foam::zero)
+FOAM_DEVICE inline Foam::SymmTensor<Cmpt>::SymmTensor(Foam::zero)
 :
-    SymmTensor::vsType(Zero)
+    SymmTensor::vsType(Foam::zero{})
 {}
 
 
@@ -240,6 +240,21 @@ inline Foam::scalar Foam::SymmTensor<Cmpt>::diagSqr() const
 
 
 template<class Cmpt>
+inline bool Foam::SymmTensor<Cmpt>::is_identity(const scalar tol) const
+{
+    return
+    (
+        Foam::mag(xx() - pTraits<Cmpt>::one) < tol
+     && Foam::mag(yy() - pTraits<Cmpt>::one) < tol
+     && Foam::mag(zz() - pTraits<Cmpt>::one) < tol
+     && Foam::mag(xy()) < tol
+     && Foam::mag(xz()) < tol
+     && Foam::mag(yz()) < tol
+    );
+}
+
+
+template<class Cmpt>
 FOAM_DEVICE inline Cmpt Foam::SymmTensor<Cmpt>::det() const
 {
     return
@@ -366,11 +381,13 @@ inline Foam::SymmTensor<Cmpt> Foam::SymmTensor<Cmpt>::inv() const
 
 // Invert with some error handling
 template<class Cmpt>
-inline Foam::SymmTensor<Cmpt> Foam::SymmTensor<Cmpt>::safeInv() const
+FOAM_DEVICE inline Foam::SymmTensor<Cmpt> Foam::SymmTensor<Cmpt>::safeInv() const
 {
     {
         // Attempt to identify and handle 2-D cases.
         // - use diagSqr instead of magSqr for fewer operations
+        const Cmpt localOne(1);
+        
         const scalar magSqr_xx = Foam::magSqr(xx());
         const scalar magSqr_yy = Foam::magSqr(yy());
         const scalar magSqr_zz = Foam::magSqr(zz());
@@ -387,9 +404,9 @@ inline Foam::SymmTensor<Cmpt> Foam::SymmTensor<Cmpt>::safeInv() const
         {
             SymmTensor<Cmpt> work(*this);
 
-            if (small_xx) { work.xx() += pTraits<Cmpt>::one; }
-            if (small_yy) { work.yy() += pTraits<Cmpt>::one; }
-            if (small_zz) { work.zz() += pTraits<Cmpt>::one; }
+            if (small_xx) { work.xx() += localOne; }
+            if (small_yy) { work.yy() += localOne; }
+            if (small_zz) { work.zz() += localOne; }
 
             const Cmpt detval = work.det();
 
@@ -401,9 +418,9 @@ inline Foam::SymmTensor<Cmpt> Foam::SymmTensor<Cmpt>::safeInv() const
 
             work = work.adjunct()/detval;
 
-            if (small_xx) { work.xx() -= pTraits<Cmpt>::one; }
-            if (small_yy) { work.yy() -= pTraits<Cmpt>::one; }
-            if (small_zz) { work.zz() -= pTraits<Cmpt>::one; }
+            if (small_xx) { work.xx() -= localOne; }
+            if (small_yy) { work.yy() -= localOne; }
+            if (small_zz) { work.zz() -= localOne; }
 
             return work;
         }

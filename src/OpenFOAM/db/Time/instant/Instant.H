@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2022 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -64,12 +64,17 @@ public:
 
     // Public Classes
 
-        //- Less function for sorting
+        //- Less function for sorting. Compares values only
         struct less
         {
-            bool operator()(const Instant& a, const Instant& b) const noexcept
+            template<class T1, class T2>
+            bool operator()
+            (
+                const Instant<T1>& a,
+                const Instant<T2>& b
+            ) const noexcept
             {
-                return a.value() < b.value();
+                return (a.value() < b.value());
             }
         };
 
@@ -128,23 +133,102 @@ public:
         T& name() noexcept { return key_; }
 
 
-        //- True if values are equal (includes SMALL for rounding)
-        bool equal(scalar val) const noexcept
+    // Comparison Methods (Static)
+
+        //- Are values equal within (SMALL) rounding tolerance?
+        static constexpr bool equal_to(scalar a, scalar b) noexcept
         {
-            return ((val_ > val - SMALL) && (val_ < val + SMALL));
+            return ((a > b - SMALL) && (a < b + SMALL));
         }
 
-        //- True if values are equal (includes SMALL for rounding)
+        //- Are values less-equal within (SMALL) rounding tolerance?
+        static constexpr bool less_equal(scalar a, scalar b) noexcept
+        {
+            return (a < b + SMALL);
+        }
+
+        //- Are values greater_equal within (SMALL) rounding tolerance?
+        static constexpr bool greater_equal(scalar a, scalar b) noexcept
+        {
+            return (a > b - SMALL);
+        }
+
+
+    // Comparison Methods
+
+        //- Is instant value equal to \p val within (SMALL) rounding?
+        bool equal(scalar val) const noexcept
+        {
+            return equal_to(this->value(), val);
+        }
+
+        //- Is instant value equal to \p other within (SMALL) rounding?
         template<class T2>
         bool equal(const Instant<T2>& other) const noexcept
         {
-            return (*this).equal(other.value());
+            return equal_to(this->value(), other.value());
+        }
+
+        //- Is instant less-equal than \p val within (SMALL) rounding?
+        bool less_equal(scalar val) const noexcept
+        {
+            return less_equal(this->value(), val);
+        }
+
+        //- Is instant less-equal than \p other within (SMALL) rounding?
+        template<class T2>
+        bool less_equal(const Instant<T2>& other) const noexcept
+        {
+            return less_equal(this->value(), other.value());
+        }
+
+        //- Is instant greater-equal than \p val within (SMALL) rounding?
+        bool greater_equal(scalar val) const noexcept
+        {
+            return less_equal(val, this->value());
+        }
+
+        //- Is instant greater-equal than \p other within (SMALL) rounding?
+        template<class T2>
+        bool greater_equal(const Instant<T2>& other) const noexcept
+        {
+            return less_equal(other.value(), this->value());
+        }
+
+
+    // Member Operators
+
+        //- Is instant less-equal than \p val within (SMALL) rounding?
+        bool operator<=(scalar val) const noexcept
+        {
+            return less_equal(this->value(), val);
+        }
+
+        //- Is instant less-equal than \p other within (SMALL) rounding?
+        template<class T2>
+        bool operator<=(const Instant<T2>& other) const noexcept
+        {
+            return less_equal(this->value(), other.value());
+        }
+
+        //- Is instant greater-equal than \p val within (SMALL) rounding?
+        bool operator>=(scalar val) const noexcept
+        {
+            return greater_equal(this->value(), val);
+        }
+
+        //- Is instant greater-equal than \p other within (SMALL) rounding?
+        template<class T2>
+        bool operator>=(const Instant<T2>& other) const noexcept
+        {
+            return greater_equal(this->value(), other.value());
         }
 };
 
 
 // * * * * * * * * * * * * * * * Global Operators  * * * * * * * * * * * * * //
 
+//- True if instant values are equal within rounding tolerance
 template<class T1, class T2>
 inline bool operator==(const Instant<T1>& a, const Instant<T2>& b) noexcept
 {
@@ -152,6 +236,7 @@ inline bool operator==(const Instant<T1>& a, const Instant<T2>& b) noexcept
 }
 
 
+//- True if instant values are not equal within rounding tolerance
 template<class T1, class T2>
 inline bool operator!=(const Instant<T1>& a, const Instant<T2>& b) noexcept
 {

@@ -37,53 +37,38 @@ Description
 
     Operands:
     \table
-      Operand           | Type           | Location
-      input             | -              | -
-      output file       | dat            | $POST/\<file\>
-      output field      | vtp            | $POST/\<AMINames\>_{src,tgt}.vtp
+      Operand      | Type   | Location
+      input        | -      | -
+      output file  | dat    | postProcessing/<FO>/<time>/file
+      output field | vtp    | postProcessing/<FO>/<time>/AMINames_{src,tgt}.vtp
     \endtable
-
-    where \c $POST=$FOAM_CASE/postProcessing/\<FO\>/\<time\>.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    AMIWeights1
+    AMIWeightsFO
     {
-        // Mandatory entries (unmodifiable)
-        type        AMIWeights;
-        libs        (fieldFunctionObjects);
+        // Mandatory entries
+        type            AMIWeights;
+        libs            (fieldFunctionObjects);
+        writeFields     <bool>;
 
-        // Mandatory entries (runtime modifiable)
-        writeFields false;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: AMIWeights              | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       writeFields  | Write weights as VTK fields        | bool |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func AMIWeights
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::AMIWeights
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 SourceFiles
     AMIWeights.C
@@ -91,8 +76,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_AMIWeights_H
-#define functionObjects_AMIWeights_H
+#ifndef Foam_functionObjects_AMIWeights_H
+#define Foam_functionObjects_AMIWeights_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -153,7 +138,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         AMIWeights
         (
             const word& name,
@@ -174,13 +159,13 @@ public:
 
     // Member Functions
 
-        //- Read the field min/max data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations (no-op)
         virtual bool execute();
 
-        //- Write the AMIWeights
+        //- Write the function-object results
         virtual bool write();
 };
 

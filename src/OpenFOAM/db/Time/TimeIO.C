@@ -35,6 +35,7 @@ License
 #include "IOdictionary.H"
 #include "fileOperation.H"
 #include "fstreamPointer.H"
+#include "Field.H"  // Ugly handling of localBoundaryConsistency switches
 
 #include <iomanip>
 
@@ -141,6 +142,9 @@ void Foam::Time::readDict()
             << controlDict_.name() << nl;
 
         debug::optimisationObjects().setValues(*localDict, true);
+
+        // Ugly handling of localBoundaryConsistency switches
+        FieldBase::warnLocalBoundaryConsistencyCompat(*localDict);
     }
 
 
@@ -469,11 +473,8 @@ void Foam::Time::readModifiedObjects()
         // processors!
         fileHandler().updateStates
         (
-            (
-                IOobject::fileModificationChecking == IOobject::inotifyMaster
-             || IOobject::fileModificationChecking == IOobject::timeStampMaster
-            ),
-            Pstream::parRun()
+            IOobject::fileModificationChecking_masterOnly(),
+            UPstream::parRun()
         );
         // Time handling is special since controlDict_ is the one dictionary
         // that is not registered to any database.

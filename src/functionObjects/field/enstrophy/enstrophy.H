@@ -44,54 +44,42 @@ Description
     Operands:
     \table
       Operand           | Type           | Location
-      input             | volVectorField | $FOAM_CASE/\<time\>/\<inpField\>
+      input             | volVectorField | <time>/inputField
       output file       | -              | -
-      output field      | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field      | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    enstrophy1
+    enstrophyFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            enstrophy;
         libs            (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-        Property     | Description                        | Type | Req'd | Dflt
+        Property     | Description                        | Type | Reqd  | Deflt
         type         | Type name: enstrophy               | word |  yes  | -
         libs         | Library name: fieldFunctionObjects | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func enstrophy
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::fieldExpression
-    - ExtendedCodeGuide::functionObjects::field::enstrophy
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     enstrophy.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_enstrophy_H
-#define functionObjects_enstrophy_H
+#ifndef Foam_functionObjects_enstrophy_H
+#define Foam_functionObjects_enstrophy_H
 
 #include "fieldExpression.H"
 
@@ -124,7 +112,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         enstrophy
         (
             const word& name,

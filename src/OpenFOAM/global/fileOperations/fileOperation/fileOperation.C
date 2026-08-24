@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2017-2018 OpenFOAM Foundation
-    Copyright (C) 2019-2024 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,7 +28,6 @@ License
 
 #include "fileOperation.H"
 #include "objectRegistry.H"
-#include "labelIOList.H"
 #include "registerSwitch.H"
 #include "stringOps.H"
 #include "Time.H"
@@ -334,7 +333,7 @@ Foam::fileMonitor& Foam::fileOperation::monitor() const
 
 void Foam::fileOperation::mergeTimes
 (
-    const instantList& extraTimes,
+    const UList<instant>& extraTimes,
     const word& constantName,
     instantList& times
 )
@@ -477,11 +476,7 @@ Foam::fileOperation::lookupAndCacheProcessorsPath
         const bool readDirMasterOnly
         (
             UPstream::parRun() && !distributed()
-         &&
-            (
-                IOobject::fileModificationChecking == IOobject::timeStampMaster
-             || IOobject::fileModificationChecking == IOobject::inotifyMaster
-            )
+         && IOobject::fileModificationChecking_masterOnly()
         );
 
         // The above selection excludes masterUncollated, which uses inotify or
@@ -525,12 +520,11 @@ Foam::fileOperation::lookupAndCacheProcessorsPath
         for (const fileName& dirN : dirEntries)
         {
             // Analyse directory name
-            fileName rp, rd, rl;
-            label rNum;
+            label rNum(-1);
             const label readProci =
-                splitProcessorPath(dirN, rp, rd, rl, group, rNum);
+                fileOperation::detectProcessorPath(dirN, group, &rNum);
 
-            nProcs = max(nProcs, readProci+1);
+            nProcs = Foam::max(nProcs, readProci+1);
 
             Tuple2<pathType, int> pathTypeIdx(pathType::NOTFOUND, 0);
 
@@ -555,7 +549,7 @@ Foam::fileOperation::lookupAndCacheProcessorsPath
                 }
 
                 // "processorsNN" or "processorsNN_start-end"
-                nProcs = max(nProcs, rNum);
+                nProcs = Foam::max(nProcs, rNum);
 
                 if (group.empty())
                 {
@@ -582,7 +576,7 @@ Foam::fileOperation::lookupAndCacheProcessorsPath
 
             if (pathTypeIdx.first() != pathType::NOTFOUND)
             {
-                procDirs.append(dirIndex(dirN, pathTypeIdx));
+                procDirs.emplace_back(dirN, pathTypeIdx);
             }
         }
 
@@ -622,7 +616,7 @@ Foam::fileOperation::lookupAndCacheProcessorsPath
                 int flavour(pathType::PROCUNCOLLATED);
                 for (const dirIndex& pDir : procDirs)
                 {
-                    flavour = max(flavour, int(pDir.second().first()));
+                    flavour = Foam::max(flavour, int(pDir.second().first()));
                 }
 
                 reduce(nProcs, maxOp<label>());  // worldComm
@@ -641,13 +635,10 @@ Foam::fileOperation::lookupAndCacheProcessorsPath
                     {
                         pathTypeIdx.second() = proci;
 
-                        procDirs.append
+                        procDirs.emplace_back
                         (
-                            dirIndex
-                            (
-                                processorsBaseDir + Foam::name(nProcs),
-                                pathTypeIdx
-                            )
+                            processorsBaseDir + Foam::name(nProcs),
+                            pathTypeIdx
                         );
                     }
                     else
@@ -656,13 +647,10 @@ Foam::fileOperation::lookupAndCacheProcessorsPath
                         // - poor fallback for pathType::PROCOBJECT
                         // - out-of-range pathType::PROCBASEOBJECT
 
-                        procDirs.append
+                        procDirs.emplace_back
                         (
-                            dirIndex
-                            (
-                                "processor" + Foam::name(proci),
-                                pathTypeIdx
-                            )
+                            "processor" + Foam::name(proci),
+                            pathTypeIdx
                         );
                     }
 
@@ -728,7 +716,7 @@ bool Foam::fileOperation::exists(IOobject& io) const
         (
             isFile(objPath)
             // object with local scope
-         && io.typeHeaderOk<labelIOList>(false)
+         && io.typeHeaderOk<regIOobject>(false)
         );
     }
 
@@ -750,7 +738,7 @@ bool Foam::fileOperation::exists(IOobject& io) const
                 (
                     isFile(originalPath)
                     // object with local scope
-                 && io.typeHeaderOk<labelIOList>(false)
+                 && io.typeHeaderOk<regIOobject>(false)
                 );
             }
         }
@@ -1107,7 +1095,15 @@ Foam::IOobject Foam::fileOperation::findInstance
     enum failureCodes { FAILED_STOPINST = 1, FAILED_CONSTINST = 2 };
     int failed(0);
 
-    instantList ts = time.times();
+    // The timeDirs
+    instantList ts
+    (
+        this->findTimes
+        (
+            time.path(),  // time.path(layout)
+            time.constant()
+        )
+    );
 
     {
         label instIndex = ts.size()-1;
@@ -1115,7 +1111,7 @@ Foam::IOobject Foam::fileOperation::findInstance
         // Backward search for first time that is <= startValue
         for (; instIndex >= 0; --instIndex)
         {
-            if (ts[instIndex].value() <= startValue)
+            if (ts[instIndex] <= startValue)
             {
                 break;
             }
@@ -1258,24 +1254,34 @@ Foam::fileNameList Foam::fileOperation::readObjects
     word& newInstance
 ) const
 {
+    constexpr IOobjectOption::Layout layout = IOobjectOption::Layout::regular;
+
     if (debug)
     {
         Pout<< "fileOperation::readObjects :"
             << " object-path:" << obr.objectPath()
             << " instance" << instance
-            << " local:" << local << endl;
+            << " local:" << local
+            << " layout:" << int(layout) << endl;
     }
 
     // dbDir() is relative to Time,
     // so use dbDir() from self or from parent, but not both!
+
+    // NOTE: should not use IOobject::path(..) here since that generates
+    // values based on the obr.db().dbDir() instead of obr.dbDir()
+    // [issue #3458]
+
     fileName path;
-    if (obr.dbDir().empty() || !obr.parent().dbDir().empty())
+    if (obr.dbDir().empty())
     {
-        path = obr.path(instance, local);
+        // Fallback (old code) using obr.db().dbDir() ...
+        path = obr.path(layout, instance, local);
     }
     else
     {
-        path = obr.path(instance, obr.dbDir()/local);
+        // This could (should?) be a method in objectRegistry
+        path = obr.rootPath()/obr.caseName(layout)/instance/obr.dbDir()/local;
     }
 
     newInstance.clear();
@@ -1343,12 +1349,12 @@ Foam::label Foam::fileOperation::nProcs
             const label readProci =
                 splitProcessorPath(dirN, rp, rd, rl, group, rNum);
 
-            maxProc = max(maxProc, readProci);
+            maxProc = Foam::max(maxProc, readProci);
 
             if (rNum > 0)       // processorsDDD where DDD>0
             {
                 // Use processors number
-                maxProc = max(maxProc, rNum-1);
+                maxProc = Foam::max(maxProc, rNum-1);
                 // Mark in cache. TBD separate handling for groups?
                 foundDirs.set(labelRange(0, rNum));
 
@@ -1633,12 +1639,39 @@ Foam::label Foam::fileOperation::splitProcessorPath
 }
 
 
+Foam::label Foam::fileOperation::detectProcessorPath
+(
+    const fileName& objPath,
+    procRangeType& group,
+    label* numProcs
+)
+{
+    fileName path, procDir, local;
+    label nProcs;
+
+    label proci = fileOperation::splitProcessorPath
+    (
+        objPath,
+        path,
+        procDir,
+        local,
+        group,
+        nProcs
+    );
+
+    if (numProcs)
+    {
+        *numProcs = nProcs;
+    }
+
+    return proci;
+}
+
+
 Foam::label Foam::fileOperation::detectProcessorPath(const fileName& fName)
 {
-    fileName path, pDir, local;
     procRangeType group;
-    label nProcs;
-    return splitProcessorPath(fName, path, pDir, local, group, nProcs);
+    return fileOperation::detectProcessorPath(fName, group);
 }
 
 

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -30,7 +30,6 @@ License
 #include "FieldMapper.H"
 #include "FieldM.H"
 #include "dictionary.H"
-#include "contiguous.H"
 #include "mapDistributeBase.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -238,7 +237,7 @@ void Foam::Field<Type>::assign(const entry& e, const label len)
             // Check lengths
             if (len >= 0 && len != lenRead)
             {
-                if (len < lenRead && allowConstructFromLargerSize)
+                if (len < lenRead && FieldBase::allowConstructFromLargerSize)
                 {
                     // Truncate the data
                     this->resize(len);
@@ -736,6 +735,7 @@ void Foam::Field<Type>::clamp_min(const Type& lower)
     }
 }
 
+
 template<class Type>
 void Foam::Field<Type>::clamp_max(const Type& upper)
 {
@@ -758,6 +758,40 @@ void Foam::Field<Type>::clamp_max(const Type& upper)
             val = min(val, upper);
         }
     }
+}
+
+
+template<class Type>
+void Foam::Field<Type>::clamp_min(const UList<Type>& lower)
+{
+    // Use free function max() [sic] to impose component-wise clamp_min
+    std::transform
+    (
+        // Can use (std::execution::par_unseq | std::execution::unseq)
+        this->begin(),
+        // this->end() but with some extra range safety
+        this->begin(lower.size()),
+        lower.begin(),
+        this->begin(),
+        maxOp<Type>()
+    );
+}
+
+
+template<class Type>
+void Foam::Field<Type>::clamp_max(const UList<Type>& upper)
+{
+    // Use free function min() [sic] to impose component-wise clamp_max
+    std::transform
+    (
+        // Can use (std::execution::par_unseq | std::execution::unseq)
+        this->begin(),
+        // this->end() but with some extra range safety
+        this->begin(upper.size()),
+        upper.begin(),
+        this->begin(),
+        minOp<Type>()
+    );
 }
 
 
@@ -826,7 +860,7 @@ void Foam::Field<Type>::writeEntry(const word& keyword, Ostream& os) const
     // The contents are 'uniform' if the list is non-empty
     // and all entries have identical values.
 
-    if (is_contiguous<Type>::value && List<Type>::uniform())
+    if (is_contiguous_v<Type> && List<Type>::uniform())
     {
         os << word("uniform") << token::SPACE << List<Type>::front();
     }

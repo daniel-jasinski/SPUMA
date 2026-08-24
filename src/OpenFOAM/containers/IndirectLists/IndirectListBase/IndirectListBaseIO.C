@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2014 OpenFOAM Foundation
-    Copyright (C) 2016-2022 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,7 +29,6 @@ License
 #include "IndirectListBase.H"
 #include "Ostream.H"
 #include "token.H"
-#include "contiguous.H"
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
@@ -44,7 +43,7 @@ Foam::Ostream& Foam::IndirectListBase<T, Addr>::writeList
 
     const label len = list.size();
 
-    if (os.format() == IOstreamOption::BINARY && is_contiguous<T>::value)
+    if (os.format() == IOstreamOption::BINARY && is_contiguous_v<T>)
     {
         // Binary and contiguous
         os << nl << len << nl;
@@ -69,7 +68,7 @@ Foam::Ostream& Foam::IndirectListBase<T, Addr>::writeList
             os.endRawWrite();
         }
     }
-    else if (is_contiguous<T>::value && len > 1 && list.uniform())
+    else if (is_contiguous_v<T> && len > 1 && list.uniform())
     {
         // Two or more entries, and all entries have identical values.
         os << len << token::BEGIN_BLOCK << list[0] << token::END_BLOCK;
@@ -80,11 +79,7 @@ Foam::Ostream& Foam::IndirectListBase<T, Addr>::writeList
      ||
         (
             (len <= shortLen)
-         &&
-            (
-                is_contiguous<T>::value
-             || Detail::ListPolicy::no_linebreak<T>::value
-            )
+         && (is_contiguous_v<T> || Foam::ListPolicy::no_linebreak<T>::value)
         )
     )
     {

@@ -42,7 +42,7 @@ SourceFiles
 #define umpire_Memory_Pool_Executor_H
 
 #include <iostream>
-#include "MemoryPool.H"
+#include "MemoryPoolBase.H"
 #include <umpire/ResourceManager.hpp>
 #include <umpire/Allocator.hpp>
 #include <umpire/strategy/DynamicPoolList.hpp>
@@ -58,7 +58,7 @@ namespace Foam
 \*---------------------------------------------------------------------------*/
 
 class umpireMemoryPool:
-    public MemoryPool
+    public Spuma::MemoryPool
 {
 
 private:

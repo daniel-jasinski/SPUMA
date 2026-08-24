@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2024 OpenCFD Ltd.
+    Copyright (C) 2024-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -401,8 +401,8 @@ tmp<scalarField> FriedrichModel::Fratio() const
         const scalar Re = h[i]*mag(Uf[i])*rho[i]/mu[i];
 
         // Weber number (FLW:Eq. 17)
-        const scalar We =
-            h[i]*rhop_*sqr(mag(Up[i]) - mag(Uf[i]))/(2.0*sigma[i]);
+        const vector Urel(Up[i] - Uf[i]);
+        const scalar We = h[i]*rhop_*sqr(mag(Urel))/(2.0*sigma[i]);
 
         // Characteristic breakup length (FLW:Eq. 15)
         const scalar Lb =
@@ -455,8 +455,8 @@ tmp<scalarField> FriedrichModel::Fratio() const
                 const scalar Re = hp[i]*mag(Ufp[i])*rhop[i]/mup[i];
 
                 // Weber number (FLW:Eq. 17)
-                const scalar We =
-                    hp[i]*rhop_*sqr(mag(Upp[i]) - mag(Ufp[i]))/(2.0*sigmap[i]);
+                const vector Urelp(Upp[i] - Ufp[i]);
+                const scalar We = hp[i]*rhop_*sqr(mag(Urelp))/(2.0*sigmap[i]);
 
                 // Characteristic breakup length (FLW:Eq. 15)
                 const scalar Lb =

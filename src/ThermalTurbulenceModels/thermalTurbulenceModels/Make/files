@@ -1,0 +1,3 @@
+thermalTurbulenceModel.C
+
+LIB = $(FOAM_LIBBIN)/libthermalTurbulenceModels

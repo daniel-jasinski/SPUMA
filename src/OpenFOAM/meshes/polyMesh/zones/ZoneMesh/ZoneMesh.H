@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -113,6 +113,9 @@ public:
 
     // Public Typedefs
 
+        //- The referenced mesh type
+        typedef MeshType mesh_type;
+
         //- The zone type. Same as PtrList<ZoneType>::value_type
         typedef ZoneType zone_type;
 
@@ -202,6 +205,9 @@ public:
             DynamicList<label>& zones
         ) const;
 
+        //- Return a list of zone sizes
+        labelList zoneSizes() const;
+
         //- Return a list of zone types
         wordList types() const;
 
@@ -226,35 +232,43 @@ public:
         //- Sorted list of zone names satisfying the input matchers
         wordList sortedNames(const wordRes& matcher) const;
 
+        //- Adjust the index of zone entries to be consistent with their
+        //- position in the list.
+        //  If the indexing changed, invalidates any mapping.
+        //  \returns true if the indexing changed.
+        bool reindex();
 
-        //- Return (sorted) zone indices for all matches
-        //  Optionally matches zone groups.
-        //  A no-op (returns empty list) for an empty matcher
+        //- The (sorted) patch indices for all matches,
+        //- optionally matching zone groups.
+        //  \returns an empty list for an empty matcher
         labelList indices
         (
             const wordRe& matcher,
             const bool useGroups = true
         ) const;
 
-        //- Return (sorted) zone indices for all matches
-        //  Optionally matches zone groups.
-        //  A no-op (returns empty list) for an empty matcher
+        //- The (sorted) patch indices for all matches,
+        //- optionally matching zone groups.
+        //  \returns an empty list for an empty matcher
         labelList indices
         (
             const wordRes& matcher,
             const bool useGroups = true
         ) const;
 
-        //- Return (sorted) zone indices for all selected matches that
-        //- are not ignored.
-        //- The selection logic as per Foam::wordRes::filter.
-        //  Optionally matches patch groups.
-        //  A no-op (returns empty list) for an empty select matcher
+        //- The (sorted) patch indices: logic as per Foam::wordRes::filter,
+        //- optionally matching zone groups.
+        //
+        //  An empty \em allow accepts everything not in \em deny.
+        //  A literal \em allow match has higher priority than any \em deny.
+        //  A regex \em allow match has lower priority than any \em deny.
+        //
+        //  \returns identity list when allow/deny are both empty.
         labelList indices
         (
-            const wordRes& select,
-            const wordRes& ignore,
-            const bool useGroups = true
+            const wordRes& allow,
+            const wordRes& deny,
+            const bool useGroups = true  //!< Match zone groups
         ) const;
 
         //- Zone index for the first match, return -1 if not found
@@ -377,8 +391,15 @@ public:
         //- Update internal meta-data (eg, prior to writing)
         void updateMetaData();
 
+        //- Write as a plain list of entries
+        void writeEntry(Ostream& os) const;
+
+        //- Write as a primitive entry with given name.
+        //- If the keyword is empty, revert to a plain list.
+        void writeEntry(const word& keyword, Ostream& os) const;
+
         //- The writeData member function required by regIOobject
-        bool writeData(Ostream& os) const;
+        virtual bool writeData(Ostream& os) const;
 
 
     // Ostream Operator

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
-    Copyright (C) 2016-2021 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,15 +33,13 @@ License
 
 Foam::surfZoneIdentifier::surfZoneIdentifier()
 :
-    surfZoneIdentifier(0)
+    index_(0)
 {}
 
 
 Foam::surfZoneIdentifier::surfZoneIdentifier(const label index)
 :
-    name_(),
-    index_(index),
-    geometricType_()
+    index_(index)
 {}
 
 
@@ -52,8 +50,7 @@ Foam::surfZoneIdentifier::surfZoneIdentifier
 )
 :
     name_(name),
-    index_(index),
-    geometricType_()
+    index_(index)
 {}
 
 
@@ -77,9 +74,7 @@ Foam::surfZoneIdentifier::surfZoneIdentifier
     const label index
 )
 :
-    name_(name),
-    index_(index),
-    geometricType_()
+    surfZoneIdentifier(name, index)
 {
     dict.readIfPresent("geometricType", geometricType_);
 }
@@ -88,13 +83,31 @@ Foam::surfZoneIdentifier::surfZoneIdentifier
 Foam::surfZoneIdentifier::surfZoneIdentifier
 (
     const surfZoneIdentifier& ident,
-    const label index
+    const label newIndex
 )
 :
-    name_(ident.name_),
-    index_(index),
-    geometricType_(ident.geometricType_)
-{}
+    surfZoneIdentifier(ident)
+{
+    if (newIndex >= 0)
+    {
+        index_ = newIndex;
+    }
+}
+
+
+Foam::surfZoneIdentifier::surfZoneIdentifier
+(
+    surfZoneIdentifier&& ident,
+    const label newIndex
+)
+:
+    surfZoneIdentifier(std::move(ident))
+{
+    if (newIndex >= 0)
+    {
+        index_ = newIndex;
+    }
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

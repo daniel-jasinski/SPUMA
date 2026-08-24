@@ -1,15 +1,15 @@
-decompositionInformation.C
-decompositionModel.C
+decompositionInformation.cxx
+decompositionModel.cxx
 
-dimFieldDecomposer.C
+dimFieldDecomposer.cxx
 
-fvFieldDecomposer.C
-fvFieldDecomposerCache.C
+fvFieldDecomposer.cxx
+fvFieldDecomposerCache.cxx
 
-pointFieldDecomposer.C
-pointFieldDecomposerCache.C
+pointFieldDecomposer.cxx
+pointFieldDecomposerCache.cxx
 
-lagrangianFieldDecomposer.C
-lagrangianFieldDecomposerCache.C
+lagrangianFieldDecomposer.cxx
+lagrangianFieldDecomposerCache.cxx
 
 LIB = $(FOAM_LIBBIN)/libdecompose

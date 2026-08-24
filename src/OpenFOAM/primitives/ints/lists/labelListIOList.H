@@ -39,7 +39,7 @@ namespace Foam
     typedef IOList<labelList> labelListIOList;
 
     //! Compact IO for a List of labelList
-    typedef CompactIOList<labelList, label> labelListCompactIOList;
+    typedef CompactIOList<labelList> labelListCompactIOList;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

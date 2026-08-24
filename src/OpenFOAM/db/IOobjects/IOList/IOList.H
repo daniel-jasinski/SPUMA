@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -62,6 +62,10 @@ class IOList
         //- Read if IOobject flags set. Return true if read.
         bool readIOcontents();
 
+        //- Read the content size.
+        //  Return the size if read, -1 otherwise
+        label readIOsize();
+
 public:
 
     //- The underlying content type
@@ -76,7 +80,7 @@ public:
         //- Default copy construct
         IOList(const IOList&) = default;
 
-        //- Construct from IOobject
+        //- Construct from IOobject. Will be zero size if not read.
         explicit IOList(const IOobject& io);
 
         //construct list on memoryPool
@@ -97,8 +101,16 @@ public:
 
     // Factory Methods
 
+        //- Read and return content size, -1 if not read.
+        //  The IOobject is never registered
+        static label readContentsSize(const IOobject& io);
+
         //- Read and return contents. The IOobject is never registered
         static List<T> readContents(const IOobject& io);
+
+        //- Write contents. The IOobject is never registered.
+        //  Uses IOListRef internally.
+        static void writeContents(const IOobject& io, const UList<T>& content);
 
 
     //- Destructor
@@ -121,11 +133,20 @@ public:
 
     // Member Operators
 
-        //- Copy assignment of entries
-        void operator=(const IOList<T>& rhs);
-
         //- Copy or move assignment of entries
         using List<T>::operator=;
+
+        //- Copy assignment of entries
+        void operator=(const IOList<T>& rhs)
+        {
+            List<T>::operator=(rhs);
+        }
+
+        //- Move assignment of entries
+        void operator=(IOList<T>&& rhs)
+        {
+            List<T>::operator=(std::move(static_cast<List<T>&>(rhs)));
+        }
 };
 
 
@@ -133,7 +154,7 @@ public:
                           Class IOListRef Declaration
 \*---------------------------------------------------------------------------*/
 
-//- A IOList wrapper for writing external data.
+//- A IOList wrapper for writing external List data
 template<class T>
 class IOListRef
 :
@@ -142,7 +163,7 @@ class IOListRef
     // Private Data
 
         //- Reference to the external content
-        refPtr<List<T>> contentRef_;
+        UList<T> contentRef_;
 
 
 public:
@@ -173,7 +194,7 @@ public:
     // Constructors
 
         //- Construct from IOobject and const data reference
-        IOListRef(const IOobject& io, const List<T>& content);
+        IOListRef(const IOobject& io, const UList<T>& content);
 
 
     //- Destructor
@@ -183,10 +204,9 @@ public:
     // Member Functions
 
         //- Allow cast to const content
-        //  Fatal if content is not set
-        operator const List<T>&() const
+        operator const UList<T>&() const
         {
-            return contentRef_.cref();
+            return contentRef_;
         }
 
         //- The writeData method for regIOobject write operation

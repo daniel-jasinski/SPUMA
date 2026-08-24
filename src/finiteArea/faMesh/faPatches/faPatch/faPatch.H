@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -327,7 +327,8 @@ public:
         //- This patch slice from the complete list of values, which has
         //- size mesh::nEdges(), using the virtual patch size.
         template<class T>
-        const typename List<T>::subList patchSlice(const List<T>& values) const
+        const typename List<T>::subList
+        patchSlice(const UList<T>& values) const
         {
             return typename List<T>::subList(values, size(), start());
         }
@@ -336,14 +337,9 @@ public:
         //- size mesh::nBoundaryEdges(), using the virtual patch size.
         template<class T>
         const typename List<T>::subList
-        boundarySlice(const List<T>& values) const
+        boundarySlice(const UList<T>& values) const
         {
-            return typename List<T>::subList
-            (
-                values,
-                size(),
-                offset()
-            );
+            return typename List<T>::subList(values, size(), offset());
         }
 
 
@@ -447,57 +443,59 @@ public:
             // \param internalData The internal field to extract from
             // \param addressing Addressing from patch into internal field
             // \param [out] pfld The extracted patch field.
-            //     It is always resized according to the patch size(),
+            //     Should normally be sized according to the patch size(),
             //     which can be smaller than the addressing size
             template<class Type>
             inline void patchInternalField
             (
                 const UList<Type>& internalData,
                 const labelUList& addressing,
-                Field<Type>& pfld
+                UList<Type>& pfld
             ) const;
 
             //- Extract internal field next to patch as patch field
             //- using edgeFaces() mapping.
             // \param internalData The internal field to extract from
             // \param [out] pfld The extracted patch field.
-            //     It is always resized according to the patch size(),
+            //     Should normally be sized according to the patch size(),
             //     which can be smaller than the edgeFaces() size
             template<class Type>
             void patchInternalField
             (
                 const UList<Type>& internalData,
-                Field<Type>& pfld
+                UList<Type>& pfld
             ) const;
 
             //- Return given internal field next to patch as patch field
             //- using edgeFaces() mapping.
             // \param internalData The internal field to extract from
             template<class Type>
-            tmp<Field<Type>> patchInternalField
+            [[nodiscard]] tmp<Field<Type>>
+            patchInternalField
             (
                 const UList<Type>& internalData
             ) const;
 
-            //- Return the patch field of the GeometricField
-            //- corresponding to this patch.
-            template<class GeometricField, class AnyType = bool>
-            const typename GeometricField::Patch& patchField
-            (
-                const GeometricField& gf
-            ) const;
 
-            //- Lookup the named field from the local registry and
-            //- return the patch field corresponding to this patch.
-            //  N.B.  The dummy pointer arguments are used if this function is
-            //  instantiated within a templated function to avoid a bug in gcc.
-            template<class GeometricField, class AnyType = bool>
-            const typename GeometricField::Patch& lookupPatchField
-            (
-                const word& name,
-                const GeometricField* = nullptr,
-                const AnyType* = nullptr
-            ) const;
+    // Lookup
+
+        //- Return the patch field of the GeometricField
+        //- corresponding to this patch.
+        template<class GeometricField, class AnyType = bool>
+        const typename GeometricField::Patch&
+        patchField(const GeometricField& gf) const;
+
+        //- Lookup the named field from the local registry and
+        //- return the patch field corresponding to this patch.
+        template<class GeometricField, class AnyType = bool>
+        const typename GeometricField::Patch&
+        lookupPatchField(const word& fldName) const;
+
+        //- Lookup the named field (if any) from the local registry and
+        //- return the patch field corresponding to this patch.
+        template<class GeometricField>
+        const typename GeometricField::Patch*
+        cfindPatchField(const word& fldName) const;
 
 
     // Ostream Operator

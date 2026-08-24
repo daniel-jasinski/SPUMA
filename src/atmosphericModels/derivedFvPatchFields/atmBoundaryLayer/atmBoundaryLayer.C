@@ -218,9 +218,11 @@ tmp<vectorField> atmBoundaryLayer::U(const vectorField& pCf) const
     const scalar groundMin = zDir() & ppMin_;
 
     // (YGCJ:Table 1, RH:Eq. 6, HW:Eq. 5)
+    scalarField zEff(max((zDir() & pCf) - groundMin - d + z0, z0));
+
     scalarField Un
     (
-        (Ustar(z0)/kappa_)*log(((zDir() & pCf) - groundMin - d + z0)/z0)
+        (Ustar(z0)/kappa_)*log(zEff/z0)
     );
 
     return flowDir()*Un;
@@ -235,9 +237,9 @@ tmp<scalarField> atmBoundaryLayer::k(const vectorField& pCf) const
     const scalar groundMin = zDir() & ppMin_;
 
     // (YGCJ:Eq. 21; RH:Eq. 7, HW:Eq. 6 when C1=0 and C2=1)
-    return
-        sqr(Ustar(z0))/sqrt(Cmu_)
-       *sqrt(C1_*log(((zDir() & pCf) - groundMin - d + z0)/z0) + C2_);
+    scalarField zEff(max((zDir() & pCf) - groundMin - d + z0, z0));
+
+    return sqr(Ustar(z0))/sqrt(Cmu_)*sqrt(C1_*log(zEff/z0) + C2_);
 }
 
 
@@ -249,9 +251,9 @@ tmp<scalarField> atmBoundaryLayer::epsilon(const vectorField& pCf) const
     const scalar groundMin = zDir() & ppMin_;
 
     // (YGCJ:Eq. 22; RH:Eq. 8, HW:Eq. 7 when C1=0 and C2=1)
-    return
-        pow3(Ustar(z0))/(kappa_*((zDir() & pCf) - groundMin - d + z0))
-       *sqrt(C1_*log(((zDir() & pCf) - groundMin - d + z0)/z0) + C2_);
+    scalarField zEff(max((zDir() & pCf) - groundMin - d + z0, z0));
+
+    return pow3(Ustar(z0))/(kappa_*zEff)*sqrt(C1_*log(zEff/z0) + C2_);
 }
 
 
@@ -263,7 +265,9 @@ tmp<scalarField> atmBoundaryLayer::omega(const vectorField& pCf) const
     const scalar groundMin = zDir() & ppMin_;
 
     // (YGJ:Eq. 13)
-    return Ustar(z0)/(kappa_*sqrt(Cmu_)*((zDir() & pCf) - groundMin - d + z0));
+    scalarField zEff(max((zDir() & pCf) - groundMin - d + z0, z0));
+
+    return Ustar(z0)/(kappa_*sqrt(Cmu_)*zEff);
 }
 
 

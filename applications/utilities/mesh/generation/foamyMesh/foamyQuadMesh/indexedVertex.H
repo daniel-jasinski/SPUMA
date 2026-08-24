@@ -41,6 +41,8 @@ Description
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #endif
 #pragma clang diagnostic ignored "-Wbitwise-instead-of-logical"
+#pragma clang diagnostic ignored "-Wdeprecated-builtins"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 // ------------------------------------------------------------------------- //
 

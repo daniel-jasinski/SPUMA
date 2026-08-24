@@ -34,8 +34,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef solid_ash_H
-#define solid_ash_H
+#ifndef Foam_solid_ash_H
+#define Foam_solid_ash_H
 
 #include "solidProperties.H"
 
@@ -52,7 +52,6 @@ class ash
 :
     public solidProperties
 {
-
 public:
 
     //- Runtime type information
@@ -61,8 +60,8 @@ public:
 
     // Constructors
 
-        //- Construct null
-        ash();
+        //- Default construct
+        ash() noexcept;
 
         //- Construct from dictionary
         ash(const dictionary& dict);

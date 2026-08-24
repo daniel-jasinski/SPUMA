@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -51,7 +51,7 @@ Foam::tmp<Foam::Field<Type>> Foam::Matrix<Form, Type>::AmulImpl
     }
     #endif
 
-    auto tresult = tmp<Field<Type>>::New(mat.m(), Zero);
+    auto tresult = tmp<Field<Type>>::New(mat.m(), Foam::zero{});
     auto& result = tresult.ref();
 
     for (label i = 0; i < mat.m(); ++i)
@@ -86,7 +86,7 @@ Foam::tmp<Foam::Field<Type>> Foam::Matrix<Form, Type>::TmulImpl
     }
     #endif
 
-    auto tresult = tmp<Field<Type>>::New(mat.n(), Zero);
+    auto tresult = tmp<Field<Type>>::New(mat.n(), Foam::zero{});
     auto& result = tresult.ref();
 
     for (label i = 0; i < mat.m(); ++i)
@@ -118,7 +118,7 @@ Foam::Matrix<Form, Type>::Matrix(const label m, const label n)
 
 
 template<class Form, class Type>
-Foam::Matrix<Form, Type>::Matrix(const label m, const label n, const Foam::zero)
+Foam::Matrix<Form, Type>::Matrix(const label m, const label n, Foam::zero)
 :
     mRows_(m),
     nCols_(n),
@@ -244,7 +244,8 @@ inline Foam::Matrix<Form, Type>::Matrix
 template<class Form, class Type>
 Foam::Matrix<Form, Type>::~Matrix()
 {
-    delete[] v_;
+    // Accurate alignment information?
+    ListPolicy::deallocate(this->v_, (mRows_*nCols_));
 }
 
 
@@ -253,12 +254,10 @@ Foam::Matrix<Form, Type>::~Matrix()
 template<class Form, class Type>
 void Foam::Matrix<Form, Type>::clear()
 {
-    if (v_)
-    {
-        delete[] v_;
-        v_ = nullptr;
-    }
+    // Accurate alignment information?
+    ListPolicy::deallocate(this->v_, (mRows_*nCols_));
 
+    v_ = nullptr;
     mRows_ = 0;
     nCols_ = 0;
 }
@@ -326,10 +325,10 @@ void Foam::Matrix<Form, Type>::resize(const label m, const label n)
         return;
     }
 
-    Matrix<Form, Type> newMatrix(m, n, Zero);
+    Matrix<Form, Type> newMatrix(m, n, Foam::zero{});
 
-    const label mrow = min(m, mRows_);
-    const label ncol = min(n, nCols_);
+    const label mrow = Foam::min(m, mRows_);
+    const label ncol = Foam::min(n, nCols_);
 
     for (label i = 0; i < mrow; ++i)
     {
@@ -480,7 +479,7 @@ Foam::scalar Foam::Matrix<Form, Type>::columnNorm
     const bool noSqrt
 ) const
 {
-    scalar result = Zero;
+    scalar result(0);
 
     for (label i=0; i < mRows_; ++i)
     {
@@ -494,7 +493,7 @@ Foam::scalar Foam::Matrix<Form, Type>::columnNorm
 template<class Form, class Type>
 Foam::scalar Foam::Matrix<Form, Type>::norm(const bool noSqrt) const
 {
-    scalar result = Zero;
+    scalar result(0);
 
     for (const Type& val : *this)
     {
@@ -508,11 +507,11 @@ Foam::scalar Foam::Matrix<Form, Type>::norm(const bool noSqrt) const
 template<class Form, class Type>
 std::streamsize Foam::Matrix<Form, Type>::byteSize() const
 {
-    if (!is_contiguous<Type>::value)
+    if constexpr (!is_contiguous_v<Type>)
     {
         FatalErrorInFunction
             << "Invalid for non-contiguous data types"
-            << abort(FatalError);
+            << Foam::abort(FatalError);
     }
     return this->size_bytes();
 }
@@ -596,7 +595,7 @@ void Foam::Matrix<Form, Type>::operator=(const Type& val)
 
 
 template<class Form, class Type>
-void Foam::Matrix<Form, Type>::operator=(const Foam::zero)
+void Foam::Matrix<Form, Type>::operator=(Foam::zero)
 {
     std::fill_n(begin(), size(), Zero);
 }

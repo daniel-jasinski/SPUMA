@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2017 OpenFOAM Foundation
-    Copyright (C) 2020-2024 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -139,9 +139,8 @@ public:
         typedef Tuple2<fileName, Tuple2<pathType, int>> dirIndex;
         typedef List<dirIndex> dirIndexList;
 
-        //- For addressing a range of processors,
-        //- identical to UPstream::rangeType
-        typedef IntRange<int> procRangeType;
+        //- For addressing a range of processors (an int range)
+        typedef UPstream::rangeType procRangeType;
 
 
 private:
@@ -200,8 +199,10 @@ protected:
         //- Merge two times
         static void mergeTimes
         (
-            const instantList& extraTimes,
+            const UList<instant>& extraTimes,
+            //! The "constant" name
             const word& constantName,
+            //! [in,out] Updated with any extra times
             instantList& times
         );
 
@@ -685,27 +686,28 @@ public:
         // (reg)IOobject functionality
 
             //- Generate disk file name for object. Opposite of filePath.
-            //  Optional wanted typeName.
             virtual fileName objectPath
             (
                 const IOobject& io,
+                //! The wanted object typeName [optional, likely unused]
                 const word& typeName
             ) const;
 
-            //- Search for an object. checkGlobal : also check undecomposed case
-            //  Optional wanted typeName.
+            //- Search for an object
             virtual fileName filePath
             (
+                //! also check undecomposed case
                 const bool checkGlobal,
                 const IOobject&,
+                //! The wanted object typeName [optional, likely unused]
                 const word& typeName,
                 const bool search = true
             ) const = 0;
 
-            //- Search for a directory. checkGlobal : also check undecomposed
-            //  case
+            //- Search for a directory
             virtual fileName dirPath
             (
+                //! also check undecomposed case
                 const bool checkGlobal,
                 const IOobject& io,
                 const bool search = true
@@ -725,7 +727,7 @@ public:
             (
                 IOobject&,
                 const fileName&,
-                const word& typeName
+                const word& typeName  //!< frequently unused?
             ) const = 0;
 
             //- Reads header for regIOobject and returns an ISstream
@@ -734,7 +736,7 @@ public:
             (
                 regIOobject&,
                 const fileName&,
-                const word& typeName,
+                const word& typeName,  //!< frequently unused?
                 const bool readOnProc = true
             ) const = 0;
 
@@ -743,7 +745,9 @@ public:
             (
                 regIOobject&,
                 const bool masterOnly,
+                //! The format for parallel send/recv
                 const IOstreamOption::streamFormat format,
+                //! forwards to regIOobject
                 const word& typeName
             ) const = 0;
 
@@ -869,7 +873,13 @@ public:
             ) const;
 
             //- Get sorted list of times
-            virtual instantList findTimes(const fileName&, const word&) const;
+            virtual instantList findTimes
+            (
+                //! The directory to search
+                const fileName& directory,
+                //! The "constant" name
+                const word& constantName = "constant"
+            ) const;
 
             //- Find time instance where IOobject is located.
             //- The name of the IOobject can be empty, in which case only the
@@ -886,7 +896,7 @@ public:
                 const IOobject& io,
                 const scalar startValue,
                 //! The search stop instance
-                const word& stopInstance,
+                const word& stopInstance = "",
                 //! Return \c "constant" instead of \c "" if the search failed
                 const bool constant_fallback = true
             ) const;
@@ -931,15 +941,31 @@ public:
             static label splitProcessorPath
             (
                 const fileName& objectPath,
+                //! [out] the leading part of the path
                 fileName& path,
+                //! [out] the processor directory name
                 fileName& procDir,
+                //! [out] the local path
                 fileName& local,
+                //! [out] any detected collated grouping
                 procRangeType& group,
+                //! [out] detected number of processors, -1 if none detected
                 label& nProcs
             );
 
             //- Detect processor number from '/aa/bb/processorDDD/cc'
             static label detectProcessorPath(const fileName& objPath);
+
+            //- Detect processor number from 'path/processorDDD/abc'
+            //- or 'path/processorsNN/abc', 'path/processorsNN_0-10/abc'
+            static label detectProcessorPath
+            (
+                const fileName& objPath,
+                //! [out] any detected collated grouping
+                procRangeType& group,
+                //! [out] detected number of collated processors, -1 if none
+                label* numProcs = nullptr
+            );
 
 
     // Rank selection/sub-selection

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -37,6 +37,7 @@ License
 #include "IOobject.H"
 #include "dynamicCode.H"
 #include "simpleObjectRegistry.H"
+#include "MemoryPoolBase.H"
 #include "sigFpe.H"
 #include "sigInt.H"
 #include "sigQuit.H"
@@ -47,6 +48,7 @@ License
 #include "stringListOps.H"
 #include "fileOperation.H"
 #include "fileOperationInitialise.H"
+#include "Field.H"  // Ugly handling of localBoundaryConsistency switches
 
 #include <cctype>
 
@@ -128,7 +130,14 @@ Foam::argList::initValidTables::initValidTables()
     (
         "mpi-threads",
         "Request use of MPI threads",
-        true  //  advanced option
+        true  // advanced option
+    );
+
+    argList::addBoolOption
+    (
+        "mpi-no-comm-dup",
+        "Disable initial MPI_Comm_dup()",
+        true  // advanced option
     );
 
     argList::addOption
@@ -192,6 +201,12 @@ Foam::argList::initValidTables::initValidTables()
         "name"
     );
 
+    argList::addBoolOption
+    (
+        "mpi-split-by-appnum",
+        "Split world communicator based on the APPNUM",
+        true  // advanced option
+    );
 
     // Some standard option aliases (with or without version warnings)
 //     argList::addOptionCompat
@@ -596,6 +611,8 @@ void Foam::argList::noParallel()
     removeOption("hostRoots");
     removeOption("world");
     removeOption("mpi-threads");
+    removeOption("mpi-no-comm-dup");
+    removeOption("mpi-split-by-appnum");
     validParOptions.clear();
 }
 
@@ -916,6 +933,8 @@ Foam::argList::argList
     // Pre-scan for some options needed for initial setup:
     //   -fileHandler (takes an argument)
     //   -mpi-threads (bool option)
+    //   -debug-switch, -info-switch, -opt-switch
+    //        so their values can also influence the initial setup
     //
     // Also handle -dry-run and -verbose counting
     // (it is left to the application to decide what to do with them).
@@ -963,6 +982,51 @@ Foam::argList::argList
                     emitErrorMessage = true;
                 }
             }
+            else if (strcmp(optName, "debug-switch") == 0)
+            {
+                // The '-debug-switch' option:
+                // change registered debug switch
+                if (argi < argc-1)
+                {
+                    ++argi;
+                    debug::debugObjects()
+                        .setNamedValue(argv[argi], 1);  // silent
+                }
+                else
+                {
+                    // emit error on the second pass
+                }
+            }
+            else if (strcmp(optName, "info-switch") == 0)
+            {
+                // The '-info-switch' option:
+                // change registered info switch
+                if (argi < argc-1)
+                {
+                    ++argi;
+                    debug::infoObjects()
+                        .setNamedValue(argv[argi], 1);  // silent
+                }
+                else
+                {
+                    // emit error on the second pass
+                }
+            }
+            else if (strcmp(optName, "opt-switch") == 0)
+            {
+                // The '-opt-switch' option:
+                // change registered optimisation switch
+                if (argi < argc-1)
+                {
+                    ++argi;
+                    debug::optimisationObjects()
+                        .setNamedValue(argv[argi], 1);  // silent
+                }
+                else
+                {
+                    // emit error on the second pass
+                }
+            }
             else if (validParOptions.contains(optName))
             {
                 // Contains a parallel run option
@@ -977,8 +1041,6 @@ Foam::argList::argList
                 Info<< nl
                     << "Error: option '-" << optName
                     << "' requires an argument" << nl << nl;
-
-                //NO: UPstream::exit(1);  // works for serial and parallel
             }
         }
     }
@@ -1102,26 +1164,26 @@ Foam::argList::argList
                 else if (strcmp(optName, "debug-switch") == 0)
                 {
                     // The '-debug-switch' option:
-                    // change registered debug switch
+                    // dryrun reporting only (already set above)
                     DetailInfo << "debug-switch ";
                     debug::debugObjects()
-                        .setNamedValue(args_[argi], 1, true);
+                        .setNamedValue(args_[argi], 1, true, true);  // dryrun
                 }
                 else if (strcmp(optName, "info-switch") == 0)
                 {
                     // The '-info-switch' option:
-                    // change registered info switch
+                    // dryrun reporting only (already set above)
                     DetailInfo << "info-switch ";
                     debug::infoObjects()
-                        .setNamedValue(args_[argi], 1, true);
+                        .setNamedValue(args_[argi], 1, true, true);  // dryrun
                 }
                 else if (strcmp(optName, "opt-switch") == 0)
                 {
                     // The '-opt-switch' option:
-                    // change registered optimisation switch
+                    // dryrun reporting only (already set above)
                     DetailInfo << "opt-switch ";
                     debug::optimisationObjects()
-                        .setNamedValue(args_[argi], 1, true);
+                        .setNamedValue(args_[argi], 1, true, true);  // dryrun
                 }
                 else
                 {
@@ -2046,22 +2108,46 @@ void Foam::argList::parse
                     Info<< "Roots  : " << roots << nl;
                 }
             }
-            Info<< "Pstream initialized with:" << nl
-                << "    floatTransfer      : "
-                << Switch::name(UPstream::floatTransfer) << nl
-                << "    maxCommsSize       : "
-                << UPstream::maxCommsSize << nl
-                << "    nProcsSimpleSum    : "
-                << UPstream::nProcsSimpleSum << nl
-                << "    nonBlockingExchange: "
-                << UPstream::nProcsNonblockingExchange
-                << " (tuning: " << UPstream::tuning_NBX_ << ')' << nl
-                << "    exchange algorithm : "
-                << PstreamBuffers::algorithm << nl
-                << "    commsType          : "
-                << UPstream::commsTypeNames[UPstream::defaultCommsType] << nl
-                << "    polling iterations : "
-                << UPstream::nPollProcInterfaces << nl;
+
+            Info<< "Pstream initialized with:" << nl;
+            {
+                Info<< "    node communication : ";
+                UPstream::printNodeCommsControl(Info);
+                Info<< nl;
+            }
+            {
+                Info<< "    topology controls  : ";
+                UPstream::printTopoControl(Info);
+                Info<< nl;
+            }
+
+            if (UPstream::floatTransfer)
+            {
+                Info<< "    floatTransfer      : enabled" << nl;
+            }
+            if (UPstream::maxCommsSize)
+            {
+                Info<< "    maxCommsSize       : "
+                    << UPstream::maxCommsSize << nl;
+            }
+            if (UPstream::nProcsSimpleSum > 2)
+            {
+                Info<< "    nProcsSimpleSum    : "
+                    << UPstream::nProcsSimpleSum << nl;
+            }
+            {
+                const auto& commsType =
+                    UPstream::commsTypeNames[UPstream::defaultCommsType];
+
+                Info<< "    consensus exchange : "
+                    << UPstream::nProcsNonblockingExchange
+                    << " (tuning: " << UPstream::tuning_NBX_ << ')' << nl
+                    << "    exchange algorithm : "
+                    << PstreamBuffers::algorithm << nl
+                    << "    commsType          : " << commsType << nl
+                    << "    polling iterations : "
+                    << UPstream::nPollProcInterfaces << nl;
+            }
 
             if (UPstream::allWorlds().size() > 1)
             {
@@ -2094,6 +2180,9 @@ void Foam::argList::parse
         sigInt::set(bannerEnabled());
         sigQuit::set(bannerEnabled());
         sigSegv::set(bannerEnabled());
+
+        // Create memory pool (if any) after MPI has been setup
+        MemoryPool::create(bannerEnabled());
 
         if (UPstream::master() && bannerEnabled())
         {
@@ -2145,6 +2234,12 @@ void Foam::argList::parse
             Info<< " user-supplied system call operations" << nl
                 << nl;
             IOobject::writeDivider(Info);
+
+            // Ugly handling of localBoundaryConsistency switches
+            FieldBase::warnLocalBoundaryConsistencyCompat
+            (
+                debug::optimisationSwitches()
+            );
         }
     }
 }

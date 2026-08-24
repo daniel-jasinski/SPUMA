@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2020-2022 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -44,6 +44,9 @@ SourceFiles
 
 #include "IOdictionary.H"
 #include "autoPtr.H"
+#include "UPtrList.H"
+#include "faMesh.H"
+#include "polyMesh.H"
 #include "runTimeSelectionTables.H"
 #include "CloudSubModelBase.H"
 
@@ -255,6 +258,17 @@ public:
 
         //- Non-const access to the total mass transferred
         inline scalar& totalMassTransferred() noexcept;
+
+
+    //- Registry
+
+        //- Return a sorted list of area-film objects that are
+        //- registered on the faMeshesRegistry
+        static UPtrList<const areaFilm> csorted_areaFilms(const polyMesh&);
+
+        //- Return a sorted list of area-film objects that are
+        //- registered on the faMeshesRegistry
+        static UPtrList<areaFilm> sorted_areaFilms(const polyMesh&);
 
 
     // Member Functions

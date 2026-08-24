@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -116,24 +116,8 @@ public:
             stream_type(static_cast<buffer_type*>(this))
         {}
 
-        #if __cplusplus >= 201703L
         //- Construct (shallow copy) from std::string_view content
         explicit ispanstream(std::string_view s)
-        :
-            buffer_type(const_cast<char*>(s.data()), s.size()),
-            stream_type(static_cast<buffer_type*>(this))
-        {}
-        #endif
-
-        //- Construct (shallow copy) from span character content
-        explicit ispanstream(stdFoam::span<char> s)
-        :
-            buffer_type(const_cast<char*>(s.data()), s.size()),
-            stream_type(static_cast<buffer_type*>(this))
-        {}
-
-        //- Construct (shallow copy) from span character content
-        explicit ispanstream(stdFoam::span<const char> s)
         :
             buffer_type(const_cast<char*>(s.data()), s.size()),
             stream_type(static_cast<buffer_type*>(this))
@@ -161,7 +145,7 @@ public:
             return buffer_type::span_remaining();
         }
 
-        //- Span of the input characters (is modifiable!)
+        //- A list \em span of the input characters (is modifiable!)
         UList<char> list() const
         {
             return UList<char>
@@ -171,10 +155,13 @@ public:
             );
         }
 
-        //- A string_view (c++17) or span view (older c++) of buffer contents
-        auto view() const -> decltype(buffer_type::view())
+        //- A string_view of buffer contents
+        auto view() const { return buffer_type::view(); }
+
+        //- A sub-slice string view of the buffer contents
+        auto view(size_t pos, size_t len = std::string::npos) const
         {
-            return buffer_type::view();
+            return buffer_type::view(pos, len);
         }
 
         //- For istringstream compatibility, return the buffer as string copy.
@@ -195,6 +182,16 @@ public:
             stream_type::clear();  // Clear old errors
         }
 
+        //- Reposition the stream from the start
+        void seek(std::streampos pos)
+        {
+            if (buffer_type::in_range(pos))
+            {
+                buffer_type::pubseekpos(pos, std::ios_base::in);
+                stream_type::clear();  // Clear old errors
+            }
+        }
+
         //- Reset the get buffer area
         void reset(const char* buffer, size_t nbytes)
         {
@@ -202,18 +199,34 @@ public:
             stream_type::clear();  // Clear old errors
         }
 
+        //- Reset the get buffer area to use the nul-terminated buffer
+        void reset(const char* s)
+        {
+            reset(s, (s ? std::char_traits<char>::length(s) : 0));
+        }
+
         //- Reset the get buffer area to use the data from a string
         void reset(const std::string& s)
         {
-            buffer_type::resetg(const_cast<char*>(&s[0]), s.size());
+            buffer_type::resetg(const_cast<char*>(s.data()), s.size());
+            stream_type::clear();  // Clear old errors
+        }
+
+        //- Reset the get buffer area to use the data from a string_view
+        void reset(std::string_view s)
+        {
+            buffer_type::resetg(const_cast<char*>(s.data()), s.size());
             stream_type::clear();  // Clear old errors
         }
 
         //- Some information about the input buffer position/capacity
         void debug_info(Ostream& os) const
         {
-            os  << "get=" << input_pos() << '/' << capacity();
+            os << "get=" << input_pos() << '/' << capacity();
         }
+
+        //- Information about stream
+        void print(Ostream& os) const { debug_info(os); os << '\n'; }
 };
 
 
@@ -257,17 +270,35 @@ public:
             reset(buffer, nbytes);
         }
 
+        //- Construct using specified nul-terminated buffer
+        explicit ISpanStream(const char* buffer)
+        :
+            ISpanStream
+            (
+                buffer,
+                (buffer ? std::char_traits<char>::length(buffer) : 0)
+            )
+        {}
+
         //- Use data area from string content
         explicit ISpanStream
         (
-            const std::string& buffer,
+            const std::string& s,
             IOstreamOption streamOpt = IOstreamOption()
         )
         :
-            ISpanStream(streamOpt)
-        {
-            reset(buffer);
-        }
+            ISpanStream(s.data(), s.size(), streamOpt)
+        {}
+
+        //- Use data area from string_view content
+        explicit ISpanStream
+        (
+            std::string_view s,
+            IOstreamOption streamOpt = IOstreamOption()
+        )
+        :
+            ISpanStream(s.data(), s.size(), streamOpt)
+        {}
 
         //- Construct using data area from a List and its inherent storage size
         //  Uses addressed size, thus no special treatment for a DynamicList
@@ -278,38 +309,6 @@ public:
         )
         :
             ISpanStream(buffer.cdata(), buffer.size(), streamOpt)
-        {}
-
-        #if __cplusplus >= 201703L
-        //- Construct (shallow copy) from std::string_view content
-        explicit ISpanStream
-        (
-            std::string_view s,
-            IOstreamOption streamOpt = IOstreamOption()
-        )
-        :
-            ISpanStream(s.data(), s.size(), streamOpt)
-        {}
-        #endif
-
-        //- Construct (shallow copy) from span character content
-        explicit ISpanStream
-        (
-            stdFoam::span<const char> s,
-            IOstreamOption streamOpt = IOstreamOption()
-        )
-        :
-            ISpanStream(s.data(), s.size(), streamOpt)
-        {}
-
-        //- Construct (shallow copy) from span character content
-        explicit ISpanStream
-        (
-            stdFoam::span<char> s,
-            IOstreamOption streamOpt = IOstreamOption()
-        )
-        :
-            ISpanStream(s.data(), s.size(), streamOpt)
         {}
 
 
@@ -331,21 +330,22 @@ public:
         //- Same as (capacity() - input_pos())
         std::streamsize remaining() const { return stream_.remaining(); }
 
-        //- Span of the current input characters (is modifiable!)
-        UList<char> list() const { return stream_.list(); }
+        //- A string_view of buffer contents
+        auto view() const { return stream_.view(); }
 
-        //- A string_view (c++17) or span view (older c++) of buffer contents
-        auto view() const -> decltype(stream_.view())
+        //- A sub-slice string view of the buffer contents
+        auto view(size_t pos, size_t len = std::string::npos) const
         {
-            return stream_.view();
+            return stream_.view(pos, len);
         }
+
+        //- A list \em span of the input characters (is modifiable!)
+        UList<char> list() const { return stream_.list(); }
 
         //- For IStringStream compatibility, return the buffer as string copy.
         //  Use sparingly - it creates a full copy!!
-        auto str() const -> decltype(stream_.str())
-        {
-            return stream_.str();
-        }
+        auto str() const { return stream_.str(); }
+
 
         //- Reset input area, position to buffer start and clear errors
         void reset(const char* buffer, size_t nbytes)
@@ -357,28 +357,12 @@ public:
         //- Reset input area to use data from a string
         void reset(const std::string& s)
         {
-            stream_.reset(s);
+            stream_.reset(s.data(), s.size());
             syncState();
         }
 
-        #if __cplusplus >= 201703L
         //- Reset input area to use data from a std::string_view
         void reset(std::string_view s)
-        {
-            stream_.reset(s.data(), s.size());
-            syncState();
-        }
-        #endif
-
-        //- Reset input area to use data from span character content
-        void reset(stdFoam::span<char> s)
-        {
-            stream_.reset(s.data(), s.size());
-            syncState();
-        }
-
-        //- Reset input area to use data from span character content
-        void reset(stdFoam::span<const char> s)
         {
             stream_.reset(s.data(), s.size());
             syncState();
@@ -387,12 +371,25 @@ public:
         //- Rewind the stream, clearing any old errors
         virtual void rewind() override
         {
+            Istream::rewind();
             stream_.rewind();
             syncState();
         }
 
-        //- Print stream description to Ostream
-        virtual void print(Ostream& os) const override;
+        //- Reposition the stream from the start
+        void seek(std::streampos pos)
+        {
+            stream_.seek(pos);
+            syncState();
+        }
+
+        //- Print stream description
+        virtual void print(Ostream& os) const override
+        {
+            os << "ispanstream: ";
+            stream_.debug_info(os);
+            os << '\n';
+        }
 
 
     // Member Operators

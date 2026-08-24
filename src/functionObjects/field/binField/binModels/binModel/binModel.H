@@ -186,7 +186,7 @@ public:
 
     // Member Functions
 
-        //- Read the dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
 

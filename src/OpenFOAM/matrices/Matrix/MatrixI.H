@@ -38,7 +38,8 @@ inline void Foam::Matrix<Form, Type>::doAlloc()
     if (len > 0)
     {
         // With sign-check to avoid spurious -Walloc-size-larger-than
-        v_ = new Type[len];
+        this->v_ = ListPolicy::allocate<Type>(len);
+
     }
 }
 
@@ -46,7 +47,7 @@ inline void Foam::Matrix<Form, Type>::doAlloc()
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class Form, class Type>
-inline Foam::Matrix<Form, Type>::Matrix() noexcept
+inline constexpr Foam::Matrix<Form, Type>::Matrix() noexcept
 :
     mRows_(0),
     nCols_(0),
@@ -62,7 +63,7 @@ inline Foam::Matrix<Form, Type>::Matrix(const labelPair& dims)
 
 
 template<class Form, class Type>
-inline Foam::Matrix<Form, Type>::Matrix(const labelPair& dims, const Foam::zero)
+inline Foam::Matrix<Form, Type>::Matrix(const labelPair& dims, Foam::zero)
 :
     Matrix<Form, Type>(dims.first(), dims.second(), Foam::zero{})
 {}
@@ -86,14 +87,14 @@ Foam::Matrix<Form, Type>::clone() const
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class Form, class Type>
-inline Foam::label Foam::Matrix<Form, Type>::size() const
+inline Foam::label Foam::Matrix<Form, Type>::size() const noexcept
 {
-    return mRows_ * nCols_;
+    return (mRows_ * nCols_);
 }
 
 
 template<class Form, class Type>
-inline Foam::labelPair Foam::Matrix<Form, Type>::sizes() const
+inline Foam::labelPair Foam::Matrix<Form, Type>::sizes() const noexcept
 {
     return labelPair(mRows_, nCols_);
 }
@@ -209,7 +210,7 @@ inline char* Foam::Matrix<Form, Type>::data_bytes() noexcept
 template<class Form, class Type>
 inline std::streamsize Foam::Matrix<Form, Type>::size_bytes() const noexcept
 {
-    return mRows_*nCols_*sizeof(Type);
+    return std::streamsize(mRows_*nCols_)*sizeof(Type);
 }
 
 

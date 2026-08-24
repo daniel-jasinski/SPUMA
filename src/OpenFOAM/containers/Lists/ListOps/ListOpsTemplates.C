@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -645,7 +645,7 @@ void Foam::inplaceSubset
 
         const label outlen = (select.size() - select.count());
 
-        const label len = min(input.size(), select.size());
+        const label len = Foam::min(input.size(), select.size());
 
         for (label i=0; i < len; ++i)
         {
@@ -1081,7 +1081,7 @@ template<class T>
 void Foam::ListOps::appendEqOp<T>::operator()
 (
     List<T>& x,
-    const List<T>& y
+    const UList<T>& y
 ) const
 {
     if (y.size())
@@ -1102,7 +1102,7 @@ template<class T>
 void Foam::ListOps::uniqueEqOp<T>::operator()
 (
     List<T>& x,
-    const List<T>& y
+    const UList<T>& y
 ) const
 {
     if (y.size())
@@ -1111,6 +1111,7 @@ void Foam::ListOps::uniqueEqOp<T>::operator()
         {
             for (const T& val : y)
             {
+                // Not very efficient
                 x.push_uniq(val);
             }
         }
@@ -1119,6 +1120,64 @@ void Foam::ListOps::uniqueEqOp<T>::operator()
             x = y;
         }
     }
+}
+
+
+template<class Type1, class Type2>
+bool Foam::ListOps::equal
+(
+    const UList<Type1>& a,
+    const UList<Type2>& b
+)
+{
+    return
+    (
+        (a.size() == b.size())
+     && std::equal(a.cbegin(), a.cend(), b.cbegin())
+    );
+}
+
+
+template<class Type1, class Type2, class BinaryPredicate>
+bool Foam::ListOps::equal
+(
+    const UList<Type1>& a,
+    const UList<Type2>& b,
+    BinaryPredicate pred
+)
+{
+    return
+    (
+        (a.size() == b.size())
+     && std::equal(a.cbegin(), a.cend(), b.cbegin(), pred)
+    );
+}
+
+
+template<class ListType>
+Foam::label Foam::ListOps::count
+(
+    const ListType& input,
+    typename ListType::const_reference val,
+    const label start
+)
+{
+    label num = 0;
+
+    const label len = input.size();
+
+    if (start >= 0)
+    {
+        for (label i = start; i < len; ++i)
+        {
+            if (val == input[i])
+            {
+                ++num;
+            }
+        }
+    }
+
+    return num;
 }
 
 
@@ -1285,9 +1344,7 @@ void Foam::ListOps::setValue
     const T& val
 )
 {
-    const label len = list.size();
-    const label count = locations.size();
-    const label end = min(count, len);
+    const label end = Foam::min(list.size(), locations.size());
 
     // The efficiency is modest
     for (label index = 0; index < end; ++index)

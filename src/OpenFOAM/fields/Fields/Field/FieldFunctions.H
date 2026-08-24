@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -246,6 +246,7 @@ Type sumCmptMag(const UList<Type>& f);
 
 TMP_UNARY_FUNCTION(Type, sumCmptMag)
 
+//- The local arithmetic average of a field
 template<class Type>
 Type average(const UList<Type>& f);
 
@@ -291,14 +292,65 @@ Type gSumCmptProd
     const label comm = UPstream::worldComm
 );
 
+//- The global arithmetic average of a field
 template<class Type>
 Type gAverage
 (
     const UList<Type>& f,
+    //! The communicator. A negative value disables the reduction
     const label comm = UPstream::worldComm
 );
 
 TMP_UNARY_FUNCTION(Type, gAverage)
+
+//- The global weighted average of a field,
+//- using the mag() of the weights.
+template<class Type>
+Type gWeightedAverage
+(
+    const UList<scalar>& weights,
+    const UList<Type>& fld,
+    //! The communicator. A negative value disables the reduction
+    const label comm = UPstream::worldComm
+);
+
+//- The local weighted average of a field,
+//- using the mag() of the weights.
+template<class Type>
+Type weightedAverage
+(
+    const UList<scalar>& weights,
+    const UList<Type>& fld
+)
+{
+    // Use the global version, but without reduction
+    return gWeightedAverage(weights, fld, -1);
+}
+
+//- The global weighted sum (integral) of a field,
+//- using the mag() of the weights.
+template<class Type>
+Type gWeightedSum
+(
+    const UList<scalar>& weights,
+    const UList<Type>& fld,
+    //! The communicator. A negative value disables the reduction
+    const label comm = UPstream::worldComm
+);
+
+//- The local weighted sum (integral) of a field,
+//- using the mag() of the weights.
+template<class Type>
+Type weightedSum
+(
+    const UList<scalar>& weights,
+    const UList<Type>& fld
+)
+{
+    // Use the global version, but without reduction
+    return gWeightedSum(weights, fld, -1);
+}
+
 
 #undef TMP_UNARY_FUNCTION
 
@@ -315,7 +367,6 @@ BINARY_TYPE_FUNCTION(Type, Type, Type, cmptDivide)
 
 BINARY_TYPE_FUNCTION_FS(Type, Type, MinMax<Type>, clamp)
 BINARY_TYPE_FUNCTION_FS(Type, Type, Foam::zero_one, clamp)
-BINARY_TYPE_FUNCTION_FS(Type, Type, MinMax<Type>, clip)  // Same as clamp
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -406,6 +457,22 @@ PRODUCT_OPERATOR(innerProduct, &, dot)
 PRODUCT_OPERATOR(scalarProduct, &&, dotdot)
 
 #undef PRODUCT_OPERATOR
+
+
+#define INPLACE_PRODUCT_OPERATOR(product, CombineOp, Op, OpFunc)               \
+                                                                               \
+template<class Type1, class Type2>                                             \
+void OpFunc                                                                    \
+(                                                                              \
+    Field<typename product<Type1, Type2>::type>& result,                       \
+    const UList<Type1>& f1,                                                    \
+    const UList<Type2>& f2                                                     \
+);
+
+INPLACE_PRODUCT_OPERATOR(outerProduct, +=, *, multiplyAdd)
+INPLACE_PRODUCT_OPERATOR(outerProduct, -=, *, multiplySubtract)
+
+#undef INPLACE_PRODUCT_OPERATOR
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

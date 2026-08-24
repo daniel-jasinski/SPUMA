@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -161,6 +161,9 @@ public:
         //- The magnitude of the triangle area
         inline scalar mag() const;
 
+        //- The magnitude squared of the triangle area
+        inline scalar magSqr() const;
+
         //- The enclosing (bounding) box for the triangle
         inline Pair<point> box() const;
 
@@ -208,27 +211,27 @@ public:
         // What to do with decomposition of triangle.
 
             //- Dummy
-            class dummyOp
+            struct dummyOp
             {
-            public:
-                inline void operator()(const triPoints&);
+                void operator()(const triPoints&) const noexcept
+                {}
             };
 
             //- Sum resulting areas
-            class sumAreaOp
+            struct sumAreaOp
             {
-            public:
                 scalar area_;
 
-                inline sumAreaOp();
+                constexpr sumAreaOp() noexcept : area_(0) {}
+
+                scalar total() const noexcept { return area_; }
 
                 inline void operator()(const triPoints&);
             };
 
             //- Store resulting tris
-            class storeOp
+            struct storeOp
             {
-            public:
                 triIntersectionList& tris_;
                 label& nTris_;
 
@@ -377,6 +380,9 @@ public:
 
         //- The magnitude of the triangle area
         inline scalar mag() const;
+
+        //- The magnitude squared of the triangle area
+        inline scalar magSqr() const;
 
         //- The enclosing (bounding) box for the triangle
         inline Pair<Point> box() const;

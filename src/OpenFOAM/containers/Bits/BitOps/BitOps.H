@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -77,26 +77,17 @@ inline unsigned int count(const UList<bool>& bools, const bool val=true)
     return std::count(bools.begin(), bools.end(), val);
 }
 
-//- True if all entries are 'true' or if the set is empty.
+//- True if all entries are 'true' or if the list is empty.
 //  For compatibility with bitSet::all()
-inline bool all(const UList<bool>& bools)
-{
-    return std::all_of(bools.begin(), bools.end(), identityOp());
-}
+inline bool all(const UList<bool>& bools) { return bools.all(); }
 
 //- True if any entries are 'true'.
 //  For compatibility with bitSet::any()
-inline bool any(const UList<bool>& bools)
-{
-    return std::any_of(bools.begin(), bools.end(), identityOp());
-}
+inline bool any(const UList<bool>& bools) { return bools.any(); }
 
 //- True if no entries are 'true'.
 //  For compatibility with bitSet::none()
-inline bool none(const UList<bool>& bools)
-{
-    return std::none_of(bools.begin(), bools.end(), identityOp());
-}
+inline bool none(const UList<bool>& bools) { return bools.none(); }
 
 
 //- Set the listed locations (assign 'true').
@@ -149,6 +140,10 @@ List<bool> select(const label n, const labelUList& locations);
 //
 //  \return a List of bools
 List<bool> select(const labelUList& locations);
+
+//- Forward to bitSet::count()
+unsigned int count(const bitSet& bitset, const bool on=true);
+
 
 //- Return the (sorted) values corresponding to 'true' entries.
 //  Similar to bitSet::toc()
@@ -292,13 +287,13 @@ struct bitInfo
     constexpr bitInfo() noexcept : value(0) {}
 
     //- Value construct
-    explicit bitInfo(UIntType val) : value(val) {}
+    explicit bitInfo(UIntType val) noexcept : value(val) {}
 
     //- Conversion to base type
-    operator UIntType () const { return value; }
+    operator UIntType () const noexcept { return value; }
 
     //- Conversion to base type
-    operator UIntType& () { return value; }
+    operator UIntType& () noexcept { return value; }
 };
 
 } // End namespace BitOps

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022-2023 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -39,12 +39,12 @@ void Foam::UPstream::allToAll                                                 \
 (                                                                             \
     const UList<Native>& sendData,                                            \
     UList<Native>& recvData,                                                  \
-    const label comm                                                          \
+    const int communicator                                                    \
 )                                                                             \
 {                                                                             \
     PstreamDetail::allToAll                                                   \
     (                                                                         \
-        sendData, recvData, TaggedType, comm                                  \
+        sendData, recvData, TaggedType, communicator                          \
     );                                                                        \
 }
 
@@ -67,12 +67,12 @@ void Foam::UPstream::allToAllConsensus                                        \
     const UList<Native>& sendData,                                            \
     UList<Native>& recvData,                                                  \
     const int tag,                                                            \
-    const label comm                                                          \
+    const int communicator                                                    \
 )                                                                             \
 {                                                                             \
     PstreamDetail::allToAllConsensus                                          \
     (                                                                         \
-        sendData, recvData, TaggedType, tag, comm                             \
+        sendData, recvData, TaggedType, tag, communicator                     \
     );                                                                        \
 }                                                                             \
                                                                               \
@@ -81,12 +81,12 @@ void Foam::UPstream::allToAllConsensus                                        \
     const Map<Native>& sendData,                                              \
     Map<Native>& recvData,                                                    \
     const int tag,                                                            \
-    const label comm                                                          \
+    const int communicator                                                    \
 )                                                                             \
 {                                                                             \
     PstreamDetail::allToAllConsensus                                          \
     (                                                                         \
-        sendData, recvData, TaggedType, tag, comm                             \
+        sendData, recvData, TaggedType, tag, communicator                     \
     );                                                                        \
 }
 
@@ -101,7 +101,7 @@ Pstream_CommonRoutines(int64_t, MPI_INT64_T);
 
 #undef  Pstream_CommonRoutines
 #define Pstream_CommonRoutines(Native, TaggedType)                            \
-void Foam::UPstream::allToAll                                                 \
+void Foam::UPstream::allToAllv                                                \
 (                                                                             \
     const Native* sendData,                                                   \
     const UList<int>& sendCounts,                                             \
@@ -109,14 +109,14 @@ void Foam::UPstream::allToAll                                                 \
     Native* recvData,                                                         \
     const UList<int>& recvCounts,                                             \
     const UList<int>& recvOffsets,                                            \
-    const label comm                                                          \
+    const int communicator                                                    \
 )                                                                             \
 {                                                                             \
     PstreamDetail::allToAllv                                                  \
     (                                                                         \
         sendData, sendCounts, sendOffsets,                                    \
         recvData, recvCounts, recvOffsets,                                    \
-        TaggedType, comm                                                      \
+        TaggedType, communicator                                              \
     );                                                                        \
 }
 

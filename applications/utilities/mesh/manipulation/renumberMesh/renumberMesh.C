@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -478,8 +478,10 @@ labelList getRegionFaceOrder
             if (ownRegion != neiRegion)
             {
                 sortKey[facei] =
+                (
                     Foam::min(ownRegion, neiRegion)*nRegions
-                   +Foam::max(ownRegion, neiRegion);
+                  + Foam::max(ownRegion, neiRegion)
+                );
             }
         }
 
@@ -873,6 +875,7 @@ int main(int argc, char *argv[])
     // -------------------------
 
     #include "addMemoryPoolOptions.H"
+    #include "addInitDeviceOptions.H"
     #include "setRootCase.H"
     #include "initDevice.H"
     #include "createMemoryPool.H"
@@ -1916,13 +1919,13 @@ int main(int argc, char *argv[])
                 );
 
                 meshMapIO.resetHeader("cellMap");
-                IOListRef<label>(meshMapIO, map().cellMap()).write();
+                IOList<label>::writeContents(meshMapIO, map().cellMap());
 
                 meshMapIO.resetHeader("faceMap");
-                IOListRef<label>(meshMapIO, map().faceMap()).write();
+                IOList<label>::writeContents(meshMapIO, map().faceMap());
 
                 meshMapIO.resetHeader("pointMap");
-                IOListRef<label>(meshMapIO, map().pointMap()).write();
+                IOList<label>::writeContents(meshMapIO, map().pointMap());
             }
         }
 

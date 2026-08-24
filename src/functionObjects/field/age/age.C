@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2018-2021 OpenFOAM Foundation
-    Copyright (C) 2021-2023 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -53,15 +53,17 @@ namespace functionObjects
 
 Foam::wordList Foam::functionObjects::age::patchTypes() const
 {
+    const fvBoundaryMesh& patches = mesh_.boundary();
+
     wordList result
     (
-        mesh_.boundary().size(),
+        patches.size(),
         inletOutletFvPatchField<scalar>::typeName
     );
 
-    forAll(mesh_.boundary(), patchi)
+    forAll(patches, patchi)
     {
-        if (isA<wallFvPatch>(mesh_.boundary()[patchi]))
+        if (isA<wallFvPatch>(patches[patchi]))
         {
             result[patchi] = fvPatchFieldBase::zeroGradientType();
         }
@@ -109,42 +111,67 @@ Foam::functionObjects::age::age
 
 bool Foam::functionObjects::age::read(const dictionary& dict)
 {
-    if (fvMeshFunctionObject::read(dict))
+    if (!fvMeshFunctionObject::read(dict))
     {
-        phiName_ = dict.getOrDefault<word>("phi", "phi");
-        rhoName_ = dict.getOrDefault<word>("rho", "rho");
-        schemesField_ = dict.getOrDefault<word>("schemesField", typeName);
-        tolerance_ = dict.getOrDefault<scalar>("tolerance", 1e-5);
-        nCorr_ = dict.getOrDefault<int>("nCorr", 5);
-        diffusion_ = dict.getOrDefault<bool>("diffusion", false);
-
-        return true;
+        return false;
     }
 
-    return false;
+    phiName_ = dict.getOrDefault<word>("phi", "phi");
+    rhoName_ = dict.getOrDefault<word>("rho", "rho");
+    schemesField_ = dict.getOrDefault<word>("schemesField", typeName);
+    tolerance_ = dict.getOrDefault<scalar>("tolerance", 1e-5);
+    nCorr_ = dict.getOrDefault<int>("nCorr", 5);
+    diffusion_ = dict.getOrDefault<bool>("diffusion", false);
+
+
+    // Detect if compressible or incompressible
+    const auto& phi = mesh_.lookupObject<surfaceScalarField>(phiName_);
+    isCompressible_ = (phi.dimensions() == dimMass/dimTime);
+
+    // Store the divergence scheme
+    divScheme_ = word("div(phi," + schemesField_ + ")");
+
+    // Store the Laplacian scheme
+    if (diffusion_)
+    {
+        if (isCompressible_)
+        {
+            laplacianScheme_ = "laplacian(muEff," + schemesField_ + ")";
+        }
+        else
+        {
+            laplacianScheme_ = "laplacian(nuEff," + schemesField_ + ")";
+        }
+    }
+
+    return true;
 }
 
 
 bool Foam::functionObjects::age::execute()
 {
-    auto tage = tmp<volScalarField>::New
-    (
-        IOobject
+    auto* agePtr = getObjectPtr<volScalarField>(typeName);
+    if (!agePtr)
+    {
+        agePtr = new volScalarField
         (
-            typeName,
-            mesh_.time().timeName(),
+            IOobject
+            (
+                typeName,
+                obr().time().timeName(),
+                obr(),
+                IOobject::READ_IF_PRESENT,
+                IOobject::AUTO_WRITE,
+                IOobject::NO_REGISTER
+            ),
             mesh_,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE,
-            IOobject::NO_REGISTER
-        ),
-        mesh_,
-        dimensionedScalar(dimTime, Zero),
-        patchTypes()
-    );
-    volScalarField& age = tage.ref();
+            dimensionedScalar(dimTime, Zero),
+            patchTypes()
+        );
+        regIOobject::store(agePtr);
+    }
+    auto& age = *agePtr;
 
-    const word divScheme("div(phi," + schemesField_ + ")");
 
     // Set under-relaxation coeff
     scalar relaxCoeff = 0;
@@ -161,12 +188,11 @@ bool Foam::functionObjects::age::execute()
 
     const auto& phi = mesh_.lookupObject<surfaceScalarField>(phiName_);
 
-    if (phi.dimensions() == dimMass/dimTime)
+    if (isCompressible_)
     {
         const auto& rho = mesh_.lookupObject<volScalarField>(rhoName_);
 
         tmp<volScalarField> tmuEff;
-        word laplacianScheme;
 
         if (diffusion_)
         {
@@ -175,21 +201,18 @@ bool Foam::functionObjects::age::execute()
                 (
                     turbulenceModel::propertiesName
                 ).muEff();
-
-            laplacianScheme =
-                "laplacian(" + tmuEff().name() + ',' + schemesField_ + ")";
         }
 
         for (int i = 0; i <= nCorr_; ++i)
         {
             fvScalarMatrix ageEqn
             (
-                fvm::div(phi, age, divScheme) == rho //+ fvOptions(rho, age)
+                fvm::div(phi, age, divScheme_) == rho //+ fvOptions(rho, age)
             );
 
             if (diffusion_)
             {
-                ageEqn -= fvm::laplacian(tmuEff(), age, laplacianScheme);
+                ageEqn -= fvm::laplacian(tmuEff(), age, laplacianScheme_);
             }
 
             ageEqn.relax(relaxCoeff);
@@ -199,7 +222,7 @@ bool Foam::functionObjects::age::execute()
             if (converged(i, ageEqn.solve().initialResidual()))
             {
                 break;
-            };
+            }
 
             fvOptions.correct(age);
         }
@@ -207,7 +230,6 @@ bool Foam::functionObjects::age::execute()
     else
     {
         tmp<volScalarField> tnuEff;
-        word laplacianScheme;
 
         if (diffusion_)
         {
@@ -216,22 +238,19 @@ bool Foam::functionObjects::age::execute()
                 (
                     turbulenceModel::propertiesName
                 ).nuEff();
-
-            laplacianScheme =
-                "laplacian(" + tnuEff().name() + ',' + schemesField_ + ")";
         }
 
         for (int i = 0; i <= nCorr_; ++i)
         {
             fvScalarMatrix ageEqn
             (
-                fvm::div(phi, age, divScheme)
+                fvm::div(phi, age, divScheme_)
              == dimensionedScalar(1) + fvOptions(age)
             );
 
             if (diffusion_)
             {
-                ageEqn -= fvm::laplacian(tnuEff(), age, laplacianScheme);
+                ageEqn -= fvm::laplacian(tnuEff(), age, laplacianScheme_);
             }
 
             ageEqn.relax(relaxCoeff);
@@ -252,10 +271,7 @@ bool Foam::functionObjects::age::execute()
         << max(age).value()
         << endl;
 
-    // Workaround
-    word fieldName = typeName;
-
-    return store(fieldName, tage);
+    return true;
 }
 
 

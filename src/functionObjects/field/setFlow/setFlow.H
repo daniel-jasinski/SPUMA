@@ -40,56 +40,55 @@ Description
     Operands:
     \table
       Operand       | Type                       | Location
-      input         | {vol,surface}\<Type\>Field <!--
-                --> | $FOAM_CASE/\<time\>/\<inpField\>
+      input         | {vol,surface}<Type>Field   | <time>/inputField
       output file   | -                          | -
-      output field  | {vol,surface}\<Type\>Field <!--
-                --> | $FOAM_CASE/\<time\>/\<outField\>
+      output field  | {vol,surface}<Type>Field   | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    setFlow1
+    setFlowFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        setFlow;
         libs        (fieldFunctionObjects);
+        mode        <word>;
+        scale       <Function1<scalar>>;
 
-        // Mandatory entries (runtime modifiable)
-        mode        rotation;
-        scale       1;
+        // Optional entries
+        U           <word>;
+        rho         <word>;
+        phi         <word>;
+        reverseTime <scalar>;
 
-        // Optional entries (runtime modifiable)
-        U           U;
-        rho         none;
-        phi         phi;
-        reverseTime 1;
+        // Conditional entries
 
-        // When mode=function
-        velocity    (1 0 0);
+            // when 'mode' is 'function'
+            velocity    <Function1<vector>>;
 
-        // When mode=rotation
-        omega       6.28318530718;
-        origin      (0.5 0 0.5);
-        refDir      (1 0 0);
-        axis        (0 1 0);
+            // when 'mode' is 'rotation'
+            omega       <Function1<scalar>>;
+            origin      <vector>;
+            refDir      <vector>;
+            axis        <vector>;
 
-        // When mode=(vortex2D|vortex3D)
-        origin      (0.5 0 0.5);
-        refDir      (1 0 0);
-        axis        (0 1 0);
+            // when 'mode' is 'vortex2D' or 'vortex3D'
+            origin      <vector>;
+            refDir      <vector>;
+            axis        <vector>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                         | Type | Req'd | Dflt
+      Property     | Description                         | Type | Reqd  | Deflt
       type         | Type name: readFields               | word |  yes  | -
       libs         | Library name: fieldFunctionObjects  | word |  yes  | -
       mode         | Operating mode - see below          | word |  yes  | -
@@ -113,29 +112,22 @@ Usage
 
     Options for the \c mode entry:
     \verbatim
-      function
-      rotation
-      vortex2D
-      vortex3D
+      function | Uses a velocity function to set the flow field
+      rotation | Applies rotational flow based on specified parameters
+      vortex2D | Imposes a 2D vortex flow
+      vortex3D | Imposes a 3D vortex flow
     \endverbatim
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::setFlow
+      - \link functionObject.H \endlink
 
 SourceFiles
     setFlow.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_setFlow_H
-#define functionObjects_setFlow_H
+#ifndef Foam_functionObjects_setFlow_H
+#define Foam_functionObjects_setFlow_H
 
 #include "fvMeshFunctionObject.H"
 #include "Function1.H"
@@ -226,7 +218,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         setFlow
         (
             const word& name,
@@ -247,13 +239,13 @@ public:
 
     // Member Functions
 
-        //- Read the setFlow data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Do nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Calculate the setFlow and write
+        //- Write the function-object results
         virtual bool write();
 };
 

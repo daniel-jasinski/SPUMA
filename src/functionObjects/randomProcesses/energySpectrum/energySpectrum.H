@@ -30,41 +30,53 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Calculates the energy spectrum for a structured IJK mesh
+    Calculates the energy spectrum for a structured IJK mesh.
+
+    Operands:
+    \table
+      Operand      | Type                 | Location
+      input        | -                    | -
+      output file  | dat                  | <time>/energySpectrum.dat
+      output field | -                    | -
+    \endtable
 
 Usage
-    Example of function object specification:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    energySpectrum1
+    energySpectrumFO
     {
+        // Mandatory entries
         type        energySpectrum;
         libs        (fieldFunctionObjects);
+
+        // Optional entries
+        U           <word>;
+
+        // Inherited entries
         ...
-        log         yes;
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property     | Description               | Required    | Default value
-        type         | type name: energySpectrum | yes         |
-        log          | write info to standard output | no      | yes
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: energySpectrum          | word | yes  | -
+      libs     | Library name: fieldFunctionObjects | word | yes  | -
+      U        | Name of the velocity field         | word | no   | U
     \endtable
 
-    Output data is written to the file \<timeDir\>/energySpectrum.dat
-
-See also
-    Foam::functionObjects::fvMeshFunctionObject
-    Foam::functionObjects::writeFile
+    The inherited entries are elaborated in:
+    - \link functionObject.H \endlink
+    - \link writeFile.H \endlink
+    - \link populationBalanceModel.H \endlink
 
 SourceFiles
     energySpectrum.C
-    energySpectrumTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_energySpectrum_H
-#define functionObjects_energySpectrum_H
+#ifndef Foam_functionObjects_energySpectrum_H
+#define Foam_functionObjects_energySpectrum_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -89,7 +101,7 @@ class energySpectrum
 {
 protected:
 
-    // Protected data
+    // Protected Data
 
         //- I-J-K mesh addressing
         labelList cellAddr_;
@@ -111,7 +123,6 @@ protected:
 
 
     // Protected Member Functions
-
 
         //- Output file header information
         virtual void writeFileHeader(Ostream& os);
@@ -142,7 +153,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         energySpectrum
         (
             const word& name,
@@ -157,13 +168,13 @@ public:
 
     // Member Functions
 
-        //- Read the field min/max data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the energySpectrum
+        //- Write the function-object results
         virtual bool write();
 };
 

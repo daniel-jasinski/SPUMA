@@ -69,7 +69,7 @@ public:
         //- Default copy construct
         GlobalIOList(const GlobalIOList&) = default;
 
-        //- Construct from IOobject
+        //- Construct from IOobject. Will be zero size if not read.
         explicit GlobalIOList(const IOobject& io);
 
         //- Construct from IOobject and zero size (if not read)
@@ -127,11 +127,20 @@ public:
 
     // Member Operators
 
-        //- Copy assignment of entries
-        void operator=(const GlobalIOList<Type>& rhs);
-
         //- Copy or move assignment of entries
         using List<Type>::operator=;
+
+        //- Copy assignment of entries
+        void operator=(const GlobalIOList<Type>& rhs)
+        {
+            List<Type>::operator=(rhs);
+        }
+
+        //- Move assignment of entries
+        void operator=(GlobalIOList<Type>&& rhs)
+        {
+            List<Type>::operator=(std::move(static_cast<List<Type>&>(rhs)));
+        }
 };
 
 

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,37 +29,51 @@ License
 #include "UList.H"
 #include "Ostream.H"
 #include "token.H"
-#include "contiguous.H"
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
 template<class T>
 void Foam::UList<T>::writeEntry(Ostream& os) const
 {
-    const word tag("List<" + word(pTraits<T>::typeName_()) + '>');
-    if (token::compound::isCompound(tag))
+    if constexpr (std::is_same_v<char, std::remove_cv_t<T>>)
     {
-        os  << tag << token::SPACE;
-    }
+        // Char data has a compound type:
+        os  << word("List<char>");
 
-    if (size())
-    {
-        os << *this;
-    }
-    else if
-    (
-        os.format() == IOstreamOption::BINARY
-     || std::is_same<char, typename std::remove_cv<T>::type>::value
-    )
-    {
-        // Zero-sized binary - Write size only
-        // NB: special treatment for char data (binary I/O only)
-        os << label(0);
+        if (this->size())
+        {
+            // Non-zero size: write as binary, so has leading newline separator.
+            os << *this;
+        }
+        else
+        {
+            // Zero-sized binary - Write size only
+            // Note that char data is always binary I/O only
+            os << token::SPACE << label(0);
+        }
     }
     else
     {
-        // Zero-sized ASCII - Write size and delimiters
-        os << label(0) << token::BEGIN_LIST << token::END_LIST;
+        const word tag("List<" + word(pTraits<T>::typeName_()) + '>');
+        if (token::compound::isCompound(tag))
+        {
+            os  << tag << token::SPACE;
+        }
+
+        if (size())
+        {
+            os << *this;
+        }
+        else if (os.format() == IOstreamOption::BINARY)
+        {
+            // Zero-sized binary - Write size only
+            os << label(0);
+        }
+        else
+        {
+            // Zero-sized ASCII - Write size and delimiters
+            os << label(0) << token::BEGIN_LIST << token::END_LIST;
+        }
     }
 }
 
@@ -89,19 +103,7 @@ Foam::Ostream& Foam::UList<T>::writeList
 
     const label len = list.size();
 
-    if (os.format() == IOstreamOption::BINARY && is_contiguous<T>::value)
-    {
-        // Binary and contiguous
-
-        os << nl << len << nl;
-
-        if (len)
-        {
-            // write(...) includes surrounding start/end delimiters
-            os.write(list.cdata_bytes(), list.size_bytes());
-        }
-    }
-    else if (std::is_same<char, typename std::remove_cv<T>::type>::value)
+    if constexpr (std::is_same_v<char, std::remove_cv_t<T>>)
     {
         // Special treatment for char data (binary I/O only)
 
@@ -116,65 +118,76 @@ Foam::Ostream& Foam::UList<T>::writeList
 
         os.format(oldFmt);
     }
-    else if (is_contiguous<T>::value && len > 1 && list.uniform())
-    {
-        // Two or more entries, and all entries have identical values.
-        os  << len << token::BEGIN_BLOCK << list[0] << token::END_BLOCK;
-    }
-    else if
-    (
-        (len <= 1 || !shortLen)
-     ||
-        (
-            (len <= shortLen)
-         &&
-            (
-                is_contiguous<T>::value
-             || Detail::ListPolicy::no_linebreak<T>::value
-            )
-        )
-    )
-    {
-        // Single-line output
-
-        // Size and start delimiter
-        os << len << token::BEGIN_LIST;
-
-        auto iter = list.cbegin();
-        const auto last = list.cend();
-
-        // Contents
-        if (iter != last)
-        {
-            os << *iter;
-
-            for (++iter; (iter != last); (void)++iter)
-            {
-                os << token::SPACE << *iter;
-            }
-        }
-
-        // End delimiter
-        os << token::END_LIST;
-    }
     else
     {
-        // Multi-line output
-
-        // Size and start delimiter
-        os << nl << len << nl << token::BEGIN_LIST;
-
-        auto iter = list.cbegin();
-        const auto last = list.cend();
-
-        // Contents
-        for (/*nil*/; (iter != last); (void)++iter)
+        if (os.format() == IOstreamOption::BINARY && is_contiguous_v<T>)
         {
-            os << nl << *iter;
-        }
+            // Binary and contiguous
 
-        // End delimiter
-        os << nl << token::END_LIST << nl;
+            os << nl << len << nl;
+
+            if (len)
+            {
+                // write(...) includes surrounding start/end delimiters
+                os.write(list.cdata_bytes(), list.size_bytes());
+            }
+        }
+        else if (is_contiguous_v<T> && len > 1 && list.uniform())
+        {
+            // Two or more entries, and all entries have identical values.
+            os  << len << token::BEGIN_BLOCK << list[0] << token::END_BLOCK;
+        }
+        else if
+        (
+            (len <= 1 || !shortLen)
+         ||
+            (
+                (len <= shortLen)
+             && (is_contiguous_v<T> || Foam::ListPolicy::no_linebreak<T>::value)
+            )
+        )
+        {
+            // Single-line output
+
+            // Size and start delimiter
+            os << len << token::BEGIN_LIST;
+
+            auto iter = list.cbegin();
+            const auto last = list.cend();
+
+            // Contents
+            if (iter != last)
+            {
+                os << *iter;
+
+                for (++iter; (iter != last); (void)++iter)
+                {
+                    os << token::SPACE << *iter;
+                }
+            }
+
+            // End delimiter
+            os << token::END_LIST;
+        }
+        else
+        {
+            // Multi-line output
+
+            // Size and start delimiter
+            os << nl << len << nl << token::BEGIN_LIST;
+
+            auto iter = list.cbegin();
+            const auto last = list.cend();
+
+            // Contents
+            for (/*nil*/; (iter != last); (void)++iter)
+            {
+                os << nl << *iter;
+            }
+
+            // End delimiter
+            os << nl << token::END_LIST << nl;
+        }
     }
 
     os.check(FUNCTION_NAME);
@@ -234,27 +247,7 @@ Foam::Istream& Foam::UList<T>::readList(Istream& is)
                 << exit(FatalIOError);
         }
 
-        if (is.format() == IOstreamOption::BINARY && is_contiguous<T>::value)
-        {
-            // Binary and contiguous
-
-            if (len)
-            {
-                Detail::readContiguous<T>
-                (
-                    is,
-                    list.data_bytes(),
-                    list.size_bytes()
-                );
-
-                is.fatalCheck
-                (
-                    "UList<T>::readList(Istream&) : "
-                    "reading binary block"
-                );
-            }
-        }
-        else if (std::is_same<char, typename std::remove_cv<T>::type>::value)
+        else if constexpr (std::is_same_v<char, std::remove_cv_t<T>>)
         {
             // Special treatment for char data (binary I/O only)
             const auto oldFmt = is.format(IOstreamOption::BINARY);
@@ -266,8 +259,7 @@ Foam::Istream& Foam::UList<T>::readList(Istream& is)
 
                 is.fatalCheck
                 (
-                    "UList<char>::readList(Istream&) : "
-                    "reading binary block"
+                    "UList<char>::readList(Istream&) : [binary block]"
                 );
             }
 
@@ -275,44 +267,66 @@ Foam::Istream& Foam::UList<T>::readList(Istream& is)
         }
         else
         {
-            // Begin of contents marker
-            const char delimiter = is.readBeginList("List");
-
-            if (len)
+            if (is.format() == IOstreamOption::BINARY && is_contiguous_v<T>)
             {
-                if (delimiter == token::BEGIN_LIST)
+                // Binary and contiguous
+
+                if (len)
                 {
-                    for (label i=0; i<len; ++i)
+                    Detail::readContiguous<T>
+                    (
+                        is,
+                        list.data_bytes(),
+                        list.size_bytes()
+                    );
+
+                    is.fatalCheck
+                    (
+                        "UList<T>::readList(Istream&) : [binary block]"
+                    );
+                }
+            }
+            else
+            {
+                // Begin of contents marker
+                const char delimiter = is.readBeginList("List");
+
+                if (len)
+                {
+                    if (delimiter == token::BEGIN_LIST)
                     {
-                        is >> list[i];
+                        for (label i=0; i<len; ++i)
+                        {
+                            is >> list[i];
+
+                            is.fatalCheck
+                            (
+                                "UList<T>::readList(Istream&) : "
+                                "reading entry"
+                            );
+                        }
+                    }
+                    else
+                    {
+                        // Uniform content (delimiter == token::BEGIN_BLOCK)
+
+                        T elem;
+                        is >> elem;
 
                         is.fatalCheck
                         (
                             "UList<T>::readList(Istream&) : "
-                            "reading entry"
+                            "reading the single entry"
                         );
+
+                        // Fill with the value
+                        this->fill_uniform(elem);
                     }
                 }
-                else
-                {
-                    // Uniform content (delimiter == token::BEGIN_BLOCK)
 
-                    T elem;
-                    is >> elem;
-
-                    is.fatalCheck
-                    (
-                        "UList<T>::readList(Istream&) : "
-                        "reading the single entry"
-                    );
-
-                    // Fill with the value
-                    this->fill_uniform(elem);
-                }
+                // End of contents marker
+                is.readEndList("List");
             }
-
-            // End of contents marker
-            is.readEndList("List");
         }
     }
     else if (tok.isPunctuation(token::BEGIN_LIST))

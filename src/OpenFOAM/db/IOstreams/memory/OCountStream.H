@@ -169,6 +169,9 @@ public:
         {
             os  << "count=" << buf_.count();
         }
+
+        //- Information about stream
+        void print(Ostream& os) const { debug_info(os); }
 };
 
 
@@ -228,8 +231,13 @@ public:
             syncState();
         }
 
-        //- Print stream description to Ostream
-        virtual void print(Ostream& os) const override;
+        //- Print stream description
+        virtual void print(Ostream& os) const override
+        {
+            os  << "ocountstream: ";
+            stream_.debug_info(os);
+            os  << '\n';
+        }
 };
 
 

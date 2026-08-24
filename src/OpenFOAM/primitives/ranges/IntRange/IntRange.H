@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,21 +30,20 @@ Description
     An interval of (signed) integers defined by a start and a size.
 
 Note
-    Only a minimum of IO operators are defined, to avoid incurring
-    too many dependencies or cyclic dependencies.
+    Since this range is low-level, the IO operators are defined
+    in the separate IntRangeIO.H header.
 
 SourceFiles
     IntRangeI.H
-    IntRanges.C
+    IntRangeIO.H
 
 \*---------------------------------------------------------------------------*/
 
 #ifndef Foam_IntRange_H
 #define Foam_IntRange_H
 
+#include "IndexIterator.H"
 #include "labelFwd.H"
-#include <iterator>
-#include <type_traits>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -52,9 +51,15 @@ namespace Foam
 {
 
 // Forward Declarations
+template<class T> class IntRange;
 class Istream;
 class Ostream;
-template<class T> class List;
+
+//- Read from Istream as bracketed (start size) tuple
+template<class T> Istream& operator>>(Istream&, IntRange<T>&);
+
+//- Write to Ostream as bracketed (start size) tuple
+template<class T> Ostream& operator<<(Ostream&, const IntRange<T>&);
 
 /*---------------------------------------------------------------------------*\
                           Class IntRange Declaration
@@ -63,7 +68,7 @@ template<class T> class List;
 template<class IntType>
 class IntRange
 {
-    static_assert(std::is_integral<IntType>::value, "Integral required");
+    static_assert(std::is_integral_v<IntType>, "Integral required");
 
     // Private Data
 
@@ -73,6 +78,12 @@ class IntRange
         //- The length of the interval
         IntType size_;
 
+
+    // Private Member Functions
+
+        //- The value "at" the local index \p idx, with bounds checking.
+        //  If index is out-of-bounds, returns the end_value()
+        inline IntType at_value(IntType idx) const noexcept;
 
 public:
 
@@ -85,10 +96,10 @@ public:
         typedef IntType size_type;
 
         //- Input iterator with const access
-        class const_iterator;
+        using const_iterator = IndexIterator<IntType>;
 
         //- Reverse input iterator with const access
-        class const_reverse_iterator;
+        using const_reverse_iterator = ReverseIndexIterator<IntType>;
 
 
     // Public Classes
@@ -97,7 +108,7 @@ public:
         struct gt0
         {
             template<class Int>
-            constexpr bool operator()(const Int val) const noexcept
+            constexpr bool operator()(Int val) const noexcept
             {
                 return (val > 0);
             }
@@ -107,7 +118,7 @@ public:
         struct lt0
         {
             template<class Int>
-            constexpr bool operator()(const Int val) const noexcept
+            constexpr bool operator()(Int val) const noexcept
             {
                 return (val < 0);
             }
@@ -117,7 +128,7 @@ public:
         struct ge0
         {
             template<class Int>
-            constexpr bool operator()(const Int val) const noexcept
+            constexpr bool operator()(Int val) const noexcept
             {
                 return (val >= 0);
             }
@@ -127,7 +138,7 @@ public:
         struct le0
         {
             template<class Int>
-            constexpr bool operator()(const Int val) const noexcept
+            constexpr bool operator()(Int val) const noexcept
             {
                 return (val <= 0);
             }
@@ -143,14 +154,10 @@ public:
         inline constexpr IntRange() noexcept;
 
         //- Construct a range with specified length, starting at zero (0,len)
-        inline explicit constexpr IntRange(const IntType len) noexcept;
+        inline explicit constexpr IntRange(IntType len) noexcept;
 
         //- Construct a range from start/length, no checks
-        inline constexpr IntRange
-        (
-            const IntType beg,
-            const IntType len
-        ) noexcept;
+        inline constexpr IntRange(IntType beg, IntType len) noexcept;
 
 
     // Member Functions
@@ -186,23 +193,23 @@ public:
 
     // Edit
 
-        //- Reset to zero start and zero size
+        //- Reset to (0,0)
+        inline void clear() noexcept ;
+
+        //- Reset to (0,0)
         inline void reset() noexcept;
 
         //- Reset start and length, no checks
-        inline void reset(const IntType beg, const IntType len) noexcept;
-
-        //- Same as reset() - reset to zero start and zero size
-        void clear() noexcept { reset(); }
+        inline void reset(IntType beg, IntType len) noexcept;
 
         //- Set the start position, no checks
-        inline void setStart(const IntType i) noexcept;
+        inline void setStart(IntType i) noexcept;
 
         //- Change the size, no checks. Identical to resize()
-        inline void setSize(const IntType n) noexcept;
+        inline void setSize(IntType n) noexcept;
 
         //- Change the size, no checks. Identical to setSize()
-        inline void resize(const IntType n) noexcept;
+        inline void resize(IntType n) noexcept;
 
         //- Enforce non-negative size
         inline void clampSize() noexcept;
@@ -211,10 +218,10 @@ public:
     // Search
 
         //- True if the (global) value is within the range
-        inline bool contains(const IntType value) const noexcept;
+        inline bool contains(IntType value) const noexcept;
 
         //- True if the (global) value is within the range
-        bool found(const IntType val) const noexcept { return contains(val); }
+        bool found(IntType val) const noexcept { return contains(val); }
 
 
     // Member Operators
@@ -223,28 +230,28 @@ public:
         //- with bounds checking.
         //  \return iterator at the requested position, or end() for
         //      out-of-bounds
-        inline const_iterator at(const IntType i) const;
+        const_iterator at(IntType i) const { return at_value(i); }
 
         //- Offset dereference, without bounds checking
-        inline constexpr IntType operator[](const IntType i) const noexcept;
+        inline constexpr IntType operator[](IntType i) const noexcept;
 
         //- True if the global value is located within the range.
         //  Behaviour identical to contains() - usable as a predicate
-        bool operator()(const IntType i) const noexcept { return contains(i); }
+        bool operator()(IntType i) const noexcept { return contains(i); }
 
         //- Increase the size by 1.
         inline IntType operator++() noexcept;
         inline IntType operator++(int) noexcept;
 
         //- Increase the size by n.
-        inline IntType operator+=(const IntType n) noexcept;
+        inline IntType operator+=(IntType n) noexcept;
 
         //- Decrease the size by 1, but never below 0.
         inline IntType operator--() noexcept;
         inline IntType operator--(int) noexcept;
 
         //- Decrease the size by n, but never below 0.
-        inline IntType operator-=(const IntType n) noexcept;
+        inline IntType operator-=(IntType n) noexcept;
 
         //- True if range has size greater than zero. Same as good()
         explicit operator bool() const noexcept { return (size_ > 0); }
@@ -267,290 +274,35 @@ public:
 
     // Bidirectional input iterators (const)
 
-        //- Random-access input iterator with const access
-        //  \note No operator+(IntType, iterator) since this provokes
-        //      misleading resolution errors
-        class const_iterator
-        {
-            //- The global value
-            IntType value_;
-
-        public:
-
-            // STL definitions (as per std::iterator)
-            typedef std::random_access_iterator_tag iterator_category;
-            typedef IntType value_type;
-            typedef IntType difference_type;
-            typedef const IntType* pointer;
-            typedef IntType reference;
-
-
-        // Constructors
-
-            //- Construct with specified value, or default construct
-            explicit constexpr const_iterator(IntType val = 0) noexcept
-            :
-                value_(val)
-            {}
-
-
-        // Member Operators
-
-            //- Return the value
-            constexpr IntType operator*() const noexcept { return value_; }
-
-            //- Offset dereference operator
-            inline constexpr IntType operator[](const IntType n) const noexcept;
-
-            //- Prefix increment
-            inline const_iterator& operator++() noexcept;
-
-            //- Postfix increment
-            inline const_iterator operator++(int) noexcept;
-
-            //- Prefix decrement
-            inline const_iterator& operator--() noexcept;
-
-            //- Postfix decrement
-            inline const_iterator operator--(int) noexcept;
-
-            //- Arbitrary increment
-            inline const_iterator& operator+=(const IntType n) noexcept;
-
-            //- Arbitrary decrement
-            inline const_iterator& operator-=(const IntType n) noexcept;
-
-            //- Return iterator with offset
-            inline constexpr const_iterator operator+
-            (
-                const IntType n
-            ) const noexcept;
-
-            //- Return iterator with offset
-            inline constexpr const_iterator operator-
-            (
-                const IntType n
-            ) const noexcept;
-
-            //- Difference operator
-            inline constexpr IntType operator-
-            (
-                const const_iterator& iter
-            ) const noexcept;
-
-
-        // Comparison
-
-            //- Test for equality of values
-            inline constexpr bool operator==(const const_iterator& iter)
-            const noexcept;
-
-            //- Compare less-than
-            inline constexpr bool operator<(const const_iterator& iter)
-            const noexcept;
-
-
-        // Derived comparisons
-
-            constexpr bool operator!=(const const_iterator& iter)
-            const noexcept
-            {
-                return !(*this == iter);
-            }
-
-            constexpr bool operator<=(const const_iterator& iter)
-            const noexcept
-            {
-                return !(iter < *this);
-            }
-
-            constexpr bool operator>(const const_iterator& iter)
-            const noexcept
-            {
-                return (iter < *this);
-            }
-
-            constexpr bool operator>=(const const_iterator& iter)
-            const noexcept
-            {
-                return !(*this < iter);
-            }
-        };
-
-
-        //- Random-access reverse input iterator with const access
-        //  \note No operator+(IntType, iterator) since this provokes
-        //      misleading resolution errors
-        class const_reverse_iterator
-        {
-            //- The global value
-            IntType value_;
-
-        public:
-
-            // STL definitions (as per std::iterator)
-            typedef std::random_access_iterator_tag iterator_category;
-            typedef IntType value_type;
-            typedef IntType difference_type;
-            typedef const IntType* pointer;
-            typedef IntType reference;
-
-
-        // Constructors
-
-            //- Construct with specified value, or default construct
-            explicit constexpr const_reverse_iterator(IntType val = 0) noexcept
-            :
-                value_(val)
-            {}
-
-
-        // Member Operators
-
-            //- Return the value
-            constexpr IntType operator*() const noexcept { return value_; }
-
-            //- Offset dereference operator
-            inline constexpr IntType operator[](const IntType n) const noexcept;
-
-            //- Prefix increment
-            inline const_reverse_iterator& operator++() noexcept;
-
-            //- Postfix increment
-            inline const_reverse_iterator operator++(int) noexcept;
-
-            //- Prefix decrement
-            inline const_reverse_iterator& operator--() noexcept;
-
-            //- Postfix decrement
-            inline const_reverse_iterator operator--(int) noexcept;
-
-            //- Arbitrary increment
-            inline const_reverse_iterator& operator+=(const IntType n) noexcept;
-
-            //- Arbitrary decrement
-            inline const_reverse_iterator& operator-=(const IntType n) noexcept;
-
-            //- Return iterator with offset
-            inline constexpr const_reverse_iterator operator+
-            (
-                const IntType n
-            ) const noexcept;
-
-            //- Return iterator with offset
-            inline constexpr const_reverse_iterator operator-
-            (
-                const IntType n
-            ) const noexcept;
-
-            //- Difference operator
-            inline constexpr IntType operator-
-            (
-                const const_reverse_iterator& iter
-            )const noexcept;
-
-
-        // Comparison
-
-            //- Test for equality of values
-            inline constexpr bool operator==(const const_reverse_iterator& iter)
-            const noexcept;
-
-            //- Reverse compare less-than
-            inline constexpr bool operator<(const const_reverse_iterator& iter)
-            const noexcept;
-
-
-        // Derived comparisons
-
-            constexpr bool operator!=(const const_reverse_iterator& iter)
-            const noexcept
-            {
-                return !(*this == iter);
-            }
-
-            constexpr bool operator<=(const const_reverse_iterator& iter)
-            const noexcept
-            {
-                return !(iter < *this);
-            }
-
-            constexpr bool operator>(const const_reverse_iterator& iter)
-            const noexcept
-            {
-                return (iter < *this);
-            }
-
-            constexpr bool operator>=(const const_reverse_iterator& iter)
-            const noexcept
-            {
-                return !(*this < iter);
-            }
-        };
-
-
-    // Bidirectional input iterators (const)
+        //- A const_iterator set to the beginning of the range
+        const_iterator begin() const noexcept { return begin_value(); }
 
         //- A const_iterator set to the beginning of the range
-        inline const_iterator begin() const noexcept;
-
-        //- A const_iterator set to the beginning of the range
-        inline const_iterator cbegin() const noexcept;
+        const_iterator cbegin() const noexcept { return begin_value(); }
 
         //- A const_iterator set to 1 beyond the end of the range.
-        inline const_iterator cend() const noexcept;
+        const_iterator cend() const noexcept { return end_value(); }
 
         //- A const_iterator set to 1 beyond the end of the range.
-        inline const_iterator end() const noexcept;
+        const_iterator end() const noexcept { return end_value(); }
 
 
     // Bidirectional reverse input iterators (const)
 
         //- A const_reverse_iterator set to 1 before the end of range
-        inline const_reverse_iterator rbegin() const noexcept;
+        const_reverse_iterator
+        rbegin() const noexcept { return rbegin_value(); }
 
         //- A const_reverse_iterator set to 1 before the end of range
-        inline const_reverse_iterator crbegin() const noexcept;
+        const_reverse_iterator
+        crbegin() const noexcept { return rbegin_value(); }
 
         //- A const_reverse_iterator set to 1 before the begin of range
-        inline const_reverse_iterator rend() const noexcept;
+        const_reverse_iterator rend() const noexcept { return rend_value(); }
 
         //- A const_reverse_iterator set to 1 before the begin of range
-        inline const_reverse_iterator crend() const noexcept;
+        const_reverse_iterator crend() const noexcept { return rend_value(); }
 };
-
-
-// * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
-
-// Identity function for common integer types
-
-//- Identity map from an int32_t IntRange
-List<label> identity(const IntRange<int32_t>& range);
-
-#if defined(WM_LABEL_SIZE) && (WM_LABEL_SIZE >= 64)
-//- Identity map from an int64_t IntRange
-List<label> identity(const IntRange<int64_t>& range);
-#endif
-
-
-// * * * * * * * * * * * * * * * IOstream Operators  * * * * * * * * * * * * //
-
-// Input operators for common integer types
-
-//- Read IntRange from Istream as bracketed (start size) tuple, no checks
-Istream& operator>>(Istream& os, IntRange<int32_t>& range);
-
-//- Read IntRange from Istream as bracketed (start size) tuple, no checks
-Istream& operator>>(Istream& os, IntRange<int64_t>& range);
-
-
-// Output operators for common integer types
-
-//- Write IntRange to Ostream as bracketed (start size) tuple
-Ostream& operator<<(Ostream& os, const IntRange<int32_t>& range);
-
-//- Write IntRange to Ostream as bracketed (start size) tuple
-Ostream& operator<<(Ostream& os, const IntRange<int64_t>& range);
 
 
 // * * * * * * * * * * * * * * * Global Operators  * * * * * * * * * * * * * //

@@ -37,28 +37,28 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    <userDefinedSubDictName1>
+    FOname
     {
-        // Mandatory and other optional entries
+        // Mandatory and optional entries
         ...
 
-        // Optional (inherited) entries (runtime modifiable)
-        fields            (<field1> <field2> ... <fieldN>);
-        result            <fieldResult>;
+        // Mandatory entries
+        fields            <wordList>;  // (<field1> <field2> ... <fieldN>);
+
+        // Optional entries
+        result            <word>;
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property  | Description                 | Type     | Req'd | Dflt
+      Property  | Description                 | Type     | Reqd  | Deflt
       fields    | Names of operand fields     | wordList |  yes  | -
       result    | Names of output fields | wordList | no | \<FO\>(\<f1\>,...)
     \endtable
 
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::fieldsExpression
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
 
 SourceFiles
     fieldsExpression.C
@@ -66,8 +66,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_fieldsExpression_H
-#define functionObjects_fieldsExpression_H
+#ifndef Foam_functionObjects_fieldsExpression_H
+#define Foam_functionObjects_fieldsExpression_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFieldsFwd.H"
@@ -100,6 +100,7 @@ protected:
 
     // Protected Member Functions
 
+        //- Set the result name
         void setResultName
         (
             const word& typeName,
@@ -132,7 +133,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         fieldsExpression
         (
             const word& name,
@@ -155,13 +156,13 @@ public:
 
     // Member Functions
 
-        //- Read the fieldsExpression data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the result fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the result fields
+        //- Write the function-object results
         virtual bool write();
 
         //- Clear the result fields from the objectRegistry

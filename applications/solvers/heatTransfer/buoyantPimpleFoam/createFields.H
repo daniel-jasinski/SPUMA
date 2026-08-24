@@ -50,6 +50,20 @@ autoPtr<compressible::turbulenceModel> turbulence
         thermo
     )
 );
+compressible::turbulenceModel& momentumTurbulence = turbulence.ref();
+
+Info<< "Creating thermal turbulence model\n" << endl;
+autoPtr<compressible::thermalTurbulenceModel> thermalTurbulence
+(
+    compressible::thermalTurbulenceModel::New
+    (
+        rho,
+        U,
+        phi,
+        thermo,
+        momentumTurbulence
+    )
+);
 
 
 #include "readGravitationalAcceleration.H"

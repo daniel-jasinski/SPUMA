@@ -104,18 +104,15 @@ const polyMesh& topoMesh = topoMeshPtr();
 
 // Block boundary faces
 {
-    const label nIntFaces = topoMesh.nInternalFaces();
+    const auto& patches = topoMesh.boundaryMesh();
     const label nBndFaces = topoMesh.nBoundaryFaces();
 
-    faceList bndFaces
-    (
-        faceList::subList(topoMesh.faces(), nBndFaces, nIntFaces)
-    );
+    const faceList allPatchFaces(patches.faces());
 
     vtk::surfaceWriter writer
     (
         topoMesh.points(),
-        bndFaces,
+        allPatchFaces,
         vtk::formatType::INLINE_ASCII,
         runTime.path()/"blockFaces"
     );
@@ -132,7 +129,7 @@ const polyMesh& topoMesh = topoMeshPtr();
 
         for (const polyPatch& pp : patches)
         {
-            label bndFacei = pp.start() - nIntFaces;
+            label bndFacei = pp.offset();
             label meshFacei = pp.start();
 
             forAll(pp, bfacei)

@@ -46,7 +46,7 @@ inline Foam::hTabulatedThermo<EquationOfState>::hTabulatedThermo
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::limit
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::limit
 (
     const scalar T
 ) const
@@ -56,7 +56,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::limit
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Cp
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Cp
 (
     const scalar p,
     const scalar T
@@ -67,7 +67,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Cp
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Ha
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Ha
 (
     const scalar p,
     const scalar T
@@ -78,7 +78,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Ha
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hs
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hs
 (
     const scalar p,
     const scalar T
@@ -89,7 +89,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hs
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hc()
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Hc()
 const
 {
     return Hf_;
@@ -97,7 +97,7 @@ const
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::S
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::S
 (
     const scalar p,
     const scalar T
@@ -108,7 +108,7 @@ inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::S
 
 
 template<class EquationOfState>
-inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Gstd
+FOAM_DEVICE inline Foam::scalar Foam::hTabulatedThermo<EquationOfState>::Gstd
 (
     const scalar T
 ) const

@@ -75,7 +75,7 @@ void Foam::binModels::singleDirectionUniformBin::initialise()
         }
 
         // Globally consistent
-        reduce(geomLimits, minMaxOp<scalar>());
+        reduce(geomLimits, sumOp<scalarMinMax>());
 
         if (!geomLimits.good())
         {
@@ -197,7 +197,7 @@ void Foam::binModels::singleDirectionUniformBin::apply()
         {
             WarningInFunction
                 << "Unable to find field " << fieldNames_[i]
-                << ". Avaliable objects are "
+                << ". Available objects are "
                 << mesh_.objectRegistry::sortedToc()
                 << endl;
         }

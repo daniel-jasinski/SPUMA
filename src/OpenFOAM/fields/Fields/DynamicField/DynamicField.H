@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,6 +29,7 @@ Class
 
 Description
     Dynamically sized Field.
+    Similar to DynamicList, but inheriting from a Field instead of a List.
 
 SourceFiles
     DynamicFieldI.H
@@ -78,31 +79,17 @@ class DynamicField
         template<class ListType>
         inline void doAssignDynList(const ListType& list);
 
-        //- Alter the size of the underlying storage
-        //  The 'nocopy' option will not attempt to recover old content
-        inline void doCapacity(const bool nocopy, const label len);
+        //- Alter the size of the underlying storage,
+        //- retaining the first count elements.
+        inline void doCapacity_copy(label count, const label len);
 
-        //- Reserve allocation space for at least this size.
+        //- Reserve allocation space for at least this size,
+        //- retaining the first count elements.
         //  Never shrinks the allocated size, use setCapacity() for that.
-        //  The 'nocopy' option will not attempt to recover old content
-        inline void doReserve(const bool nocopy, const label len);
-
-        //- Reserve allocation space for at least this size.
-        //  Never shrinks the allocated size, use setCapacity() for that.
-        //  The 'nocopy' option will not attempt to recover old content
-        inline void doResize(const bool nocopy, const label len);
+        inline void doReserve_copy(label count, const label len);
 
 
 public:
-
-    // Static Member Functions
-
-        //- Return a null DynamicField (reference to a nullObject).
-        static const DynamicField<T, SizeMin>& null() noexcept
-        {
-            return NullObjectRef<DynamicField<T, SizeMin>>();
-        }
-
 
     // Constructors
 
@@ -112,11 +99,14 @@ public:
         //- Construct empty field with given initial capacity
         inline explicit DynamicField(const label initialCapacity);
 
+        //- Construct with given size and capacity
+        inline explicit DynamicField(std::pair<label,label> sizing);
+
         //- Construct given size and initial value
         inline DynamicField(const label len, const T& val);
 
         //- Construct given size and initial value of zero
-        inline DynamicField(const label len, const Foam::zero);
+        inline DynamicField(const label len, Foam::zero);
 
         //- Copy construct
         inline DynamicField(const DynamicField<T, SizeMin>& list);
@@ -147,6 +137,17 @@ public:
         template<int AnySizeMin>
         inline DynamicField(DynamicList<T, AnySizeMin>&& content) noexcept;
 
+        //- Copy or move construct from DynamicField
+        template<int AnySizeMin>
+        inline DynamicField(DynamicField<T, AnySizeMin>& content, bool reuse);
+
+        //- Copy or move construct from DynamicList
+        template<int AnySizeMin>
+        inline DynamicField(DynamicList<T, AnySizeMin>& content, bool reuse);
+
+        //- Copy or move construct from List
+        inline DynamicField(List<T>& content, bool reuse);
+
         //- Construct by 1 to 1 mapping from the given field
         inline DynamicField
         (
@@ -174,6 +175,10 @@ public:
 
         //- Clone
         inline tmp<DynamicField<T, SizeMin>> clone() const;
+
+
+    //- Destructor, sync allocated size before list destruction
+    ~DynamicField() { List<T>::setAddressableSize(capacity_); }
 
 
     // Member Functions
@@ -207,7 +212,7 @@ public:
 
         //- Change the value for the list capacity directly (ADVANCED, UNSAFE)
         //- Does not perform any memory management or resizing.
-        inline void setCapacity_unsafe(const label len) noexcept;
+        void setCapacity_unsafe(label len) noexcept { capacity_ = len; }
 
         //- Reserve allocation space for at least this size, allocating new
         //- space if required and \em retaining old content.
@@ -219,6 +224,12 @@ public:
         //  Never shrinks the allocated size, use setCapacity() for that.
         inline void reserve_nocopy(const label len);
 
+        //- Reserve allocation space for at least this size, allocating new
+        //- space if required and \em retaining old content.
+        //- If allocation is required, uses the specified size
+        //- without any other resizing logic.
+        inline void reserve_exact(const label len);
+
         //- Alter addressable list size, allocating new space if required
         //- while \em recovering old content.
         //  If no reallocation is required, the contents remain untouched.
@@ -227,20 +238,21 @@ public:
         //  setting values (as per List usage).
         inline void resize(const label len);
 
-        //- Alter addressable size and fill new space with constant value
+        //- Alter addressable size and fill \em new entries with constant value
         inline void resize(const label len, const T& val);
+
+        //- Alter addressable size, retaining the first count contents.
+        //  \note Only uses a limited number of internal checks.
+        inline void resize_copy(label count, const label len);
+
+        //- Alter addressable size and set val for \em all addressed entries
+        inline void resize_fill(const label len, const T& val);
 
         //- Alter addressable list size, allocating new space if required
         //- \em without necessarily recovering old content.
         //  If no reallocation is required, the contents remain untouched.
         //  Otherwise all entries will be uninitialized.
         inline void resize_nocopy(const label len);
-
-        //- Alias for resize()
-        void setSize(const label n) { this->resize(n); }
-
-        //- Alias for resize()
-        void setSize(const label n, const T& val) { this->resize(n, val); }
 
         //- Clear the addressed list, i.e. set the size to zero.
         //  Allocated size does not change
@@ -252,27 +264,19 @@ public:
         //- Shrink the allocated space to the number of elements used.
         inline void shrink_to_fit();
 
-        //- Shrink the internal bookkeeping of the allocated space to the
-        //- number of addressed elements without affecting allocation.
-        //  \note when empty() it will delete any allocated memory.
-        inline void shrink_unsafe();
-
-        //- Calls shrink_to_fit() and returns a reference to the DynamicField.
-        inline DynamicField<T, SizeMin>& shrink();
-
 
     // Edit
 
         //- Swap with plain List content. Implies shrink_to_fit().
-        inline void swap(List<T>& list);
+        inline void swap(List<T>& other);
 
         //- Swap content, independent of sizing parameter
         template<int AnySizeMin>
-        inline void swap(DynamicField<T, AnySizeMin>& other);
+        inline void swap(DynamicField<T, AnySizeMin>& other) noexcept;
 
         //- Swap content with DynamicList, independent of sizing parameter
         template<int AnySizeMin>
-        inline void swap(DynamicList<T, AnySizeMin>& other);
+        inline void swap(DynamicList<T, AnySizeMin>& other) noexcept;
 
         //- Transfer the parameter contents into this
         inline void transfer(List<T>& list);
@@ -290,7 +294,7 @@ public:
         template<class... Args>
         inline T& emplace_back(Args&&... args);
 
-        //- Copy append an element at the end of the list
+        //- Copy append an element to the end of the list
         inline void push_back(const T& val);
 
         //- Move append an element
@@ -319,7 +323,7 @@ public:
         inline void operator=(const T& val);
 
         //- Assign addressed entries to zero
-        inline void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
         //- Copy assignment
         inline void operator=(const UList<T>& list);
@@ -370,6 +374,20 @@ public:
 
 
     // Housekeeping
+
+        //- Alias for resize()
+        void setSize(const label n) { this->resize(n); }
+
+        //- Alias for resize()
+        void setSize(const label n, const T& val) { this->resize(n, val); }
+
+        //- Calls shrink_to_fit() and returns a reference to the DynamicField.
+        //FOAM_DEPRECATED_FOR(2025-04, "shrink_to_fit()")
+        DynamicField<T, SizeMin>& shrink()
+        {
+            this->shrink_to_fit();
+            return *this;
+        }
 
         //- Append an element at the end of the list
         //FOAM_DEPRECATED_FOR(2022-10, "push_back()")

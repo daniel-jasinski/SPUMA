@@ -15,8 +15,8 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef writeSurfaceFields_H
-#define writeSurfaceFields_H
+#ifndef FoamToVTK_writeSurfaceFields_H
+#define FoamToVTK_writeSurfaceFields_H
 
 #include "readFields.H"
 #include "primitivePatch.H"

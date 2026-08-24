@@ -175,11 +175,14 @@ void Foam::mappedFieldFvPatchField<Type>::updateCoeffs()
 
     if (debugLevel())
     {
+        auto limits = gMinMax(*this);
+        auto avg = gAverage(*this);
+
         Info<< "operating on field:" << this->internalField().name()
             << " patch:" << this->patch().name()
-            << "  avg:" << gAverage(*this)
-            << "  min:" << gMin(*this)
-            << "  max:" << gMax(*this)
+            << "  avg:" << avg
+            << "  min:" << limits.min()
+            << "  max:" << limits.max()
             << endl;
     }
 

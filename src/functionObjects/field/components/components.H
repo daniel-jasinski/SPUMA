@@ -48,54 +48,40 @@ Description
 
     Operands:
     \table
-      Operand           | Type                                        | Location
-      input             | {vol,surface}\<Type\>Field (Type != Scalar) <!--
-                    --> | $FOAM_CASE/\<time\>/\<inpField\>
-      output file       | -                                           | -
-      output field      | {vol,surface}ScalarField for each component <!--
-                    --> | $FOAM_CASE/\<time\>/\<outField\>\<suffix\>
+      Operand       | Type                     | Location
+      input         | {vol,surface}<Type>Field | <time>/inputField
+      output file   | -                        | -
+      output field  | {vol,surface}ScalarField | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    components1
+    componentsFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            components;
         libs            (fieldFunctionObjects);
 
-        // Mandatory (inherited) entry (runtime modifiable)
-        field           <field>;
-
-        // Optional (inherited) entries
+        // Inherited entries
+        field           <word>;
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: components              | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       field        | Name of the operand field          | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func "components(<field>)"
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::components
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     components.C
@@ -154,7 +140,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         components
         (
             const word& name,
@@ -175,7 +161,7 @@ public:
 
     // Member Functions
 
-        //- Write the component fields
+        //- Write the function-object results
         virtual bool write();
 
         //- Clear the component fields from the objectRegistry

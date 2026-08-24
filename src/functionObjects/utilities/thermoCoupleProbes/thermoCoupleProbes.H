@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2020 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -39,40 +39,46 @@ Description
     \f]
 
 Usage
-    Example of function object specification:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    probes
+    thermoCoupleProbesFO
     {
+        // Mandatory entries
         type            thermoCoupleProbes;
         libs            (utilityFunctionObjects);
-        writeControl    timeStep;
-        writeInterval   1;
+        radiationField  <word>;  // G;
 
-        solver          rodas23;
-        absTol          1e-12;
-        relTol          1e-8;
+        rho             <scalar>;
+        Cp              <scalar>;
+        d               <scalar>;
+        epsilon         <scalar>;
 
-        interpolationScheme cellPoint;
+        // Optional entries
+        U               <word>;
 
-        // thermocouple properties
-        rho             8908;
-        Cp              440;
-        d               1e-3;
-        epsilon         0.85;
-
-        radiationField  G;
-
-        probeLocations
-        (
-            (0.5 0.5 0.5)
-        );
-        fields
-        (
-            T
-        );
+        // Inherited entries
+        probeLocations  (<vectorList>);
+        fields          (<wordList>);
+        ...
     }
     \endverbatim
 
+    where the entries mean:
+    \table
+      Property     | Description                          | Type | Reqd | Deflt
+      type         | Type name: systemCall                | word | yes  | -
+      libs         | Library name: utilityFunctionObjects | word | yes  | -
+      radiationField | Name of the radiation field        | word | yes  | -
+      rho          | Thermocouple density                 | scalar | yes | -
+      Cp           | Thermocouple heat capacity           | scalar | yes | -
+      d            | Thermocouple diameter                | scalar | yes | -
+      epsilon      | Thermocouple emissivity              | scalar | yes | -
+      U            | Name of the velocity field           | word | no   | U
+    \endtable
+
+    The inherited entries are elaborated in:
+      - \link probes.H \endlink
+      - \link ODESystem.H \endlink
 
 SourceFiles
     thermoCoupleProbes.C
@@ -203,13 +209,14 @@ public:
 
     // Public Member Functions
 
-        //- Read
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Execute. Evaluates the ODESolver
+        //- Execute the function-object operations
+        //  Evaluates the ODESolver
         virtual bool execute();
 
-        //- Sample and write
+        //- Write the function-object results
         virtual bool write();
 };
 
@@ -222,7 +229,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "thermoCoupleProbesTemplates.C"
+    #include "thermoCoupleProbes.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

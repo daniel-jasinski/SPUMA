@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  v2412                                 |
+|  \\    /   O peration     | Version:  v2512                                 |
 |   \\  /    A nd           | Website:  www.openfoam.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
@@ -18,6 +18,25 @@ dimensions      [0 0 0 1 0 0 0];
 
 internalField   uniform 300;
 
+__thermalShell
+{
+    thermalShellModel   thermalShell;
+
+    // Thermal properties
+    thermo
+    {
+        rho             1000;
+        kappa           200;
+        Cp              600;
+        emissivity      0;
+    }
+
+    qr      qr;     // radiation
+
+    // Tprimary : volume temperature
+}
+
+
 boundaryField
 {
     "floor.*"
@@ -28,27 +47,22 @@ boundaryField
 
     "ceiling.*"
     {
-        type                compressible::thermalShell;
+        type            compressible::thermalShell;
+        value           uniform 300;
+
         active              true;
-        T                   T;
+        region              upper;
+        //suffixing           default;
 
-        thermo
-        {
-            W               50;
-            rho             1000;
-            kappa           200;
-            Cp              600;
-            Hf              0;
-            emissivity      0;
-        }
+        ${__thermalShell}
 
-        region              ceilingShell;
-        thermalShellModel   thermalShell;
+        // Thickness (default and/or as field)
+        thickness   1e-3;
+        h           hs;
 
-        qr                  qr;
-        thickness           1e-3;
-
-        value               uniform 300;
+        // Field names
+        // Ts       : shell temperature
+        // Tprimary : volume temperature
     }
 
     "fixedWall.*"
@@ -57,5 +71,6 @@ boundaryField
     }
 }
 
+#remove __thermalShell
 
 // ************************************************************************* //

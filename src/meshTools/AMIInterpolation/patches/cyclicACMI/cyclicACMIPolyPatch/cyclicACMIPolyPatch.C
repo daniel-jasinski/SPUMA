@@ -336,17 +336,64 @@ void Foam::cyclicACMIPolyPatch::resetAMI(const UList<point>& points) const
     cyclicAMIPolyPatch::resetAMI(points);
 
     const AMIPatchToPatchInterpolation& AMI = this->AMI();
+    const auto& cache = AMI.cache();
 
-    // Output some statistics
-    reportCoverage("source", AMI.srcWeightsSum());
-    reportCoverage("target", AMI.tgtWeightsSum());
+    if (cache.index0() == -1 && cache.index1() == -1)
+    {
+        // No caching
 
-    // Set the mask fields
-    // Note:
-    // - assumes that the non-overlap patches are decomposed using the same
-    //   decomposition as the coupled patches (per side)
-    srcMask_ = clamp(AMI.srcWeightsSum(), zero_one{});
-    tgtMask_ = clamp(AMI.tgtWeightsSum(), zero_one{});
+        // Output some statistics
+        reportCoverage("source", AMI.srcWeightsSum());
+        reportCoverage("target", AMI.tgtWeightsSum());
+
+        // Set the mask fields
+        // Note:
+        // - assumes that the non-overlap patches are decomposed using the same
+        //   decomposition as the coupled patches (per side)
+        srcMask_ = clamp(AMI.srcWeightsSum(), zero_one{});
+        tgtMask_ = clamp(AMI.tgtWeightsSum(), zero_one{});
+    }
+    else
+    {
+        cache.setDirection(owner());
+
+        if (cache.applyLower())
+        {
+            // Output some statistics
+            reportCoverage("source", cache.cSrcWeightsSum0());
+            reportCoverage("target", cache.cTgtWeightsSum0());
+
+            srcMask_ = clamp(cache.cSrcWeightsSum0(), zero_one{});
+            tgtMask_ = clamp(cache.cTgtWeightsSum0(), zero_one{});
+        }
+        else if (cache.applyUpper())
+        {
+            // Output some statistics
+            reportCoverage("source", cache.cSrcWeightsSum1());
+            reportCoverage("target", cache.cTgtWeightsSum1());
+
+            srcMask_ = clamp(cache.cSrcWeightsSum1(), zero_one{});
+            tgtMask_ = clamp(cache.cTgtWeightsSum1(), zero_one{});
+        }
+        else if (cache.applyInterpolate())
+        {
+            srcMask_ = cache.cSrcWeightsSum0();
+            tgtMask_ = cache.cTgtWeightsSum0();
+
+            const auto srcMask1(cache.cSrcWeightsSum1());
+            const auto tgtMask1(cache.cTgtWeightsSum1());
+
+            srcMask_ += (srcMask1 - srcMask_)*cache.weight();
+            tgtMask_ += (tgtMask1 - tgtMask_)*cache.weight();
+
+            // Output some statistics
+            reportCoverage("source", srcMask_);
+            reportCoverage("target", tgtMask_);
+
+            srcMask_ = clamp(srcMask_, zero_one{});
+            tgtMask_ = clamp(tgtMask_, zero_one{});
+        }
+    }
 
     if (debug)
     {

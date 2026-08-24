@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
-    Copyright (C) 2021 OpenCFD Ltd.
+    Copyright (C) 2021,2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -59,8 +59,14 @@ Ostream& operator<<(Ostream& os, const char c);
 //- Write a nul-terminated C-string
 Ostream& operator<<(Ostream& os, const char* str);
 
-//- Test for whitespace (C-locale)
-inline bool isspace(char c) noexcept
+//- Test for digits [0-9] (C-locale only)
+inline constexpr bool isdigit(char c) noexcept
+{
+    return (c >= '0' && c <= '9');
+}
+
+//- Test for whitespace (C-locale only)
+inline constexpr bool isspace(char c) noexcept
 {
     return
     (
@@ -95,10 +101,7 @@ public:
     // Constructors
 
         //- Copy construct from primitive
-        explicit pTraits(char val) noexcept
-        :
-            p_(val)
-        {}
+        explicit pTraits(char val) noexcept : p_(val) {}
 
         //- Read construct from Istream
         explicit pTraits(Istream& is);

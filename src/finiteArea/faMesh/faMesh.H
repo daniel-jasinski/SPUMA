@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2021-2024 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -46,6 +46,7 @@ SourceFiles
     faMeshPatches.C
     faMeshTopology.C
     faMeshUpdate.C
+    faMeshI.H
 
 Author
     Zeljko Tukovic, FMENA
@@ -101,8 +102,8 @@ public:
     // Constructors
 
         //- Construct an objectRegistry for given area region name.
-        //  Uses faMeshesRegistry internally
-        faMeshRegistry(const word& areaRegion, const polyMesh& mesh);
+        //- Treat an empty name like polyMesh::defaultRegion
+        faMeshRegistry(const word& areaName, const polyMesh& mesh);
 
 
     // Member Functions
@@ -525,14 +526,14 @@ class faMesh
         //- Test if faSchemes/faSolution files are available
         static bool hasSystemFiles
         (
-            const word& meshName,
+            const word& areaName,
             const polyMesh& pMesh
         );
 
         //- Test if mesh files needed for read construction are available
         static bool hasMeshFiles
         (
-            const word& meshName,
+            const word& areaName,
             const polyMesh& pMesh
         );
 
@@ -576,14 +577,14 @@ public:
 
         //- Construct zero-sized from polyMesh
         //  Boundary is added using addFaPatches() member function
-        faMesh(const word& meshName, const polyMesh&, Foam::zero);
+        faMesh(const word& areaName, const polyMesh&, Foam::zero);
 
         //- Construct zero-sized from polyMesh
         //  Boundary is added using addFaPatches() member function
         faMesh(const polyMesh&, Foam::zero);
 
         //- Read construct from polyMesh, using its IOobject properties
-        faMesh(const word& meshName, const polyMesh&, const bool doInit = true);
+        faMesh(const word& areaName, const polyMesh&, const bool doInit = true);
 
         //- Read construct from polyMesh, using its IOobject properties
         explicit faMesh(const polyMesh&, const bool doInit = true);
@@ -593,7 +594,7 @@ public:
         //  Boundary is added using addFaPatches() member function.
         faMesh
         (
-            const word& meshName,
+            const word& areaName,
             const polyMesh& pMesh,
             labelList&& faceLabels,
             IOobjectOption ioOpt
@@ -602,7 +603,7 @@ public:
         //- Construct from components (face labels) without boundary,
         //- using IOobject properties from polyMesh.
         //  Boundary is added using addFaPatches() member function.
-        faMesh(const word& meshName, const polyMesh&, labelList&& faceLabels);
+        faMesh(const word& areaName, const polyMesh&, labelList&& faceLabels);
 
         //- Construct from components (face labels) without boundary,
         //- using specified read properties.
@@ -617,7 +618,7 @@ public:
         //- Construct as copy (for dictionaries) and zero-sized
         //- without boundary.
         //  Boundary is added using addFaPatches() member function
-        faMesh(const word& meshName, const faMesh& baseMesh, Foam::zero);
+        faMesh(const word& areaName, const faMesh& baseMesh, Foam::zero);
 
         //- Construct as copy (for dictionaries) and zero-sized
         //- without boundary, using IOobject properties from polyMesh.
@@ -629,7 +630,7 @@ public:
         //  Boundary is added using addFaPatches() member function
         faMesh
         (
-            const word& meshName,
+            const word& areaName,
             const faMesh& baseMesh,
             labelList&& faceLabels,
             IOobjectOption ioOpt
@@ -650,7 +651,7 @@ public:
         //  Boundary is added using addFaPatches() member function
         faMesh
         (
-            const word& meshName,
+            const word& areaName,
             const faMesh& baseMesh,
             labelList&& faceLabels
         );
@@ -663,7 +664,7 @@ public:
         //- Construct from single polyPatch
         faMesh
         (
-            const word& meshName,
+            const word& areaName,
             const polyPatch& pp,
             const bool doInit = true
         );
@@ -674,7 +675,7 @@ public:
         //- Construct from definition
         faMesh
         (
-            const word& meshName,
+            const word& areaName,
             const polyMesh& pMesh,
             const dictionary& faMeshDefinition,
             const bool doInit = true
@@ -714,7 +715,7 @@ public:
         //- Read construction from polyMesh if all files are available
         static autoPtr<faMesh> TryNew
         (
-            const word& meshName,
+            const word& areaName,
             const polyMesh& pMesh
         );
 
@@ -750,9 +751,13 @@ public:
 
     // Database
 
-        //- The parent registry containing all finite-area meshes
-        //- on the polyMesh.
+        //- Find the singleton parent registry (on the polyMesh)
+        //- that contains all objects related to finite-area.
         static const objectRegistry* registry(const polyMesh& pMesh);
+
+        //- Return the singleton parent registry (on the polyMesh)
+        //- that contains all objects related to finite-area.
+        static const objectRegistry& Registry(const polyMesh& pMesh);
 
         //- The single-region finite-area region on the polyMesh.
         //- Uses lookupObject semantics - Fatal if non-existent
@@ -883,8 +888,7 @@ public:
             return faMeshRegistry::dbDir();
         }
 
-        //- Name function is needed to disambiguate those inherited
-        //- from base classes
+        //- The name of the area mesh
         const word& name() const
         {
             return faMeshRegistry::thisDb().name();
@@ -925,7 +929,7 @@ public:
             const word& areaRegion = word::null
         );
 
-        //- The mesh region name or word::null if polyMesh::defaultRegion
+        //- The region name or word::null if polyMesh::defaultRegion
         const word& regionName() const;
 
 

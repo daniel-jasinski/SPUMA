@@ -34,8 +34,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef solid_CaCO3_H
-#define solid_CaCO3_H
+#ifndef Foam_solid_CaCO3_H
+#define Foam_solid_CaCO3_H
 
 #include "solidProperties.H"
 
@@ -52,7 +52,6 @@ class CaCO3
 :
     public solidProperties
 {
-
 public:
 
     //- Runtime type information
@@ -61,11 +60,11 @@ public:
 
     // Constructors
 
-        //- Construct null
-        CaCO3();
+        //- Default construct
+        CaCO3() noexcept;
 
         //- Construct from dictionary
-        CaCO3(const dictionary& dict);
+        explicit CaCO3(const dictionary& dict);
 
         //- Return a clone
         virtual autoPtr<solidProperties> clone() const

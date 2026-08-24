@@ -17,7 +17,7 @@
 /*
     forAll(porousFluidRegions, porousi)
     {
-        CoNum = max
+        CoNum = Foam::max
         (
             compressibleCourantNo
             (

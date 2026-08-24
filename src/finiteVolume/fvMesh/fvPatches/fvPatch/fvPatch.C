@@ -141,9 +141,9 @@ const Foam::scalarField& Foam::fvPatch::magSf() const
 }
 
 
-Foam::tmp<Foam::vectorField> Foam::fvPatch::unitSf() const
+const Foam::vectorField& Foam::fvPatch::unitSf() const
 {
-    return Sf()/magSf();
+    return boundaryMesh().mesh().unitSf().boundaryField()[index()];
 }
 
 

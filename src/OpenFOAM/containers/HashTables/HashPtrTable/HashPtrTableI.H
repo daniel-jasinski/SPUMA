@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -49,6 +49,19 @@ inline const T* Foam::HashPtrTable<T, Key, Hash>::get(const Key& key) const
 {
     // Like lookup() with a nullptr
     const const_iterator iter(this->cfind(key));
+    if (iter.good())
+    {
+        return iter.val();
+    }
+    return nullptr;
+}
+
+
+template<class T, class Key, class Hash>
+inline T* Foam::HashPtrTable<T, Key, Hash>::get(const Key& key)
+{
+    // Like lookup() with a nullptr + const_cast
+    iterator iter(this->find(key));
     if (iter.good())
     {
         return iter.val();

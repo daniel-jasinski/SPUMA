@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -61,7 +61,6 @@ License
 #include "faceSet.H"
 #include "topoDistanceData.H"
 #include "FaceCellWave.H"
-#include "PackedBoolList.H"
 
 // Leak path
 #include "shortestPathSet.H"
@@ -289,8 +288,8 @@ void Foam::meshRefinement::calcNeighbourData
 void Foam::meshRefinement::calcCellCellRays
 (
     const pointField& neiCc,
-    const labelList& neiLevel,
-    const labelList& testFaces,
+    const labelUList& neiLevel,
+    const labelUList& testFaces,
     pointField& start,
     pointField& end,
     labelList& minLevel
@@ -359,7 +358,7 @@ void Foam::meshRefinement::calcCellCellRays
 }
 
 
-void Foam::meshRefinement::updateIntersections(const labelList& changedFaces)
+void Foam::meshRefinement::updateIntersections(const labelUList& changedFaces)
 {
     // Stats on edges to test. Count proc faces only once.
     bitSet isMasterFace(syncTools::getMasterFaces(mesh_));
@@ -2051,7 +2050,7 @@ Foam::autoPtr<Foam::mapDistributePolyMesh> Foam::meshRefinement::balance
             labelList nProcCells(distributor.countCells(distribution));
             Pout<< "Wanted distribution:" << nProcCells << endl;
 
-            Pstream::listCombineReduce(nProcCells, plusEqOp<label>());
+            Pstream::listReduce(nProcCells, sumOp<label>());
 
             Pout<< "Wanted resulting decomposition:" << endl;
             forAll(nProcCells, proci)
@@ -2778,7 +2777,7 @@ Foam::labelList Foam::meshRefinement::countEdgeFaces
         // Match pp edges to coupled edges
         labelList patchEdges;
         labelList coupledEdges;
-        PackedBoolList sameEdgeOrientation;
+        bitSet sameEdgeOrientation;
         PatchTools::matchEdges
         (
             pp,
@@ -3612,7 +3611,7 @@ const
             nCells[cellLevel[celli]]++;
         }
 
-        Pstream::listCombineGather(nCells, plusEqOp<label>());
+        Pstream::listGather(nCells, sumOp<label>());
 
         /// Pstream::broadcast(nCells);
         if (Pstream::master())

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,7 +30,7 @@ Description
     A set of labels defined by a start, a length and a stride.
 
 SourceFiles
-    sliceRange.C
+    sliceRange.cxx
     sliceRangeI.H
 
 \*---------------------------------------------------------------------------*/
@@ -47,10 +47,16 @@ namespace Foam
 {
 
 // Forward Declarations
+class sliceRange;
 class Istream;
 class Ostream;
-template<class T> class List;
 template<class T, unsigned N> class FixedList;
+
+//- Read sliceRange from Istream as (start size stride) tuple, no checks
+Istream& operator>>(Istream& is, sliceRange& range);
+
+//- Write sliceRange to Ostream as (start size stride) tuple
+Ostream& operator<<(Ostream& os, const sliceRange& range);
 
 /*---------------------------------------------------------------------------*\
                          Class sliceRange Declaration
@@ -144,8 +150,15 @@ public:
         //- Ill-defined for an empty range
         label max() const noexcept { return start_ + (size_-1) * stride_; }
 
-        //- Return list of labels corresponding to the slice
-        List<label> labels() const;
+
+    // Comparison
+
+        //- Test equality of start/size/stride.
+        inline bool equals(const sliceRange& b) const noexcept;
+
+        //- Compare start/size/stride in that order.
+        //  \return -1,0,+1
+        inline int compare(const sliceRange& b) const noexcept;
 
 
     // Member Operators
@@ -468,59 +481,27 @@ public:
 };
 
 
-// * * * * * * * * * * * * * * * IOstream Operators  * * * * * * * * * * * * //
-
-//- Read sliceRange from Istream as (start size stride) tuple, no checks
-Istream& operator>>(Istream& is, sliceRange& range);
-
-//- Write sliceRange to Ostream as (start size stride) tuple
-Ostream& operator<<(Ostream& os, const sliceRange& range);
-
-
 // * * * * * * * * * * * * * * * Global Operators  * * * * * * * * * * * * * //
 
-//- Test for equality of begin/size/slice values
+//- Test for equality of begin/size/stride values
 inline bool operator==
 (
     const sliceRange& a,
     const sliceRange& b
 ) noexcept
 {
-    return
-    (
-        a.start() == b.start()
-     && a.size() == b.size()
-     && a.stride() == b.stride()
-    );
+    return a.equals(b);
 }
 
 
-//- Comparison function for sorting, compares the start.
-//  If the start values are equal, compare the sizes.
-//  If the sizes are also equal, compare the strides.
+//- Compare for less-than (start/size/stride) in that order
 inline bool operator<
 (
     const sliceRange& a,
     const sliceRange& b
 ) noexcept
 {
-    return
-    (
-        a.start() < b.start()
-     ||
-        (
-            !(b.start() < a.start())
-         &&
-            (
-                a.size() < b.size()
-             ||
-                (
-                    !(b.size() < a.size())
-                 && a.stride() < b.stride()
-                )
-            )
-        )
-    );
+    return (a.compare(b) < 0);
 }
 
 
@@ -532,7 +513,7 @@ inline bool operator!=
     const sliceRange& b
 ) noexcept
 {
-    return !(a == b);
+    return !a.equals(b);
 }
 
 
@@ -542,7 +523,7 @@ inline bool operator<=
     const sliceRange& b
 ) noexcept
 {
-    return !(b < a);
+    return (a.compare(b) <= 0);
 }
 
 inline bool operator>
@@ -551,7 +532,7 @@ inline bool operator>
     const sliceRange& b
 ) noexcept
 {
-    return (b < a);
+    return (a.compare(b) > 0);
 }
 
 inline bool operator>=
@@ -560,7 +541,7 @@ inline bool operator>=
     const sliceRange& b
 ) noexcept
 {
-    return !(a < b);
+    return (a.compare(b) >= 0);
 }
 
 

@@ -39,7 +39,7 @@ namespace Foam
     typedef IOField<tensorField> tensorFieldIOField;
 
     //! Compact IO for a Field of tensorField
-    typedef CompactIOField<tensorField, tensor> tensorFieldCompactIOField;
+    typedef CompactIOField<tensorField> tensorFieldCompactIOField;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

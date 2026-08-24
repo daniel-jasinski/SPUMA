@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -42,7 +42,7 @@ SourceFiles
 #define Foam_DimensionedField_H
 
 #include "regIOobject.H"
-#include "Field.H"
+#include "DynamicField.H"
 #include "dimensionedType.H"
 #include "orientedType.H"
 
@@ -77,11 +77,14 @@ template<class Type, class GeoMesh>
 class DimensionedField
 :
     public regIOobject,
-    public Field<Type>
+    public DynamicField<Type>
 {
 public:
 
     // Public Typedefs
+
+        //- The template instance used for this DimensionedField type
+        typedef DimensionedField<Type, GeoMesh> this_type;
 
         //- The mesh type for the DimensionedField
         typedef typename GeoMesh::Mesh Mesh;
@@ -90,7 +93,7 @@ public:
         typedef DimensionedField<Type, GeoMesh> Internal;
 
         //- Type of the field from which this DimensionedField is derived
-        typedef Field<Type> FieldType;
+        typedef DynamicField<Type> FieldType;
 
         //- Component type of the field elements
         typedef typename Field<Type>::cmptType cmptType;
@@ -109,6 +112,10 @@ private:
         //- Oriented flag
         orientedType oriented_;
 
+        //- Flattened array: patches are allocated as slicedPatches
+        // in the extra capacity space
+        const bool isFlattened_;
+
 
     // Private Member Functions
 
@@ -116,7 +123,7 @@ private:
         void checkFieldSize() const;
 
         //- Read from file if it is present. Checks the readOption flag
-        void readIfPresent(const word& fieldDictEntry = "value");
+        bool readIfPresent(const word& fieldDictEntry = "value");
 
         //- Read the field - create the field dictionary on-the-fly
         void readField(const word& fieldDictEntry = "value");
@@ -142,9 +149,9 @@ public:
     // Static Member Functions
 
         //- Return a null DimensionedField (reference to a nullObject).
-        static const DimensionedField<Type, GeoMesh>& null() noexcept
+        static const this_type& null() noexcept
         {
-            return NullObjectRef<DimensionedField<Type, GeoMesh>>();
+            return NullObjectRef<this_type>();
         }
 
 
@@ -194,7 +201,11 @@ public:
             const IOobject& io,
             const Mesh& mesh,
             const dimensionSet& dims,
-            const bool checkIOFlags = true
+            //! Handle mandatory/optional reading?
+            const bool checkIOFlags = true,
+            //! Additional space for geometric boundary size?
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
         //- Construct from components, setting dimensions and initial
@@ -205,7 +216,11 @@ public:
             const Mesh& mesh,
             const Type& value,
             const dimensionSet& dims,
-            const bool checkIOFlags = true
+            //! Handle mandatory/optional reading?
+            const bool checkIOFlags = true,
+            //! Additional space for geometric boundary size?
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
         //- Construct from components, setting dimensions and initial
@@ -216,15 +231,22 @@ public:
             const IOobject& io,
             const Mesh& mesh,
             const dimensioned<Type>& dt,
-            const bool checkIOFlags = true
+            //! Handle mandatory/optional reading?
+            const bool checkIOFlags = true,
+            //! Additional space for geometric boundary size?
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
-        //- Construct from Istream.
+        //- Construct from Istream (uses an intermediate dictionary)
         DimensionedField
         (
             const IOobject& io,
             const Mesh& mesh,
-            const word& fieldDictEntry = "value"
+            const word& fieldDictEntry = "value",
+            //! Additional space for geometric boundary size?
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
         //- Construct from dictionary
@@ -233,7 +255,10 @@ public:
             const IOobject& io,
             const Mesh& mesh,
             const dictionary& fieldDict,
-            const word& fieldDictEntry = "value"
+            const word& fieldDictEntry = "value",
+            //! Additional space for geometric boundary size?
+            const bool extraCapacity = false,
+            const bool isFlattened = false
         );
 
         //- Copy construct
@@ -368,6 +393,33 @@ public:
             const Mesh& mesh,
             const dimensionSet& dims,
             Field<Type>&& iField
+        );
+
+        //- Return tmp field (NO_READ, NO_WRITE)
+        //- from name, mesh, dimensions, primitive field (tmp).
+        //- [Takes current timeName from the mesh registry].
+        //  For LEGACY_REGISTER, registration is determined by
+        //  objectRegistry::is_cacheTemporaryObject().
+        static tmp<DimensionedField<Type, GeoMesh>> New
+        (
+            const word& name,
+            IOobjectOption::registerOption regOpt,
+            const Mesh& mesh,
+            const dimensionSet& dims,
+            const tmp<Field<Type>>& tfield
+        );
+
+        //- Return tmp field (NO_READ, NO_WRITE)
+        //- from name, mesh, dimensions, primitive field (tmp).
+        //- [Takes current timeName from the mesh registry].
+        //  Registration/persistence determined by
+        //  objectRegistry::is_cacheTemporaryObject().
+        static tmp<DimensionedField<Type, GeoMesh>> New
+        (
+            const word& name,
+            const Mesh& mesh,
+            const dimensionSet& dims,
+            const tmp<Field<Type>>& tfield
         );
 
         //- Return tmp field (NO_READ, NO_WRITE)
@@ -509,20 +561,26 @@ public:
             const word& fieldDictEntry = "value"
         );
 
-        //- Return mesh
-        inline const Mesh& mesh() const noexcept;
+        //- Return non-const reference to this field
+        this_type& constCast() const noexcept
+        {
+            return const_cast<this_type&>(*this);
+        }
+
+        //- Return const reference to mesh
+        const Mesh& mesh() const noexcept { return mesh_; }
 
         //- Return dimensions
-        inline const dimensionSet& dimensions() const noexcept;
+        const dimensionSet& dimensions() const noexcept { return dimensions_; }
 
         //- Return non-const access to dimensions
-        inline dimensionSet& dimensions() noexcept;
+        dimensionSet& dimensions() noexcept { return dimensions_; }
 
         //- Return oriented type
-        inline orientedType oriented() const noexcept;
+        orientedType oriented() const noexcept { return oriented_; }
 
         //- Return non-const access to the oriented type
-        inline orientedType& oriented() noexcept;
+        orientedType& oriented() noexcept { return oriented_; }
 
         //- True if field is ORIENTED
         inline bool is_oriented() const noexcept;
@@ -530,11 +588,15 @@ public:
         //- Set the oriented flag: on/off
         inline void setOriented(bool on = true) noexcept;
 
-        //- Return const-reference to the field values
-        inline const Field<Type>& field() const noexcept;
+        //- Return isFlattened boolean value
+        inline bool isFlattened() const noexcept { return isFlattened_; }
 
-        //- Return reference to the field values
-        inline Field<Type>& field() noexcept;
+        //- Return const-reference to the primitive field values
+        const DynamicField<Type>& field() const noexcept { return *this; }
+
+        //- Return reference to the primitive field values
+        DynamicField<Type>& field() noexcept { return *this; }
+
 
         //- Return a component field of the field
         tmp<DimensionedField<cmptType, GeoMesh>> component
@@ -561,19 +623,21 @@ public:
         //- Return the field transpose (only defined for second rank tensors)
         tmp<DimensionedField<Type, GeoMesh>> T() const;
 
-        //- Calculate and return arithmetic average
-        dimensioned<Type> average() const;
+        //- Return the global arithmetic average
+        dimensioned<Type> average(const label comm = UPstream::worldComm) const;
 
-        //- Calculate and return weighted average
+        //- Return the global weighted average
         dimensioned<Type> weightedAverage
         (
-            const DimensionedField<scalar, GeoMesh>& weightField
+            const DimensionedField<scalar, GeoMesh>& weights,
+            const label comm = UPstream::worldComm
         ) const;
 
-        //- Calculate and return weighted average
+        //- Return the global weighted average
         dimensioned<Type> weightedAverage
         (
-            const tmp<DimensionedField<scalar, GeoMesh>>& tweightField
+            const tmp<DimensionedField<scalar, GeoMesh>>& tweights,
+            const label comm = UPstream::worldComm
         ) const;
 
 
@@ -601,8 +665,11 @@ public:
         void operator=(const DimensionedField<Type, GeoMesh>& df);
         void operator=(const tmp<DimensionedField<Type, GeoMesh>>& tdf);
 
-        //- Assign dimensions and value.
+        //- Assign value (with dimension check)
         void operator=(const dimensioned<Type>& dt);
+
+        //- Assign value zero (no dimension checks)
+        void operator=(Foam::zero);
 
         void operator+=(const DimensionedField<Type, GeoMesh>& df);
         void operator+=(const tmp<DimensionedField<Type, GeoMesh>>& tdf);

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022-2024 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,7 +33,7 @@ License
 
 bool Foam::faMesh::hasSystemFiles
 (
-    const word& meshName,
+    const word& areaName,
     const polyMesh& pMesh
 )
 {
@@ -44,7 +44,7 @@ bool Foam::faMesh::hasSystemFiles
     // The directory relative to polyMesh (not Time)
     const fileName relativeDir
     (
-        faMesh::prefix() / polyMesh::regionName(meshName)
+        faMesh::prefix() / polyMesh::regionName(areaName)
     );
 
     DebugInfo<< "check system files: " << relativeDir << nl;
@@ -102,7 +102,7 @@ bool Foam::faMesh::hasSystemFiles
 
 bool Foam::faMesh::hasMeshFiles
 (
-    const word& meshName,
+    const word& areaName,
     const polyMesh& pMesh
 )
 {
@@ -114,14 +114,14 @@ bool Foam::faMesh::hasMeshFiles
 
 
     // Not required...
-    // bool looksValid = hasSystemFiles(meshName, pMesh);
+    // bool looksValid = hasSystemFiles(areaName, pMesh);
 
     bool looksValid = true;
 
     // The mesh directory relative to polyMesh (not Time)
     const fileName relativeDir
     (
-        faMesh::meshDir(word::null, meshName)
+        faMesh::meshDir(word::null, areaName)
     );
 
     if (looksValid)
@@ -193,13 +193,13 @@ bool Foam::faMesh::hasMeshFiles
 
 Foam::autoPtr<Foam::faMesh> Foam::faMesh::TryNew
 (
-    const word& meshName,
+    const word& areaName,
     const polyMesh& pMesh
 )
 {
-    if (faMesh::hasMeshFiles(meshName, pMesh))
+    if (faMesh::hasMeshFiles(areaName, pMesh))
     {
-        return autoPtr<faMesh>::New(meshName, pMesh);
+        return autoPtr<faMesh>::New(areaName, pMesh);
     }
 
     return nullptr;

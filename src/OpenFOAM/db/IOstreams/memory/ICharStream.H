@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -131,7 +131,16 @@ public:
             return buffer_type::span_remaining();
         }
 
-        //- Span of the input characters (is modifiable!)
+        //- A string_view of buffer contents
+        auto view() const { return buffer_type::view(); }
+
+        //- A sub-slice string view of the buffer contents
+        auto view(size_t pos, size_t len = std::string::npos) const
+        {
+            return buffer_type::view(pos, len);
+        }
+
+        //- A list 'span' of buffer contents (caution: is modifiable!!)
         UList<char> list() const
         {
             return UList<char>
@@ -139,12 +148,6 @@ public:
                 buffer_type::data_bytes(),
                 label(buffer_type::size_bytes())
             );
-        }
-
-        //- A string_view (c++17) or span view (older c++) of buffer contents
-        auto view() const -> decltype(buffer_type::view())
-        {
-            return buffer_type::view();
         }
 
         //- For istringstream compatibility, return the buffer as string copy.
@@ -163,6 +166,16 @@ public:
         {
             buffer_type::pubseekpos(0, std::ios_base::in);
             stream_type::clear();  // Clear old errors
+        }
+
+        //- Reposition the stream from the start
+        void seek(std::streampos pos)
+        {
+            if (buffer_type::in_range(pos))
+            {
+                buffer_type::pubseekpos(pos, std::ios_base::in);
+                stream_type::clear();  // Clear old errors
+            }
         }
 
         //- Reset stream content (copy), reset positions
@@ -198,8 +211,11 @@ public:
         //- Some information about the input buffer position/capacity
         void debug_info(Ostream& os) const
         {
-            os  << "get=" << input_pos() << '/' << capacity();
+            os << "get=" << input_pos() << '/' << capacity();
         }
+
+        //- Information about stream
+        void print(Ostream& os) const { debug_info(os); os << '\n'; }
 };
 
 
@@ -271,6 +287,8 @@ public:
 
     // Member Functions
 
+    // Access/Query
+
         //- Position of the get buffer
         std::streampos tellg() const { return stream_.input_pos(); }
 
@@ -287,21 +305,24 @@ public:
         //- Same as (capacity() - input_pos())
         std::streamsize remaining() const { return stream_.remaining(); }
 
-        //- Span of the input characters (is modifiable!)
-        UList<char> list() const { return stream_.list(); }
+        //- A string_view of buffer contents
+        auto view() const { return stream_.view(); }
 
-        //- A string_view (c++17) or span view (older c++) of buffer contents
-        auto view() const -> decltype(stream_.view())
+        //- A sub-slice string view of the buffer contents
+        auto view(size_t pos, size_t len = std::string::npos) const
         {
-            return stream_.view();
+            return stream_.view(pos, len);
         }
+
+        //- A list \em span of the input characters (is modifiable!)
+        UList<char> list() const { return stream_.list(); }
 
         //- For IStringStream compatibility, return the buffer as string copy.
         //  Use sparingly - it creates a full copy!!
-        auto str() const -> decltype(stream_.str())
-        {
-            return stream_.str();
-        }
+        auto str() const { return stream_.str(); }
+
+
+    // Edit
 
         //- Reset content (copy)
         void reset(const char* buffer, size_t nbytes)
@@ -336,12 +357,28 @@ public:
         //- Rewind the stream, clearing any old errors
         virtual void rewind() override
         {
+            Istream::rewind();
             stream_.rewind();
             syncState();
         }
 
-        //- Print stream description to Ostream
-        virtual void print(Ostream& os) const override;
+        //- Reposition the stream from the start
+        void seek(std::streampos pos)
+        {
+            stream_.seek(pos);
+            syncState();
+        }
+
+
+    // Other
+
+        //- Print stream description
+        virtual void print(Ostream& os) const override
+        {
+            os << "icharstream: ";
+            stream_.debug_info(os);
+            os << '\n';
+        }
 
 
     // Member Operators

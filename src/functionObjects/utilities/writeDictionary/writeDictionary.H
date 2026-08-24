@@ -33,6 +33,32 @@ Group
 Description
     Reports dictionary contents on change.
 
+Usage
+    Minimal example by using \c system/controlDict.functions:
+    \verbatim
+    writeDictionaryFO
+    {
+        // Mandatory entries
+        type        writeDictionary;
+        libs        (utilityFunctionObjects);
+        dictNames   <wordList>;
+
+        // Inherited entries
+        ...
+    }
+    \endverbatim
+
+    where the entries mean:
+    \table
+      Property     | Description                        | Type | Reqd  | Deflt
+      type         | Type name: writeDictionary         | word |  yes  | -
+      libs         | Library name: fieldFunctionObjects | word |  yes  | -
+      dictNames    | Names of dictionaries to monitor   | wordList |  yes  | -
+    \endtable
+
+    The inherited entries are elaborated in:
+      - \link regionFunctionObject.H \endlink
+
 SourceFiles
     writeDictionary.C
 
@@ -101,7 +127,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         writeDictionary
         (
             const word& name,
@@ -116,13 +142,13 @@ public:
 
     // Member Functions
 
-        //- Read the writeDictionary data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations (no-op)
         virtual bool execute();
 
-        //- Write the selected dictionaries
+        //- Write the function-object results
         virtual bool write();
 };
 

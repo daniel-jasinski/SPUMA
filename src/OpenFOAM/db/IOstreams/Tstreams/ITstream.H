@@ -5,8 +5,8 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2011-2016,2024 OpenFOAM Foundation
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -77,7 +77,8 @@ class ITstream
         //  but leave any excess capacity (ie, like reserve).
         void reserveCapacity(const label newCapacity);
 
-        //- Convert input sequence into a list of tokens,
+        //- Convert input sequence into a list of tokens.
+        //  Includes nullptr guard
         static tokenList parse_chars
         (
             const char* s,
@@ -87,6 +88,7 @@ class ITstream
 
         //- Convert input sequence into a list of tokens,
         //- using the existing stream format. Rewinds the stream
+        //  Includes nullptr guard
         void reset(const char* input, size_t nbytes);
 
         //- Failsafe read-access to token at specified location
@@ -122,7 +124,7 @@ public:
         //- Construct empty, optionally with given name
         explicit ITstream
         (
-            const Foam::zero,
+            Foam::zero,
             const string& name = "input",
             IOstreamOption streamOpt = IOstreamOption()
         );
@@ -152,15 +154,6 @@ public:
             const string& name = "input"
         );
 
-        //- Construct token list by parsing the input string
-        //  Uses static parse function internally.
-        explicit ITstream
-        (
-            const std::string& input,
-            IOstreamOption streamOpt = IOstreamOption(),
-            const string& name = "input"
-        );
-
         //- Construct token list by parsing the input character sequence
         //  Uses static parse function internally.
         explicit ITstream
@@ -170,43 +163,16 @@ public:
             const string& name = "input"
         );
 
-        #if __cplusplus >= 201703L
         //- Construct token list by parsing the input character sequence
         //  Uses static parse function internally.
         explicit ITstream
         (
             std::string_view s,
-            IOstreamOption streamOpt = IOstreamOption()
+            IOstreamOption streamOpt = IOstreamOption(),
+            const string& name = "input"
         )
         :
-            ITstream(streamOpt)
-        {
-            reset(s.data(), s.size());
-        }
-        #endif
-
-        //- Construct token list by parsing the input character sequence
-        //  Uses static parse function internally.
-        explicit ITstream
-        (
-            stdFoam::span<char> s,
-            IOstreamOption streamOpt = IOstreamOption()
-        )
-        :
-            ITstream(streamOpt)
-        {
-            reset(s.data(), s.size());
-        }
-
-        //- Construct token list by parsing the input character sequence
-        //  Uses static parse function internally.
-        explicit ITstream
-        (
-            stdFoam::span<const char> s,
-            IOstreamOption streamOpt = IOstreamOption()
-        )
-        :
-            ITstream(streamOpt)
+            ITstream(streamOpt, name)
         {
             reset(s.data(), s.size());
         }
@@ -265,17 +231,6 @@ public:
             return parse_chars(input.cdata(), input.size(), streamOpt);
         }
 
-        //- Create token list by parsing the input string
-        //- until no good tokens remain.
-        static tokenList parse
-        (
-            const std::string& input,
-            IOstreamOption streamOpt = IOstreamOption()
-        )
-        {
-            return parse_chars(input.data(), input.size(), streamOpt);
-        }
-
         //- Create token list by parsing the input character sequence
         //- until no good tokens remain.
         static tokenList parse
@@ -284,38 +239,21 @@ public:
             IOstreamOption streamOpt = IOstreamOption()
         )
         {
-            return parse_chars(input, strlen(input), streamOpt);
+            if (input)
+            {
+                return parse_chars(input, strlen(input), streamOpt);
+            }
+            else
+            {
+                return tokenList();
+            }
         }
 
-        #if __cplusplus >= 201703L
         //- Create token list by parsing the input character sequence
         //- until no good tokens remain.
         static tokenList parse
         (
             std::string_view s,
-            IOstreamOption streamOpt = IOstreamOption()
-        )
-        {
-            return parse_chars(s.data(), s.size(), streamOpt);
-        }
-        #endif
-
-        //- Create token list by parsing the input character sequence
-        //- until no good tokens remain.
-        static tokenList parse
-        (
-            stdFoam::span<char> s,
-            IOstreamOption streamOpt = IOstreamOption()
-        )
-        {
-            return parse_chars(s.data(), s.size(), streamOpt);
-        }
-
-        //- Create token list by parsing the input character sequence
-        //- until no good tokens remain.
-        static tokenList parse
-        (
-            stdFoam::span<const char> s,
             IOstreamOption streamOpt = IOstreamOption()
         )
         {
@@ -399,7 +337,7 @@ public:
         label& tokenIndex() noexcept { return tokenIndex_; }
 
         //- Set the token index (no checks). \return the previous value
-        label tokenIndex(const label num) noexcept
+        label tokenIndex(label num) noexcept
         {
             label old(tokenIndex_);
             tokenIndex_ = num;
@@ -482,18 +420,10 @@ public:
 
         //- Copy append a list of tokens at the current tokenIndex,
         //- incrementing the index.
-        //
-        //  \param newTokens the list of tokens to copy append
-        //  \param lazy leaves any excess capacity for further appends.
-        //      The caller will be responsible for resizing later.
         void add_tokens(const UList<token>& toks);
 
         //- Move append a list of tokens at the current tokenIndex,
         //- incrementing the index.
-        //
-        //  \param newTokens the list of tokens to move append
-        //  \param lazy leaves any excess capacity for further appends.
-        //      The caller will be responsible for resizing later.
         void add_tokens(List<token>&& toks);
 
 
@@ -529,8 +459,17 @@ public:
         //- triggers not implemented error
         virtual Istream& read(string&) override;
 
-        //- Read a label : triggers not implemented error
-        virtual Istream& read(label&) override;
+        //- Read int32_t : triggers not implemented error
+        virtual Istream& read(int32_t&) override;
+
+        //- Read int64_t : triggers not implemented error
+        virtual Istream& read(int64_t&) override;
+
+        //- Read uint32_t : triggers not implemented error
+        virtual Istream& read(uint32_t&) override;
+
+        //- Read uint64_t : triggers not implemented error
+        virtual Istream& read(uint64_t&) override;
 
         //- Read a float : triggers not implemented error
         virtual Istream& read(float&) override;
@@ -551,7 +490,11 @@ public:
         virtual bool endRawRead() override { return false; }
 
         //- Rewind the stream so that it may be read again. Same as seek(0)
-        virtual void rewind() override { ITstream::seek(0); }
+        virtual void rewind() override
+        {
+            Istream::rewind();
+            ITstream::seek(0);
+        }
 
 
     // Output

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -33,6 +33,7 @@ License
 #define TEMPLATE template<class Type>
 #include "FieldFunctionsM.C"
 
+#include "Atomics.H"
 #include <type_traits>
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -777,7 +778,7 @@ template<class Type>                                                           \
 ReturnType gFunc(const UList<Type>& f, const label comm)                       \
 {                                                                              \
     ReturnType res = Func(f);                                                  \
-    reduce(res, rFunc##Op<ReturnType>(), UPstream::msgType(), comm);           \
+    Foam::reduce(res, rFunc##Op<ReturnType>(), UPstream::msgType(), comm);     \
     return res;                                                                \
 }                                                                              \
 TMP_UNARY_FUNCTION(ReturnType, gFunc)
@@ -809,7 +810,7 @@ typename scalarProduct<Type, Type>::type gSumProd
     typedef typename scalarProduct<Type, Type>::type resultType;
 
     resultType result = sumProd(f1, f2);
-    reduce(result, sumOp<resultType>(), UPstream::msgType(), comm);
+    Foam::reduce(result, sumOp<resultType>(), UPstream::msgType(), comm);
     return result;
 }
 
@@ -822,7 +823,7 @@ Type gSumCmptProd
 )
 {
     Type result = sumCmptProd(f1, f2);
-    reduce(result, sumOp<Type>(), UPstream::msgType(), comm);
+    Foam::reduce(result, sumOp<Type>(), UPstream::msgType(), comm);
     return result;
 }
 
@@ -833,15 +834,18 @@ Type gAverage
     const label comm
 )
 {
-    label n = f1.size();
-    Type s = sum(f1);
-    sumReduce(s, n, UPstream::msgType(), comm);
+    label count = f1.size();
+    Type result = sum(f1);
 
-    if (n > 0)
+    // Communicator is not disabled
+    if (comm >= 0)
     {
-        Type result = s/n;
+        Foam::sumReduce(result, count, UPstream::msgType(), comm);
+    }
 
-        return result;
+    if (count > 0)
+    {
+        return result/count;
     }
 
     WarningInFunction
@@ -851,6 +855,74 @@ Type gAverage
 }
 
 TMP_UNARY_FUNCTION(Type, gAverage)
+
+
+template<class Type>
+Type gWeightedAverage
+(
+    const UList<scalar>& weights,
+    const UList<Type>& fld,
+    const label comm
+)
+{
+    scalar weight(0);
+    Type result = Zero;
+
+    const label loopLen = fld.size();
+
+    const auto weightsPtr = weights.cbegin();
+    const auto fldPtr = fld.cbegin();
+    foamExecutor exec;
+    auto LambdaWeight = [=](label i){return Foam::mag(weightsPtr[i]);};
+    exec.reductionSum(LambdaWeight,&weight,loopLen);
+    auto LambdaResult = [=](label i){return Foam::mag(weightsPtr[i])*fldPtr[i];};
+    exec.reductionSum(LambdaResult,&result,loopLen);
+
+    // Communicator is not disabled
+    if (comm >= 0)
+    {
+        Foam::sumReduce(result, weight, UPstream::msgType(), comm);
+    }
+
+    if (weight > ROOTVSMALL)
+    {
+        // With minimal rounding to protect against aggressive optimization
+        return result/(weight + ROOTVSMALL);
+    }
+    else
+    {
+        return Zero;
+    }
+}
+
+
+template<class Type>
+Type gWeightedSum
+(
+    const UList<scalar>& weights,
+    const UList<Type>& fld,
+    const label comm
+)
+{
+    Type result = Zero;
+
+    const label loopLen = fld.size();
+
+    /* pragmas... */
+    for (label i = 0; i < loopLen; ++i)
+    {
+        result += Foam::mag(weights[i])*fld[i];
+    }
+
+    // Communicator is not disabled
+    if (comm >= 0)
+    {
+        Foam::reduce(result, sumOp<Type>(), UPstream::msgType(), comm);
+    }
+
+    return result;
+}
+
 
 #undef TMP_UNARY_FUNCTION
 
@@ -921,8 +993,6 @@ BINARY_TYPE_FUNCTION(Type, Type, Type, max)
 BINARY_TYPE_FUNCTION(Type, Type, Type, min)
 BINARY_TYPE_FUNCTION(Type, Type, Type, cmptMultiply)
 BINARY_TYPE_FUNCTION(Type, Type, Type, cmptDivide)
-
-BINARY_TYPE_FUNCTION_FS(Type, Type, MinMax<Type>, clip)  // Same as clamp
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -1121,6 +1191,44 @@ PRODUCT_OPERATOR(innerProduct, &, dot)
 PRODUCT_OPERATOR(scalarProduct, &&, dotdot)
 
 #undef PRODUCT_OPERATOR
+
+
+#define INPLACE_PRODUCT_OPERATOR(product, CombineOp, Op, OpFunc)               \
+                                                                               \
+template<class Type1, class Type2>                                             \
+void OpFunc                                                                    \
+(                                                                              \
+    Field<typename product<Type1, Type2>::type>& result,                       \
+    const UList<Type1>& f1,                                                    \
+    const UList<Type2>& f2                                                     \
+)                                                                              \
+{                                                                              \
+    typedef typename product<Type1, Type2>::type resultType;                   \
+                                                                               \
+    if (result.usePool() && f1.usePool() && f2.usePool())                      \
+    {                                                                          \
+        /* Check fields have same size */                                      \
+        auto resPtr = result.begin();                                          \
+        auto f1Ptr = f1.cbegin();                                              \
+        auto f2Ptr = f2.cbegin();                                              \
+        auto Lambda = [=](label i)                                             \
+        {                                                                      \
+            (resPtr[i]) CombineOp (f1Ptr[i]) Op (f2Ptr[i]);                    \
+        };                                                                     \
+        foamExecutor exec;                                                     \
+        exec.parallelFor(Lambda, result.size());                               \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        TFOR_ALL_F_OP_F_OP_F                                                   \
+        (resultType, result, CombineOp, Type1, f1, Op, Type2, f2)              \
+    }                                                                          \
+}
+
+INPLACE_PRODUCT_OPERATOR(outerProduct, +=, *, multiplyAdd)
+INPLACE_PRODUCT_OPERATOR(outerProduct, -=, *, multiplySubtract)
+
+#undef INPLACE_PRODUCT_OPERATOR
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

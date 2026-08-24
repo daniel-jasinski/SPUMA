@@ -84,7 +84,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    electricPotential1
+    electricPotentialFO
     {
         // Mandatory entries
         type            electricPotential;
@@ -166,8 +166,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_electricPotential_H
-#define functionObjects_electricPotential_H
+#ifndef Foam_functionObjects_electricPotential_H
+#define Foam_functionObjects_electricPotential_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFields.H"
@@ -263,7 +263,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         electricPotential
         (
             const word& name,
@@ -278,13 +278,13 @@ public:
 
     // Member Functions
 
-        //- Read the function object data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the function object
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the function object output
+        //- Write the function-object results
         virtual bool write();
 };
 

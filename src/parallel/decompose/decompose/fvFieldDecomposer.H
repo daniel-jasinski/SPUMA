@@ -31,9 +31,9 @@ Description
     Finite Volume volume and surface field decomposer.
 
 SourceFiles
-    fvFieldDecomposer.C
-    fvFieldDecomposerCache.C
-    fvFieldDecomposerTemplates.C
+    fvFieldDecomposer.cxx
+    fvFieldDecomposer.txx
+    fvFieldDecomposerCache.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -42,6 +42,7 @@ SourceFiles
 
 #include "fvMesh.H"
 #include "fvPatchFieldMapper.H"
+#include "volFields.H"
 #include "surfaceFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -61,6 +62,9 @@ class fvFieldDecomposer
 public:
 
     // Public Classes
+
+        //- Internal caching for field reading
+        class fieldsCache;
 
         //- Patch field decomposer class
         class patchFieldDecomposer
@@ -85,23 +89,23 @@ public:
 
             // Member Functions
 
-                label size() const
+                label size() const noexcept
                 {
                     return directAddressing_.size();
                 }
 
-                bool direct() const
+                bool direct() const noexcept
                 {
                     return true;
                 }
 
                 //- Are there unmapped values
-                bool hasUnmapped() const
+                bool hasUnmapped() const noexcept
                 {
                     return false;
                 }
 
-                const labelUList& directAddressing() const
+                const labelUList& directAddressing() const noexcept
                 {
                     return directAddressing_;
                 }
@@ -139,23 +143,23 @@ public:
 
             // Member Functions
 
-                label size() const
+                label size() const noexcept
                 {
                     return directAddressing_.size();
                 }
 
-                bool direct() const
+                bool direct() const noexcept
                 {
                     return true;
                 }
 
                 //- Are there unmapped values
-                bool hasUnmapped() const
+                bool hasUnmapped() const noexcept
                 {
                     return false;
                 }
 
-                const labelUList& directAddressing() const
+                const labelUList& directAddressing() const noexcept
                 {
                     return directAddressing_;
                 }
@@ -174,36 +178,36 @@ public:
         public:
 
             //- Construct given addressing
-            processorSurfacePatchFieldDecomposer
+            explicit processorSurfacePatchFieldDecomposer
             (
                 const labelUList& addressingSlice
             );
 
 
-            // Member functions
+            // Member Functions
 
-                label size() const
+                label size() const noexcept
                 {
                     return addressing_.size();
                 }
 
-                bool direct() const
+                bool direct() const noexcept
                 {
                     return false;
                 }
 
                 //- Are there unmapped values
-                bool hasUnmapped() const
+                bool hasUnmapped() const noexcept
                 {
                     return false;
                 }
 
-                const labelListList& addressing() const
+                const labelListList& addressing() const noexcept
                 {
                     return addressing_;
                 }
 
-                const scalarListList& weights() const
+                const scalarListList& weights() const noexcept
                 {
                     return weights_;
                 }
@@ -218,13 +222,13 @@ private:
         const fvMesh& procMesh_;
 
         //- Reference to face addressing
-        const labelList& faceAddressing_;
+        const labelUList& faceAddressing_;
 
         //- Reference to cell addressing
-        const labelList& cellAddressing_;
+        const labelUList& cellAddressing_;
 
         //- Reference to boundary addressing
-        const labelList& boundaryAddressing_;
+        const labelUList& boundaryAddressing_;
 
         //- List of patch field decomposers
         PtrList<patchFieldDecomposer> patchFieldDecomposerPtrs_;
@@ -248,10 +252,6 @@ private:
 
 public:
 
-    // Public Classes
-    class fieldsCache;
-
-
     // Static Data
 
         //- Output verbosity when writing
@@ -263,11 +263,11 @@ public:
         //- Construct without mappers, added later with reset()
         fvFieldDecomposer
         (
-            const Foam::zero,
+            Foam::zero,
             const fvMesh& procMesh,
-            const labelList& faceAddressing,
-            const labelList& cellAddressing,
-            const labelList& boundaryAddressing
+            const labelUList& faceAddressing,
+            const labelUList& cellAddressing,
+            const labelUList& boundaryAddressing
         );
 
         //- Construct from components using information from the complete mesh
@@ -275,24 +275,24 @@ public:
         (
             const fvMesh& completeMesh,
             const fvMesh& procMesh,
-            const labelList& faceAddressing,
-            const labelList& cellAddressing,
-            const labelList& boundaryAddressing
+            const labelUList& faceAddressing,
+            const labelUList& cellAddressing,
+            const labelUList& boundaryAddressing
         );
 
         //- Construct from components without the complete mesh
         fvFieldDecomposer
         (
             // Information about the complete mesh
-            const List<labelRange>& boundaryRanges,
+            const UList<labelRange>& boundaryRanges,
             const labelUList& faceOwner,
             const labelUList& faceNeigbour,
 
             // Addressing for processor mesh
             const fvMesh& procMesh,
-            const labelList& faceAddressing,
-            const labelList& cellAddressing,
-            const labelList& boundaryAddressing
+            const labelUList& faceAddressing,
+            const labelUList& cellAddressing,
+            const labelUList& boundaryAddressing
         );
 
 
@@ -303,7 +303,7 @@ public:
     // Member Functions
 
         //- True if no mappers have been allocated
-        bool empty() const;
+        bool empty() const noexcept;
 
         //- Remove all mappers
         void clear();
@@ -314,7 +314,7 @@ public:
         //- Reset mapper using information about the complete mesh
         void reset
         (
-            const List<labelRange>& boundaryRanges,
+            const UList<labelRange>& boundaryRanges,
             const labelUList& faceOwner,
             const labelUList& faceNeigbour
         );
@@ -349,7 +349,7 @@ public:
 
         //- Decompose list of fields
         template<class GeoField>
-        void decomposeFields(const PtrList<GeoField>& fields) const;
+        void decomposeFields(const UPtrList<GeoField>& fields) const;
 };
 
 
@@ -359,21 +359,14 @@ public:
 
 class fvFieldDecomposer::fieldsCache
 {
-    // Private Data
+    class privateCache;
+    std::unique_ptr<privateCache> cache_;
 
-        class privateCache;
+    //- No copy construct
+    fieldsCache(const fieldsCache&) = delete;
 
-        //- All field and field-field types for lagrangian
-        std::unique_ptr<privateCache> cache_;
-
-
-    // Private Member Functions
-
-        //- No copy construct
-        fieldsCache(const fieldsCache&) = delete;
-
-        //- No copy assignment
-        void operator=(const fieldsCache&) = delete;
+    //- No copy assignment
+    void operator=(const fieldsCache&) = delete;
 
 
 public:
@@ -391,10 +384,10 @@ public:
     // Member Functions
 
         //- No fields
-        bool empty() const;
+        bool empty() const noexcept;
 
         //- Total number of fields
-        label size() const;
+        label size() const noexcept;
 
         //- Clear out
         void clear();
@@ -423,7 +416,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "fvFieldDecomposerTemplates.C"
+    #include "fvFieldDecomposer.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

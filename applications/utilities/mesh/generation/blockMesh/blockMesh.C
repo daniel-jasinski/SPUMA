@@ -167,6 +167,8 @@ int main(int argc, char *argv[])
     );
 
     #include "addRegionOption.H"
+    #include "addMemoryPoolOptions.H"
+    #include "addInitDeviceOptions.H"
     #include "setRootCase.H"
     #include "initDevice.H"
     #include "createMemoryPool.H"

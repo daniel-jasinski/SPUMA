@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
     Copyright (C) 2018-2023 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -102,7 +102,7 @@ public:
     // Constructors
 
         //- Construct initialized to zero
-        inline Tensor(const Foam::zero);
+        FOAM_DEVICE inline Tensor(Foam::zero);
 
         //- Construct given MatrixSpace of the same rank
         template<class Cmpt2>
@@ -174,15 +174,15 @@ public:
         FOAM_DEVICE const Cmpt& zy() const noexcept { return this->v_[ZY]; }
         FOAM_DEVICE const Cmpt& zz() const noexcept { return this->v_[ZZ]; }
 
-        Cmpt& xx() noexcept { return this->v_[XX]; }
-        Cmpt& xy() noexcept { return this->v_[XY]; }
-        Cmpt& xz() noexcept { return this->v_[XZ]; }
-        Cmpt& yx() noexcept { return this->v_[YX]; }
-        Cmpt& yy() noexcept { return this->v_[YY]; }
-        Cmpt& yz() noexcept { return this->v_[YZ]; }
-        Cmpt& zx() noexcept { return this->v_[ZX]; }
-        Cmpt& zy() noexcept { return this->v_[ZY]; }
-        Cmpt& zz() noexcept { return this->v_[ZZ]; }
+        FOAM_DEVICE Cmpt& xx() noexcept { return this->v_[XX]; }
+        FOAM_DEVICE Cmpt& xy() noexcept { return this->v_[XY]; }
+        FOAM_DEVICE Cmpt& xz() noexcept { return this->v_[XZ]; }
+        FOAM_DEVICE Cmpt& yx() noexcept { return this->v_[YX]; }
+        FOAM_DEVICE Cmpt& yy() noexcept { return this->v_[YY]; }
+        FOAM_DEVICE Cmpt& yz() noexcept { return this->v_[YZ]; }
+        FOAM_DEVICE Cmpt& zx() noexcept { return this->v_[ZX]; }
+        FOAM_DEVICE Cmpt& zy() noexcept { return this->v_[ZY]; }
+        FOAM_DEVICE Cmpt& zz() noexcept { return this->v_[ZZ]; }
 
 
     // Column-vector access
@@ -286,7 +286,7 @@ public:
         FOAM_DEVICE inline Cmpt det() const;
 
         //- The 2D determinant by excluding given direction
-        inline Cmpt det2D(const direction excludeCmpt) const;
+        FOAM_DEVICE inline Cmpt det2D(const direction excludeCmpt) const;
 
         //- Return adjunct matrix (transpose of cofactor matrix)
         FOAM_DEVICE inline Tensor<Cmpt> adjunct() const;
@@ -295,22 +295,22 @@ public:
         FOAM_DEVICE inline Tensor<Cmpt> cof() const;
 
         //- Return 2D adjunct matrix by excluding given direction
-        inline Tensor<Cmpt> adjunct2D(const direction excludeCmpt) const;
+        FOAM_DEVICE inline Tensor<Cmpt> adjunct2D(const direction excludeCmpt) const;
 
         //- Return inverse
         FOAM_DEVICE inline Tensor<Cmpt> inv() const;
 
         //- Return inverse, with (ad hoc) failsafe handling of 2D tensors
-        inline Tensor<Cmpt> safeInv() const;
+        FOAM_DEVICE inline Tensor<Cmpt> safeInv() const;
 
         //- Return inverse of 2D tensor (by excluding given direction)
-        inline Tensor<Cmpt> inv2D(const direction excludeCmpt) const;
+        FOAM_DEVICE inline Tensor<Cmpt> inv2D(const direction excludeCmpt) const;
 
         //- Inner-product of this with another Tensor.
         FOAM_DEVICE inline Tensor<Cmpt> inner(const Tensor<Cmpt>& t2) const;
 
         //- Schur-product of this with another Tensor.
-        inline Tensor<Cmpt> schur(const Tensor<Cmpt>& t2) const;
+        FOAM_DEVICE inline Tensor<Cmpt> schur(const Tensor<Cmpt>& t2) const;
 
 
     // Member Operators
@@ -339,6 +339,7 @@ public:
 
         //- Deprecated(2018-12) Return vector for given row (0,1)
         //  \deprecated(2018-12) use row() method
+        FOAM_DEPRECATED_FOR(2018-12, "row()")
         Vector<Cmpt> vectorComponent(const direction cmpt) const
         {
             return row(cmpt);

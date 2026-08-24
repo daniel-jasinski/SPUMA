@@ -91,7 +91,7 @@ void Foam::schemesLookup::read(const dictionary& dict)
         {
             Switch sw(fluxRequired_.lookup("default").peek());
 
-            if (sw.good() && sw.type() != Switch::NONE)
+            if (sw.good() && !sw.is_none())
             {
                 fluxRequiredDefault_ = bool(sw);
             }

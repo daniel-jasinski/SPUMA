@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -228,7 +228,7 @@ Foam::tmp<Foam::labelField> Foam::cyclicAMIFvPatch::interfaceInternalField
     const labelUList& faceCells
 ) const
 {
-    auto tpfld = tmp<labelField>::New();
+    auto tpfld = tmp<labelField>::New(this->size());
     patchInternalField(internalData, faceCells, tpfld.ref());
     return tpfld;
 }
@@ -289,7 +289,7 @@ void Foam::cyclicAMIFvPatch::movePoints()
         }
 
         scalarField srcMeshPhi(phip);
-        if (AMI().distributed())
+        if (AMI().distributed() && AMI().comm() != -1)
         {
             AMI().srcMap().distribute(srcMeshPhi);
         }

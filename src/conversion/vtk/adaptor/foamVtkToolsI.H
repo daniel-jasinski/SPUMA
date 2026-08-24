@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2017-2020 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,8 +24,6 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 \*---------------------------------------------------------------------------*/
-
-#include <numeric>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,16 +54,38 @@ inline Foam::UList<vtkIdType> Foam::vtk::Tools::asUList
 
 
 inline vtkSmartPointer<vtkPoints>
-Foam::vtk::Tools::Points(const UList<point>& pts)
+Foam::vtk::Tools::NewPoints
+(
+    vtkIdType count
+)
 {
     auto vtkpoints = vtkSmartPointer<vtkPoints>::New();
+    // if (narrowing || (sizeof(float) == sizeof(Foam::scalar)))
+    // {
+    //     vtkpoints->SetDataTypeToFloat();
+    // }
+    // else
+    // {
+    //     vtkpoints->SetDataTypeToDouble();
+    // }
+    vtkpoints->SetNumberOfPoints(count);
 
-    vtkpoints->SetNumberOfPoints(pts.size());
+    return vtkpoints;
+}
+
+
+inline vtkSmartPointer<vtkPoints>
+Foam::vtk::Tools::Points
+(
+    const UList<point>& pts
+)
+{
+    auto vtkpoints = vtk::Tools::NewPoints(pts.size());
 
     vtkIdType pointId = 0;
-    for (const point& pt : pts)
+    for (const auto& p : pts)
     {
-        vtkpoints->SetPoint(pointId++, pt.v_);
+        vtkpoints->SetPoint(pointId++, p.cdata());
     }
 
     return vtkpoints;
@@ -73,16 +93,19 @@ Foam::vtk::Tools::Points(const UList<point>& pts)
 
 
 inline vtkSmartPointer<vtkPoints>
-Foam::vtk::Tools::Points(const UList<point>& pts, const labelUList& addr)
+Foam::vtk::Tools::Points
+(
+    const UList<point>& pts,
+    const labelUList& addr
+)
 {
-    auto vtkpoints = vtkSmartPointer<vtkPoints>::New();
-
-    vtkpoints->SetNumberOfPoints(addr.size());
+    auto vtkpoints = vtk::Tools::NewPoints(addr.size());
 
     vtkIdType pointId = 0;
     for (const label pointi : addr)
     {
-        vtkpoints->SetPoint(pointId++, pts[pointi].v_);
+        const auto& p = pts[pointi];
+        vtkpoints->SetPoint(pointId++, p.cdata());
     }
 
     return vtkpoints;
@@ -90,7 +113,10 @@ Foam::vtk::Tools::Points(const UList<point>& pts, const labelUList& addr)
 
 
 inline vtkSmartPointer<vtkPolyData>
-Foam::vtk::Tools::Vertices(const UList<point>& pts)
+Foam::vtk::Tools::Vertices
+(
+    const UList<point>& pts
+)
 {
     auto vtkmesh = vtkSmartPointer<vtkPolyData>::New();
 
@@ -102,7 +128,11 @@ Foam::vtk::Tools::Vertices(const UList<point>& pts)
 
 
 inline vtkSmartPointer<vtkPolyData>
-Foam::vtk::Tools::Vertices(const UList<point>& pts, const labelUList& addr)
+Foam::vtk::Tools::Vertices
+(
+    const UList<point>& pts,
+    const labelUList& addr
+)
 {
     auto vtkmesh = vtkSmartPointer<vtkPolyData>::New();
 
@@ -134,9 +164,10 @@ inline Foam::scalarMinMax Foam::vtk::Tools::rangeOf(vtkDataArray* data)
 }
 
 
-inline vtkSmartPointer<vtkCellArray> Foam::vtk::Tools::identityVertices
+inline vtkSmartPointer<vtkCellArray>
+Foam::vtk::Tools::identityVertices
 (
-    const label size
+    const vtkIdType size
 )
 {
     auto cells = vtkSmartPointer<vtkCellArray>::New();
@@ -206,36 +237,6 @@ inline vtkSmartPointer<vtkCellArray> Foam::vtk::Tools::identityVertices
     #endif
 
     return cells;
-};
-
-
-template<class Type>
-inline void Foam::vtk::Tools::foamToVtkTuple
-(
-    float output[],
-    const Type& val
-)
-{
-    for (direction cmpt=0; cmpt < pTraits<Type>::nComponents; ++cmpt)
-    {
-        output[cmpt] = component(val, cmpt);
-    }
-    remapTuple<Type>(output);
-}
-
-
-template<class Type>
-inline void Foam::vtk::Tools::foamToVtkTuple
-(
-    double output[],
-    const Type& val
-)
-{
-    for (direction cmpt=0; cmpt < pTraits<Type>::nComponents; ++cmpt)
-    {
-        output[cmpt] = component(val, cmpt);
-    }
-    remapTuple<Type>(output);
 }
 
 

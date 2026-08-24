@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2020-2023 OpenCFD Ltd.
+    Copyright (C) 2020-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -18,8 +18,8 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef ensight_writePointFields_H
-#define ensight_writePointFields_H
+#ifndef FoamToEnsight_writePointFields_H
+#define FoamToEnsight_writePointFields_H
 
 #include "readFields.H"
 #include "ensightMesh.H"
@@ -102,23 +102,32 @@ label writeAllPointFields
     const IOobjectList& objects
 )
 {
-    #undef  ensight_WRITE_FIELD
-    #define ensight_WRITE_FIELD(PrimitiveType)          \
-        writePointFields<PrimitiveType>                 \
-        (                                               \
-            ensCase,                                    \
-            ensMesh,                                    \
-            objects                                     \
-        )
-
     label count = 0;
-    count += ensight_WRITE_FIELD(scalar);
-    count += ensight_WRITE_FIELD(vector);
-    count += ensight_WRITE_FIELD(sphericalTensor);
-    count += ensight_WRITE_FIELD(symmTensor);
-    count += ensight_WRITE_FIELD(tensor);
+    const label total = objects.size();
+    do
+    {
+        #undef  doLocalWriteCode
+        #define doLocalWriteCode(Type)                      \
+        {                                                   \
+            count += writePointFields<Type>                 \
+            (                                               \
+                ensCase,                                    \
+                ensMesh,                                    \
+                objects                                     \
+            );                                              \
+            if (count >= total) break;  /* early exit */    \
+        }
 
-    #undef ensight_WRITE_FIELD
+        doLocalWriteCode(scalar);
+        doLocalWriteCode(vector);
+        doLocalWriteCode(sphericalTensor);
+        doLocalWriteCode(symmTensor);
+        doLocalWriteCode(tensor);
+
+        #undef doLocalWriteCode
+    }
+    while (false);
+
     return count;
 }
 

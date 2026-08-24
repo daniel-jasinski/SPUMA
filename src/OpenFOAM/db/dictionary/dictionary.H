@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -113,6 +113,7 @@ SeeAlso
 #include "label.H"
 #include "scalar.H"
 #include "regExpFwd.H"
+#include "Switch.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -154,24 +155,24 @@ public:
             friend dictionary;
 
             //- The const/non-const type for the context and sub-dictionaries
-            typedef typename std::conditional
-                <Const, const dictionary, dictionary>::type dict_type;
+            using dict_type =
+                std::conditional_t<Const, const dictionary, dictionary>;
 
             //- The const/non-const type for entries
-            typedef typename std::conditional
-                <Const, const entry, entry>::type value_type;
+            using value_type =
+                std::conditional_t<Const, const entry, entry>;
 
             //- A pointer to a const/non-const dictionary
-            typedef dict_type* dict_pointer;
+            using dict_pointer = dict_type*;
 
             //- A reference to a const/non-const dictionary
-            typedef dict_type& dict_reference;
+            using dict_reference = dict_type&;
 
             //- A pointer to a const/non-const entry
-            typedef value_type* pointer;
+            using pointer = value_type*;
 
             //- A reference to a const/non-const entry
-            typedef value_type& reference;
+            using reference = value_type&;
 
 
         protected:
@@ -958,6 +959,21 @@ public:
         //
         //  \return pointer to inserted entry or nullptr on failure
         entry* set(const keyType& k, const dictionary& v);
+
+        //- Assign an empty primitive entry,
+        //- overwriting any existing entry.
+        //  \return pointer to entry or nullptr on failure
+        entry* set(const keyType& k, std::nullptr_t);
+
+        //- Assign a primitive entry from a list of tokens,
+        //- overwriting any existing entry.
+        //  \return pointer to entry or nullptr on failure
+        entry* set(const keyType& k, const UList<token>& tokens);
+
+        //- Assign a primitive entry from a list of tokens,
+        //- overwriting any existing entry.
+        //  \return pointer to entry or nullptr on failure
+        entry* set(const keyType& k, List<token>&& tokens);
 
         //- Assign a T entry, overwriting any existing entry.
         //  \return pointer to inserted entry or nullptr on failure

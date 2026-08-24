@@ -59,38 +59,38 @@ Description
     Operands:
     \table
       Operand        | Type           | Location
-      input          | volScalarField | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | volScalarField | <time>/inputField
       output file    | -              | -
-      output field   | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    proudmanAcousticPower1
+    proudmanAcousticPowerFO
     {
-        // Mandatory entries (unmodifiable)
-        type        proudmanAcousticPower;
-        libs        (fieldFunctionObjects);
+        // Mandatory entries
+        type            proudmanAcousticPower;
+        libs            (fieldFunctionObjects);
 
-        // Optional entries (runtime modifiable)
-        alphaEps    0.1;
+        // Optional entries
+        alphaEps        <scalar>;
         // For incompressible flow simulations
-        rhoInf      1.225;
-        aRef        340;
+        rhoInf          <scalar>;
+        aRef            <scalar>;
         // Turbulence field names (if not retrieved from the turb model)
-        k           kMean;
-        epsilon     epsilonMean;
-        omega       none; // omegaMean
+        k               <word>;
+        epsilon         <word>;
+        omega           <word>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                         | Type | Req'd | Dflt
+      Property     | Description                         | Type | Reqd  | Deflt
       type         | Type name: proudmanAcousticPower    | word |  yes  | -
       libs         | Library name: fieldFunctionObjects  | word |  yes  | -
       rhoInf       | Freestream density (for incompressible) | scalar <!--
@@ -104,27 +104,20 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
+      - \link functionObject.H \endlink
 
 Note
     The freestream density and reference speed of sound are only necessary
     when a thermodynamics package is unavailable, typically for incompressible
     cases.
 
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::proudmanAcousticPower
-
 SourceFiles
     proudmanAcousticPower.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_proudmanAcousticPower_H
-#define functionObjects_proudmanAcousticPower_H
+#ifndef Foam_functionObjects_proudmanAcousticPower_H
+#define Foam_functionObjects_proudmanAcousticPower_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFieldsFwd.H"
@@ -188,7 +181,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         proudmanAcousticPower
         (
             const word& name,
@@ -209,13 +202,13 @@ public:
 
     // Member Functions
 
-        //- Read the Proudman acoustic power data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the Proudman acoustic power
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the Proudman acoustic power
+        //- Write the function-object results
         virtual bool write();
 };
 

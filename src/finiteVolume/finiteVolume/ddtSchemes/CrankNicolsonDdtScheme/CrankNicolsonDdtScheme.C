@@ -409,6 +409,9 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
             vf.dimensions()
         );
 
+    // Bypass DynamicField level to avoid problems with Field level calcs
+    const auto& ddt0p = static_cast<const Field<Type>&>(ddt0.primitiveField());
+
     IOobject ddtIOobject
     (
         "ddt(" + vf.name() + ')',
@@ -420,6 +423,9 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
 
     if (mesh().moving())
     {
+        const scalarField& V0 = mesh().V0();
+        const scalarField& V00 = mesh().V00();
+
         if (evaluate(ddt0))
         {
             const scalar rDtCoef0 = rDtCoef0_(ddt0).value();
@@ -428,10 +434,10 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
             (
                 rDtCoef0*
                 (
-                    mesh().V0()*vf.oldTime().primitiveField()
-                  - mesh().V00()*vf.oldTime().oldTime().primitiveField()
-                ) - mesh().V00()*offCentre_(ddt0.primitiveField())
-            )/mesh().V0();
+                    V0*vf.oldTime().primitiveField()
+                  - V00*vf.oldTime().oldTime().primitiveField()
+                ) - V00*offCentre_(ddt0p)
+            )/V0;
 
             ddt0.boundaryFieldRef() =
             (
@@ -504,6 +510,9 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
             rho.dimensions()*vf.dimensions()
         );
 
+    // Bypass DynamicField level to avoid problems with Field level calcs
+    const auto& ddt0p = static_cast<const Field<Type>&>(ddt0.primitiveField());
+
     IOobject ddtIOobject
     (
         "ddt(" + rho.name() + ',' + vf.name() + ')',
@@ -515,6 +524,9 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
 
     if (mesh().moving())
     {
+        const scalarField& V0 = mesh().V0();
+        const scalarField& V00 = mesh().V00();
+
         if (evaluate(ddt0))
         {
             const scalar rDtCoef0 = rDtCoef0_(ddt0).value();
@@ -523,10 +535,10 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
             (
                 rDtCoef0*rho.value()*
                 (
-                    mesh().V0()*vf.oldTime().primitiveField()
-                  - mesh().V00()*vf.oldTime().oldTime().primitiveField()
-                ) - mesh().V00()*offCentre_(ddt0.primitiveField())
-            )/mesh().V0();
+                    V0*vf.oldTime().primitiveField()
+                  - V00*vf.oldTime().oldTime().primitiveField()
+                ) - V00*offCentre_(ddt0p)
+            )/V0;
 
             ddt0.boundaryFieldRef() =
             (
@@ -549,8 +561,8 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
                     rDtCoef.value()*rho.value()*
                     (
                         mesh().V()*vf.primitiveField()
-                      - mesh().V0()*vf.oldTime().primitiveField()
-                    ) - mesh().V0()*offCentre_(ddt0.primitiveField())
+                      - V0*vf.oldTime().primitiveField()
+                    ) - V0*offCentre_(ddt0p)
                 )/mesh().V(),
                 rDtCoef.value()*rho.value()*
                 (
@@ -601,6 +613,9 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
             rho.dimensions()*vf.dimensions()
         );
 
+    // Bypass DynamicField level to avoid problems with Field level calcs
+    const auto& ddt0p = static_cast<const Field<Type>&>(ddt0.primitiveField());
+
     IOobject ddtIOobject
     (
         "ddt(" + rho.name() + ',' + vf.name() + ')',
@@ -612,6 +627,9 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
 
     if (mesh().moving())
     {
+        const scalarField& V0 = mesh().V0();
+        const scalarField& V00 = mesh().V00();
+
         if (evaluate(ddt0))
         {
             const scalar rDtCoef0 = rDtCoef0_(ddt0).value();
@@ -620,12 +638,12 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
             (
                 rDtCoef0*
                 (
-                    mesh().V0()*rho.oldTime().primitiveField()
+                    V0*rho.oldTime().primitiveField()
                    *vf.oldTime().primitiveField()
-                  - mesh().V00()*rho.oldTime().oldTime().primitiveField()
+                  - V00*rho.oldTime().oldTime().primitiveField()
                    *vf.oldTime().oldTime().primitiveField()
-                ) - mesh().V00()*offCentre_(ddt0.primitiveField())
-            )/mesh().V0();
+                ) - V00*offCentre_(ddt0p)
+            )/V0;
 
             ddt0.boundaryFieldRef() =
             (
@@ -650,9 +668,9 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
                     rDtCoef.value()*
                     (
                         mesh().V()*rho.primitiveField()*vf.primitiveField()
-                      - mesh().V0()*rho.oldTime().primitiveField()
+                      - V0*rho.oldTime().primitiveField()
                        *vf.oldTime().primitiveField()
-                    ) - mesh().V00()*offCentre_(ddt0.primitiveField())
+                    ) - V00*offCentre_(ddt0p)
                 )/mesh().V(),
                 rDtCoef.value()*
                 (
@@ -709,6 +727,9 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
             alpha.dimensions()*rho.dimensions()*vf.dimensions()
         );
 
+    // Bypass DynamicField level to avoid problems with Field level calcs
+    const auto& ddt0p = static_cast<const Field<Type>&>(ddt0.primitiveField());
+
     IOobject ddtIOobject
     (
         "ddt(" + alpha.name() + ',' + rho.name() + ',' + vf.name() + ')',
@@ -720,6 +741,9 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
 
     if (mesh().moving())
     {
+        const scalarField& V0 = mesh().V0();
+        const scalarField& V00 = mesh().V00();
+
         if (evaluate(ddt0))
         {
             const scalar rDtCoef0 = rDtCoef0_(ddt0).value();
@@ -728,17 +752,17 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
             (
                 rDtCoef0*
                 (
-                    mesh().V0()
+                    V0
                    *alpha.oldTime().primitiveField()
                    *rho.oldTime().primitiveField()
                    *vf.oldTime().primitiveField()
 
-                  - mesh().V00()
+                  - V00
                    *alpha.oldTime().oldTime().primitiveField()
                    *rho.oldTime().oldTime().primitiveField()
                    *vf.oldTime().oldTime().primitiveField()
-                ) - mesh().V00()*offCentre_(ddt0.primitiveField())
-            )/mesh().V0();
+                ) - V00*offCentre_(ddt0p)
+            )/V0;
 
             ddt0.boundaryFieldRef() =
             (
@@ -771,11 +795,11 @@ CrankNicolsonDdtScheme<Type>::fvcDdt
                        *rho.primitiveField()
                        *vf.primitiveField()
 
-                      - mesh().V0()
+                      - V0
                        *alpha.oldTime().primitiveField()
                        *rho.oldTime().primitiveField()
                        *vf.oldTime().primitiveField()
-                    ) - mesh().V00()*offCentre_(ddt0.primitiveField())
+                    ) - V00*offCentre_(ddt0p)
                 )/mesh().V(),
                 rDtCoef.value()*
                 (
@@ -844,6 +868,9 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
             vf.dimensions()
         );
 
+    // Bypass DynamicField level to avoid problems with Field level calcs
+    const auto& ddt0p = static_cast<const Field<Type>&>(ddt0.primitiveField());
+
     tmp<fvMatrix<Type>> tfvm
     (
         new fvMatrix<Type>
@@ -862,6 +889,9 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
 
     if (mesh().moving())
     {
+        const scalarField& V0 = mesh().V0();
+        const scalarField& V00 = mesh().V00();
+
         if (evaluate(ddt0))
         {
             const scalar rDtCoef0 = rDtCoef0_(ddt0).value();
@@ -870,11 +900,11 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
             (
                 rDtCoef0*
                 (
-                    mesh().V0()*vf.oldTime().primitiveField()
-                  - mesh().V00()*vf.oldTime().oldTime().primitiveField()
+                    V0*vf.oldTime().primitiveField()
+                  - V00*vf.oldTime().oldTime().primitiveField()
                 )
-              - mesh().V00()*offCentre_(ddt0.primitiveField())
-            )/mesh().V0();
+              - V00*offCentre_(ddt0p)
+            )/V0;
 
             ddt0.boundaryFieldRef() =
             (
@@ -890,8 +920,8 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
         fvm.source() =
         (
             rDtCoef*vf.oldTime().primitiveField()
-          + offCentre_(ddt0.primitiveField())
-        )*mesh().V0();
+          + offCentre_(ddt0p)
+        )*V0;
     }
     else
     {
@@ -905,7 +935,7 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
         fvm.source() =
         (
             rDtCoef*vf.oldTime().primitiveField()
-          + offCentre_(ddt0.primitiveField())
+          + offCentre_(ddt0p)
         )*mesh().V();
     }
 
@@ -928,6 +958,9 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
             rho.dimensions()*vf.dimensions()
         );
 
+    // Bypass DynamicField level to avoid problems with Field level calcs
+    const auto& ddt0p = static_cast<const Field<Type>&>(ddt0.primitiveField());
+
     tmp<fvMatrix<Type>> tfvm
     (
         new fvMatrix<Type>
@@ -945,6 +978,9 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
 
     if (mesh().moving())
     {
+        const scalarField& V0 = mesh().V0();
+        const scalarField& V00 = mesh().V00();
+
         if (evaluate(ddt0))
         {
             const scalar rDtCoef0 = rDtCoef0_(ddt0).value();
@@ -953,11 +989,11 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
             (
                 rDtCoef0*rho.value()*
                 (
-                    mesh().V0()*vf.oldTime().primitiveField()
-                  - mesh().V00()*vf.oldTime().oldTime().primitiveField()
+                    V0*vf.oldTime().primitiveField()
+                  - V00*vf.oldTime().oldTime().primitiveField()
                 )
-              - mesh().V00()*offCentre_(ddt0.primitiveField())
-            )/mesh().V0();
+              - V00*offCentre_(ddt0p)
+            )/V0;
 
             ddt0.boundaryFieldRef() =
             (
@@ -973,8 +1009,8 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
         fvm.source() =
         (
             rDtCoef*rho.value()*vf.oldTime().primitiveField()
-          + offCentre_(ddt0.primitiveField())
-        )*mesh().V0();
+          + offCentre_(ddt0p)
+        )*V0;
     }
     else
     {
@@ -987,7 +1023,7 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
         fvm.source() =
         (
             rDtCoef*rho.value()*vf.oldTime().primitiveField()
-          + offCentre_(ddt0.primitiveField())
+          + offCentre_(ddt0p)
         )*mesh().V();
     }
 
@@ -1010,6 +1046,9 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
             rho.dimensions()*vf.dimensions()
         );
 
+    // Bypass DynamicField level to avoid problems with Field level calcs
+    const auto& ddt0p = static_cast<const Field<Type>&>(ddt0.primitiveField());
+
     tmp<fvMatrix<Type>> tfvm
     (
         new fvMatrix<Type>
@@ -1028,6 +1067,9 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
 
     if (mesh().moving())
     {
+        const scalarField& V0 = mesh().V0();
+        const scalarField& V00 = mesh().V00();
+
         if (evaluate(ddt0))
         {
             const scalar rDtCoef0 = rDtCoef0_(ddt0).value();
@@ -1036,13 +1078,13 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
             (
                 rDtCoef0*
                 (
-                    mesh().V0()*rho.oldTime().primitiveField()
+                    V0*rho.oldTime().primitiveField()
                    *vf.oldTime().primitiveField()
-                  - mesh().V00()*rho.oldTime().oldTime().primitiveField()
+                  - V00*rho.oldTime().oldTime().primitiveField()
                    *vf.oldTime().oldTime().primitiveField()
                 )
-              - mesh().V00()*offCentre_(ddt0.primitiveField())
-            )/mesh().V0();
+              - V00*offCentre_(ddt0p)
+            )/V0;
 
             ddt0.boundaryFieldRef() =
             (
@@ -1060,8 +1102,8 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
         fvm.source() =
         (
             rDtCoef*rho.oldTime().primitiveField()*vf.oldTime().primitiveField()
-          + offCentre_(ddt0.primitiveField())
-        )*mesh().V0();
+          + offCentre_(ddt0p)
+        )*V0;
     }
     else
     {
@@ -1077,7 +1119,7 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
         fvm.source() =
         (
             rDtCoef*rho.oldTime().primitiveField()*vf.oldTime().primitiveField()
-          + offCentre_(ddt0.primitiveField())
+          + offCentre_(ddt0p)
         )*mesh().V();
     }
 
@@ -1101,6 +1143,9 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
             alpha.dimensions()*rho.dimensions()*vf.dimensions()
         );
 
+    // Bypass DynamicField level to avoid problems with Field level calcs
+    const auto& ddt0p = static_cast<const Field<Type>&>(ddt0.primitiveField());
+
     tmp<fvMatrix<Type>> tfvm
     (
         new fvMatrix<Type>
@@ -1120,6 +1165,9 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
 
     if (mesh().moving())
     {
+        const scalarField& V0 = mesh().V0();
+        const scalarField& V00 = mesh().V00();
+
         if (evaluate(ddt0))
         {
             const scalar rDtCoef0 = rDtCoef0_(ddt0).value();
@@ -1128,18 +1176,18 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
             (
                 rDtCoef0*
                 (
-                    mesh().V0()
+                    V0
                    *alpha.oldTime().primitiveField()
                    *rho.oldTime().primitiveField()
                    *vf.oldTime().primitiveField()
 
-                  - mesh().V00()
+                  - V00
                    *alpha.oldTime().oldTime().primitiveField()
                    *rho.oldTime().oldTime().primitiveField()
                    *vf.oldTime().oldTime().primitiveField()
                 )
-              - mesh().V00()*offCentre_(ddt0.primitiveField())
-            )/mesh().V0();
+              - V00*offCentre_(ddt0p)
+            )/V0;
 
             ddt0.boundaryFieldRef() =
             (
@@ -1163,8 +1211,8 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
            *alpha.oldTime().primitiveField()
            *rho.oldTime().primitiveField()
            *vf.oldTime().primitiveField()
-          + offCentre_(ddt0.primitiveField())
-        )*mesh().V0();
+          + offCentre_(ddt0p)
+        )*V0;
     }
     else
     {
@@ -1188,7 +1236,7 @@ CrankNicolsonDdtScheme<Type>::fvmDdt
            *alpha.oldTime().primitiveField()
            *rho.oldTime().primitiveField()
            *vf.oldTime().primitiveField()
-          + offCentre_(ddt0.primitiveField())
+          + offCentre_(ddt0p)
         )*mesh().V();
     }
 

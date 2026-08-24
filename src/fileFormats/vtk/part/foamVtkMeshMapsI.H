@@ -33,50 +33,16 @@ inline void Foam::foamVtkMeshMaps::clear()
 {
     cellMap_.clear();
     pointMap_.clear();
-    additionalIds_.clear();
+    extraIds_.clear();
 }
 
 
-inline const Foam::labelList&
-Foam::foamVtkMeshMaps::cellMap() const noexcept
-{
-    return cellMap_;
-}
-
-
-inline Foam::DynamicList<Foam::label>&
-Foam::foamVtkMeshMaps::cellMap() noexcept
-{
-    return cellMap_;
-}
-
-
-inline const Foam::labelList&
-Foam::foamVtkMeshMaps::pointMap() const noexcept
-{
-    return pointMap_;
-}
-
-
-inline Foam::DynamicList<Foam::label>&
-Foam::foamVtkMeshMaps::pointMap() noexcept
-{
-    return pointMap_;
-}
-
-
-inline const Foam::labelList&
-Foam::foamVtkMeshMaps::additionalIds() const noexcept
-{
-    return additionalIds_;
-}
-
-
-inline Foam::DynamicList<Foam::label>&
-Foam::foamVtkMeshMaps::additionalIds() noexcept
-{
-    return additionalIds_;
-}
+// inline void Foam::foamVtkMeshMaps::clearStorage()
+// {
+//     cellMap_.clearStorage();
+//     pointMap_.clearStorage();
+//     extraIds_.clearStorage();
+// }
 
 
 // ************************************************************************* //

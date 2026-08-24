@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,8 +26,10 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "thermalShell.H"
-#include "addToRunTimeSelectionTable.H"
+#include "fam.H"
+#include "faMatrices.H"
 #include "fvPatchFields.H"
+#include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -123,13 +125,29 @@ thermalShell::thermalShell
 )
 :
     thermalShellModel(modelType, mesh, dict),
+    hName_(dict.getOrDefault<word>("h", suffixed("h"))),
+    qsName_(dict.getOrDefault<word>("qs", suffixed("qs"))),
+    qrName_(dict.getOrDefault<word>("qr", "none")),
     nNonOrthCorr_(1),
-    thermo_(dict.subDict("thermo")),
+    // Only need/want thermal solid properties
+    thermo_(dict.subDict("thermo"), solidProperties::THERMAL),
+    h_
+    (
+        IOobject
+        (
+            hName_,
+            regionMesh().time().timeName(),
+            regionMesh().thisDb(),
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        regionMesh()
+    ),
     qs_
     (
         IOobject
         (
-            "qs_" + regionName_,
+            qsName_,
             regionMesh().time().timeName(),
             regionMesh().thisDb(),
             IOobject::READ_IF_PRESENT,
@@ -138,19 +156,6 @@ thermalShell::thermalShell
         regionMesh(),
         dimensionedScalar(dimPower/dimArea, Zero)
     ),
-    h_
-    (
-        IOobject
-        (
-            "h_" + regionName_,
-            regionMesh().time().timeName(),
-            regionMesh().thisDb(),
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        regionMesh()
-    ),
-    qrName_(dict.getOrDefault<word>("qr", "none")),
     thickness_(dict.getOrDefault<scalar>("thickness", 0))
 {
     init(dict);

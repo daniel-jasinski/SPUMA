@@ -30,33 +30,57 @@ Group
     grpInitialisationFunctionObjects
 
 Description
-    Calculates and outputs the pressure fields p_rgh and ph_rgh
+    Calculates and outputs the pressure fields \c p_rgh and \c ph_rgh.
 
 Usage
-    Example of function object specification to calculate hydrostatic pressure:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    hydrostaticPressure1
+    hydrostaticPressureFO
     {
+        // Mandatory entries
         type        hydrostaticPressure;
         libs        (initialisationFunctionObjects);
+
+        // Optional entries
+        p_rgh       <word>;
+        ph_rgh      <word>;
+        pRef        <word>;
+        rho         <word>;
+        U           <word>;
+        gh          <word>;
+        ghf         <word>;
+        nCorrectors <label>;
+        reInitialise <bool>;
+
+        // Conditional entries
+
+            // when 'pRef' is 'pInf'
+            pRefValue   <scalar>;
+
+        // Inherited entries
         ...
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property     | Description             | Required    | Default value
-        log          | Log to standard output  | no          | yes
-        p_rgh        | Name of p_rgh field     | no          | p_rgh
-        ph_rgh       | Name of ph_rgh field    | no          | ph_rgh
-        pRef         | Name of pressure ref field | no       | pRef
-        pRefValue    | Value of pressure ref | when pRef set to pInf | 0
-        rho          | Name of density field   | no          | rho
-        U            | Name of velocity field  | no          | U
-        gh           | Name of gravity*height volume field  | no | gh
-        ghf          | Name of gravity*height surface field | no | ghf
-        nCorrectors  | Number of correctors when solving ph_rgh | no | 5
+      Property  | Description                        | Type | Reqd | Deflt
+      type      | Type name: hydrostaticPressure     | word | yes  | -
+      libs      | Library name: initialisationFunctionObjects | word | yes | -
+      p_rgh     | Name of p - rho*g*h field          | word | no   | p_rgh
+      ph_rgh    | Name of p_hydrostatic - rho*g*h field | word | no | ph_rgh
+      pRef      | Name of pressure ref field         | word | no   | pRef
+      pRefValue | Value of pressure ref              | scalar | conditional | 0
+      rho       | Name of density field              | word | no   | rho
+      U         | Name of velocity field             | word | no   | U
+      gh        | Name of g*h volume field           | word | no   | gh
+      ghf       | Name of g*h surface field          | word | no   | ghf
+      nCorrectors | Number of correctors when solving ph_rgh | label | no
+      reInitialise | Re-initialise at start of simulation | bool | no | false
     \endtable
+
+    The inherited entries are elaborated in:
+      - \link functionObject.H \endlink
 
 Note
     Calculates the hydrostatic pressure on construction/re-initialisation;
@@ -67,8 +91,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_hydrostaticPressure_H
-#define functionObjects_hydrostaticPressure_H
+#ifndef Foam_functionObjects_hydrostaticPressure_H
+#define Foam_functionObjects_hydrostaticPressure_H
 
 #include "fvMeshFunctionObject.H"
 #include "uniformDimensionedFields.H"
@@ -141,7 +165,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         hydrostaticPressure
         (
             const word& name,
@@ -156,13 +180,13 @@ public:
 
     // Member Functions
 
-        //- Read the hydrostaticPressure data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the p_rgh field
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the p_rgh and derived fields
+        //- Write the function-object results
         virtual bool write();
 };
 

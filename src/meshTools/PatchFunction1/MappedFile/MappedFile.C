@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2022 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -700,8 +700,7 @@ Foam::PatchFunction1Types::MappedFile<Type>::value
 
         if (this->faceValues())
         {
-            const scalarField magSf(mag(this->patch_.faceAreas()));
-            averagePsi = gSum(magSf*fld)/gSum(magSf);
+            averagePsi = gWeightedAverage(this->patch_.magFaceAreas(), fld);
         }
         else
         {
@@ -748,9 +747,13 @@ Foam::PatchFunction1Types::MappedFile<Type>::value
 
     if (debug)
     {
-        Pout<< "MappedFile<Type>::value : set fixedValue to min:" << gMin(fld)
-            << " max:" << gMax(fld)
-            << " avg:" << gAverage(fld) << endl;
+        auto limits = gMinMax(fld);
+        auto avg = gAverage(fld);
+
+        Pout<< "MappedFile<Type>::value : set fixedValue to min:"
+            << limits.min()
+            << " max:" << limits.max()
+            << " avg:" << avg << endl;
     }
 
     return this->transform(tfld);

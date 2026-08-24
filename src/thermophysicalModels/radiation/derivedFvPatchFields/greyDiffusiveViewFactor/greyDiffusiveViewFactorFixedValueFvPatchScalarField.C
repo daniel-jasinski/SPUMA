@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2016 OpenCFD Ltd
+    Copyright (C) 2016-2025 OpenCFD Ltd
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -140,15 +140,17 @@ updateCoeffs()
 
     if (debug)
     {
-        scalar Q = gSum((*this)*patch().magSf());
+        scalar Q = gWeightedSum(patch().magSf(), *this);
+
+        MinMax<scalar> limits = gMinMax(*this);
 
         Info<< patch().boundaryMesh().mesh().name() << ':'
             << patch().name() << ':'
             << this->internalField().name() << " <- "
             << " heat transfer rate:" << Q
             << " wall radiative heat flux "
-            << " min:" << gMin(*this)
-            << " max:" << gMax(*this)
+            << " min:" << limits.min()
+            << " max:" << limits.max()
             << " avg:" << gAverage(*this)
             << endl;
     }
@@ -170,14 +172,16 @@ greyDiffusiveViewFactorFixedValueFvPatchScalarField::qro(label bandI) const
             radiation.primaryFluxName_ + "_"  + name(bandI)
         );
 
-        word qSecName = radiation.relfectedFluxName_ + "_" + name(bandI);
-
-        if (this->db().foundObject<volScalarField>(qSecName))
+        if
+        (
+            const auto* qSec
+          = patch().cfindPatchField<volScalarField>
+            (
+                radiation.relfectedFluxName_ + "_" + name(bandI)
+            )
+        )
         {
-            const volScalarField& qSec =
-                this->db().lookupObject<volScalarField>(qSecName);
-
-            tqrt.ref() += qSec.boundaryField()[patch().index()];
+            tqrt.ref() += *qSec;
         }
     }
 

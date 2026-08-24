@@ -5,8 +5,8 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2011-2016,2024 OpenFOAM Foundation
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -150,8 +150,17 @@ public:
             //- Read a string (including enclosing double-quotes)
             virtual Istream& read(string&) = 0;
 
-            //- Read a label
-            virtual Istream& read(label&) = 0;
+            //- Read int32_t
+            virtual Istream& read(int32_t&) = 0;
+
+            //- Read int64_t
+            virtual Istream& read(int64_t&) = 0;
+
+            //- Read uint32_t
+            virtual Istream& read(uint32_t&) = 0;
+
+            //- Read uint64_t
+            virtual Istream& read(uint64_t&) = 0;
 
             //- Read a float
             virtual Istream& read(float&) = 0;
@@ -175,7 +184,8 @@ public:
             //- operation.
             virtual Istream& readRaw(char* data, std::streamsize count) = 0;
 
-            //- Rewind the stream so that it may be read again
+            //- Rewind the stream so that it may be read again.
+            //  The base implementation clears any putback.
             virtual void rewind() = 0;
 
 
@@ -231,45 +241,70 @@ inline Istream& operator>>(Istream& is, IOstreamManip f)
 
 namespace Detail
 {
-    //- Read binary block of contiguous data, possibly with conversion
-    template<class T>
-    void readContiguous(Istream& is, char* data, std::streamsize byteCount)
+
+//- Read binary block of contiguous data, possibly with conversion
+template<class T>
+void readContiguous(Istream& is, char* data, std::streamsize byteCount)
+{
+    if constexpr (is_contiguous_label<T>::value)
     {
         is.beginRawRead();
-
-        if (is_contiguous_label<T>::value)
-        {
-            readRawLabel
-            (
-                is,
-                reinterpret_cast<label*>(data),
-                byteCount/sizeof(label)
-            );
-        }
-        else if (is_contiguous_scalar<T>::value)
-        {
-            readRawScalar
-            (
-                is,
-                reinterpret_cast<scalar*>(data),
-                byteCount/sizeof(scalar)
-            );
-        }
-        else
-        {
-            is.readRaw(data, byteCount);
-        }
-
+        readRawLabel
+        (
+            is,
+            reinterpret_cast<label*>(data),
+            byteCount/sizeof(label)
+        );
         is.endRawRead();
     }
+    else if constexpr (is_contiguous_scalar<T>::value)
+    {
+        is.beginRawRead();
+        readRawScalar
+        (
+            is,
+            reinterpret_cast<scalar*>(data),
+            byteCount/sizeof(scalar)
+        );
+        is.endRawRead();
+    }
+    else
+    {
+        is.read(data, byteCount);
+    }
+}
 
 } // End namespace Detail
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
 } // End namespace Foam
 
+
+// * * * * * * * * * * * * * * * Specializations * * * * * * * * * * * * * * //
+
+// Contiguous classes with mixed internal representations require specialized
+// versions of readContiguous.
+//
+// The declarations must be known when reading files, so declare them here.
+// This approach obviously does not scale well, but fortunately there
+// are not too many of these classes.
+
+namespace Foam
+{
+
+// Forward Declarations
+class pointConstraint;
+
+namespace Detail
+{
+
+//- Read binary block of pointConstraint data (possibly with conversion)
+template<>
+void readContiguous<pointConstraint>
+(
+    Istream& is, char* data, std::streamsize byteCount
+);
+
+} // End namespace Detail
+} // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

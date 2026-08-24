@@ -47,39 +47,35 @@ Description
 
     \table
       Operand       | Type           | Location
-      input         | volScalarField | $FOAM_CASE/\<time\>/\<inpField\>
+      input         | volScalarField | <time>/inputField
       output file   | -              | -
-      output field  | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field  | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    pow1
+    powFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            pow;
         libs            (fieldFunctionObjects);
+        field           <word>;
+        n               <scalar>;
 
-        // Mandatory (inherited) entry (runtime modifiable)
-        field           <inpField>;
+        // Optional entries
+        checkDimensions <bool>;
+        scale           <scalar>;
+        offset          <scalar>;
 
-        // Mandatory entry (runtime modifiable)
-        n               0.25;
-
-        // Optional entries (runtime modifiable)
-        checkDimensions false;
-        scale           1.0;
-        offset          0.0;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: pow                     | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       field        | Name of the operand field          | word |  yes  | -
@@ -91,27 +87,15 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func "pow(<inpField>)" -scale 1.0 -offset 0.0
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::pow
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     pow.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_pow_H
-#define functionObjects_pow_H
+#ifndef Foam_functionObjects_pow_H
+#define Foam_functionObjects_pow_H
 
 #include "fieldExpression.H"
 
@@ -159,7 +143,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         pow
         (
             const word& name,
@@ -180,8 +164,8 @@ public:
 
     // Member Functions
 
-        //- Read the randomise data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 };
 
 

@@ -31,8 +31,8 @@ Description
     Dimensioned field decomposer.
 
 SourceFiles
-    dimFieldDecomposer.C
-    dimFieldDecomposerTemplates.C
+    dimFieldDecomposer.cxx
+    dimFieldDecomposer.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -40,7 +40,7 @@ SourceFiles
 #define Foam_dimFieldDecomposer_H
 
 #include "fvMesh.H"
-#include "surfaceFields.H"
+#include "DimensionedField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -59,10 +59,10 @@ class dimFieldDecomposer
         const fvMesh& procMesh_;
 
         //- Reference to face addressing
-        //UNUSED: const labelList& faceAddressing_;
+        //UNUSED: const labelUList& faceAddressing_;
 
         //- Reference to cell addressing
-        const labelList& cellAddressing_;
+        const labelUList& cellAddressing_;
 
 
 public:
@@ -80,7 +80,7 @@ public:
         dimFieldDecomposer
         (
             const fvMesh& procMesh,
-            const labelList& cellAddressing
+            const labelUList& cellAddressing
         );
 
         //- Construct from components with API as per fvFieldDecomposer
@@ -88,8 +88,8 @@ public:
         (
             const fvMesh& completeMesh,         //!< unused
             const fvMesh& procMesh,
-            const labelList& faceAddressing,    //!< unused
-            const labelList& cellAddressing
+            const labelUList& faceAddressing,   //!< unused
+            const labelUList& cellAddressing
         );
 
 
@@ -110,7 +110,7 @@ public:
 
         //- Decompose list of fields
         template<class GeoField>
-        void decomposeFields(const PtrList<GeoField>& fields) const;
+        void decomposeFields(const UPtrList<GeoField>& fields) const;
 };
 
 
@@ -121,7 +121,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "dimFieldDecomposerTemplates.C"
+    #include "dimFieldDecomposer.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -99,7 +99,7 @@ protected:
         //- Index of other half
         mutable label nbrPatchID_;
 
-        //- Particle displacement fraction accross AMI
+        //- Particle displacement fraction across AMI
         const scalar fraction_;
 
 
@@ -165,6 +165,9 @@ protected:
 
             //- Temporary storage for AMI face centres
             mutable vectorField faceCentres0_;
+
+        // Cache
+        bool cacheAMI_;
 
 
     // Protected Member Functions
@@ -520,9 +523,14 @@ public:
                 (
                     const Field<Type>& fld,
                     labelRange& sendRequests,
-                    PtrList<List<Type>>& sendBuffers,
                     labelRange& recvRequests,
-                    PtrList<List<Type>>& recvBuffers
+                    PtrList<List<Type>>& sendBuffers,
+                    PtrList<List<Type>>& recvBuffers,
+
+                    labelRange& sendRequests1,
+                    labelRange& recvRequests1,
+                    PtrList<List<Type>>& sendBuffers1,
+                    PtrList<List<Type>>& recvBuffers1
                 ) const;
 
                 template<class Type>
@@ -530,9 +538,14 @@ public:
                 (
                     const Field<Type>& fld,
                     labelRange& sendRequests,
-                    PtrList<List<Type>>& sendBuffers,
                     labelRange& recvRequests,
-                    PtrList<List<Type>>& recvBuffers
+                    PtrList<List<Type>>& sendBuffers,
+                    PtrList<List<Type>>& recvBuffers,
+
+                    labelRange& sendRequests1,
+                    labelRange& recvRequests1,
+                    PtrList<List<Type>>& sendBuffers1,
+                    PtrList<List<Type>>& recvBuffers1
                 ) const;
 
                 template<class Type>
@@ -541,6 +554,8 @@ public:
                     const Field<Type>& localFld,
                     const labelRange& requests,  // The receive requests
                     const PtrList<List<Type>>& recvBuffers,
+                    const labelRange& requests1,  // The receive requests
+                    const PtrList<List<Type>>& recvBuffers1,
                     const UList<Type>& defaultValues
                 ) const;
 

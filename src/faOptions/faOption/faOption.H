@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,6 +40,9 @@ Usage
         // Mandatory entries (runtime modifiable)
         region            <regionName>;
 
+        // Optional entry (unmodifiable)
+        area              <areaName>;
+
         // Optional entries (unmodifiable/runtime modifiable)
         <faOption>Coeffs
         {
@@ -56,19 +59,23 @@ Usage
     \table
       Property         | Description                   | Type  | Reqd | Dflt
       type             | Name of operand faOption      | word  | yes  | -
+      area             | Name of finite-area mesh      | word  | no   | region0
       region           | Name of operand region        | word  | yes  | -
       \<faOption\>Coeffs | Dictionary containing settings of <!--
                     --> the selected faOption settings | dictionary | no | -
       active   | Flag to (de)activate faOption         | bool  | no   | true
       log      | Flag to log faOption-related info     | bool  | no   | true
+      suffixing | Suffix hint for option variables     | word  | no   | -
     \endtable
 
 Note
   - Source/sink options are to be added to the right-hand side of equations.
+  - Suffixing (true|false|none|default|...) currently selects between
+    no suffix and ('_'+region).
 
 SourceFiles
-    faOption.C
-    faOptionIO.C
+    faOption.cxx
+    faOptionIO.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -126,8 +133,14 @@ protected:
         //- Applied flag list - corresponds to each fieldNames_ entry
         List<bool> applied_;
 
-        //- Region name (finite-area)
+        //- The finite-area mesh name
+        word areaName_;
+
+        //- The model region name (finite-area)
         word regionName_;
+
+        //- Suffix hint for variable names (default: "")
+        word suffixHint_;
 
 
     // Protected Member Functions
@@ -171,9 +184,10 @@ public:
                 const word& name,
                 const word& modelType,
                 const dictionary& dict,
-                const fvMesh& mesh
+                const fvMesh& mesh,
+                const word& areaName
             ),
-            (name, modelType, dict, mesh)
+            (name, modelType, dict, mesh, areaName)
         );
 
 
@@ -185,7 +199,9 @@ public:
             const word& name,
             const word& modelType,
             const dictionary& dict,
-            const fvMesh& mesh
+            const fvMesh& mesh,
+            //! The expected finite-area mesh name
+            const word& defaultAreaName = word()
         );
 
         //- Return clone
@@ -202,28 +218,33 @@ public:
             //- Reference to the mesh
             const fvMesh& mesh_;
 
-            //- Name
+            //- The option name
             const word& name_;
+
+            //- The default area name
+            const word& area_;
 
         public:
 
             iNew
             (
                 const fvMesh& mesh,
-                const word& name
-            )
+                const word& name,
+                const word& defaultAreaName
+            ) noexcept
             :
                 mesh_(mesh),
-                name_(name)
+                name_(name),
+                area_(defaultAreaName)
             {}
 
             autoPtr<option> operator()(Istream& is) const
             {
                 const dictionary dict(is);
 
-                return autoPtr<option>
+                return autoPtr<fa::option>
                 (
-                    option::New(name_, dict, mesh_)
+                    fa::option::New(name_, dict, mesh_, area_)
                 );
             }
         };
@@ -236,7 +257,9 @@ public:
         (
             const word& name,
             const dictionary& dict,
-            const fvMesh& mesh
+            const fvMesh& mesh,
+            //! The expected finite-area mesh name
+            const word& defaultAreaName = word()
         );
 
 
@@ -246,50 +269,72 @@ public:
 
     // Member Functions
 
-        // Access
-
-            //- Return const access to the source name
-            inline const word& name() const noexcept;
-
-            //- Return const access to the mesh database
-            inline const fvMesh& mesh() const noexcept;
-
-            //- Return dictionary
-            inline const dictionary& coeffs() const noexcept;
-
-            //- True if source is active
-            inline bool active() const noexcept;
-
-            //- Set the applied flag to true for field index fieldi
-            inline void setApplied(const label fieldi);
-
-            //- The region name
-            inline const word& regionName() const noexcept;
-
-            //- Return the region mesh database (demand-driven)
-            inline const faMesh& regionMesh() const;
-
-            //- Return volSurfaceMapping (demand-driven)
-            inline const volSurfaceMapping& vsm() const;
+        //- Compare the region names.
+        //  Treats empty or polyMesh::defaultRegion as always matching
+        static bool sameRegionNames(const word& name1, const word& name2);
 
 
-        // Edit
+    // Access
 
-            //- Change source active flag, return previous value
-            inline bool active(const bool on) noexcept;
+        //- The source name
+        const word& name() const noexcept { return name_; }
+
+        //- Return const access to the volume mesh
+        const fvMesh& mesh() const noexcept { return mesh_; }
+
+        //- Return dictionary
+        const dictionary& coeffs() const noexcept { return coeffs_; }
+
+        //- True if source is active
+        bool active() const noexcept { return active_; }
+
+        //- Set the applied flag to true for field index fieldi
+        inline void setApplied(const label fieldi);
+
+        //- The finite-area mesh name
+        const word& areaName() const noexcept { return areaName_; }
+
+        //- The model region name
+        const word& regionName() const noexcept { return regionName_; }
+
+        //- Return the region mesh database (demand-driven)
+        inline const faMesh& regionMesh() const;
+
+        //- Return volSurfaceMapping (demand-driven)
+        inline const volSurfaceMapping& vsm() const;
 
 
-        // Checks
+    // Edit
 
-            //- Is the source active?
-            virtual bool isActive();
+        //- Change source active flag, return previous value
+        inline bool active(bool on) noexcept;
 
-            //- Return index of field name if found in fieldNames list
-            virtual label applyToField(const word& fieldName) const;
 
-            //- Check that the source has been applied
-            virtual void checkApplied() const;
+    // Helper Functions
 
+        //- The suffix hint when generating variable names
+        const word& suffixHint() const noexcept { return suffixHint_; }
+
+        //- Return the concatenation of \p base and the suffix hint
+        inline word suffixed(const char* base) const;
+
+        //- Return the concatenation of \p base and the suffix hint
+        inline word suffixed(const std::string& base) const;
+
+
+    // Checks
+
+        //- Is the source active?
+        virtual bool isActive();
+
+        //- Return index of field name if found in fieldNames list
+        virtual label applyToField(const word& fieldName) const;
+
+        //- Check that the source has been applied
+        virtual void checkApplied() const;
+
+
+    // Member Functions
 
         // Evaluation
 

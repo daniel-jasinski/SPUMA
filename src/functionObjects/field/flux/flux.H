@@ -35,47 +35,38 @@ Description
     Operands:
     \table
       Operand      | Type                     | Location
-      input        | {vol,surface}VectorField | $FOAM_CASE/\<time\>/\<inpField\>
+      input        | {vol,surface}VectorField | <time>/inputField
       output file  | -                        | -
-      output field | surfaceScalarField       | $FOAM_CASE/\<time\>/\<outField\>
+      output field | surfaceScalarField       | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    flowType1
+    flowTypeFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            flux;
         libs            (fieldFunctionObjects);
 
-        // Optional entries (runtime modifiable)
-        rho             none;
+        // Optional entries
+        rho             <word>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-        Property     | Description                        | Type | Req'd | Dflt
+        Property     | Description                        | Type | Reqd  | Deflt
         type         | Type name: flux                    | word |  yes  | -
         libs         | Library name: fieldFunctionObjects | word |  yes  | -
         rho          | Name of density field              | word |  no   | none
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::flux
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     flux.C
@@ -83,8 +74,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_flux_H
-#define functionObjects_flux_H
+#ifndef Foam_functionObjects_flux_H
+#define Foam_functionObjects_flux_H
 
 #include "fieldExpression.H"
 
@@ -131,7 +122,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         flux
         (
             const word& name,

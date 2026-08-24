@@ -98,22 +98,20 @@ bool Foam::regIOobject::writeObject
     const bool masterOnly
     (
         isGlobal
-     && (
-            IOobject::fileModificationChecking == IOobject::timeStampMaster
-         || IOobject::fileModificationChecking == IOobject::inotifyMaster
-        )
+     && IOobject::fileModificationChecking_masterOnly()
     );
 
-    bool osGood = false;
+    bool osGood = true;
     if (!masterOnly || UPstream::master())
     {
         osGood = fileHandler().writeObject(*this, streamOpt, writeOnProc);
     }
-    else
-    {
-        // Or scatter the master osGood?
-        osGood = true;
-    }
+
+    // Or broadcast the master osGood?
+    // if (masterOnly)
+    // {
+    //     Pstream::broadcast(osGood);
+    // }
 
     if (OFstream::debug)
     {

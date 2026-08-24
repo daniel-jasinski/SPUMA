@@ -83,11 +83,11 @@ Foam::fileName Foam::fileFormats::edgeMeshFormatsCore::findMeshInstance
     // closest to and lower than current time
 
     instantList ts = t.times();
-    label instanceI;
+    label instanceI = (ts.size()-1);
 
-    for (instanceI = ts.size()-1; instanceI >= 0; --instanceI)
+    for (; instanceI >= 0; --instanceI)
     {
-        if (ts[instanceI].value() <= t.timeOutputValue())
+        if (ts[instanceI] <= t.timeOutputValue())
         {
             break;
         }
@@ -96,14 +96,11 @@ Foam::fileName Foam::fileFormats::edgeMeshFormatsCore::findMeshInstance
     // Noting that the current directory has already been searched
     // for mesh data, start searching from the previously stored time directory
 
-    if (instanceI >= 0)
+    for (label i = instanceI; i >= 0; --i)
     {
-        for (label i = instanceI; i >= 0; --i)
+        if (isFile(t.path()/ts[i].name()/localName))
         {
-            if (isFile(t.path()/ts[i].name()/localName))
-            {
-                return ts[i].name();
-            }
+            return ts[i].name();
         }
     }
 
@@ -123,11 +120,11 @@ Foam::fileName Foam::fileFormats::edgeMeshFormatsCore::findMeshFile
     // closest to and lower than current time
 
     instantList ts = t.times();
-    label instanceI;
+    label instanceI = (ts.size()-1);
 
-    for (instanceI = ts.size()-1; instanceI >= 0; --instanceI)
+    for (; instanceI >= 0; --instanceI)
     {
-        if (ts[instanceI].value() <= t.timeOutputValue())
+        if (ts[instanceI] <= t.timeOutputValue())
         {
             break;
         }
@@ -136,16 +133,13 @@ Foam::fileName Foam::fileFormats::edgeMeshFormatsCore::findMeshFile
     // Noting that the current directory has already been searched
     // for mesh data, start searching from the previously stored time directory
 
-    if (instanceI >= 0)
+    for (label i = instanceI; i >= 0; --i)
     {
-        for (label i = instanceI; i >= 0; --i)
-        {
-            fileName testName(t.path()/ts[i].name()/localName);
+        fileName testName(t.path()/ts[i].name()/localName);
 
-            if (isFile(testName))
-            {
-                return testName;
-            }
+        if (isFile(testName))
+        {
+            return testName;
         }
     }
 

@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
     Copyright (C) 2019 OpenCFD Ltd.
-    Copyright (C) 2025 Cineca
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -73,14 +73,23 @@ class twoStageGaussSeidelSmoother
 {
 private:
 
-    //- local inner (nInnerIter) Jacobi iterations
-    label nInnerIter_;
-    
-    //- damping parameter
-    scalar omega_;
+   // Private data
 
-    //- Read the control parameters from the controlDict_
-    void readControls();
+        //- The inverse (reciprocal for scalars) diagonal
+        Field<solveScalar> rD_;
+
+        //- local inner (nInnerIter) Jacobi iterations
+        label nInnerIter_;
+
+        //- damping parameter
+        scalar omega_;
+
+
+    // Member functions
+
+        //- Read the control parameters from the controlDict_
+        void readControls();
+
 
 public:
 

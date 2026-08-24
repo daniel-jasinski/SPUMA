@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  v2412                                 |
+|  \\    /   O peration     | Version:  v2512                                 |
 |   \\  /    A nd           | Website:  www.openfoam.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
@@ -788,9 +788,14 @@ boundary
 
     AMI1
     {
+        cacheSize       360;
+
         type            cyclicAMI;
         neighbourPatch  AMI2;
         transform       noOrdering;
+        rotationCentre  (0 0 0);
+        rotationAxis    (0 0 1);
+
 /* optional
         surface
         {
@@ -815,9 +820,13 @@ boundary
 
     AMI2
     {
+        cacheSize       360;
+
         type            cyclicAMI;
         neighbourPatch  AMI1;
         transform       noOrdering;
+        rotationCentre  (0 0 0);
+        rotationAxis    (0 0 1);
 /* optional
         surface
         {

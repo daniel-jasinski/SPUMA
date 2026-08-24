@@ -34,16 +34,16 @@ Description
     Performs a file copy/replacement once a specified time has been reached.
 
 Usage
-    Example usage to update the fvSolution dictionary at various times
-    throughout the calculation:
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    fileUpdate1
+    fileUpdateFO
     {
+        // Mandatory entries
         type              timeActivatedFileUpdate;
         libs              (utilityFunctionObjects);
-        writeControl      timeStep;
-        writeInterval     1;
-        fileToUpdate      "<system>/fvSolution";
+
+        fileToUpdate      <fileName>;  // "<system>/fvSolution";
+        timeVsFile        <Tuple2<scalar, fileName>>;
         timeVsFile
         (
             (-1   "<system>/fvSolution.0")
@@ -51,26 +51,31 @@ Usage
             (0.20 "<system>/fvSolution.20")
             (0.35 "<system>/fvSolution.35")
         );
+
+        // Inherited entries
         ...
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property     | Description             | Required    | Default value
-        type         | Type name: timeActivatedFileUpdate | yes |
-        fileToUpdate | Name of file to update  | yes         |
-        timeVsFile   | List of time vs file    | yes         |
+      Property     | Description                          | Type | Reqd | Deflt
+      type         | Type name: timeActivatedFileUpdate   | word | yes  | -
+      libs         | Library name: utilityFunctionObjects | word | yes  | -
+      fileToUpdate | Name of the file to update           | fileName | yes | -
+      timeVsFile   | List of times vs files    | scalar, fileName | yes | -
     \endtable
 
+    The inherited entries are elaborated in:
+      - \link timeFunctionObject.H \endlink
 
 SourceFiles
     timeActivatedFileUpdate.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_timeActivatedFileUpdate_H
-#define functionObjects_timeActivatedFileUpdate_H
+#ifndef Foam_functionObjects_timeActivatedFileUpdate_H
+#define Foam_functionObjects_timeActivatedFileUpdate_H
 
 #include "timeFunctionObject.H"
 #include "Tuple2.H"
@@ -129,7 +134,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         timeActivatedFileUpdate
         (
             const word& name,
@@ -144,13 +149,13 @@ public:
 
     // Member Functions
 
-        //- Read the timeActivatedFileUpdate data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Execute file updates
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Do nothing
+        //- Write the function-object results (no-op)
         virtual bool write();
 
         //- Did any file get changed during execution?

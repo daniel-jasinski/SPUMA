@@ -37,7 +37,8 @@ Note
     Non-parallel only
 
 SourceFiles
-    foamVtkCoordSetWriter.C
+    foamVtkCoordSetWriter.cxx
+    foamVtkCoordSetWriter.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -119,6 +120,9 @@ private:
         //  \param pointOffset processor-local point offset
         void writeLines();
 
+public:
+
+    // Generated Methods
 
         //- No copy construct
         coordSetWriter(const coordSetWriter&) = delete;
@@ -127,12 +131,10 @@ private:
         void operator=(const coordSetWriter&) = delete;
 
 
-public:
-
     // Constructors
 
         //- Construct from components (default format INLINE_BASE64)
-        coordSetWriter
+        explicit coordSetWriter
         (
             const UPtrList<const pointField>& pts,
             const vtk::outputOptions opts = vtk::formatType::INLINE_BASE64
@@ -227,7 +229,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "foamVtkCoordSetWriterTemplates.C"
+    #include "foamVtkCoordSetWriter.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

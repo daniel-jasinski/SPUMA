@@ -29,6 +29,9 @@ Class
 Description
     Base-64 encoded output layer - normally only used indirectly by formatters.
 
+SourceFiles
+    foamVtkBase64Layer.cxx
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef Foam_vtk_base64Layer_H

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022-2023 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,85 +26,76 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "UPstream.H"
-#include <cstring>  // memmove
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#undef  Pstream_CommonRoutines
-#define Pstream_CommonRoutines(Native)                                        \
-                                                                              \
-void Foam::UPstream::mpiGather                                                \
-(                                                                             \
-    const Native* sendData,                                                   \
-    Native* recvData,                                                         \
-    int count,                                                                \
-    const label comm                                                          \
-)                                                                             \
-{                                                                             \
-    std::memmove(recvData, sendData, count*sizeof(Native));                   \
-}                                                                             \
-                                                                              \
-                                                                              \
-void Foam::UPstream::mpiScatter                                               \
-(                                                                             \
-    const Native* sendData,                                                   \
-    Native* recvData,                                                         \
-    int count,                                                                \
-    const label comm                                                          \
-)                                                                             \
-{                                                                             \
-    std::memmove(recvData, sendData, count*sizeof(Native));                   \
-}                                                                             \
-                                                                              \
-                                                                              \
-void Foam::UPstream::mpiAllGather                                             \
-(                                                                             \
-    Native* allData,                                                          \
-    int count,                                                                \
-    const label comm                                                          \
-)                                                                             \
-{}                                                                            \
-                                                                              \
-                                                                              \
-void Foam::UPstream::gather                                                   \
-(                                                                             \
-    const Native* sendData,                                                   \
-    int sendCount,                                                            \
-                                                                              \
-    Native* recvData,                                                         \
-    const UList<int>& recvCounts,                                             \
-    const UList<int>& recvOffsets,                                            \
-    const label comm                                                          \
-)                                                                             \
-{                                                                             \
-    /* recvCounts[0] may be invalid - use sendCount instead */                \
-    std::memmove(recvData, sendData, sendCount*sizeof(Native));               \
-}                                                                             \
-                                                                              \
-void Foam::UPstream::scatter                                                  \
-(                                                                             \
-    const Native* sendData,                                                   \
-    const UList<int>& sendCounts,                                             \
-    const UList<int>& sendOffsets,                                            \
-                                                                              \
-    Native* recvData,                                                         \
-    int recvCount,                                                            \
-    const label comm                                                          \
-)                                                                             \
-{                                                                             \
-    std::memmove(recvData, sendData, recvCount*sizeof(Native));               \
-}
+void Foam::UPstream::mpi_gather
+(
+    const void* sendData,
+    void* recvData,
+    int count,
+    const UPstream::dataTypes dataTypeId,
+
+    const int communicator,
+    UPstream::Request* req
+)
+{}
 
 
-//TDB: Pstream_CommonRoutines(bool);
-Pstream_CommonRoutines(char);
-Pstream_CommonRoutines(int32_t);
-Pstream_CommonRoutines(int64_t);
-Pstream_CommonRoutines(uint32_t);
-Pstream_CommonRoutines(uint64_t);
-Pstream_CommonRoutines(float);
-Pstream_CommonRoutines(double);
+void Foam::UPstream::mpi_scatter
+(
+    const void* sendData,
+    void* recvData,
+    int count,
+    const UPstream::dataTypes dataTypeId,
 
-#undef Pstream_CommonRoutines
+    const int communicator,
+    UPstream::Request* req
+)
+{}
+
+
+void Foam::UPstream::mpi_allgather
+(
+    void* allData,
+    int count,
+    const UPstream::dataTypes dataTypeId,
+
+    const int communicator,
+    UPstream::Request* req
+)
+{}
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+void Foam::UPstream::mpi_gatherv
+(
+    const void* sendData,
+    int sendCount,
+    void* recvData,
+    const UList<int>& recvCounts,
+    const UList<int>& recvOffsets,
+
+    const UPstream::dataTypes dataTypeId,
+    const int communicator
+)
+{}
+
+
+void Foam::UPstream::mpi_scatterv
+(
+    const void* sendData,
+    const UList<int>& sendCounts,
+    const UList<int>& sendOffsets,
+
+    void* recvData,
+    int recvCount,
+
+    const UPstream::dataTypes dataTypeId,
+    const int communicator
+)
+{}
+
 
 // ************************************************************************* //

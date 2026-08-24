@@ -5,7 +5,8 @@ then
     -icudaExecutor.cuh \
     -icudaAtomic.cuh \
     -icudaDeviceInit.cuh \
-    -icudaMemoryExecutor.cuh"
+    -icudaMemoryExecutor.cuh \
+    -icudaDeviceUtils.cuh"
 
 fi
 
@@ -16,16 +17,13 @@ then
     -ihipExecutor.hpp \
     -ihipAtomic.hpp \
     -ihipDeviceInit.hpp \
-    -ihipMemoryExecutor.hpp"
+    -ihipMemoryExecutor.hpp     -ihipDeviceUtils.hpp"
 
 fi
 
 if [ -z "$have_sycl" ]
 then
 
-    export WM_EXCLUDE_HEADERS="$WM_EXCLUDE_HEADERS -isyclExecutor.H \
-    -isyclAtomic.H \
-    -isyclDeviceInit.H \
-    -isyclMemoryExecutor.H"
+    export WM_EXCLUDE_HEADERS="$WM_EXCLUDE_HEADERS -isyclExecutor.H     -isyclAtomic.H     -isyclDeviceInit.H     -isyclMemoryExecutor.H"
 
 fi

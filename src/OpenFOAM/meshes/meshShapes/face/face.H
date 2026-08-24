@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -182,6 +182,9 @@ public:
         //- Centre point of face
         point centre(const UList<point>& points) const;
 
+        //- Average of face points: a quick estimate of the face centre.
+        inline point average(const UList<point>& points) const;
+
         //- Calculate average value at centroid of face
         template<class Type>
         Type average
@@ -206,6 +209,9 @@ public:
 
         //- Magnitude of face area
         inline scalar mag(const UList<point>& p) const;
+
+        //- Magnitude squared of face area
+        inline scalar magSqr(const UList<point>& p) const;
 
         //- The enclosing (bounding) box for the face
         inline Pair<point> box(const UList<point>& pts) const;

@@ -63,6 +63,9 @@ Description
 
 // Flex may use register, which is deprecated and incompatible with C++17
 #pragma clang diagnostic ignored "-Wdeprecated-register"
+// A 'nothing' define to effectively remove from code as well (issue #3337)
+#undef  register
+#define register
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -1674,10 +1677,9 @@ int main(int argc, char *argv[])
             // Add cell zones to patch zone list
             forAll(bPatches, pI)
             {
-                const labelList& faceCells = bPatches[pI].faceCells();
-                forAll(faceCells, fcI)
+                for (const label celli : bPatches[pI].faceCells())
                 {
-                    if (zoneCell.test(faceCells[fcI]))
+                    if (zoneCell.test(celli))
                     {
                         boundaryZones[pI].append(name);
                         break;

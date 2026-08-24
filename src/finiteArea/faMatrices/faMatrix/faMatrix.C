@@ -213,8 +213,7 @@ Foam::faMatrix<Type>::faMatrix
     }
 
     // Update the boundary coefficients of psi without changing its event No.
-    auto& psiRef =
-        const_cast<GeometricField<Type, faPatchField, areaMesh>&>(psi_);
+    auto& psiRef = psi_.constCast();
 
     const label currentStatePsi = psiRef.eventNo();
     psiRef.boundaryFieldRef().updateCoeffs();
@@ -313,11 +312,7 @@ void Foam::faMatrix<Type>::setValuesFromList
     const labelUList& nei = mesh.neighbour();
 
     scalarField& Diag = diag();
-    Field<Type>& psi =
-        const_cast
-        <
-            GeometricField<Type, faPatchField, areaMesh>&
-        >(psi_).primitiveFieldRef();
+    Field<Type>& psi = psi_.constCast().primitiveFieldRef();
 
     // Following actions:
     // - adjust local field psi
@@ -678,18 +673,12 @@ Foam::faMatrix<Type>::flux() const
     (
         "flux(" + psi_.name() + ')',
         psi_.mesh(),
-        dimensions()
+        dimensions(),
+        lduMatrix::faceH(psi_.primitiveField())
     );
     auto& fieldFlux = tfieldFlux.ref();
+    // not yet: fieldFlux.setOriented();
 
-    for (direction cmpt=0; cmpt<pTraits<Type>::nComponents; ++cmpt)
-    {
-        fieldFlux.primitiveFieldRef().replace
-        (
-            cmpt,
-            lduMatrix::faceH(psi_.primitiveField().component(cmpt))
-        );
-    }
 
     FieldField<Field, Type> InternalContrib = internalCoeffs_;
 
@@ -718,10 +707,13 @@ Foam::faMatrix<Type>::flux() const
         }
     }
 
-    forAll(fieldFlux.boundaryField(), patchI)
     {
-        fieldFlux.boundaryFieldRef()[patchI] =
-            InternalContrib[patchI] - NeighbourContrib[patchI];
+        auto& ffbf = fieldFlux.boundaryFieldRef();
+
+        forAll(ffbf, patchi)
+        {
+            ffbf[patchi] = InternalContrib[patchi] - NeighbourContrib[patchi];
+        }
     }
 
     if (faceFluxCorrectionPtr_)

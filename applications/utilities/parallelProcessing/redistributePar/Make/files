@@ -1,12 +1,12 @@
-passivePositionParticleCloud.C
+passivePositionParticleCloud.cxx
 
-parLagrangianDistributor.C
-parLagrangianDistributorFields.C
+parLagrangianDistributor.cxx
+parLagrangianDistributorFields.cxx
 
-parPointFieldDistributor.C
-parFaFieldDistributorCache.C
-parFvFieldDistributor.C
-parFvFieldDistributorFields.C
+parPointFieldDistributor.cxx
+parFaFieldDistributorCache.cxx
+parFvFieldDistributor.cxx
+parFvFieldDistributorFields.cxx
 
 loadOrCreateMesh.C
 redistributePar.C

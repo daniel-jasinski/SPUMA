@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2021 OpenCFD Ltd.
+    Copyright (C) 2021-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -79,6 +79,7 @@ int main(int argc, char *argv[])
     // Courant numbers used to adjust the time-step
     scalar CoNum = 0.0;
     scalar meanCoNum = 0.0;
+    scalar minCoNum = 0.0;
 
     Info<< "\nStarting time loop\n" << endl;
 
@@ -181,14 +182,14 @@ int main(int argc, char *argv[])
         // estimated by the central scheme
         amaxSf = max(mag(aphiv_pos), mag(aphiv_neg));
 
-        #include "centralCourantNo.H"
-
         if (LTS)
         {
             #include "setRDeltaT.H"
 
             ++runTime;
         }
+
+        #include "centralCourantNo.H"
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
 

@@ -5,8 +5,8 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2024 OpenCFD Ltd.
+    Copyright (C) 2011-2016,2024 OpenFOAM Foundation
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -34,7 +34,7 @@ inline Foam::token Foam::token::boolean(bool on) noexcept
 {
     token tok;
     tok.type_ = tokenType::BOOL;
-    tok.data_.labelVal = on;
+    tok.data_.flagVal = on;
 
     return tok;
 }
@@ -47,6 +47,18 @@ inline Foam::token Foam::token::flag(int bitmask) noexcept
     tok.data_.flagVal = bitmask;
 
     return tok;
+}
+
+
+inline bool Foam::token::is_integerToken(tokenType tokType) noexcept
+{
+    return
+    (
+        tokType == tokenType::INTEGER_32
+     || tokType == tokenType::INTEGER_64
+     || tokType == tokenType::UNSIGNED_INTEGER_32
+     || tokType == tokenType::UNSIGNED_INTEGER_64
+    );
 }
 
 
@@ -112,6 +124,41 @@ inline void Foam::token::setUndefined() noexcept
     type_ = tokenType::UNDEFINED;
     data_.int64Val = 0; // bit-wise zero for union content
     // leave lineNumber untouched - may still be needed
+}
+
+
+// inline bool Foam::token:is_pointer() const noexcept
+// {
+//     return (isWord() || isString() || isCompound());
+// }
+
+template<class Type>
+inline Type Foam::token::getIntegral(const char* expected) const
+{
+    switch (type_)
+    {
+        case tokenType::INTEGER_32 : return data_.int32Val;
+        case tokenType::INTEGER_64 : return data_.int64Val;
+        case tokenType::UNSIGNED_INTEGER_32 : return data_.uint32Val;
+        case tokenType::UNSIGNED_INTEGER_64 : return data_.uint64Val;
+        default: parseError(expected); return 0;
+    }
+}
+
+
+template<class Type>
+inline Type Foam::token::getArithmetic(const char* expected) const
+{
+    switch (type_)
+    {
+        case tokenType::INTEGER_32 : return data_.int32Val;
+        case tokenType::INTEGER_64 : return data_.int64Val;
+        case tokenType::UNSIGNED_INTEGER_32 : return data_.uint32Val;
+        case tokenType::UNSIGNED_INTEGER_64 : return data_.uint64Val;
+        case tokenType::FLOAT  : return data_.floatVal;
+        case tokenType::DOUBLE : return data_.doubleVal;
+        default: parseError(expected); return 0;
+    }
 }
 
 
@@ -190,17 +237,47 @@ inline Foam::token::token(punctuationToken p, label lineNum) noexcept
 }
 
 
-inline Foam::token::token(const label val, label lineNum) noexcept
+inline Foam::token::token(int32_t val, label lineNum) noexcept
 :
     data_(),
-    type_(tokenType::LABEL),
+    type_(tokenType::INTEGER_32),
     line_(lineNum)
 {
-    data_.labelVal = val;
+    data_.int32Val = val;
 }
 
 
-inline Foam::token::token(const float val, label lineNum) noexcept
+inline Foam::token::token(int64_t val, label lineNum) noexcept
+:
+    data_(),
+    type_(tokenType::INTEGER_64),
+    line_(lineNum)
+{
+    data_.int64Val = val;
+}
+
+
+inline Foam::token::token(uint32_t val, label lineNum) noexcept
+:
+    data_(),
+    type_(tokenType::UNSIGNED_INTEGER_32),
+    line_(lineNum)
+{
+    data_.uint32Val = val;
+}
+
+
+inline Foam::token::token(uint64_t val, label lineNum) noexcept
+:
+    data_(),
+    type_(tokenType::UNSIGNED_INTEGER_64),
+    line_(lineNum)
+{
+    data_.uint64Val = val;
+}
+
+
+inline Foam::token::token(float val, label lineNum) noexcept
 :
     data_(),
     type_(tokenType::FLOAT),
@@ -210,7 +287,7 @@ inline Foam::token::token(const float val, label lineNum) noexcept
 }
 
 
-inline Foam::token::token(const double val, label lineNum) noexcept
+inline Foam::token::token(double val, label lineNum) noexcept
 :
     data_(),
     type_(tokenType::DOUBLE),
@@ -425,13 +502,13 @@ inline bool Foam::token::setType(token::tokenType tokType) noexcept
 
     switch (tokType)
     {
+        case tokenType::FLAG:
         case tokenType::BOOL:
-        case tokenType::LABEL:
         {
             switch (type_)
             {
+                case tokenType::FLAG:
                 case tokenType::BOOL:
-                case tokenType::LABEL:
                     type_ = tokType;
                     return true;
                     break;
@@ -537,13 +614,25 @@ inline bool Foam::token::isBool() const noexcept
 
 inline bool Foam::token::boolToken() const
 {
-    if (type_ == tokenType::BOOL || type_ == tokenType::LABEL)
+    if (type_ == tokenType::BOOL)
     {
-        return data_.labelVal;
+        return data_.flagVal;
+    }
+    else if (type_ == tokenType::INTEGER_32)
+    {
+        return data_.int32Val;
     }
 
     parseError("bool");
     return false;
+}
+
+
+inline void Foam::token::boolToken(bool on)
+{
+    reset();
+    type_ = tokenType::BOOL;
+    data_.flagVal = on;
 }
 
 
@@ -571,7 +660,7 @@ inline bool Foam::token::isPunctuation() const noexcept
 }
 
 
-inline bool Foam::token::isPunctuation(const punctuationToken p) const noexcept
+inline bool Foam::token::isPunctuation(punctuationToken p) const noexcept
 {
     return
     (
@@ -598,54 +687,237 @@ inline Foam::token::punctuationToken Foam::token::pToken() const
         return data_.punctuationVal;
     }
 
-    parseError("punctuation character");
+    parseError("punctuation");
     return punctuationToken::NULL_TOKEN;
+}
+
+
+inline void Foam::token::pToken(punctuationToken p)
+{
+    reset();
+    type_ = tokenType::PUNCTUATION;
+    data_.punctuationVal = p;
+}
+
+
+inline bool Foam::token::isIntType() const noexcept
+{
+    return is_integerToken(type_);
+}
+
+
+// inline bool Foam::token::isSignedIntType() const noexcept
+// {
+//     return
+//     (
+//         (type_ == tokenType::INTEGER_32)
+//      || (type_ == tokenType::INTEGER_64)
+//     );
+// }
+//
+//
+// inline bool Foam::token::isUnsignedIntType() const noexcept
+// {
+//     return
+//     (
+//         (type_ == tokenType::UNSIGNED_INTEGER_32)
+//      || (type_ == tokenType::UNSIGNED_INTEGER_64)
+//     );
+// }
+
+
+inline bool Foam::token::is_int32() const noexcept
+{
+    return (type_ == tokenType::INTEGER_32) ||
+    (
+        (type_ == tokenType::INTEGER_64)
+      ? (data_.int64Val >= INT32_MIN && data_.int64Val <= INT32_MAX)
+      : (type_ == tokenType::UNSIGNED_INTEGER_32)
+      ? (data_.uint32Val <= INT32_MAX)
+      :
+        (
+            type_ == tokenType::UNSIGNED_INTEGER_64
+         && data_.uint64Val <= INT32_MAX
+        )
+    );
+}
+
+
+inline int32_t Foam::token::int32Token() const
+{
+    return getIntegral<int32_t>("int32");
+}
+
+
+inline void Foam::token::int32Token(int32_t val)
+{
+    reset();
+    type_ = tokenType::INTEGER_32;
+    data_.int32Val = val;
+}
+
+
+inline bool Foam::token::is_int64() const noexcept
+{
+    return (type_ == tokenType::INTEGER_64) ||
+    (
+        (type_ == tokenType::INTEGER_32)
+     || (type_ == tokenType::UNSIGNED_INTEGER_32)
+     || (
+            type_ == tokenType::UNSIGNED_INTEGER_64
+         && data_.uint64Val <= INT64_MAX
+        )
+    );
+}
+
+
+inline int64_t Foam::token::int64Token() const
+{
+    return getIntegral<int64_t>("int64");
+}
+
+
+inline void Foam::token::int64Token(int64_t val)
+{
+    reset();
+    type_ = tokenType::INTEGER_64;
+    data_.int64Val = val;
+}
+
+
+inline bool Foam::token::is_uint32() const noexcept
+{
+    return (type_ == tokenType::UNSIGNED_INTEGER_32) ||
+    (
+        (type_ == tokenType::INTEGER_32)
+      ? (data_.int32Val >= 0)
+      : (type_ == tokenType::INTEGER_64)
+      ? (data_.int64Val >= 0 && data_.int64Val <= UINT32_MAX)
+      :
+        (
+            type_ == tokenType::UNSIGNED_INTEGER_64
+         && data_.uint64Val <= UINT32_MAX
+        )
+    );
+}
+
+
+inline uint32_t Foam::token::uint32Token() const
+{
+    return getIntegral<uint32_t>("uint32");
+}
+
+
+inline void Foam::token::uint32Token(uint32_t val)
+{
+    reset();
+    type_ = tokenType::UNSIGNED_INTEGER_32;
+    data_.uint32Val = val;
+}
+
+
+inline bool Foam::token::is_uint64() const noexcept
+{
+    return
+    (
+        (
+            type_ == tokenType::UNSIGNED_INTEGER_32
+         || type_ == tokenType::UNSIGNED_INTEGER_64
+        )
+      ||
+        (
+            (type_ == tokenType::INTEGER_32) ? (data_.int32Val >= 0)
+          : (type_ == tokenType::INTEGER_64  && data_.int64Val >= 0)
+        )
+    );
+}
+
+
+inline uint64_t Foam::token::uint64Token() const
+{
+    return getIntegral<uint64_t>("uint64");
+}
+
+
+inline void Foam::token::uint64Token(uint64_t val)
+{
+    reset();
+    type_ = tokenType::UNSIGNED_INTEGER_64;
+    data_.uint64Val = val;
 }
 
 
 inline bool Foam::token::isLabel() const noexcept
 {
-    return
-    (
-        type_ == tokenType::LABEL
-        // FUTURE?
-        // || type_ == tokenType::INT32
-        // || type_ == tokenType::INT64
-    );
+    if constexpr (sizeof(Foam::label) == sizeof(int32_t))
+    {
+        return is_int32();
+    }
+    else
+    {
+        return is_int64();
+    }
 }
 
 
-inline bool Foam::token::isLabel(const label value) const noexcept
+inline bool Foam::token::isULabel() const noexcept
 {
-    // FUTURE?
-    // return
-    // (
-    //     type_ == tokenType::LABEL
-    //   ? value == data_.labelVal
-    //   : type_ == tokenType::INT32
-    //   ? value == data_.int32Val
-    //   : type_ == tokenType::INT64
-    //   ? value == data_.int64Val
-    //   : false
-    // );
-
-    return
-    (
-        type_ == tokenType::LABEL
-     && value == data_.labelVal
-    );
+    if constexpr (sizeof(Foam::label) == sizeof(int32_t))
+    {
+        return is_uint32();
+    }
+    else
+    {
+        return is_uint64();
+    }
 }
 
 
 inline Foam::label Foam::token::labelToken() const
 {
-    if (type_ == tokenType::LABEL)
-    {
-        return data_.labelVal;
-    }
+    return getIntegral<label>("label");
+}
 
-    parseError("label");
-    return 0;
+
+inline Foam::uLabel Foam::token::uLabelToken() const
+{
+    return getIntegral<uLabel>("uLabel");
+}
+
+
+inline bool Foam::token::isLabel(const label value) const noexcept
+{
+    return
+    (
+        (type_ == tokenType::INTEGER_32)
+      ? (value == data_.int32Val)
+      : (type_ == tokenType::INTEGER_64)
+      ? (value == data_.int64Val)
+      : (type_ == tokenType::UNSIGNED_INTEGER_32)
+      ? (value >= 0 && uint32_t(value) == data_.uint32Val)
+      :
+        (
+            (type_ == tokenType::UNSIGNED_INTEGER_64)
+         && (value >= 0 && uint64_t(value) == data_.uint64Val)
+        )
+    );
+}
+
+
+inline void Foam::token::labelToken(const label val)
+{
+    if constexpr (sizeof(Foam::label) == sizeof(int32_t))
+    {
+        reset();
+        type_ = tokenType::INTEGER_32;
+        data_.int32Val = val;
+    }
+    else
+    {
+        reset();
+        type_ = tokenType::INTEGER_64;
+        data_.int64Val = val;
+    }
 }
 
 
@@ -661,9 +933,18 @@ inline float Foam::token::floatToken() const
     {
         return data_.floatVal;
     }
+    else
+    {
+        parseError("float"); return 0;
+    }
+}
 
-    parseError("float");
-    return 0;
+
+inline void Foam::token::floatToken(const float val)
+{
+    reset();
+    type_ = tokenType::FLOAT;
+    data_.floatVal = val;
 }
 
 
@@ -679,9 +960,18 @@ inline double Foam::token::doubleToken() const
     {
         return data_.doubleVal;
     }
+    else
+    {
+        parseError("double"); return 0;
+    }
+}
 
-    parseError("double");
-    return 0;
+
+inline void Foam::token::doubleToken(const double val)
+{
+    reset();
+    type_ = tokenType::DOUBLE;
+    data_.doubleVal = val;
 }
 
 
@@ -697,39 +987,24 @@ inline bool Foam::token::isScalar() const noexcept
 
 inline Foam::scalar Foam::token::scalarToken() const
 {
-    if (type_ == tokenType::FLOAT)
+    switch (type_)
     {
-        return data_.floatVal;
+        case tokenType::FLOAT  : return data_.floatVal;
+        case tokenType::DOUBLE : return data_.doubleVal;
+        default: parseError("scalar"); return 0;
     }
-    else if (type_ == tokenType::DOUBLE)
-    {
-        return data_.doubleVal;
-    }
-
-    parseError("scalar");
-    return 0;
 }
 
 
 inline bool Foam::token::isNumber() const noexcept
 {
-    return (isLabel() || isScalar());
+    return (is_integerToken(type_) || isScalar());
 }
 
 
 inline Foam::scalar Foam::token::number() const
 {
-    if (isLabel())
-    {
-        return labelToken();
-    }
-    if (isScalar())
-    {
-        return scalarToken();
-    }
-
-    parseError("number (label or scalar)");
-    return 0;
+    return getArithmetic<scalar>("number (label or scalar)");
 }
 
 
@@ -910,46 +1185,46 @@ inline Type& Foam::token::transferCompoundToken(const Istream& is)
 }
 
 
-template<class T>
-Foam::token::tokenType Foam::token::Compound<T>::typeCode() const
+template<class Type>
+Foam::token::tokenType Foam::token::Compound<Type>::typeCode() const
 {
     // Does not cover all possibilities perfectly, but should handle
     // most of the common ones (bool, label, scalar, vector lists).
     // Something like List<edge> will not be quite correct if we rely
     // on nComponents
 
-    typedef typename T::value_type valueType;
+    typedef typename Type::value_type valueType;
 
-    if (std::is_same<valueType, bool>::value)
+    if constexpr (std::is_same_v<bool, valueType>)
     {
         // List<bool>
         return token::tokenType::BOOL;
     }
-    else if (is_contiguous_label<valueType>::value)
+    else if constexpr (is_contiguous_label<valueType>::value)
     {
         // List<label>, List<labelVector> etc
-        return token::tokenType::LABEL;
-
-        // FUTURE?
-        // return
-        // (
-        //     sizeof(int32_t) == sizeof(Foam::label)
-        //   ? token::tokenType::INT32
-        //   : token::tokenType::INT64
-        // );
-
+        if constexpr (sizeof(Foam::label) == sizeof(int32_t))
+        {
+            return token::tokenType::INTEGER_32;
+        }
+        else
+        {
+            return token::tokenType::INTEGER_64;
+        }
     }
-    else if (is_contiguous_scalar<valueType>::value)
+    else if constexpr (is_contiguous_scalar<valueType>::value)
     {
         // List<scalar>, List<vector>, List<tensor> etc
-        return
-        (
-            sizeof(float) == sizeof(Foam::scalar)
-          ? token::tokenType::FLOAT
-          : token::tokenType::DOUBLE
-        );
+        if constexpr (sizeof(Foam::scalar) == sizeof(float))
+        {
+            return token::tokenType::FLOAT;
+        }
+        else
+        {
+            return token::tokenType::DOUBLE;
+        }
     }
-    else if (std::is_same<valueType, char>::value)
+    else if constexpr (std::is_same_v<char, valueType>)
     {
         // List<char>
         return token::tokenType::PUNCTUATION;
@@ -1031,17 +1306,39 @@ inline void Foam::token::operator=(token&& tok)
 
 inline void Foam::token::operator=(const punctuationToken p)
 {
-    reset();
-    type_ = tokenType::PUNCTUATION;
-    data_.punctuationVal = p;
+    token::pToken(p);
 }
 
 
-inline void Foam::token::operator=(const label val)
+inline void Foam::token::operator=(const int32_t val)
 {
     reset();
-    type_ = tokenType::LABEL;
-    data_.labelVal = val;
+    type_ = tokenType::INTEGER_32;
+    data_.int32Val = val;
+}
+
+
+inline void Foam::token::operator=(const int64_t val)
+{
+    reset();
+    type_ = tokenType::INTEGER_64;
+    data_.int64Val = val;
+}
+
+
+inline void Foam::token::operator=(const uint32_t val)
+{
+    reset();
+    type_ = tokenType::UNSIGNED_INTEGER_32;
+    data_.uint32Val = val;
+}
+
+
+inline void Foam::token::operator=(const uint64_t val)
+{
+    reset();
+    type_ = tokenType::UNSIGNED_INTEGER_64;
+    data_.uint64Val = val;
 }
 
 
@@ -1122,7 +1419,7 @@ inline bool Foam::token::operator==(const token& tok) const
             return true;
 
         case tokenType::BOOL:
-            return data_.labelVal == tok.data_.labelVal;
+            return data_.flagVal == tok.data_.flagVal;
 
         case tokenType::FLAG:
             return data_.flagVal == tok.data_.flagVal;
@@ -1130,8 +1427,17 @@ inline bool Foam::token::operator==(const token& tok) const
         case tokenType::PUNCTUATION:
             return data_.punctuationVal == tok.data_.punctuationVal;
 
-        case tokenType::LABEL:
-            return data_.labelVal == tok.data_.labelVal;
+        case tokenType::INTEGER_32 :
+            return data_.int32Val == tok.data_.int32Val;
+
+        case tokenType::INTEGER_64 :
+            return data_.int64Val == tok.data_.int64Val;
+
+        case tokenType::UNSIGNED_INTEGER_32 :
+            return data_.uint64Val == tok.data_.uint64Val;
+
+        case tokenType::UNSIGNED_INTEGER_64 :
+            return data_.uint64Val == tok.data_.uint64Val;
 
         case tokenType::FLOAT:
             return equal(data_.floatVal, tok.data_.floatVal);
@@ -1180,9 +1486,43 @@ inline bool Foam::token::operator==(const std::string& s) const
 }
 
 
-inline bool Foam::token::operator==(const label val) const noexcept
+inline bool Foam::token::operator==(const int32_t val) const noexcept
 {
-    return isLabel(val);
+    return
+    (
+        type_ == tokenType::INTEGER_32
+     && data_.int32Val == val
+    );
+}
+
+
+inline bool Foam::token::operator==(const int64_t val) const noexcept
+{
+    return
+    (
+        type_ == tokenType::INTEGER_64
+     && data_.int64Val == val
+    );
+}
+
+
+inline bool Foam::token::operator==(const uint32_t val) const noexcept
+{
+    return
+    (
+        type_ == tokenType::UNSIGNED_INTEGER_32
+     && data_.uint32Val == val
+    );
+}
+
+
+inline bool Foam::token::operator==(const uint64_t val) const noexcept
+{
+    return
+    (
+        type_ == tokenType::UNSIGNED_INTEGER_64
+     && data_.uint64Val == val
+    );
 }
 
 
@@ -1203,42 +1543,6 @@ inline bool Foam::token::operator==(const double val) const noexcept
         type_ == tokenType::DOUBLE
      && equal(data_.doubleVal, val)
     );
-}
-
-
-inline bool Foam::token::operator!=(const token& tok) const
-{
-    return !operator==(tok);
-}
-
-
-inline bool Foam::token::operator!=(const punctuationToken p) const noexcept
-{
-    return !isPunctuation(p);
-}
-
-
-inline bool Foam::token::operator!=(const label val) const noexcept
-{
-    return !operator==(val);
-}
-
-
-inline bool Foam::token::operator!=(const float val) const noexcept
-{
-    return !operator==(val);
-}
-
-
-inline bool Foam::token::operator!=(const double val) const noexcept
-{
-    return !operator==(val);
-}
-
-
-inline bool Foam::token::operator!=(const std::string& s) const
-{
-    return !operator==(s);
 }
 
 

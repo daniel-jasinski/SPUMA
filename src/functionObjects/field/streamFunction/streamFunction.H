@@ -36,54 +36,42 @@ Description
     Operands:
     \table
       Operand        | Type                   | Location
-      input          | surfaceScalarField     | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | surfaceScalarField     | <time>/inputField
       output file    | -                      | -
-      output field   | pointScalarField       | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | pointScalarField       | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    streamFunction1
+    streamFunctionFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        streamFunction;
         libs        (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: streamFunction          | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func streamFunction
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::streamFunction
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     streamFunction.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_streamFunction_H
-#define functionObjects_streamFunction_H
+#ifndef Foam_functionObjects_streamFunction_H
+#define Foam_functionObjects_streamFunction_H
 
 #include "fieldExpression.H"
 #include "surfaceFieldsFwd.H"

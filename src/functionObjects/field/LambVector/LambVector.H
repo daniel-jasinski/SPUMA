@@ -44,59 +44,47 @@ Description
     Operands:
     \table
       Operand          | Type           | Location
-      input            | volVectorField | $FOAM_CASE/\<time\>/\<inpField\>
+      input            | volVectorField | <time>/inputField
       output file      | -              | -
-      output field     | volVectorField | $FOAM_CASE/\<time\>/\<outField\>
+      output field     | volVectorField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    LambVector1
+    LambVectorFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            LambVector;
         libs            (fieldFunctionObjects);
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: LambVector              | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func LambVector
-    \endverbatim
+      - \link fieldExpression.H \endlink
 
 Note
     To execute \c LambVector function object on an input \<field\>, a numerical
     scheme should be defined for \c div(LambVector) in
     \c system/fvSchemes.divSchemes.
 
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::fieldExpression
-    - ExtendedCodeGuide::functionObjects::field::LambVector
-
 SourceFiles
     LambVector.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_LambVector_H
-#define functionObjects_LambVector_H
+#ifndef Foam_functionObjects_LambVector_H
+#define Foam_functionObjects_LambVector_H
 
 #include "fieldExpression.H"
 
@@ -129,7 +117,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         LambVector
         (
             const word& name,

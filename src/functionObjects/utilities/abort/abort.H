@@ -41,24 +41,31 @@ Description
     - writeNow
     - nextWrite
 
-    Example of function object specification:
+Usage
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    abort
+    abortFO
     {
-        type    abort;
-        libs    (utilityFunctionObjects);
+        // Mandatory entries
+        type            abort;
+        libs            (utilityFunctionObjects);
 
-        file    "<case>/GOODBYE";
-        action  writeNow
+        // Optional entries
+        file            <word>;  // "<case>/GOODBYE";
+        action          <word>;
+
+        // Inherited entries
+        ...
     }
     \endverbatim
 
-    \heading Function object usage
+    where the entries mean:
     \table
-        Property  | Description                         | Required | Default
-        type      | Type name: abort                    | yes |
-        file      | The trigger filename                | no  | \<case\>/name
-        action    | The default action to trigger       | no  | nextWrite
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: abort                   | word | yes  | -
+      libs     | Library name: utilityFunctionObjects | word | yes | -
+      file     | The trigger filename               | word | no  | \<case\>/name
+      action   | The default action to trigger      | word | no  | nextWrite
     \endtable
 
     When the trigger file is found, it is checked for the following
@@ -76,6 +83,9 @@ Description
        : use the default action
     .
 
+    The inherited entries are elaborated in:
+      - \link timeFunctionObject.H \endlink
+
 Note
     The trigger file is considered "sticky". This means that once detected
     and processed, the trigger is duly noted and the file will not be
@@ -86,8 +96,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_abort_H
-#define functionObjects_abort_H
+#ifndef Foam_functionObjects_abort_H
+#define Foam_functionObjects_abort_H
 
 #include "timeFunctionObject.H"
 #include "Time.H"
@@ -136,7 +146,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         abort(const word& name, const Time& runTime, const dictionary& dict);
 
 
@@ -146,13 +156,14 @@ public:
 
     // Member Functions
 
-        //- Read the dictionary settings
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Check existence of the file and take action
+        //- Execute the function-object operations
+        //  Check existence of the file and take action
         virtual bool execute();
 
-        //- No-op
+        //- Write the function-object results (no-op)
         virtual bool write();
 
         //- Remove the trigger file after the final time-loop.

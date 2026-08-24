@@ -31,7 +31,7 @@ Description
     Vector of labels.
 
 SourceFiles
-    labelVector.C
+    labelVector.cxx
 
 \*---------------------------------------------------------------------------*/
 

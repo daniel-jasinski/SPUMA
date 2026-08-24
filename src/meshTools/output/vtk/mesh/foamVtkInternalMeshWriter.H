@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2021 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -44,8 +44,8 @@ See Also
     Foam::vtk::internalWriter
 
 SourceFiles
-    foamVtkInternalMeshWriter.C
-    foamVtkInternalMeshWriterTemplates.C
+    foamVtkInternalMeshWriter.cxx
+    foamVtkInternalMeshWriter.txx
 
 \*---------------------------------------------------------------------------*/
 
@@ -75,17 +75,26 @@ protected:
 
     // Protected Data
 
-        //- The number of field points for the current Piece
-        label numberOfPoints_;
-
-        //- The number of field cells for the current Piece
-        label numberOfCells_;
-
         //- Reference to the OpenFOAM mesh (or subset)
         const polyMesh& mesh_;
 
         //- The volume cells (internalMesh)
-        const vtuCells& vtuCells_;
+        const vtk::vtuCells& vtuCells_;
+
+        //- Slab addressing for field points of the current Piece
+        OffsetRange<label> pointSlab_;
+
+        //- Slab addressing for field cells of the current Piece
+        OffsetRange<label> cellSlab_;
+
+
+    // Protected Member Functions
+
+        //- Total number of field points for the current Piece
+        label nTotalPoints() const noexcept { return pointSlab_.total(); }
+
+        //- Total number of field cells for the current Piece
+        label nTotalCells() const noexcept { return cellSlab_.total(); }
 
 
 private:
@@ -99,24 +108,13 @@ private:
         void writePoints();
 
         //- Write cells (connectivity and type), legacy format
-        //  \param pointOffset processor-local point offset
-        void writeCellsLegacy(const label pointOffset);
+        void writeCells_legacy();
 
         //- Write cells connectivity
-        //  \param pointOffset processor-local point offset
-        void writeCellsConnectivity(const label pointOffset);
+        void writeCellsConnectivity();
 
         //- Write cells face streams
-        //  \param pointOffset processor-local point offset
-        void writeCellsFaces(const label pointOffset);
-
-
-        //- No copy construct
-        internalMeshWriter(const internalMeshWriter&) = delete;
-
-        //- No copy assignment
-        void operator=(const internalMeshWriter&) = delete;
-
+        void writeCellsFaces();
 
 public:
 
@@ -130,6 +128,14 @@ public:
 
 //- File extension for given output type
 //  constexpr static vtk::fileTag content = vtk::fileTag::UNSTRUCTURED_GRID;
+
+    // Generated Methods
+
+        //- No copy construct
+        internalMeshWriter(const internalMeshWriter&) = delete;
+
+        //- No copy assignment
+        void operator=(const internalMeshWriter&) = delete;
 
 
     // Constructors
@@ -149,7 +155,7 @@ public:
             const polyMesh& mesh,
             const vtk::vtuCells& cells,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
         //- Construct from components (default format INLINE_BASE64),
@@ -160,7 +166,7 @@ public:
             const vtk::vtuCells& cells,
             const vtk::outputOptions opts,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
 
@@ -245,7 +251,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "foamVtkInternalMeshWriterTemplates.C"
+    #include "foamVtkInternalMeshWriter.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

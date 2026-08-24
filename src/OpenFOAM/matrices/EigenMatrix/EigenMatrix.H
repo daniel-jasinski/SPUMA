@@ -159,7 +159,7 @@ class EigenMatrix
 {
     static_assert
     (
-        std::is_floating_point<cmptType>::value,
+        std::is_floating_point_v<cmptType>,
         "EigenMatrix operates only with scalar base type."
     );
 
@@ -199,6 +199,12 @@ class EigenMatrix
 
 
 public:
+
+    // Typedefs
+
+        //- The value type the Matrix contains
+        typedef cmptType value_type;
+
 
     // Generated Methods
 

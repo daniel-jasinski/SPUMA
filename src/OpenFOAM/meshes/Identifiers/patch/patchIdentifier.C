@@ -33,7 +33,6 @@ License
 
 Foam::patchIdentifier::patchIdentifier()
 :
-    name_(),
     index_(0)
 {}
 

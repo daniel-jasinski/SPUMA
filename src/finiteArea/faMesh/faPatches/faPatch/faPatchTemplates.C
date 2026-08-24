@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,12 +35,27 @@ void Foam::faPatch::patchInternalField
 (
     const UList<Type>& internalData,
     const labelUList& addressing,
-    Field<Type>& pfld
+    UList<Type>& pfld
 ) const
 {
-    const label len = this->size();
+    // For v2412 and earlier this was a field and was resized here:
+    //     const label len = this->size();
+    //     pfld.resize_nocopy(len);
+    //
+    // Now uses pre-sized storage (note: behaves like a static method)
 
-    pfld.resize_nocopy(len);
+    const label len = pfld.size();
+
+    #ifdef FULLDEBUG
+    if (FOAM_UNLIKELY((addressing.size() < len) || (this->size() < len)))
+    {
+        FatalErrorInFunction
+            << "patchField size = " << len
+            << " but patch size = " << this->size()
+            << " and addressing size = " << addressing.size() << nl
+            << abort(FatalError);
+    }
+    #endif
 
     for (label i = 0; i < len; ++i)
     {
@@ -53,9 +68,14 @@ template<class Type>
 void Foam::faPatch::patchInternalField
 (
     const UList<Type>& internalData,
-    Field<Type>& pfld
+    UList<Type>& pfld
 ) const
 {
+    // For v2412 and earlier this was a field and was resized here:
+    //     pfld.resize_nocopy(this->size());
+    //
+    // Now uses pre-sized storage
+
     patchInternalField(internalData, this->edgeFaces(), pfld);
 }
 
@@ -66,7 +86,7 @@ Foam::tmp<Foam::Field<Type>> Foam::faPatch::patchInternalField
     const UList<Type>& internalData
 ) const
 {
-    auto tpfld = tmp<Field<Type>>::New();
+    auto tpfld = tmp<Field<Type>>::New(this->size());
     patchInternalField(internalData, this->edgeFaces(), tpfld.ref());
     return tpfld;
 }

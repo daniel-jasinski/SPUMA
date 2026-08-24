@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011 OpenFOAM Foundation
+    Copyright (C) 2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,9 +28,9 @@ License
 
 #include "cellShape.H"
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
 
-bool Foam::operator==(const cellShape& a, const cellShape& b)
+int Foam::cellShape::compare(const cellShape& a, const cellShape& b)
 {
     // Basic rule: we assume that the sequence of labels in each list
     // will be circular in the same order (but not necessarily in the
@@ -38,75 +39,65 @@ bool Foam::operator==(const cellShape& a, const cellShape& b)
     // identical cellShape (i.e. one sharing the same points but in a
     // different order) will necessarily be matched.
 
-    const labelList& labsA = a;
-    const labelList& labsB = b;
+    const labelUList& labsA = a;
+    const labelUList& labsB = b;
 
-    // Trivial reject: faces are different size
-    label sizeA = labsA.size();
-    label sizeB = labsB.size();
+    const label sizeA = labsA.size();
+    const label sizeB = labsB.size();
+
     if (sizeA != sizeB)
     {
-        return false;
+        // Trivial reject: different sizes
+        return 0;
     }
-
-
-    // First we look for the occurrence of the first label in A, in B
-
-    label Bptr = -1;
-    label firstA = labsA[0];
-    forAll(labsB, i)
+    else if (sizeA == 0)
     {
-        if (labsB[i] == firstA)
-        {
-            Bptr = i;                // Denotes 'found match' at element 'i'
-            break;
-        }
+        // Both have zero vertices. Always identical
+        return 1;
+    }
+    else if (sizeA == 1)
+    {
+        // Both have a single vertex? Simple check
+        return (labsA[0] == labsB[0] ? 1 : 0);
     }
 
-    // If no match was found, exit false
+
+    // Search B for the starting point of A
+    label Bptr = labsB.find(labsA[0]);
+
     if (Bptr < 0)
     {
-        return false;
+        // No match found
+        return 0;
     }
 
-    // Now we must look for the direction, if any
-    label secondA = labsA[1];
-    label dir = 0;
+    // Now check B for the next label of A,
+    // it could be in either direction
+    label Aptr = 1;
+    int dir = 0;
 
-    // Check whether at top of list
-    Bptr++;
+    ++Bptr;
     if (Bptr == labsB.size())
     {
         Bptr = 0;
     }
 
-    // Test whether upward label matches second A label
-    if (labsB[Bptr] == secondA)
+    if (labsA[Aptr] == labsB[Bptr])
     {
         // Yes - direction is 'up'
         dir = 1;
     }
     else
     {
-        // No - so look downwards, checking whether at bottom of list
+        // No - so look downwards
         Bptr -= 2;
         if (Bptr < 0)
         {
-            // Case (1) Bptr=-1
-            if (Bptr == -1)
-            {
-                Bptr = labsB.size() - 1;
-            }
-
-            // Case (2) Bptr = -2
-            else
-            {
-                Bptr = labsB.size() - 2;
-            }
+            Bptr += labsB.size();
         }
 
-        // Test whether downward label matches second A label
-        if (labsB[Bptr] == secondA)
+        // Test whether downward label matches the second label in A
+        if (labsA[Aptr] == labsB[Bptr])
         {
             // Yes - direction is 'down'
             dir = -1;
@@ -116,61 +107,76 @@ bool Foam::operator==(const cellShape& a, const cellShape& b)
     // Check whether a match was made at all, and exit false if not
     if (dir == 0)
     {
-        return false;
+        return 0;
     }
-
-    // Decrement size by 2 to account for first searches
-    sizeA -= 2;
 
     // We now have both direction of search and next element
     // to search, so we can continue search until no more points.
-    label Aptr = 1;
+    // Decrement size by 2 to account for first searches
+
+    label remaining = (sizeA - 2);
+
     if (dir > 0)
     {
-        while (sizeA--)
+        while (remaining--)
         {
-            Aptr++;
+            ++Aptr;
             if (Aptr >= labsA.size())
             {
                 Aptr = 0;
             }
 
-            Bptr++;
+            ++Bptr;
             if (Bptr >= labsB.size())
             {
                 Bptr = 0;
             }
+
             if (labsA[Aptr] != labsB[Bptr])
             {
-                return false;
+                return 0;
             }
         }
     }
     else
     {
-        while (sizeA--)
+        while (remaining--)
         {
-            Aptr++;
+            ++Aptr;
             if (Aptr >= labsA.size())
             {
                 Aptr = 0;
             }
 
-            Bptr--;
+            --Bptr;
             if (Bptr < 0)
             {
                 Bptr = labsB.size() - 1;
             }
+
             if (labsA[Aptr] != labsB[Bptr])
             {
-                return false;
+                return 0;
             }
         }
     }
 
-    // They must be equal
-    return true;
+    // Equal values but perhaps different order
+    return dir;
 }
+
+
+// * * * * * * * * * * * * * * Global Operators  * * * * * * * * * * * * * * //
+
+bool Foam::operator==(const cellShape& a, const cellShape& b)
+{
+    return cellShape::compare(a, b) != 0;
+}
+
+// bool Foam::operator!=(const cellShape& a, const cellShape& b)
+// {
+//     return cellShape::compare(a, b) == 0;
+// }
 
 
 // ************************************************************************* //

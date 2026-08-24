@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2021 OpenCFD Ltd.
+    Copyright (C) 2021,2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,24 +35,20 @@ Author
     Hrvoje Jasak, Wikki Ltd.
 
 SourceFiles
-    faMeshDecomposition.C
+    faMeshDecomposition.cxx
 
 \*---------------------------------------------------------------------------*/
 
 #ifndef Foam_faMeshDecomposition_H
 #define Foam_faMeshDecomposition_H
 
-#include "polyMesh.H"
 #include "faMesh.H"
-#include "labelList.H"
-#include "PtrList.H"
-#include "point.H"
 
 namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class faMeshDecomposition Declaration
+                     Class faMeshDecomposition Declaration
 \*---------------------------------------------------------------------------*/
 
 class faMeshDecomposition
@@ -61,8 +57,11 @@ class faMeshDecomposition
 {
     // Private Data
 
+        //- The area-region name
+        const word areaName_;
+
         //- Number of processors in decomposition
-        label nProcs_;
+        const label nProcs_;
 
         //- Is the decomposition data to be distributed for each processor
         bool distributed_;
@@ -128,6 +127,11 @@ class faMeshDecomposition
 
         void distributeFaces();
 
+        //- No copy construct
+        faMeshDecomposition(const faMeshDecomposition&) = delete;
+
+        //- No copy assignment
+        void operator=(const faMeshDecomposition&) = delete;
 
 public:
 
@@ -135,13 +139,27 @@ public:
 
         //- Construct from components.
         //- Values will come from the volume decomposition
-        //  \param mesh the fvMesh
-        //  \param nProcessors the number of processors
-        //  \param params additional parameters, sent to updateParameters
         faMeshDecomposition
         (
+            //! The area-region name
+            const word& areaName,
+            //! The underlying polyMesh
             const polyMesh& mesh,
+            //! The number of processors
             const label nProcessors,
+            //! Additional parameters, sent to updateParameters
+            const dictionary& params = dictionary::null
+        );
+
+        //- Construct from components (default area region).
+        //- Values will come from the volume decomposition
+        faMeshDecomposition
+        (
+            //! The underlying polyMesh
+            const polyMesh& mesh,
+            //! The number of processors
+            const label nProcessors,
+            //! Additional parameters, sent to updateParameters
             const dictionary& params = dictionary::null
         );
 
@@ -154,20 +172,17 @@ public:
 
     // Settings
 
+        //- The area-region name
+        const word& name() const noexcept { return areaName_; }
+
         //- Number of processor in decomposition
-        label nProcs() const noexcept
-        {
-            return nProcs_;
-        }
+        label nProcs() const noexcept { return nProcs_; }
 
         //- Is decomposition data to be distributed for each processor
-        bool distributed() const noexcept
-        {
-            return distributed_;
-        }
+        bool distributed() const noexcept { return distributed_; }
 
         //- Change distributed flag
-        bool distributed(const bool on) noexcept
+        bool distributed(bool on) noexcept
         {
             bool old(distributed_);
             distributed_ = on;
@@ -177,11 +192,11 @@ public:
         //- Are global face zones used
         bool useGlobalFaceZones() const noexcept
         {
-            return distributed_;
+            return hasGlobalFaceZones_;
         }
 
         //- Change global face zones flag
-        bool useGlobalFaceZones(const bool on) noexcept
+        bool useGlobalFaceZones(bool on) noexcept
         {
             bool old(hasGlobalFaceZones_);
             hasGlobalFaceZones_ = on;
@@ -208,7 +223,7 @@ public:
         void decomposeMesh();
 
         //- Write decomposition
-        bool writeDecomposition();
+        bool writeDecomposition() const;
 };
 
 

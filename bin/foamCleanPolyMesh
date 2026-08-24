@@ -7,7 +7,7 @@
 #    \\/     M anipulation  |
 #-------------------------------------------------------------------------------
 #     Copyright (C) 2011-2016 OpenFOAM Foundation
-#     Copyright (C) 2022 OpenCFD Ltd.
+#     Copyright (C) 2022,2025 OpenCFD Ltd.
 #------------------------------------------------------------------------------
 # License
 #     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -27,9 +27,11 @@ usage() {
 
 Usage: ${0##*/} [OPTION]
 options:
-  -case <dir>       specify alternative case directory, default is the cwd
-  -region <name>    specify alternative mesh region
-  -help             print the usage
+  -case <dir>           case directory, default is the cwd
+  -allRegions           all mesh regions
+  -region <name>        mesh region
+  -dry-run | -n         report actions but do not remove
+  -help                 print the usage
 
 Remove the contents of the constant/polyMesh directory as per the
 Foam::polyMesh::removeFiles() method.
@@ -38,58 +40,137 @@ USAGE
    exit 1
 }
 
-unset caseDir regionName
+#------------------------------------------------------------------------------
+# Parse options
+unset caseDir regionName optAllRegions optDryRun
 
-# Parse a single option
 while [ "$#" -gt 0 ]
 do
     case "$1" in
+    ('')  ;;                # Ignore empty option
+    (--)  shift; break ;;   # Stop option parsing
+
     -h | -help*)
         usage
         ;;
+    -dry-run | -n)
+        optDryRun="(dry-run) "
+        ;;
+
+    -case=*)
+        caseDir="${1#*=}"
+        ;;
+
     -case)
         [ "$#" -ge 2 ] || usage "'$1' option requires an argument"
-        cd "$2" 2>/dev/null || usage "directory does not exist:  '$2'"
-        caseDir=$2
-        shift 2
+        caseDir="$2"
+        shift
         ;;
+
+    -allRegions)
+        optAllRegions=true
+        unset optAllRegions
+        ;;
+
+    -region=*)
+        regionName="${1#*=}"
+        unset optAllRegions
+        ;;
+
     -region)
         [ "$#" -ge 2 ] || usage "'$1' option requires an argument"
-        regionName=$2
-        shift 2
+        regionName="$2"
+        unset optAllRegions
+        shift
         ;;
-    *)
+
+    (*)
         usage "unknown option/argument: '$*'"
         ;;
     esac
+    shift
 done
 
-meshDir=polyMesh
-if [ -n "$regionName" ]
-then
-    meshDir="$regionName/$meshDir"
-fi
-
-# If -case was specified: insist upon 'constant/polyMesh'
 if [ -n "$caseDir" ]
 then
-    if [ -d constant/"$meshDir" ]
-    then
-        # Use constant/polyMesh
-        meshDir=constant/"$meshDir"
-    else
-       echo "Error: no 'constant/$meshDir' in $caseDir" 1>&2
-       exit 1
-    fi
+    cd "$caseDir" 2>/dev/null || usage "directory does not exist: '$caseDir'"
+fi
+
+
+#------------------------------------------------------------------------------
+
+# Remove files (mesh itself, modifiers, snappyHexMesh ones) and subdirectories
+# also remove .gz versions of the same files
+
+removeFiles()
+{
+    local directory="$1"
+
+    for i in \
+        points faces \
+        owner neighbour \
+        boundary \
+        cells \
+        cellZones faceZones pointZones \
+        meshModifiers \
+        parallelData \
+        sets \
+        cellLevel pointLevel \
+        level0Edge \
+        refinementHistory \
+        surfaceIndex \
+    ;
+    do
+        if [ -n "$optDryRun" ]
+        then
+            echo "${optDryRun} rm -rf $directory/{$i,$i.gz}"
+        else
+            rm -rf -- "$directory/$i" "$directory/$i.gz"
+        fi
+    done
+}
+
+#------------------------------------------------------------------------------
+
+if [ -n "$optAllRegions" ]
+then
+    # Discover probable regions
+    for meshDir in constant/*/polyMesh
+    do
+        if [ -d "$meshDir" ]
+        then
+            removeFiles "$meshDir"
+        fi
+    done
+    unset regionName
+fi
+
+meshDir="constant/${regionName}${regionName:+/}polyMesh"
+
+if [ -d "$meshDir" ]
+then
+    # [OK] has constant/<region>/polyMesh
+    :
+
+elif [ -n "$optAllRegions" ]
+then
+    # No constant/polyMesh, but not an error with -allRegions
+    exit 0
+
+elif [ -n "$caseDir" ]
+then
+    # Specified -case, so no extra magic...
+    echo "Error: no <$meshDir> in $caseDir" 1>&2
+    exit 1
+
 else
-    if [ -d constant/"$meshDir" ]
+    # Try some other combinations
+    other="${meshDir#constant/}"
+
+    if [ -d "$other" ]
     then
-        # Use constant/polyMesh
-        meshDir=constant/"$meshDir"
-    elif [ -d "$meshDir" ]
-    then
-        # Likely already in constant/ - do not adjust anything
-        :
+        # Probably already within constant/
+        meshDir="$other"
     elif [ "${PWD##*/}" = polyMesh ] && [ -z "$regionName" ]
     then
         # Apparently already within polyMesh/
@@ -98,31 +179,8 @@ else
 fi
 
 
-# Remove files (mesh itself, modifiers, snappyHexMesh ones) and subdirectories
-# also remove .gz versions of the same files
 echo "Cleaning ${caseDir:-.}/$meshDir" 1>&2
 
-for i in \
-    points \
-    faces \
-    owner \
-    neighbour \
-    cells \
-    boundary \
-    pointZones \
-    faceZones \
-    cellZones \
-    meshModifiers \
-    parallelData \
-    sets \
-    cellLevel \
-    pointLevel \
-    level0Edge \
-    refinementHistory \
-    surfaceIndex \
-;
-do
-    rm -rf "$meshDir/$i" "$meshDir/$i.gz"
-done
+removeFiles "$meshDir"
 
 #------------------------------------------------------------------------------

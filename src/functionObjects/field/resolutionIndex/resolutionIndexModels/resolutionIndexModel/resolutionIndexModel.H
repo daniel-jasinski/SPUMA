@@ -141,27 +141,21 @@ public:
     // Access
 
         //- Return const reference to the mesh
-        const fvMesh& mesh() const noexcept
-        {
-            return mesh_;
-        }
+        const fvMesh& mesh() const noexcept { return mesh_; }
 
         //- Return const reference to the result name
-        const word& resultName() const noexcept
-        {
-            return resultName_;
-        }
+        const word& resultName() const noexcept { return resultName_; }
 
 
     // I-O
 
-        //- Read top-level dictionary
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the result field
+        //- Execute the function-object operations
         virtual bool execute() = 0;
 
-        //- Write the result field
+        //- Write the function-object results
         virtual bool write() = 0;
 };
 

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -258,13 +258,13 @@ public:
             return ioState_ & std::ios_base::badbit;
         }
 
-        //- Return true if the stream has not failed
+        //- True if the stream has not failed
         explicit operator bool() const noexcept
         {
             return !fail();
         }
 
-        //- Return true if the stream has failed
+        //- True if the stream has failed
         bool operator!() const noexcept
         {
             return fail();
@@ -298,23 +298,37 @@ public:
         }
 
 
-        //- Check if the label byte-size associated with the stream
+        //- Test if the label byte-size associated with the stream
         //- is the same as the given type
-        template<class T = label>
-        typename std::enable_if<std::is_integral<T>::value, bool>::type
-        checkLabelSize() const noexcept
+        template<class T, class = std::enable_if_t<std::is_integral_v<T>>>
+        bool checkLabelSize() const noexcept
         {
             return sizeofLabel_ == sizeof(T);
         }
 
-        //- Check if the scalar byte-size associated with the stream
+        //- Test if the scalar byte-size associated with the stream
         //- is the same as the given type
-        template<class T = scalar>
-        typename std::enable_if<std::is_floating_point<T>::value, bool>::type
-        checkScalarSize() const noexcept
+        template<class T, class = std::enable_if_t<std::is_floating_point_v<T>>>
+        bool checkScalarSize() const noexcept
         {
             return sizeofScalar_ == sizeof(T);
         }
+
+        //- Test if the label/scalar byte-size associated with the stream
+        //- are the native label/scalar sizes
+        bool checkNativeSizes() const noexcept
+        {
+            return
+            (
+                sizeofLabel_ == sizeof(label)
+             && sizeofScalar_ == sizeof(scalar)
+            );
+        }
+
+        //- Assert that the label/scalar byte-size associated with the stream
+        //- are the native label/scalar sizes.
+        //  Generate a FatalIOError for any mismatch.
+        bool fatalCheckNativeSizes(const char* operation) const;
 
 
     // Stream State Functions
@@ -407,10 +421,10 @@ public:
             return flags((flags() & ~mask) | (f & mask));
         }
 
-        //- Unset flags of stream
-        void unsetf(std::ios_base::fmtflags f)
+        //- Unset stream flags, return old stream flags
+        std::ios_base::fmtflags unsetf(std::ios_base::fmtflags f)
         {
-            flags(flags() & ~f);
+            return flags(flags() & ~f);
         }
 
 
@@ -516,26 +530,26 @@ protected:
 namespace Detail
 {
 
-//- Termination for input looping (no-op)
-template<class IS> inline void inputLoop(IS&) {}
-
-//- Termination for output looping (no-op)
-template<class OS> inline void outputLoop(OS&) {}
-
 //- Input looping. Read into first parameter and recurse.
 template<class IS, class Type, class... Args>
-inline void inputLoop(IS& is, Type& arg1, Args&&... args)
+void inputLoop(IS& is, Type& arg1, Args&&... args)
 {
     is >> arg1;
-    Detail::inputLoop(is, std::forward<Args>(args)...);
+    if constexpr (sizeof...(args))
+    {
+        Detail::inputLoop(is, std::forward<Args>(args)...);
+    }
 }
 
 //- Output looping. Write first parameter and recurse.
 template<class OS, class Type, class... Args>
-inline void outputLoop(OS& os, const Type& arg1, Args&&... args)
+void outputLoop(OS& os, const Type& arg1, Args&&... args)
 {
     os << arg1;
-    Detail::outputLoop(os, std::forward<Args>(args)...);
+    if constexpr (sizeof...(args))
+    {
+        Detail::outputLoop(os, std::forward<Args>(args)...);
+    }
 }
 
 } // End namespace Detail

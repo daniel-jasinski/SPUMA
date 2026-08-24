@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2011-2017,2024 OpenFOAM Foundation
     Copyright (C) 2016-2023 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
@@ -146,7 +146,7 @@ Foam::UOPstreamBase::UOPstreamBase
     const int toProcNo,
     DynamicList<char>& sendBuf,
     const int tag,
-    const label comm,
+    const int communicator,
     const bool sendAtDestruct,
     IOstreamOption::streamFormat fmt
 )
@@ -155,7 +155,7 @@ Foam::UOPstreamBase::UOPstreamBase
     Ostream(fmt),
     toProcNo_(toProcNo),
     tag_(tag),
-    comm_(comm),
+    comm_(communicator),
     sendAtDestruct_(sendAtDestruct),
     sendBuf_(sendBuf)
 {
@@ -321,7 +321,7 @@ Foam::Ostream& Foam::UOPstreamBase::write(const std::string& str)
 
 Foam::Ostream& Foam::UOPstreamBase::write(const int32_t val)
 {
-    putChar(token::tokenType::LABEL);
+    putChar(token::tokenType::INTEGER_32);
     writeToBuffer(val);
     return *this;
 }
@@ -329,7 +329,23 @@ Foam::Ostream& Foam::UOPstreamBase::write(const int32_t val)
 
 Foam::Ostream& Foam::UOPstreamBase::write(const int64_t val)
 {
-    putChar(token::tokenType::LABEL);
+    putChar(token::tokenType::INTEGER_64);
+    writeToBuffer(val);
+    return *this;
+}
+
+
+Foam::Ostream& Foam::UOPstreamBase::write(const uint32_t val)
+{
+    putChar(token::tokenType::UNSIGNED_INTEGER_32);
+    writeToBuffer(val);
+    return *this;
+}
+
+
+Foam::Ostream& Foam::UOPstreamBase::write(const uint64_t val)
+{
+    putChar(token::tokenType::UNSIGNED_INTEGER_64);
     writeToBuffer(val);
     return *this;
 }

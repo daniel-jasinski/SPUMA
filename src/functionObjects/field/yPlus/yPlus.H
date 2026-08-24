@@ -37,31 +37,31 @@ Description
     \table
       Operand        | Type           | Location
       input          | -              | -
-      output file    | dat | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
-      output field   | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output file    | dat            | postProcessing/<FO>/<time>/file
+      output field   | volScalarField | postProcessing/<FO>/<time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    yPlus1
+    yPlusFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type        yPlus;
         libs        (fieldFunctionObjects);
 
         // Optional entries
-        useWallFunction true;
-        writeFields     true;
+        useWallFunction <bool>;
+        writeFields     <bool>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property   | Description                        | Type | Req'd | Dflt
+      Property   | Description                        | Type | Reqd  | Deflt
       type       | Type name: yPlus                   | word |  yes  | -
       libs       | Library name: fieldFunctionObjects | word |  yes  | -
       useWallFunction | Flag to use the local expressions of <!--
@@ -72,25 +72,14 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        <solver> -postProcess -func yPlus
-    \endverbatim
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 Note
     The \c writeFields flag currently defaults to \c true
     (for consistency with previous versions that did not have that flag)
     but this is subject to change in the near future for consistency
     with other function objects.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::yPlus
 
 SourceFiles
     yPlus.C
@@ -143,7 +132,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         yPlus
         (
             const word& name,
@@ -164,14 +153,13 @@ public:
 
     // Member Functions
 
-        //- Read the yPlus data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the yPlus field
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Report min/max/avg (per patch) and log to file,
-        //- write the yPlus volume field.
+        //- Write the function-object results
         virtual bool write();
 };
 

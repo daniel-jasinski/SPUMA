@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,34 +35,33 @@ Description
     Operands:
     \table
       Operand      | Type                       | Location
-      input        | {vol,surface}\<Type\>Field <!--
-                                    --> | $FOAM_CASE/\<time\>/\<inpField\>
+      input        | {vol,surface}<Type>Field   | <time>/inputField
       output file  | -                          | -
-      output field | {vol,surface}\<Type\>Field <!--
-                                    --> | $FOAM_CASE/\<time\>/\<outField\>
+      output field | {vol,surface}\<Type\>Field | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    mapFields1
+    mapFieldsFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            mapFields;
         libs            (fieldFunctionObjects);
+        fields          <wordList>;  // (<field1> <field2> ... <fieldN>);
+        mapRegion       <word>;      // coarseMesh;
+        mapMethod       <word>;      // cellVolumeWeight;
+        consistent      <bool>;;
 
-        // Mandatory (inherited) entries (runtime modifiable)
-        fields          (<field1> <field2> ... <fieldN>);
-        mapRegion       coarseMesh;
-        mapMethod       cellVolumeWeight;
-        consistent      true;
+        // Optional entries
+        patchMapMethod  direct;  // AMI-related entry
 
-        // Optional entries (runtime modifiable)
-        // patchMapMethod  direct;  // AMI-related entry
+        // Conditional entries
 
-        // When consistent=false
+        // when consistent=false
 
             // Manual: createPatchMap false;
             // patchMap        (<patchSrc> <patchTgt>);
@@ -71,14 +70,14 @@ Usage
             // Automatic: createPatchMap true;
             // Creates the patchMap and cuttingPatches automatically
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: mapFields               | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       fields       | Names of operand fields            | wordList |  yes  | -
@@ -109,14 +108,7 @@ Usage
     \endverbatim
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::mapFields
+      - \link functionObject.H \endlink
 
 SourceFiles
     mapFields.C
@@ -124,8 +116,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_mapFields_H
-#define functionObjects_mapFields_H
+#ifndef Foam_functionObjects_mapFields_H
+#define Foam_functionObjects_mapFields_H
 
 #include "fvMeshFunctionObject.H"
 #include "volFieldsFwd.H"
@@ -150,8 +142,11 @@ class mapFields
 {
     // Private Data
 
-        //- Locally cached map region mesh (map to this mesh)
-        autoPtr<fvMesh> mapRegionPtr_;
+        //- Input dictionary
+        dictionary dict_;
+
+        // //- Locally cached map region mesh (map to this mesh)
+        // autoPtr<fvMesh> mapRegionPtr_;
 
         //- Mesh-to-mesh interpolation
         autoPtr<meshToMesh> interpPtr_;
@@ -162,8 +157,19 @@ class mapFields
 
     // Private Member Functions
 
+        //- On-the-fly lookup or load of the map region mesh
+        const fvMesh& lookupMapRegion() const;
+
         //- Helper function to create the mesh-to-mesh interpolation
-        void createInterpolation(const dictionary& dict);
+        void createInterpolation
+        (
+            const dictionary& dict,
+            const fvMesh& meshTarget,
+            const fvMesh& mapRegion
+        );
+
+        // //- Helper function to create the mesh-to-mesh interpolation
+        // void createInterpolation(const dictionary& dict);
 
         //- Helper function to evaluate constraint patches after mapping
         template<class Type>
@@ -189,7 +195,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         mapFields
         (
             const word& name,
@@ -210,13 +216,13 @@ public:
 
     // Member Functions
 
-        //- Read the mapFields data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Calculate the mapFields and write
+        //- Write the function-object results
         virtual bool write();
 };
 

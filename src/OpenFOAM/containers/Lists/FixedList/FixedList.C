@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,11 +33,11 @@ License
 template<class T, unsigned N>
 std::streamsize Foam::FixedList<T, N>::byteSize()
 {
-    if (!is_contiguous<T>::value)
+    if constexpr (!is_contiguous_v<T>)
     {
         FatalErrorInFunction
             << "Invalid for non-contiguous data types"
-            << abort(FatalError);
+            << Foam::abort(FatalError);
     }
     return FixedList<T, N>::size_bytes();
 }
@@ -169,8 +169,8 @@ template<class T, unsigned N>
 bool Foam::FixedList<T, N>::operator==(const FixedList<T, N>& list) const
 {
     // Can dispatch with
-    // - std::execution::parallel_unsequenced_policy
-    // - std::execution::unsequenced_policy
+    // - std::execution::par_unseq
+    // - std::execution::unseq
     return
     (
         // List sizes are identical by definition (template parameter)
@@ -185,8 +185,8 @@ bool Foam::FixedList<T, N>::operator<(const FixedList<T, N>& list) const
     // List sizes are identical by definition (template parameter)
 
     // Can dispatch with
-    // - std::execution::parallel_unsequenced_policy
-    // - std::execution::unsequenced_policy
+    // - std::execution::par_unseq
+    // - std::execution::unseq
     return std::lexicographical_compare
     (
         this->cbegin(), this->cend(),

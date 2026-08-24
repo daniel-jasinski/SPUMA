@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2016-2024 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -56,6 +56,8 @@ SourceFiles
 #include "stdFoam.H"
 #include "label.H"
 #include "word.H"
+
+#include <string_view>
 #include <string>
 #include <iostream>
 
@@ -131,6 +133,14 @@ public:
 
     // Constructors
 
+        //- Construct untitled with given characteristics
+        explicit messageStream
+        (
+            errorSeverity severity,
+            int maxErrors = 0,
+            bool use_stderr = false
+        );
+
         //- Construct from components
         messageStream
         (
@@ -143,14 +153,11 @@ public:
         //- Construct from components
         messageStream
         (
-            const std::string& title,
+            string title,
             errorSeverity severity,
             int maxErrors = 0,
             bool use_stderr = false
-        )
-        :
-            messageStream(title.c_str(), severity, maxErrors, use_stderr)
-        {}
+        );
 
 
         //- Construct from dictionary as Fatal, extracting 'title'.
@@ -175,7 +182,7 @@ public:
         //  \return the previous value for maxErrors
         int maxErrors(int nErrors) noexcept
         {
-            int old = maxErrors_;
+            int old(maxErrors_);
             maxErrors_ = nErrors;
             return old;
         }
@@ -187,12 +194,15 @@ public:
         OSstream& stream
         (
             //! An alternative output stream (serial-only)
-            OSstream* alternative = nullptr
+            OSstream* alternative = nullptr,
+            //! Communicator. Negative is treated like UPstream::worldComm
+            int communicator = -1
         );
 
         //- Return OSstream for output operations on the master process only,
         //- Snull on other processes.
-        OSstream& masterStream(const label communicator);
+        //  A negative communicator is treated like UPstream::worldComm
+        OSstream& masterStream(int communicator);
 
         //- Return std::ostream for output operations.
         std::ostream& stdStream();
@@ -221,28 +231,23 @@ public:
             return this->stream();
         }
 
-        //- Report 'From function-name'
-        //  \return OSstream for further operations
-        OSstream& operator()
-        (
-            const std::string& functionName
-        );
-
-        //- Report 'From function-name, source file, line number'
-        //  \return OSstream for further operations
-        OSstream& operator()
-        (
-            const char* functionName,
-            const char* sourceFileName,
-            const int sourceFileLineNumber = 0
-        );
-
-        //- Report 'From function-name, source file, line number'
+        //- Report 'From function-name',
+        //- optionally with 'source file, line number'
         //  \return OSstream for further operations
         OSstream& operator()
         (
             const std::string& functionName,
-            const char* sourceFileName,
+            const char* sourceFileName = nullptr,
+            const int sourceFileLineNumber = 0
+        );
+
+        //- Report 'From function-name',
+        //- optionally with 'source file, line number'
+        //  \return OSstream for further operations
+        OSstream& operator()
+        (
+            const char* functionName,
+            const char* sourceFileName = nullptr,
             const int sourceFileLineNumber = 0
         );
 
@@ -402,15 +407,15 @@ FOAM_EXPORT_DATA extern messageStream SeriousError;
 
 //- Write to Foam::Info if the Foam::infoDetailLevel is +ve non-zero (default)
 #define DetailInfo                                                             \
-    if (::Foam::infoDetailLevel > 0) Info
+    if (::Foam::infoDetailLevel > 0) ::Foam::Info
 
 //- Report write to Foam::Info if the local log switch is true
 #define Log                                                                    \
-    if (log) Info
+    if (log) ::Foam::Info
 
 //- Report write to Foam::Info if the class log switch is true
 #define Log_                                                                   \
-    if (this->log) Info
+    if (this->log) ::Foam::Info
 
 
 //- Report an IO information message using Foam::Info
@@ -437,7 +442,7 @@ FOAM_EXPORT_DATA extern messageStream SeriousError;
 //  defineTypeNameAndDebug gets debugLevel() for free; classes that declare
 //  a standalone 'static int debug;' define an accessor alongside it.
 #define DebugInfo                                                              \
-    if (debugLevel()) Info
+    if (debugLevel()) ::Foam::Info
 
 //- Report an information message using Foam::Info
 //  for FUNCTION_NAME in file __FILE__ at line __LINE__
@@ -448,7 +453,7 @@ FOAM_EXPORT_DATA extern messageStream SeriousError;
 //- Report an information message using Foam::Pout
 //  if the local debug switch is true
 #define DebugPout                                                              \
-    if (debugLevel()) Pout
+    if (debugLevel()) ::Foam::Pout
 
 //- Report an information message using Foam::Pout
 //  for FUNCTION_NAME in file __FILE__ at line __LINE__

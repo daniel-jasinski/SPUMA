@@ -36,8 +36,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef geometricSurfacePatch_H
-#define geometricSurfacePatch_H
+#ifndef Foam_geometricSurfacePatch_H
+#define Foam_geometricSurfacePatch_H
 
 #include "surfZoneIdentifier.H"
 #include "stdFoam.H"
@@ -106,9 +106,16 @@ public:
         //- Copy construct
         geometricSurfacePatch(const geometricSurfacePatch&) = default;
 
+        //- Move construct
+        geometricSurfacePatch(geometricSurfacePatch&&) = default;
+
         //- Copy assignment
         geometricSurfacePatch&
-            operator=(const geometricSurfacePatch&) = default;
+        operator=(const geometricSurfacePatch&) = default;
+
+        //- Move assignment
+        geometricSurfacePatch&
+        operator=(geometricSurfacePatch&&) = default;
 
 
     // Constructors
@@ -147,40 +154,22 @@ public:
     // Member Functions
 
         //- The patch/zone name
-        const word& name() const noexcept
-        {
-            return name_;
-        }
+        const word& name() const noexcept { return name_; }
 
         //- Modifiable patch/zone name
-        word& name() noexcept
-        {
-            return name_;
-        }
+        word& name() noexcept { return name_; }
 
         //- The index of this patch/zone in the surface mesh
-        label index() const noexcept
-        {
-            return index_;
-        }
+        label index() const noexcept { return index_; }
 
         //- Modifiable index of this patch/zone in the surface mesh
-        label& index() noexcept
-        {
-            return index_;
-        }
+        label& index() noexcept { return index_; }
 
         //- The geometric type of the patch/zone
-        const word& geometricType() const noexcept
-        {
-            return geometricType_;
-        }
+        const word& geometricType() const noexcept { return geometricType_; }
 
         //- Modifiable geometric type of the patch/zone
-        word& geometricType() noexcept
-        {
-            return geometricType_;
-        }
+        word& geometricType() noexcept { return geometricType_; }
 
         //- Write (geometricType) dictionary entry
         //- (without surrounding braces)

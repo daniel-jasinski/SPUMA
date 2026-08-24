@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -88,7 +88,11 @@ void Foam::faBoundaryMesh::calcGroupIDs() const
     // Remove groups that clash with patch names
     forAll(patches, patchi)
     {
-        if (groupLookup.erase(patches[patchi].name()))
+        if (groupLookup.empty())
+        {
+            break;  // Early termination
+        }
+        else if (groupLookup.erase(patches[patchi].name()))
         {
             WarningInFunction
                 << "Removed group '" << patches[patchi].name()
@@ -422,6 +426,26 @@ Foam::label Foam::faBoundaryMesh::nProcessorPatches() const
 }
 
 
+Foam::label Foam::faBoundaryMesh::nNonProcessorEdges() const
+{
+    const faPatchList& patches = *this;
+
+    label count = 0;
+
+    for (const faPatch& p : patches)
+    {
+        if (isA<processorFaPatch>(p))
+        {
+            break;
+        }
+
+        count += p.nEdges();
+    }
+
+    return count;
+}
+
+
 const Foam::HashTable<Foam::labelList>&
 Foam::faBoundaryMesh::groupPatchIDs() const
 {
@@ -564,7 +588,7 @@ Foam::labelList Foam::faBoundaryMesh::indices
     // Only check groups if requested and they exist
     const bool checkGroups = (useGroups && this->hasGroupIDs());
 
-    labelHashSet ids(0);
+    labelHashSet ids;
 
     if (matcher.isPattern())
     {
@@ -577,7 +601,7 @@ Foam::labelList Foam::faBoundaryMesh::indices
             {
                 if (matcher(iter.key()))
                 {
-                    // Add patch ids associated with the group
+                    // Add ids associated with the group
                     ids.insert(iter.val());
                 }
             }
@@ -609,7 +633,7 @@ Foam::labelList Foam::faBoundaryMesh::indices
 
             if (iter.good())
             {
-                // Add patch ids associated with the group
+                // Add ids associated with the group
                 ids.insert(iter.val());
             }
         }
@@ -634,7 +658,7 @@ Foam::labelList Foam::faBoundaryMesh::indices
         return this->indices(matcher.front(), useGroups);
     }
 
-    labelHashSet ids(0);
+    labelHashSet ids;
 
     // Only check groups if requested and they exist
     if (useGroups && this->hasGroupIDs())
@@ -646,7 +670,7 @@ Foam::labelList Foam::faBoundaryMesh::indices
         {
             if (matcher(iter.key()))
             {
-                // Add patch ids associated with the group
+                // Add ids associated with the group
                 ids.insert(iter.val());
             }
         }
@@ -667,19 +691,20 @@ Foam::labelList Foam::faBoundaryMesh::indices
 
 Foam::labelList Foam::faBoundaryMesh::indices
 (
-    const wordRes& select,
-    const wordRes& ignore,
+    const wordRes& allow,
+    const wordRes& deny,
     const bool useGroups
 ) const
 {
-    if (ignore.empty())
+    if (allow.empty() && deny.empty())
     {
-        return this->indices(select, useGroups);
+        // Fast-path: select all
+        return identity(this->size());
     }
 
-    const wordRes::filter matcher(select, ignore);
+    const wordRes::filter matcher(allow, deny);
 
-    labelHashSet ids(0);
+    labelHashSet ids;
 
     // Only check groups if requested and they exist
     if (useGroups && this->hasGroupIDs())
@@ -691,7 +716,7 @@ Foam::labelList Foam::faBoundaryMesh::indices
         {
             if (matcher(iter.key()))
             {
-                // Add patch ids associated with the group
+                // Add ids associated with the group
                 ids.insert(iter.val());
             }
         }
@@ -756,6 +781,23 @@ Foam::label Foam::faBoundaryMesh::findPatchID
 
     // Not found, return -1
     return -1;
+}
+
+
+const Foam::faPatch* Foam::faBoundaryMesh::cfindPatch
+(
+    const word& patchName
+) const
+{
+    const faPatchList& patches = *this;
+
+    if (!patchName.empty())
+    {
+        // Note: get() handles out-of-range access properly
+        return patches.get(PtrListOps::firstMatching(patches, patchName));
+    }
+
+    return nullptr;
 }
 
 

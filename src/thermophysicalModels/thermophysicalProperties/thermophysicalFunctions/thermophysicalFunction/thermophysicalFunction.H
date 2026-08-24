@@ -101,7 +101,7 @@ public:
     // Member Functions
 
         //- Evaluate the function and return the result
-        virtual scalar f(scalar p, scalar T) const = 0;
+        FOAM_DEVICE virtual inline scalar f(scalar p, scalar T) const = 0;
 
         //- Write the function coefficients
         virtual void writeData(Ostream& os) const = 0;

@@ -45,26 +45,22 @@ Description
     \table
       Operand      | Type                | Location
       input        | -                   | -
-      output file  | dat                 <!--
-               --> | postProcessing/\<FO\>/\<time\>/\<file\>(s)
-      output field | volScalarField(s)   <!--
-               --> | \<time\>/initialResiduals:\<outField\>(s)
+      output file  | dat                 | postProcessing/<FO>/<time>/<file>(s)
+      output field | volScalarField(s)   | <time>/initialResiduals:<outField>(s)
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    solverInfo1
+    solverInfoFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            solverInfo;
         libs            (utilityFunctionObjects);
+        fields          <wordList>;  // (<field1> <field2> ... <fieldN>);
 
-        // Mandatory entries (runtime modifiable)
-        fields          (<field1> <field2> ... <fieldN>);
-
-        // Optional entries (runtime modifiable)
-        writeResidualFields true;
+        // Optional entries
+        writeResidualFields <bool>;
 
         // Inherited entries
         ...
@@ -85,19 +81,14 @@ Usage
      - \link functionObject.H \endlink
      - \link writeFile.H \endlink
 
-See also
-  - Foam::functionObject
-  - Foam::functionObjects::fvMeshFunctionObject
-  - Foam::functionObjects::writeFile
-
 SourceFiles
     solverInfo.C
     solverInfoTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_solverInfo_H
-#define functionObjects_solverInfo_H
+#ifndef Foam_functionObjects_solverInfo_H
+#define Foam_functionObjects_solverInfo_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -174,7 +165,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         solverInfo
         (
             const word& name,
@@ -189,13 +180,13 @@ public:
 
     // Member Functions
 
-        //- Read solverInfo settings
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Execute solverInfo
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write solverInfo results
+        //- Write the function-object results (no-op)
         virtual bool write();
 };
 

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -67,11 +67,13 @@ public:
 
     // Public Data Types
 
-        //- Data format (ascii | binary)
+        //- Data format (ascii | binary | coherent)
         enum streamFormat : char
         {
             ASCII = 0,          //!< "ascii" (normal default)
-            BINARY              //!< "binary"
+            BINARY,             //!< "binary"
+            COHERENT,           //!< "coherent"
+            UNKNOWN_FORMAT
         };
 
         //- Compression treatment (UNCOMPRESSED | COMPRESSED)

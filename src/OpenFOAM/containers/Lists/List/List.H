@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -48,7 +48,7 @@ SourceFiles
 #include "UList.H"
 #include "SLListFwd.H"
 
-#include "MemoryPool.H"
+#include "MemoryPoolBase.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -61,7 +61,7 @@ template<class T> class List;
 template<class T, unsigned N> class FixedList;
 template<class T, int SizeMin> class DynamicList;
 
-template<class T> class PtrList;
+template<class T> class UPtrList;
 
 template<class T> Istream& operator>>(Istream& is, List<T>& list);
 
@@ -103,12 +103,8 @@ class List
 {
     // Private Member Functions
 
-        //- Allocate list storage
-        inline void doAlloc();
-
-        //- Reallocate list storage to the given size
-        //  Discards old storage (if any). Does not copy old contents
-        inline void reAlloc(const label len);
+        //- Allocate list storage. Assumes there is no existing content
+        inline void doAlloc(const label len);
 
         //- Copy all list contents. Uses operator[] on the input list
         template<class ListType>
@@ -119,17 +115,13 @@ class List
         template<class ListType, class ListIndices>
         inline void copyList(const ListType& list, const ListIndices& indices);
 
-        //- Change allocation size of List, retaining old contents.
-        //  Backend for resize
-        void doResize(const label len);
-
         //- Construct given begin/end iterators and number of elements
         //  Since the size is provided, the end iterator is actually ignored.
         template<class InputIterator>
         inline List
         (
-            InputIterator firstIter,
-            InputIterator lastIter,  // (unused)
+            InputIterator input,
+            InputIterator inputEnd,  // (unused)
             const label len
         );
 
@@ -141,7 +133,7 @@ class List
     // Methods as per DynamicList to simplify code maintenance
 
         //- Stub method for internal naming as per DynamicList
-        void setCapacity_nocopy(const label len) { resize_nocopy(len); }
+        void setCapacity_nocopy(label len) { resize_nocopy(len); }
 
 
 public:
@@ -150,6 +142,7 @@ public:
 
         //- Declare type of subList
         typedef SubList<T> subList;
+
 
     // Static Member Functions
 
@@ -167,27 +160,24 @@ public:
         inline constexpr List() noexcept;
 
         //- Construct with given size
-        //explicit List(const label len);
         explicit List(const label len, poolSwitch usePool = poolSwitch(false));
 
         explicit List(const poolSwitch usePool);
 
         //- Construct with given size and value for all elements
-        //List(const label len, const T& val);
         List(const label len, const T& val, poolSwitch usePool = poolSwitch(false));
 
         //- Construct with given size initializing all elements to zero
-        List(const label len, const Foam::zero, poolSwitch usePool = poolSwitch(false));
-        //List(const label len, const Foam::zero, poolSwitch usePool = false);
+        List(const label len, Foam::zero, poolSwitch usePool = poolSwitch(false));
 
         //- Construct with length=1, copying the value as the only content
-        List(const Foam::one, const T& val);
+        List(Foam::one, const T& val);
 
         //- Construct with length=1, moving the value as the only content
-        List(const Foam::one, T&& val);
+        List(Foam::one, T&& val);
 
         //- Construct with length=1, initializing content to zero
-        List(const Foam::one, const Foam::zero);
+        List(Foam::one, Foam::zero);
 
         //- Copy construct from list
         List(const List<T>& list);
@@ -209,8 +199,8 @@ public:
         template<unsigned N>
         explicit List(const FixedList<T, N>& list);
 
-        //- Construct as copy of PtrList<T>
-        explicit List(const PtrList<T>& list);
+        //- Construct as copy of UPtrList<T> content
+        explicit List(const UPtrList<T>& list);
 
         //- Construct as copy of IndirectList contents
         template<class Addr>
@@ -220,7 +210,7 @@ public:
         List(std::initializer_list<T> list);
 
         //- Move construct from List
-        List(List<T>&& list) noexcept;
+        inline List(List<T>&& list) noexcept;
 
         //- Move construct from DynamicList
         template<int SizeMin>
@@ -251,6 +241,10 @@ public:
         //- Adjust allocated size of list and set val for \em new elements
         void resize(const label len, const T& val);
 
+        //- Change allocated size of list, retaining the first count elements.
+        //  \note Only uses a limited number of internal checks.
+        void resize_copy(label count, const label len);
+
         //- Adjust allocated size of list and set val for \em all elements
         inline void resize_fill(const label len, const T& val);
 
@@ -258,20 +252,8 @@ public:
         //  retaining old content.
         //  If no reallocation is required, the contents remain untouched.
         //  Otherwise the contents will be uninitialized.
+        //  Shorthand for \c resize(0, len)
         inline void resize_nocopy(const label len);
-
-        //- Change the addressed list size directly without affecting
-        //- any memory management (advanced usage).
-        //
-        //  It is left to the caller to avoid \em unsafe lengthening beyond
-        //  the allocated memory region.
-        inline void resize_unsafe(const label len) noexcept;
-
-        //- Alias for resize()
-        void setSize(const label n) { this->resize(n); }
-
-        //- Alias for resize()
-        void setSize(const label n, const T& val) { this->resize(n, val); }
 
 
     // Edit
@@ -346,7 +328,7 @@ public:
         inline void operator=(const T& val);
 
         //- Assignment of all entries to zero
-        inline void operator=(const Foam::zero);
+        inline void operator=(Foam::zero);
 
         //- Move assignment. Takes constant time
         void operator=(List<T>&& list);
@@ -384,9 +366,12 @@ public:
         //  Increases size when setting an out-of-bounds value.
         //
         //  \return True if value changed.
-        template<class TypeT = T>
-        typename std::enable_if<std::is_same<bool, TypeT>::value, bool>::type
-        inline set(const label i, bool val = true)
+        template
+        <
+            class TypeT = T,
+            class = std::enable_if_t<stdFoam::is_bool_v<TypeT>>
+        >
+        inline bool set(const label i, bool val = true)
         {
             if (i < 0)
             {
@@ -433,15 +418,31 @@ public:
         }
 
         //- Same as push_uniq()
-        FOAM_DEPRECATED_STRICT(2022-10, "push_uniq()")
+        FOAM_DEPRECATED_FOR(2022-10, "push_uniq()")
         label appendUniq(const T& val) { return this->push_uniq(val); }
 
+        //- Alias for resize()
+        void setSize(label n) { this->resize(n); }
 
-        //- Copy construct from SLList
-        explicit List(const SLList<T>& list);
+        //- Alias for resize()
+        void setSize(label n, const T& val) { this->resize(n, val); }
 
-        //- Copy assign from SLList in linear time
-        void operator=(const SLList<T>& list);
+
+    // Expression templates
+
+        //- Construct from value expression
+        template<typename E>
+        explicit List(const Expression::ListExpression<E>& expr)
+        {
+            expr.evaluate(*this);
+        }
+
+        //- Assign values from expression
+        template<typename E>
+        void operator=(const Expression::ListExpression<E>& expr)
+        {
+            expr.evaluate(*this);
+        }
 };
 
 
@@ -468,6 +469,14 @@ Istream& operator>>(Istream& is, List<T>& list)
 //- works like std::iota() but returning a list of label values.
 //  Optionally with an alternative start index, so that (map[i] == i+start)
 labelList identity(const label len, label start=0);
+
+//- Return an identity map corresponding to the index range (start, size)
+template<class IntType>
+labelList identity(const IntRange<IntType>& range)
+{
+    return Foam::identity(label(range.size()), label(range.start()));
+}
+
 
 //- Return the (stable) sort order for the list
 template<class T>

@@ -37,19 +37,17 @@ Description
       Operand        | Type            | Location
       input          | -               | -
       output file    | -               | -
-      output field   | volScalarField  | $FOAM_CASE/\<time\>/surfaceDistance
+      output field   | volScalarField  | <time>/surfaceDistance
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    surfaceDistance1
+    surfaceDistanceFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            surfaceDistance;
         libs            (fieldFunctionObjects);
-
-        // Mandatory entries (runtime modifiable)
         geometry
         {
             motorBike.obj
@@ -59,17 +57,17 @@ Usage
             }
         }
 
-        // Optional entries (runtime modifiable)
-        calculateCells  true;
+        // Optional entries
+        calculateCells  <bool>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                           | Type | Req'd | Dflt
+      Property     | Description                           | Type | Reqd | Deflt
       type         | Type name: surfaceDistance            | word |  yes  | -
       libs         | Library name: fieldFunctionObjects    | word |  yes  | -
       geometry     | Surface details                       | dict |  yes  | -
@@ -77,22 +75,15 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::surfaceDistance
+      - \link functionObject.H \endlink
 
 SourceFiles
     surfaceDistance.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_surfaceDistance_H
-#define functionObjects_surfaceDistance_H
+#ifndef Foam_functionObjects_surfaceDistance_H
+#define Foam_functionObjects_surfaceDistance_H
 
 #include "fvMeshFunctionObject.H"
 #include "searchableSurfaces.H"
@@ -103,7 +94,7 @@ SourceFiles
 namespace Foam
 {
 
-// Forward declaration of classes
+// Forward Declarations
 class objectRegistry;
 class dictionary;
 class mapPolyMesh;
@@ -160,13 +151,13 @@ public:
 
     // Member Functions
 
-        //- Read the controls
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Calculate the interpolated fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the interpolated fields
+        //- Write the function-object results
         virtual bool write();
 };
 

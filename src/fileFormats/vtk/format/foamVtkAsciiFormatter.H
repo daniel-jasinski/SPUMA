@@ -32,7 +32,7 @@ Description
     (for consistency with what VTK itself outputs).
 
 SourceFiles
-    foamVtkAsciiFormatter.C
+    foamVtkAsciiFormatter.cxx
 
 \*---------------------------------------------------------------------------*/
 

@@ -116,7 +116,7 @@ Foam::thermophysicalPropertiesSelector<ThermophysicalProperties>::Ha
 
 
 template<class ThermophysicalProperties>
-inline Foam::scalar
+FOAM_DEVICE inline Foam::scalar
 Foam::thermophysicalPropertiesSelector<ThermophysicalProperties>::Hs
 (
     scalar p,
@@ -148,7 +148,7 @@ Foam::thermophysicalPropertiesSelector<ThermophysicalProperties>::Cv
 
 
 template<class ThermophysicalProperties>
-inline Foam::scalar
+FOAM_DEVICE inline Foam::scalar
 Foam::thermophysicalPropertiesSelector<ThermophysicalProperties>::Es
 (
     scalar p,

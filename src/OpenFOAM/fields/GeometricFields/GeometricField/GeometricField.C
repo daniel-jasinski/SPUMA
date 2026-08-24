@@ -6,7 +6,8 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2024 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -63,8 +64,10 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::readFields
 
     if (dict.readIfPresent("referenceLevel", refLevel))
     {
-        Field<Type>::operator+=(refLevel);
+        // Add to internal (primitive) field
+        this->field() += refLevel;
 
+        // Add to boundary fields
         forAll(boundaryField_, patchi)
         {
             boundaryField_[patchi] == boundaryField_[patchi] + refLevel;
@@ -190,10 +193,12 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const IOobject& io,
     const Mesh& mesh,
     const dimensionSet& dims,
-    const word& patchFieldType
+    const word& patchFieldType,
+    const bool extraCapacity,
+    const bool isFlattened
 )
 :
-    Internal(io, mesh, dims, false),
+    Internal(io, mesh, dims, false, extraCapacity, isFlattened),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary(), *this, patchFieldType)
 {
@@ -214,7 +219,7 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const wordList& actualPatchTypes
 )
 :
-    Internal(io, mesh, dims, false),
+    Internal(io, mesh, dims, false, FieldBase::unifiedGeometricField),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary(), *this, patchFieldTypes, actualPatchTypes)
 {
@@ -235,7 +240,7 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const word& patchFieldType
 )
 :
-    Internal(io, mesh, value, dims, false),
+    Internal(io, mesh, value, dims, false, FieldBase::unifiedGeometricField),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary(), *this, patchFieldType)
 {
@@ -259,7 +264,7 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const wordList& actualPatchTypes
 )
 :
-    Internal(io, mesh, value, dims, false),
+    Internal(io, mesh, value, dims, false, FieldBase::unifiedGeometricField),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary(), *this, patchFieldTypes, actualPatchTypes)
 {
@@ -422,7 +427,7 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     boundaryField_(mesh.boundary(), *this, patchFieldType)
 {
     DebugInFunction
-        << "Copy construct from internal field" << nl << this->info() << endl;
+        << "Copy construct from primitive field" << nl << this->info() << endl;
 
     readIfPresent();
 }
@@ -443,7 +448,28 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     boundaryField_(mesh.boundary(), *this, patchFieldType)
 {
     DebugInFunction
-        << "Move construct from internal field" << nl << this->info() << endl;
+        << "Move construct from primitive field" << nl << this->info() << endl;
+
+    readIfPresent();
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
+(
+    const IOobject& io,
+    const Mesh& mesh,
+    const dimensionSet& dims,
+    const tmp<Field<Type>>& tfield,
+    const word& patchFieldType
+)
+:
+    Internal(io, mesh, dims, tfield),
+    timeIndex_(this->time().timeIndex()),
+    boundaryField_(mesh.boundary(), *this, patchFieldType)
+{
+    DebugInFunction
+        << "Construct from tmp primitive field" << nl << this->info() << endl;
 
     readIfPresent();
 }
@@ -520,7 +546,10 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const bool readOldTime
 )
 :
-    Internal(io, mesh, dimensionSet(), false),
+    // dimensionSet() instead of dimless: avoids cross-DLL data access
+    // to the global dimless object on Windows (DEF JMP thunks cover
+    // functions only, not data)
+    Internal(io, mesh, dimensionSet(), false, FieldBase::unifiedGeometricField),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary())
 {
@@ -557,7 +586,10 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
     const dictionary& dict
 )
 :
-    Internal(io, mesh, dimensionSet(), false),
+    // dimensionSet() instead of dimless: avoids cross-DLL data access
+    // to the global dimless object on Windows (DEF JMP thunks cover
+    // functions only, not data)
+    Internal(io, mesh, dimensionSet(), false, FieldBase::unifiedGeometricField),
     timeIndex_(this->time().timeIndex()),
     boundaryField_(mesh.boundary())
 {
@@ -1078,6 +1110,46 @@ correctLocalBoundaryConditions()
 
 
 template<class Type, template<class> class PatchField, class GeoMesh>
+template<class Cop>
+Foam::label Foam::GeometricField<Type, PatchField, GeoMesh>::
+boundaryEvaluate(const Cop& cop)
+{
+    const label meshSize = GeoMesh::size(this->mesh());
+    const label totalSize = GeoMesh::boundary_size(this->mesh()) + meshSize;
+
+    if (FOAM_UNLIKELY(meshSize != this->size() && totalSize != this->size()))
+    {
+        FatalErrorInFunction
+            << "Problem : field:" << this->name()
+            << " size:" << this->size()
+            << " capacity:" << this->capacity()
+            << " is not mesh size:" << meshSize
+            << " or total size:" << totalSize
+            << exit(FatalError);
+    }
+
+    auto& fld = static_cast<DynamicField<Type>&>(*this);
+
+    // Resize primitive field to allow for internal+boundary fields
+    // - avoid size doubling
+    // - only copying the internal field without boundaries
+
+    fld.reserve_exact(totalSize);
+    fld.resize_copy(meshSize, totalSize);
+
+    // Populate the extra space with the flattened boundary values:
+    for (const auto& pfld : this->boundaryField())
+    {
+        const label start = (meshSize + pfld.patch().offset());
+        SubList<Type> slice(fld, pfld.size(), start);
+        cop(pfld, slice);
+    }
+
+    return meshSize;
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
 bool Foam::GeometricField<Type, PatchField, GeoMesh>::needReference() const
 {
     // Search all boundary conditions, if any are
@@ -1145,10 +1217,11 @@ Foam::word Foam::GeometricField<Type, PatchField, GeoMesh>::select
 template<class Type, template<class> class PatchField, class GeoMesh>
 void Foam::GeometricField<Type, PatchField, GeoMesh>::writeMinMax
 (
-    Ostream& os
+    Ostream& os,
+    label comm
 ) const
 {
-    MinMax<Type> range = Foam::minMax(*this).value();
+    MinMax<Type> range = Foam::minMax(*this, comm).value();
 
     os  << "min/max(" << this->name() << ") = "
         << range.min() << ", " << range.max() << endl;
@@ -1311,6 +1384,38 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::clamp_max
 
 
 template<class Type, template<class> class PatchField, class GeoMesh>
+void Foam::GeometricField<Type, PatchField, GeoMesh>::clamp_min
+(
+    const GeometricField<Type, PatchField, GeoMesh>& lower
+)
+{
+    primitiveFieldRef().clamp_min(lower.primitiveField());
+    boundaryFieldRef().clamp_min(lower.boundaryField());
+    correctLocalBoundaryConditions();
+    if (GeometricBoundaryField<Type, PatchField, GeoMesh>::debug)
+    {
+        boundaryField().check();
+    }
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+void Foam::GeometricField<Type, PatchField, GeoMesh>::clamp_max
+(
+    const GeometricField<Type, PatchField, GeoMesh>& upper
+)
+{
+    primitiveFieldRef().clamp_max(upper.primitiveField());
+    boundaryFieldRef().clamp_max(upper.boundaryField());
+    correctLocalBoundaryConditions();
+    if (GeometricBoundaryField<Type, PatchField, GeoMesh>::debug)
+    {
+        boundaryField().check();
+    }
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
 void Foam::GeometricField<Type, PatchField, GeoMesh>::clamp_range
 (
     const Type& lower,
@@ -1389,6 +1494,12 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::operator=
 
     internalFieldRef() = gf.internalField();
     boundaryFieldRef() = gf.boundaryField();
+
+    // Make sure any e.g. jump-cyclic are updated.
+    boundaryFieldRef().evaluate_if
+    (
+        [](const auto& pfld) { return pfld.constraintOverride(); }
+    );
 }
 
 
@@ -1425,6 +1536,12 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::operator=
     boundaryFieldRef() = gf.boundaryField();
 
     tgf.clear();
+
+    // Make sure any e.g. jump-cyclic are updated.
+    boundaryFieldRef().evaluate_if
+    (
+        [](const auto& pfld) { return pfld.constraintOverride(); }
+    );
 }
 
 
@@ -1436,6 +1553,27 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::operator=
 {
     internalFieldRef() = dt;
     boundaryFieldRef() = dt.value();
+
+    // Make sure any e.g. jump-cyclic are updated.
+    boundaryFieldRef().evaluate_if
+    (
+        [](const auto& pfld) { return pfld.constraintOverride(); }
+    );
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+void Foam::GeometricField<Type, PatchField, GeoMesh>::operator=(Foam::zero)
+{
+    // No dimension checking
+    primitiveFieldRef() = Foam::zero{};
+    boundaryFieldRef() = Foam::zero{};
+
+    // Make sure any e.g. jump-cyclic are updated.
+    boundaryFieldRef().evaluate_if
+    (
+        [](const auto& pfld) { return pfld.constraintOverride(); }
+    );
 }
 
 
@@ -1455,6 +1593,12 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::operator==
     boundaryFieldRef() == gf.boundaryField();
 
     tgf.clear();
+
+    // Make sure any e.g. jump-cyclic are updated.
+    boundaryFieldRef().evaluate_if
+    (
+        [](const auto& pfld) { return pfld.constraintOverride(); }
+    );
 }
 
 
@@ -1466,6 +1610,27 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::operator==
 {
     internalFieldRef() = dt;
     boundaryFieldRef() == dt.value();
+
+    // Make sure any e.g. jump-cyclic are updated.
+    boundaryFieldRef().evaluate_if
+    (
+        [](const auto& pfld) { return pfld.constraintOverride(); }
+    );
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+void Foam::GeometricField<Type, PatchField, GeoMesh>::operator==(Foam::zero)
+{
+    // No dimension checking
+    primitiveFieldRef() = Foam::zero{};
+    boundaryFieldRef() == Foam::zero{};
+
+    // Make sure any e.g. jump-cyclic are updated.
+    boundaryFieldRef().evaluate_if
+    (
+        [](const auto& pfld) { return pfld.constraintOverride(); }
+    );
 }
 
 
@@ -1481,6 +1646,11 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::operator op              \
                                                                                \
     internalFieldRef() op gf.internalField();                                  \
     boundaryFieldRef() op gf.boundaryField();                                  \
+                                                                               \
+    boundaryFieldRef().evaluate_if                                             \
+    (                                                                          \
+        [](const auto& pfld) { return pfld.constraintOverride(); }             \
+    );                                                                         \
 }                                                                              \
                                                                                \
 template<class Type, template<class> class PatchField, class GeoMesh>          \
@@ -1491,6 +1661,11 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::operator op              \
 {                                                                              \
     operator op(tgf());                                                        \
     tgf.clear();                                                               \
+                                                                               \
+    boundaryFieldRef().evaluate_if                                             \
+    (                                                                          \
+        [](const auto& pfld) { return pfld.constraintOverride(); }             \
+    );                                                                         \
 }                                                                              \
                                                                                \
 template<class Type, template<class> class PatchField, class GeoMesh>          \
@@ -1501,6 +1676,11 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::operator op              \
 {                                                                              \
     internalFieldRef() op dt;                                                  \
     boundaryFieldRef() op dt.value();                                          \
+                                                                               \
+    boundaryFieldRef().evaluate_if                                             \
+    (                                                                          \
+        [](const auto& pfld) { return pfld.constraintOverride(); }             \
+    );                                                                         \
 }
 
 COMPUTED_ASSIGNMENT(Type, +=)
@@ -1536,6 +1716,124 @@ Foam::Ostream& Foam::operator<<
     tfld.clear();
 
     return os;
+}
+
+
+// * * * * * * * * * * * * * Expression Templates  * * * * * * * * * * * * * //
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+template<typename E>
+Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
+(
+    const IOobject& io,
+    const Mesh& mesh,
+    const Expression::GeometricFieldExpression
+    <
+        E,
+        typename E::IntExpr,
+        typename E::UncoupledPatchExpr,
+        typename E::CoupledPatchExpr,
+        typename E::value_type
+    >& expr
+)
+:
+    Internal(io, mesh, expr.dimensions(), false),
+    timeIndex_(this->time().timeIndex()),
+    boundaryField_(mesh.boundary(), *this, PatchField<Type>::calculatedType())
+{
+    DebugInFunction
+        << "Creating from expression " << nl << this->info() << endl;
+
+    bool hasRead = readIfPresent();
+    if (!hasRead)
+    {
+        expr.evaluate(*this);
+    }
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+template<typename E>
+Foam::GeometricField<Type, PatchField, GeoMesh>::GeometricField
+(
+    const word& name,
+    const Mesh& mesh,
+    const Expression::GeometricFieldExpression
+    <
+        E,
+        typename E::IntExpr,
+        typename E::UncoupledPatchExpr,
+        typename E::CoupledPatchExpr,
+        typename E::value_type
+    >& expr
+)
+:
+    Internal
+    (
+        IOobject
+        (
+            name,
+            mesh.time().timeName(),
+            mesh.thisDb()
+        ),
+        mesh,
+        expr.dimensions(),
+        false
+    ),
+    timeIndex_(this->time().timeIndex()),
+    boundaryField_(mesh.boundary(), *this, PatchField<Type>::calculatedType())
+{
+    DebugInFunction
+        << "Creating from expression " << nl << this->info() << endl;
+
+    expr.evaluate(*this);
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+Foam::Expression::GeometricFieldConstRefWrap
+<
+    Foam::GeometricField<Type, PatchField, GeoMesh>
+>
+Foam::GeometricField<Type, PatchField, GeoMesh>::expr() const
+{
+    return Expression::GeometricFieldConstRefWrap<this_type>(*this);
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+template<typename E>
+void Foam::GeometricField<Type, PatchField, GeoMesh>::operator=
+(
+    const Expression::GeometricFieldExpression
+    <
+        E,
+        typename E::IntExpr,
+        typename E::UncoupledPatchExpr,
+        typename E::CoupledPatchExpr,
+        typename E::value_type
+    >& expr
+)
+{
+    Expression::GeometricFieldRefWrap<this_type>(*this, expr);
+}
+
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+template<typename E>
+void Foam::GeometricField<Type, PatchField, GeoMesh>::operator==
+(
+    const Expression::GeometricFieldExpression
+    <
+        E,
+        typename E::IntExpr,
+        typename E::UncoupledPatchExpr,
+        typename E::CoupledPatchExpr,
+        typename E::value_type
+    >& expr
+)
+{
+    expr.evaluate(*this, true);
 }
 
 

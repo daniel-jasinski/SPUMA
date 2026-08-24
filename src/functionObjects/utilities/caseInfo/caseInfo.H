@@ -29,18 +29,18 @@ Class
 Description
     Collects and writes case information to file.
 
-    Example of function object specification:
+Usage
+    Minimal example by using \c system/controlDict.functions:
     \verbatim
-    caseInfo
+    caseInfoFO
     {
+        // Mandatory entries
         type            caseInfo;
         libs            (utilityFunctionObjects);
 
-        // Warn when entries are not found
-        lookupMode  warn; // none | warn | error;
-
-        // Write format
-        writeFormat json; //  dictionary | json;
+        // Optional entries
+        lookupMode      <word>; // none | warn | error;
+        writeFormat     <word>; // dictionary | json;
 
         dictionaries
         {
@@ -93,30 +93,47 @@ Description
         }
 
         functionObjects (minMax1); // v2306 only
+
+        // Inherited entries
+        ...
     }
     \endverbatim
 
-    Where the entries comprise:
+    where the entries mean:
     \table
-        Property      | Description                         | Required | Default
-        type          | Type name: caseInfo                 | yes |
-        lookupMode    | Lookup mode                         | no  | warn
-        writeFormat   | Write format                        | yes |
-        dictionaries  | Dictionaries to process             | no  | \<none\>
-        functionObjects | Function objects to process       | no  | \<none\>
+      Property | Description                        | Type | Reqd | Deflt
+      type     | Type name: caseInfo                | word | yes  | -
+      libs     | Library name: utilityFunctionObjects | word | yes | -
+      lookupMode    | Lookup mode                   | word | no  | warn
+      writeFormat   | Write format                  | word | no  | -
+      dictionaries  | Dictionaries to process       | word | no  | -
+      functionObjects | Function objects to process | word | no  | -
     \endtable
 
-See also
-    Foam::functionObject
-    Foam::timeFunctionObject
+    Options for the \c writeFormat entry:
+    \verbatim
+      dictionary    | OpenFOAM native dictionary format
+      json          | JSON output format
+    \endverbatim
+
+    Options for the \c lookupMode entry:
+    \verbatim
+      none          | Do not report missing entries.
+      warn          | Warn about missing entries.
+      error         | Error and abort on missing entries.
+    \endverbatim
+
+    The inherited entries are elaborated in:
+      - \link stateFunctionObject.H \endlink
+      - \link writeFile.H \endlink
 
 SourceFiles
     caseInfo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_caseInfo_H
-#define functionObjects_caseInfo_H
+#ifndef Foam_functionObjects_caseInfo_H
+#define Foam_functionObjects_caseInfo_H
 
 #include "IOdictionary.H"
 #include "writeFile.H"
@@ -128,7 +145,7 @@ SourceFiles
 namespace Foam
 {
 
-// Forward declarations
+// Forward Declarations
 class fvMesh;
 
 namespace functionObjects
@@ -146,7 +163,7 @@ class caseInfo
 {
 public:
 
-    // Public enumerations
+    // Public Enumerations
 
         //- Write format enumeration
         enum class writeFormat
@@ -166,7 +183,7 @@ public:
 
 private:
 
-    // Private Member Data
+    // Private Data
 
         //- Write format names
         static const Enum<writeFormat> writeFormatNames_;
@@ -251,7 +268,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         caseInfo
         (
             const word& name,
@@ -269,13 +286,13 @@ public:
         using regIOobject::read;
         using regIOobject::write;
 
-        //- Read the controls
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Execute, does nothing
+        //- Execute the function-object operations (no-op)
         virtual bool execute();
 
-        //- Write the caseInfo
+        //- Write the function-object results
         virtual bool write();
 };
 

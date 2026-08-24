@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -30,7 +30,7 @@ License
 #include "UList.H"
 #include "contiguous.H"
 #include "labelRange.H"
-#include "MemoryPool.H"
+#include "MemoryPoolBase.H"
 
 #include <random>
 
@@ -102,7 +102,6 @@ void Foam::UList<T>::swapLast(const label i)
     }
 }
 
-//TODO memory pool
 template<class T>
 void Foam::UList<T>::deepCopy(const UList<T>& list)
 {
@@ -119,16 +118,26 @@ void Foam::UList<T>::deepCopy(const UList<T>& list)
     if (this->size_ > 0)
     {
         // Can dispatch with
-        // - std::execution::parallel_unsequenced_policy
-        // - std::execution::unsequenced_policy
+        // - std::execution::par_unseq
+        // - std::execution::unseq
 #ifndef SYCL_DEVICE_ONLY
         if (list.usePool() && this->usePool_) //ADD case were the src list is not on the pool?
         {
-            MemoryPool::getInstance()->memCopy(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+            Spuma::MemoryPool::getInstance()->memCopy
+            (
+                this->v_,
+                const_cast<void*>(reinterpret_cast<const void*>(list.cbegin())),
+                this->size_*sizeof(T)
+            );
         }
         else if (this->usePool_ && !list.usePool())
         {
-            MemoryPool::getInstance()->copyIn(this->v_,(void*)list.begin(),this->size_*sizeof(T));
+            Spuma::MemoryPool::getInstance()->copyIn
+            (
+                this->v_,
+                const_cast<void*>(reinterpret_cast<const void*>(list.cbegin())),
+                this->size_*sizeof(T)
+            );
         }
         else
 #endif
@@ -172,27 +181,17 @@ void Foam::UList<T>::deepCopy(const IndirectListBase<T, Addr>& list)
 }
 
 
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-// This is non-inlined to allow template specializations
-template<class T>
-void Foam::UList<T>::operator=(const Foam::zero)
-{
-    this->fill_uniform(Foam::zero{});
-}
-
-
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class T>
 std::streamsize Foam::UList<T>::byteSize() const
 {
 #ifndef SYCL_DEVICE_ONLY
-    if (!is_contiguous<T>::value)
+    if constexpr (!is_contiguous_v<T>)
     {
         FatalErrorInFunction
             << "Invalid for non-contiguous data types"
-            << abort(FatalError);
+            << Foam::abort(FatalError);
     }
 #endif
     return this->size_bytes();
@@ -268,8 +267,8 @@ template<class T>
 bool Foam::UList<T>::operator==(const UList<T>& list) const
 {
     // Can dispatch with
-    // - std::execution::parallel_unsequenced_policy
-    // - std::execution::unsequenced_policy
+    // - std::execution::par_unseq
+    // - std::execution::unseq
     return
     (
         (this->size_ == list.size_)
@@ -289,8 +288,8 @@ template<class T>
 bool Foam::UList<T>::operator<(const UList<T>& list) const
 {
     // Can dispatch with
-    // - std::execution::parallel_unsequenced_policy
-    // - std::execution::unsequenced_policy
+    // - std::execution::par_unseq
+    // - std::execution::unseq
     return std::lexicographical_compare
     (
         this->cbegin(), this->cend(),

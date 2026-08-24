@@ -319,6 +319,19 @@ inline Foam::scalar Foam::triangle<Point, PointRef>::mag() const
 }
 
 
+inline Foam::scalar Foam::triPoints::magSqr() const
+{
+    return ::Foam::magSqr(areaNormal());
+}
+
+
+template<class Point, class PointRef>
+inline Foam::scalar Foam::triangle<Point, PointRef>::magSqr() const
+{
+    return ::Foam::magSqr(areaNormal());
+}
+
+
 template<class Point, class PointRef>
 inline Point Foam::triangle<Point, PointRef>::circumCentre() const
 {
@@ -1053,21 +1066,6 @@ inline int Foam::triangle<Point, PointRef>::sign
 
     return ((dist < -tol) ? -1 : (dist > tol) ? +1 : 0);
 }
-
-
-template<class Point, class PointRef>
-inline void Foam::triangle<Point, PointRef>::dummyOp::operator()
-(
-    const triPoints&
-)
-{}
-
-
-template<class Point, class PointRef>
-inline Foam::triangle<Point, PointRef>::sumAreaOp::sumAreaOp()
-:
-    area_(0.0)
-{}
 
 
 template<class Point, class PointRef>

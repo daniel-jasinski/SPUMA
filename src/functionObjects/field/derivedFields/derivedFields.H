@@ -41,34 +41,32 @@ Description
     Operands:
     \table
       Operand       | Type                    | Location
-      input         | vol{Scalar,Vector}Field | $FOAM_CASE/\<time\>/\<inpField\>
+      input         | vol{Scalar,Vector}Field | <time>/inputField
       output file   | -                       | -
-      output field  | vol{Scalar,Vector}Field | $FOAM_CASE/\<time\>/\<outField\>
+      output field  | vol{Scalar,Vector}Field | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    derivedFields1
+    derivedFieldsFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            derivedFields;
         libs            (fieldFunctionObjects);
-
-        // Mandatory entries (runtime modifiable)
         derived         (rhoU pTotal);
 
-        // Optional entries (runtime modifiable)
-        rhoRef          1.0;
+        // Optional entries
+        rhoRef          <scalar>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                           | Type | Req'd | Dflt
+      Property     | Description                           | Type | Reqd | Deflt
       type         | Type name: derivedFields              | word |  yes  | -
       libs         | Library name: fieldFunctionObjects    | word |  yes  | -
       derived      | Names of operand fields (rhoU/pTotal) | word |  yes  | -
@@ -76,22 +74,15 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::derivedFields
+      - \link functionObject.H \endlink
 
 SourceFiles
     derivedFields.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_derivedFields_H
-#define functionObjects_derivedFields_H
+#ifndef Foam_functionObjects_derivedFields_H
+#define Foam_functionObjects_derivedFields_H
 
 #include "fvMeshFunctionObject.H"
 #include "Enum.H"
@@ -158,7 +149,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         derivedFields
         (
             const word& name,
@@ -182,13 +173,13 @@ public:
         //- Remove (checkOut) derived fields from the object registry
         void removeDerivedFields();
 
-        //- Read the data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 
-        //- Calculate the derived fields
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write derived fields
+        //- Write the function-object results
         virtual bool write();
 
         //- Update for changes of mesh

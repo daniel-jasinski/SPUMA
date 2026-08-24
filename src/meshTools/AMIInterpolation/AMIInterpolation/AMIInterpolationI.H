@@ -102,17 +102,30 @@ inline Foam::label Foam::AMIInterpolation::singlePatchProc() const noexcept
 }
 
 
-inline Foam::label Foam::AMIInterpolation::comm() const
+inline Foam::label Foam::AMIInterpolation::comm() const noexcept
 {
-    return comm_;
+    if (const auto* ptr = geomComm_.get())
+    {
+        return ptr->comm();
+    }
+    else
+    {
+        return comm_;
+    }
 }
 
 
-inline Foam::label Foam::AMIInterpolation::comm(const label newComm)
+inline Foam::label Foam::AMIInterpolation::comm(label communicator) noexcept
 {
-    const label oldComm(comm_);
-    comm_ = newComm;
-    return oldComm;
+    label old(comm_);
+    comm_ = communicator;
+    return old;
+}
+
+
+inline bool Foam::AMIInterpolation::cacheActive() const
+{
+    return cache_.active();
 }
 
 
@@ -149,6 +162,30 @@ inline const Foam::scalarListList& Foam::AMIInterpolation::srcWeights() const
 inline Foam::scalarListList& Foam::AMIInterpolation::srcWeights()
 {
     return srcWeights_;
+}
+
+
+inline const Foam::ListListAddr<Foam::labelList>& Foam::AMIInterpolation::srcListAddr() const
+{
+    return srcListAddr_();
+}
+
+
+inline Foam::ListListAddr<Foam::labelList>& Foam::AMIInterpolation::srcListAddr()
+{
+    return srcListAddr_.ref();
+}
+
+
+inline const Foam::ListListAddr<Foam::scalarList>& Foam::AMIInterpolation::srcListWeights() const
+{
+    return srcListWeights_();
+}
+
+
+inline Foam::ListListAddr<Foam::scalarList>& Foam::AMIInterpolation::srcListWeights()
+{
+    return srcListWeights_.ref();
 }
 
 
@@ -222,6 +259,30 @@ inline const Foam::scalarListList& Foam::AMIInterpolation::tgtWeights() const
 inline Foam::scalarListList& Foam::AMIInterpolation::tgtWeights()
 {
     return tgtWeights_;
+}
+
+
+inline const Foam::ListListAddr<Foam::labelList>& Foam::AMIInterpolation::tgtListAddr() const
+{
+    return tgtListAddr_();
+}
+
+
+inline Foam::ListListAddr<Foam::labelList>& Foam::AMIInterpolation::tgtListAddr()
+{
+    return tgtListAddr_.ref();
+}
+
+
+inline const Foam::ListListAddr<Foam::scalarList>& Foam::AMIInterpolation::tgtListWeights() const
+{
+    return tgtListWeights_();
+}
+
+
+inline Foam::ListListAddr<Foam::scalarList>& Foam::AMIInterpolation::tgtListWeights()
+{
+    return tgtListWeights_.ref();
 }
 
 

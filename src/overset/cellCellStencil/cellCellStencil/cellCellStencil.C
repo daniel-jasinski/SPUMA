@@ -423,7 +423,7 @@ void Foam::cellCellStencil::setUpFrontOnOversetPatch
     {
         if (isA<oversetFvPatch>(fvm[patchi]))
         {
-            const labelList& fc = fvm[patchi].faceCells();
+            const labelUList& fc = fvm[patchi].faceCells();
             forAll(fc, i)
             {
                 const label celli = fc[i];
@@ -498,7 +498,7 @@ void Foam::cellCellStencil::walkFront
         bitSet isFrontWork(isFront);
         label nCurrLayer = currLayer;
 
-        while (nCurrLayer > 1 && returnReduce(isFrontWork.any(), orOp<bool>()))
+        while (nCurrLayer > 1 && returnReduceOr(isFrontWork.any()))
         {
             bitSet newIsFront(mesh_.nFaces());
             forAll(isFrontWork, facei)
@@ -575,7 +575,7 @@ void Foam::cellCellStencil::walkFront
         scalarField allWeightWork(allCellTypes.size(), Zero);
         bitSet nHoles(allCellTypes.size());
 
-        while (returnReduce(isFront.any(), orOp<bool>()))
+        while (returnReduceOr(isFront.any()))
         {
             // Interpolate cells on front
             bitSet newIsFront(mesh_.nFaces());

@@ -39,8 +39,7 @@ namespace Foam
     typedef IOField<diagTensorField> diagTensorFieldIOField;
 
     //! Compact IO for a Field of diagTensorField
-    typedef CompactIOField<diagTensorField, diagTensor>
-    diagTensorFieldCompactIOField;
+    typedef CompactIOField<diagTensorField> diagTensorFieldCompactIOField;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

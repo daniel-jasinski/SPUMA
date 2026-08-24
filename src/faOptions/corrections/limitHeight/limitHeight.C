@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2022 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -53,10 +53,11 @@ Foam::fa::limitHeight::limitHeight
     const word& name,
     const word& modelType,
     const dictionary& dict,
-    const fvMesh& mesh
+    const fvMesh& mesh,
+    const word& defaultAreaName
 )
 :
-    faceSetOption(name, modelType, dict, mesh),
+    fa::faceSetOption(name, modelType, dict, mesh, defaultAreaName),
     hName_("h"),
     max_(0)  // overwritten later
 {

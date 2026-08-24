@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2024 OpenCFD Ltd.
+    Copyright (C) 2024-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -63,7 +63,8 @@ Usage
       Property   | Description                        | Type | Reqd | Deflt
       type       | Type name: surfaceCourantNumber    | word | yes  | -
       libs       | Library name: regionFaModels       | word | yes  | -
-      area       | Name of finite-area region         | word | no   | region0
+      region     | Name of finite-volume region       | word | no   | region0
+      area       | Name of finite-area region         | word | no   |
       result     | Name of result field               | word | no   | surfaceCo
       phis       | Name of edge flux field            | word | no   | phis
       rho        | Name of density field              | word | no   | rho
@@ -75,15 +76,16 @@ Usage
 
 Note
   - The \c surfaceCourantNumber calculates the Courant number at face centers,
-  rather than at edge centers.
+    rather than at edge centers.
+  - If the area region is not specified, the first region is taken
 
 SourceFiles
     surfaceCourantNumber.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_surfaceCourantNumber_H
-#define functionObjects_surfaceCourantNumber_H
+#ifndef Foam_functionObjects_surfaceCourantNumber_H
+#define Foam_functionObjects_surfaceCourantNumber_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -105,7 +107,7 @@ namespace functionObjects
 
 class surfaceCourantNumber
 :
-    public fvMeshFunctionObject,
+    public functionObjects::fvMeshFunctionObject,
     public writeFile
 {
     // Private Data
@@ -120,7 +122,7 @@ class surfaceCourantNumber
         word rhoName_;
 
         //- Reference to finite-area object registry
-        std::shared_ptr<const faMesh> faMeshPtr_;
+        const faMesh* faMeshPtr_;
 
 
     // Private Member Functions
@@ -144,6 +146,12 @@ public:
             const Time& runTime,
             const dictionary& dict
         );
+
+        //- No copy construct
+        surfaceCourantNumber(const surfaceCourantNumber&) = delete;
+
+        //- No copy assignment
+        void operator=(const surfaceCourantNumber&) = delete;
 
 
     //- Destructor

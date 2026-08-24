@@ -88,8 +88,7 @@ Foam::autoPtr<Foam::lduMatrix::smoother> Foam::lduMatrix::smoother::New
         e.stream() >> name;
     }
 
-    // not (yet?) needed:
-    // const dictionary& controls = e.isDict() ? e.dict() : dictionary::null;
+    const dictionary& controls = e.isDict() ? e.dict() : dictionary::null;
 
     if (matrix.symmetric())
     {

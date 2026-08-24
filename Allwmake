@@ -32,6 +32,7 @@ then
 else
     echo "compiler=unknown"
 fi
+echo "cxxflags=\"$(wmake -show-cxxflags 2>/dev/null || true)\""
 
 echo
 echo ========================================

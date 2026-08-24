@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2015 OpenFOAM Foundation
     Copyright (C) 2017-2019 OpenCFD Ltd.
-    Copyright (C) 2025 CINECA
+    Copyright (C) 2026 CINECA
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -166,6 +166,8 @@ void Foam::ChebyshevSmoother::smooth_
     const label nSweeps
 )  const
 {
+    const bool useLowerCSR = controlDict_.getOrDefault<bool>("useLowerCSR", false);
+
     const label nCells = psi.size();
 
     solveScalar* __restrict__ psiPtr = psi.begin();
@@ -205,7 +207,7 @@ void Foam::ChebyshevSmoother::smooth_
     const scalar alpha1 = 2 * rho0 / ((lambdaMax - lambdaMin) * spRadius);
 
     // --- Calculate A.psi
-    matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
+    matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
 
     preconditioner_->precondition(wA,source - Apsi);
 
@@ -243,7 +245,7 @@ void Foam::ChebyshevSmoother::smooth_
         scalar alpha1n = 4.* rhon / ((lambdaMax - lambdaMin) * spRadius);
 
         // --- Calculate A.psi
-        matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt);
+        matrix_.Amul(Apsi, psi, interfaceBouCoeffs_, interfaces_, cmpt, useLowerCSR);
         
         preconditioner_->precondition(wA, source - Apsi);
 

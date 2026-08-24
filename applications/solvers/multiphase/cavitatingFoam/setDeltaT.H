@@ -38,7 +38,8 @@ if (adjustTimeStep)
     scalar maxDeltaTFact =
         Foam::min(maxCo/(CoNum + SMALL), maxAcousticCo/(acousticCoNum + SMALL));
 
-    scalar deltaTFact = Foam::min(Foam::min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
+    const scalar deltaTFact =
+        Foam::min(Foam::min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
 
     runTime.setDeltaT
     (

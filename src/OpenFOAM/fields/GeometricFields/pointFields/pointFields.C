@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -79,78 +80,14 @@ defineTemplateDebugSwitchWithName
 );
 
 
+// Out-of-line debugLevel() definitions for the Boundary specializations
+// (cross-DLL safe function accessors for the debug switch on Windows)
 
-
-// Local-ops consistency enforcing
-
-template<> int pointScalarField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "localConsistency",
-    int,
-    Foam::pointScalarField::Boundary::localConsistency
-);
-
-template<> int pointVectorField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "pointVectorField::Boundary::localConsistency",
-    int,
-    Foam::pointVectorField::Boundary::localConsistency
-);
-
-template<> int pointSphericalTensorField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "pointSphericalTensorField::Boundary::localConsistency",
-    int,
-    Foam::pointSphericalTensorField::Boundary::localConsistency
-);
-
-template<> int pointSymmTensorField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "pointSymmTensorField::Boundary::localConsistency",
-    int,
-    Foam::pointSymmTensorField::Boundary::localConsistency
-);
-
-template<> int pointTensorField::Boundary::localConsistency
-(
-    debug::optimisationSwitch("localConsistency", 1)
-);
-registerOptSwitch
-(
-    "pointTensorField::Boundary::localConsistency",
-    int,
-    Foam::pointTensorField::Boundary::localConsistency
-);
-
-
-#define defineBoundaryAccessors(Type)                                         \
-    defineTemplateDebugLevelFunction(Type);                                   \
-    template<> int& Type::localConsistencyRef()                               \
-    { return Type::localConsistency; }
-
-defineBoundaryAccessors(pointScalarField::Boundary);
-defineBoundaryAccessors(pointVectorField::Boundary);
-defineBoundaryAccessors(pointSphericalTensorField::Boundary);
-defineBoundaryAccessors(pointSymmTensorField::Boundary);
-defineBoundaryAccessors(pointTensorField::Boundary);
-
-#undef defineBoundaryAccessors
+defineTemplateDebugLevelFunction(pointScalarField::Boundary);
+defineTemplateDebugLevelFunction(pointVectorField::Boundary);
+defineTemplateDebugLevelFunction(pointSphericalTensorField::Boundary);
+defineTemplateDebugLevelFunction(pointSymmTensorField::Boundary);
+defineTemplateDebugLevelFunction(pointTensorField::Boundary);
 
 } // End namespace Foam
 
@@ -167,6 +104,18 @@ const Foam::wordList Foam::fieldTypes::point
     "pointSymmTensorField",
     "pointTensorField"
 });
+
+
+// * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
+
+bool Foam::fieldTypes::is_point(const word& clsName)
+{
+    return
+    (
+        clsName.starts_with("point") && clsName.ends_with("Field")
+     && Foam::fieldTypes::point.contains(clsName)
+    );
+}
 
 
 // ************************************************************************* //

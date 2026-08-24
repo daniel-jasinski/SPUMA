@@ -41,7 +41,7 @@ Note
     may be addressed using ghost points.
 
 SourceFiles
-    foamVtkSurfaceWriter.C
+    foamVtkSurfaceWriter.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -50,6 +50,7 @@ SourceFiles
 
 #include "foamVtkPolyWriter.H"
 #include "instant.H"
+
 #include <functional>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -108,7 +109,7 @@ public:
             const pointField& pts,
             const faceList& faces,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
         //- Construct from components and open the file for writing.
@@ -119,7 +120,7 @@ public:
             const faceList& faces,
             const vtk::outputOptions opts,
             const fileName& file,
-            bool parallel = Pstream::parRun()
+            bool parallel = UPstream::parRun()
         );
 
 

@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2018-2023 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
@@ -73,7 +73,7 @@ bool writePointField
     }
 
     // Boundary
-    for (vtk::patchWriter& writer : patchWriters)
+    for (auto& writer : patchWriters)
     {
         writer.write(field);
     }
@@ -138,25 +138,36 @@ label writeAllPointFields
 
     const pointMesh& ptMesh = pointMesh::New(proxy.baseMesh());
 
-    #undef  foamToVtk_WRITE_FIELD
-    #define foamToVtk_WRITE_FIELD(FieldType)    \
-        writePointFields<FieldType>             \
-        (                                       \
-            internalWriter,                     \
-            patchWriters,                       \
-            proxy, ptMesh,                      \
-            objects,                            \
-            syncPar                             \
-        )
-
     label count = 0;
-    count += foamToVtk_WRITE_FIELD(pointScalarField);
-    count += foamToVtk_WRITE_FIELD(pointVectorField);
-    count += foamToVtk_WRITE_FIELD(pointSphericalTensorField);
-    count += foamToVtk_WRITE_FIELD(pointSymmTensorField);
-    count += foamToVtk_WRITE_FIELD(pointTensorField);
+    const label total = objects.size();
+    do
+    {
+        #undef  doLocalWriteCode
+        #define doLocalWriteCode(Type)                      \
+        {                                                   \
+            typedef PointField<Type> FieldType;             \
+                                                            \
+            count += writePointFields<FieldType>            \
+            (                                               \
+                internalWriter,                             \
+                patchWriters,                               \
+                proxy, ptMesh,                              \
+                objects,                                    \
+                syncPar                                     \
+            );                                              \
+            if (count >= total) break;  /* early exit */    \
+        }
 
-    #undef foamToVTK_WRITE_FIELD
+        doLocalWriteCode(scalar);
+        doLocalWriteCode(vector);
+        doLocalWriteCode(sphericalTensor);
+        doLocalWriteCode(symmTensor);
+        doLocalWriteCode(tensor);
+
+        #undef doLocalWriteCode
+    }
+    while (false);
+
     return count;
 }
 

@@ -39,6 +39,11 @@ dimensionedScalar rhoInfValue
     laminarTransport
 );
 
+const dimensionedScalar invRhoInf
+(
+    dimless/dimDensity, scalar(1)/rhoInfValue.value()
+);
+
 volScalarField rhoInf
 (
     IOobject

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2017 OpenFOAM Foundation
-    Copyright (C) 2018-2024 OpenCFD Ltd.
+    Copyright (C) 2018-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -62,6 +62,10 @@ class IOField
         //  Return true if read (only accurate when readOnProc == true).
         bool readIOcontents(bool readOnProc = true);
 
+        //- Read the content size.
+        //  Return the size if read, -1 otherwise
+        label readIOsize();
+
 public:
 
     //- The underlying content type
@@ -76,7 +80,7 @@ public:
         //- Default copy construct
         IOField(const IOField&) = default;
 
-        //- Construct from IOobject
+        //- Construct from IOobject. Will be zero size if not read.
         explicit IOField(const IOobject& io);
 
         //- Construct from IOobject, with local processor conditional reading
@@ -99,6 +103,10 @@ public:
 
 
     // Factory Methods
+
+        //- Read and return content size, -1 if not read.
+        //  The IOobject will not be registered
+        static label readContentsSize(const IOobject& io);
 
         //- Read and return contents. The IOobject will not be registered
         static Field<Type> readContents(const IOobject& io);
@@ -124,11 +132,20 @@ public:
 
     // Member Operators
 
-        //- Copy assignment of entries
-        void operator=(const IOField<Type>& rhs);
-
         //- Copy or move assignment of entries
         using Field<Type>::operator=;
+
+        //- Copy assignment of entries
+        void operator=(const IOField<Type>& rhs)
+        {
+            Field<Type>::operator=(rhs);
+        }
+
+        //- Move assignment of entries
+        void operator=(IOField<Type>&& rhs)
+        {
+            Field<Type>::operator=(std::move(static_cast<Field<Type>&>(rhs)));
+        }
 };
 
 

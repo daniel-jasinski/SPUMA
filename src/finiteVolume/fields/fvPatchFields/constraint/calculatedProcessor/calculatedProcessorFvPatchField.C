@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
     Copyright (C) 2025 Cineca
 -------------------------------------------------------------------------------
 License
@@ -112,6 +112,25 @@ Foam::calculatedProcessorFvPatchField<Type>::patchNeighbourField() const
 
 
 template<class Type>
+void Foam::calculatedProcessorFvPatchField<Type>::patchNeighbourField
+(
+    UList<Type>& pnf
+) const
+{
+    if (!this->ready())
+    {
+        FatalErrorInFunction
+            << "Outstanding request on patch of size "
+            << procInterface_.faceCells().size()
+            << " between proc " << procInterface_.myProcNo()
+            << " and " << procInterface_.neighbProcNo()
+            << abort(FatalError);
+    }
+    pnf.deepCopy(*this);
+}
+
+
+template<class Type>
 void Foam::calculatedProcessorFvPatchField<Type>::initEvaluate
 (
     const Pstream::commsTypes commsType
@@ -119,35 +138,36 @@ void Foam::calculatedProcessorFvPatchField<Type>::initEvaluate
 {
     if (UPstream::parRun())
     {
-        if (!is_contiguous<Type>::value)
+        if constexpr (!is_contiguous_v<Type>)
         {
             FatalErrorInFunction
                 << "Invalid for non-contiguous data types"
                 << abort(FatalError);
         }
 
-        //this->patchInternalField(sendBuf_);
         // Bypass patchInternalField since uses fvPatch addressing
+
+        Field<Type>& self = *this;  // Receive straight into *this
+
         {
-            const Field<Type>& iF = this->internalField();
-            const labelList& fc = procInterface_.faceCells();
-            sendBuf_.resize_nocopy(fc.size());
-            forAll(fc, i)
+            const Field<Type>& psiInternal = this->internalField();
+            const labelUList& faceCells = procInterface_.faceCells();
+
+            sendBuf_.resize_nocopy(faceCells.size());
+            self.resize_nocopy(faceCells.size());
+
+            forAll(faceCells, i)
             {
-                sendBuf_[i] = iF[fc[i]];
+                sendBuf_[i] = psiInternal[faceCells[i]];
             }
         }
-
-        // Receive straight into *this
-        this->resize_nocopy(sendBuf_.size());
 
         recvRequest_ = UPstream::nRequests();
         UIPstream::read
         (
             UPstream::commsTypes::nonBlocking,
             procInterface_.neighbProcNo(),
-            this->data_bytes(),
-            this->size_bytes(),
+            self,
             procInterface_.tag(),
             procInterface_.comm()
         );
@@ -157,8 +177,7 @@ void Foam::calculatedProcessorFvPatchField<Type>::initEvaluate
         (
             UPstream::commsTypes::nonBlocking,
             procInterface_.neighbProcNo(),
-            sendBuf_.cdata_bytes(),
-            sendBuf_.size_bytes(),
+            sendBuf_,
             procInterface_.tag(),
             procInterface_.comm()
         );
@@ -204,29 +223,30 @@ void Foam::calculatedProcessorFvPatchField<Type>::initInterfaceMatrixUpdate
     }
 
     // Bypass patchInternalField since uses fvPatch addressing
-    const labelList& fc = lduAddr.patchAddr(patchId);
+    const labelUList& faceCells = lduAddr.patchAddr(patchId);
 
-    scalarSendBuf_.resize_nocopy(fc.size());
-
-    foamExecutor exec;
-    auto sSendBufp = scalarSendBuf_.begin();
-    const auto psiInternalp = psiInternal.cbegin();
-    const auto fcp = fc.cbegin();
-    auto Lambda = [=](label i)
     {
-        sSendBufp[i] = psiInternalp[fcp[i]];
-    };
-    exec.parallelFor(Lambda, fc.size());
+        scalarSendBuf_.resize_nocopy(faceCells.size());
+        scalarRecvBuf_.resize_nocopy(faceCells.size());
 
-    scalarRecvBuf_.resize_nocopy(scalarSendBuf_.size());
+        foamExecutor exec;
+        auto sSendBufp = scalarSendBuf_.begin();
+        const auto psiInternalp = psiInternal.cbegin();
+        const auto fcp = faceCells.cbegin();
+        auto Lambda = [=](label i)
+        {
+            sSendBufp[i] = psiInternalp[fcp[i]];
+        };
+        exec.parallelFor(Lambda, faceCells.size());
+
+    }
 
     recvRequest_ = UPstream::nRequests();
     UIPstream::read
     (
         UPstream::commsTypes::nonBlocking,
         procInterface_.neighbProcNo(),
-        scalarRecvBuf_.data_bytes(),
-        scalarRecvBuf_.size_bytes(),
+        scalarRecvBuf_,
         procInterface_.tag(),
         procInterface_.comm()
     );
@@ -236,8 +256,7 @@ void Foam::calculatedProcessorFvPatchField<Type>::initInterfaceMatrixUpdate
     (
         UPstream::commsTypes::nonBlocking,
         procInterface_.neighbProcNo(),
-        scalarSendBuf_.cdata_bytes(),
-        scalarSendBuf_.size_bytes(),
+        scalarSendBuf_,
         procInterface_.tag(),
         procInterface_.comm()
     );

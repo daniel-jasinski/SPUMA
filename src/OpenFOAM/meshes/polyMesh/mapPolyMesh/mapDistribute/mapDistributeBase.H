@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2015-2017 OpenFOAM Foundation
-    Copyright (C) 2015-2023 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -235,7 +235,7 @@ protected:
         static void flipAndCombine
         (
             //! [in,out] The left of binary combine operation
-            List<T>& lhs,
+            UList<T>& lhs,
             //! The right of binary combine operation
             const UList<T>& rhs,
             //! The mapping indices
@@ -254,8 +254,8 @@ protected:
         static void accessAndFlip
         (
             //! [out] The result values
-            List<T>& output,
-            //! [out] The input values
+            UList<T>& output,
+            //! The input values
             const UList<T>& values,
             //! The mapping indices
             const labelUList& map,
@@ -270,7 +270,7 @@ protected:
         template<class T, class NegateOp>
         static List<T> accessAndFlip
         (
-            //! [out] The input values
+            //! The input values
             const UList<T>& values,
             //! The mapping indices
             const labelUList& map,
@@ -895,7 +895,7 @@ public:
         static void distribute
         (
             const UPstream::commsTypes commsType,
-            const List<labelPair>& schedule,
+            const UList<labelPair>& schedule,
             const label constructSize,
             const labelListList& subMap,
             const bool subHasFlip,
@@ -909,6 +909,36 @@ public:
             const label comm = UPstream::worldComm
         );
 
+        //- Distribute combine data with specified combine operation
+        //- and negate operator (for flips).
+        //
+        //  If multiple processors write to same position,
+        //  contributions are added using the combine cop.
+        //
+        //  \note schedule only used for UPstream::commsTypes::scheduled,
+        //        others just use send-to-all, receive-from-all.
+        template<class T, class CombineOp, class NegateOp>
+        static void distribute
+        (
+            const UPstream::commsTypes commsType,
+            const UList<labelPair>& schedule,
+
+            const UList<T>& inField,         // input field
+            const labelListList& subMap,
+            const bool subHasFlip,
+
+            List<T>& field,                 // output field
+            const label constructSize,
+            const labelListList& constructMap,
+            const bool constructHasFlip,
+            const T& nullValue,
+            const CombineOp& cop,
+            const NegateOp& negOp,
+
+            const int tag = UPstream::msgType(),
+            const label comm = UPstream::worldComm
+        );
+
         //- Distribute assign data with specified negate operator (for flips).
         //- Uses assignment for combine operation.
         //
@@ -918,7 +948,7 @@ public:
         static void distribute
         (
             const UPstream::commsTypes commsType,
-            const List<labelPair>& schedule,
+            const UList<labelPair>& schedule,
             const label constructSize,
             const labelListList& subMap,
             const bool subHasFlip,
@@ -1078,7 +1108,7 @@ public:
 
             //- Do all sends using PstreamBuffers
             template<class T>
-            void send(PstreamBuffers& pBufs, const List<T>& field) const;
+            void send(PstreamBuffers& pBufs, const UList<T>& field) const;
 
             //- Do all receives using PstreamBuffers
             template<class T>

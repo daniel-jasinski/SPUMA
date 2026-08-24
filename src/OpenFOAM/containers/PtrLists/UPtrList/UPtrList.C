@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2015-2022 OpenCFD Ltd.
+    Copyright (C) 2015-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -66,23 +66,6 @@ Foam::label Foam::UPtrList<T>::squeezeNull()
 
 
 template<class T>
-void Foam::UPtrList<T>::trimTrailingNull()
-{
-    label newLen = this->size();
-
-    for (label i = newLen-1; i >= 0 && !ptrs_[i]; --i)
-    {
-        --newLen;
-    }
-
-    // Or mutable?
-    // const_cast<Detail::PtrListDetail<T>&>(ptrs_).setAddressableSize(newLen);
-
-    ptrs_.setAddressableSize(newLen);
-}
-
-
-template<class T>
 void Foam::UPtrList<T>::reorder(const labelUList& oldToNew, const bool check)
 {
     const label len = this->size();
@@ -98,7 +81,7 @@ void Foam::UPtrList<T>::reorder(const labelUList& oldToNew, const bool check)
 
     Detail::PtrListDetail<T> newList(len);
 
-    for (label i=0; i<len; ++i)
+    for (label i = 0; i < len; ++i)
     {
         const label newIdx = oldToNew[i];
 
@@ -127,7 +110,8 @@ void Foam::UPtrList<T>::reorder(const labelUList& oldToNew, const bool check)
         newList.checkNonNull();
     }
 
-    ptrs_.transfer(newList);
+    // Copy the pointers, do not swap or transfer lists!
+    ptrs_ = newList;
 }
 
 
@@ -148,7 +132,7 @@ void Foam::UPtrList<T>::sortOrder(const labelUList& order, const bool check)
     Detail::PtrListDetail<T> newList(len);
     Detail::PtrListDetail<T> guard(len);
 
-    for (label i=0; i<len; ++i)
+    for (label i = 0; i < len; ++i)
     {
         const label oldIdx = order[i];
 
@@ -179,16 +163,35 @@ void Foam::UPtrList<T>::sortOrder(const labelUList& order, const bool check)
         newList.checkNonNull();
     }
 
-    ptrs_.transfer(newList);
+    // Copy the pointers, do not swap or transfer lists!
+    ptrs_ = newList;
 }
 
 
 // * * * * * * * * * * * * * * * Ostream Operators * * * * * * * * * * * * * //
 
 template<class T>
+Foam::Ostream& Foam::UPtrList<T>::printAddresses(Ostream& os) const
+{
+    return ptrs_.printAddresses(os);
+}
+
+
+template<class T>
+Foam::Ostream& Foam::UPtrList<T>::writeList
+(
+    Ostream& os,
+    const bool trimNull
+) const
+{
+    return ptrs_.write(os, trimNull);
+}
+
+
+template<class T>
 Foam::Ostream& Foam::operator<<(Ostream& os, const UPtrList<T>& list)
 {
-    return list.ptrs_.write(os);
+    return list.writeList(os, false);  // Do not ignore null
 }
 
 

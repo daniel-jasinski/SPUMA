@@ -37,8 +37,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_runTimeControls_runTimeCondition_H
-#define functionObjects_runTimeControls_runTimeCondition_H
+#ifndef Foam_functionObjects_runTimeControls_runTimeCondition_H
+#define Foam_functionObjects_runTimeControls_runTimeCondition_H
 
 #include "stateFunctionObject.H"
 #include "dictionary.H"

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2010-2018 Bernhard Gschaider
-    Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,62 +29,6 @@ License
 #include "objectRegistry.H"
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
-
-template<class Type>
-Type Foam::expressions::exprDriver::exprDriver::weightedAverage
-(
-    const scalarField& wfield,
-    const Field<Type>& fld
-)
-{
-    if (isNull(wfield))
-    {
-        const label n = returnReduce(fld.size(), sumOp<label>());
-
-        // stabilize
-        if (!n)
-        {
-            return Zero;
-        }
-
-        return gSum(fld) / scalar(n);
-    }
-
-    // #ifdef FULLDEBUG
-    // checkSize(wfield, fld);
-    // #endif
-
-    const scalar s = gSum(wfield);
-
-    // stabilize
-    if (mag(s) < ROOTVSMALL)
-    {
-        return Zero;
-    }
-
-    return gSum(wfield*fld) / s;
-}
-
-
-template<class Type>
-Type Foam::expressions::exprDriver::exprDriver::weightedSum
-(
-    const scalarField& wfield,
-    const Field<Type>& fld
-)
-{
-    if (isNull(wfield))
-    {
-        return gSum(fld);
-    }
-
-    // #ifdef FULLDEBUG
-    // checkSize(wfield, fld);
-    // #endif
-
-    return gSum(wfield*fld);
-}
-
 
 template<class Type>
 Foam::tmp<Foam::Field<Type>>
@@ -137,7 +81,7 @@ bool Foam::expressions::exprDriver::isFunction(const word& name) const
     // Currently only scalar, vector
     #undef doLocalCode
     #define doLocalCode(WhichType, MapperMember)                    \
-    if (std::is_same<Type, WhichType>::value)                       \
+    if constexpr (std::is_same_v<Type, WhichType>)                  \
     {                                                               \
         return bool                                                 \
         (                                                           \
@@ -172,7 +116,7 @@ Type Foam::expressions::exprDriver::getFunctionValue
         // Currently only scalar, vector
         #undef doLocalCode
         #define doLocalCode(WhichType, MapperMember)                \
-        if (std::is_same<Type, WhichType>::value)                   \
+        if constexpr (std::is_same_v<Type, WhichType>)              \
         {                                                           \
             const Function1<WhichType>* ptr =                       \
                 this->template getFunction1Ptr<WhichType>           \
@@ -230,7 +174,7 @@ void Foam::expressions::exprDriver::fillFunctionValues
         // Currently only scalar, vector
         #undef doLocalCode
         #define doLocalCode(WhichType, MapperMember)                \
-        if (std::is_same<Type, WhichType>::value)                   \
+        if constexpr (std::is_same_v<Type, WhichType>)              \
         {                                                           \
             const Function1<WhichType>* ptr =                       \
                 this->template getFunction1Ptr<WhichType>           \

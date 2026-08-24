@@ -31,72 +31,55 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Adds a random component to an input field,
-    with a specified perturbation magnitude.
+    Adds a random component to an input field, with a specified perturbation
+    magnitude.
 
     Operands:
     \table
       Operand        | Type             | Location
-      input          | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | vol<Type>Field   | <time>/inputField
       output file    | -                | -
-      output field   | vol\<Type\>Field | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | vol<Type>Field   | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    randomise1
+    randomiseFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            randomise;
         libs            (fieldFunctionObjects);
+        magPerturbation <scalar>;
+        field           <word>;
 
-        // Mandatory entries (runtime modifiable)
-        magPerturbation 0.1;
-
-        // Mandatory (inherited) entries (runtime modifiable)
-        field           <field>;
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                          | Type | Req'd | Dflt
+      Property     | Description                          | Type | Reqd  | Deflt
       type         | Type name: randomise                 | word |  yes  | -
       libs         | Library name: fieldFunctionObjects   | word |  yes  | -
-      regionType   | Selection type: all/cellSet/cellZone | word |  no  | all
-      magPerturbation | The magnitude of the perturbation | scalar |  yes  | -
-      field  | Name of the operand field            | word | yes  | -
-      name   | Name of cellSet/cellZone if required | word | conditional  | -
+      magPerturbation | The magnitude of the perturbation | scalar |  yes | -
+      field        | Name of the operand field            | word | yes   | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func "randomise(<field>)"
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::randomise
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     randomise.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_randomise_H
-#define functionObjects_randomise_H
+#ifndef Foam_functionObjects_randomise_H
+#define Foam_functionObjects_randomise_H
 
 #include "fieldExpression.H"
 #include "volRegion.H"
@@ -154,7 +137,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         randomise
         (
             const word& name,
@@ -169,7 +152,7 @@ public:
 
     // Member Functions
 
-        //- Read the randomise data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary& dict);
 };
 

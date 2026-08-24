@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2022 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -65,16 +65,20 @@ Foam::fa::externalHeatFluxSource::externalHeatFluxSource
     const word& sourceName,
     const word& modelType,
     const dictionary& dict,
-    const fvMesh& m
+    const fvMesh& m,
+    const word& defaultAreaName
 )
 :
-    fa::faceSetOption(sourceName, modelType, dict, m),
+    fa::faceSetOption(sourceName, modelType, dict, m, defaultAreaName),
     mode_(operationModeNames.get("mode", dict)),
-    TName_(dict.getOrDefault<word>("T", "T")),
-    Q_(nullptr),
-    q_(nullptr),
-    h_(nullptr),
-    Ta_(nullptr),
+    TName_
+    (
+        dict.getOrDefaultCompat<word>
+        (
+            "Ts", {{"T", -2506}},
+            suffixed("Ts"), keyType::LITERAL
+        )
+    ),
     emissivity_(dict.getOrDefault<scalar>("emissivity", 0))
 {
     fieldNames_.resize(1, TName_);
@@ -203,6 +207,11 @@ bool Foam::fa::externalHeatFluxSource::read(const dictionary& dict)
         dict.readIfPresent("emissivity", emissivity_);
 
         mode_ = operationModeNames.get("mode", dict);
+
+        Q_.reset(nullptr);
+        q_.reset(nullptr);
+        h_.reset(nullptr);
+        Ta_.reset(nullptr);
 
         switch (mode_)
         {

@@ -99,7 +99,9 @@ protected:
 
     // Demand-Driven Data
 
-        mutable fvMeshLduAddressing* lduPtr_;
+        mutable std::unique_ptr<fvMeshLduAddressing> lduPtr_;
+
+        mutable std::unique_ptr<fvMeshCsrAddressing> csrPtr_;
 
         mutable fvMeshCsrAddressing* csrPtr_;
 
@@ -110,25 +112,28 @@ protected:
         mutable label curTimeIndex_;
 
         //- Cell volumes
-        mutable SlicedDimensionedField<scalar, volMesh>* VPtr_;
+        mutable std::unique_ptr<SlicedDimensionedField<scalar, volMesh>> VPtr_;
 
         //- Cell volumes old time level
-        mutable DimensionedField<scalar, volMesh>* V0Ptr_;
+        mutable std::unique_ptr<DimensionedField<scalar, volMesh>> V0Ptr_;
 
         //- Cell volumes old-old time level
-        mutable DimensionedField<scalar, volMesh>* V00Ptr_;
+        mutable std::unique_ptr<DimensionedField<scalar, volMesh>> V00Ptr_;
 
         //- Face area vectors
-        mutable slicedSurfaceVectorField* SfPtr_;
+        mutable std::unique_ptr<slicedSurfaceVectorField> SfPtr_;
 
         //- Mag face area vectors
-        mutable surfaceScalarField* magSfPtr_;
+        mutable std::unique_ptr<surfaceScalarField> magSfPtr_;
+
+        //- Unit normal vectors
+        mutable std::unique_ptr<surfaceVectorField> unitSfPtr_;
 
         //- Cell centres
-        mutable slicedVolVectorField* CPtr_;
+        mutable std::unique_ptr<slicedVolVectorField> CPtr_;
 
         //- Face centres
-        mutable slicedSurfaceVectorField* CfPtr_;
+        mutable std::unique_ptr<slicedSurfaceVectorField> CfPtr_;
 
         //- Face motion fluxes
         mutable std::unique_ptr<surfaceScalarField> phiPtr_;
@@ -162,6 +167,7 @@ protected:
 
             void makeSf() const;
             void makeMagSf() const;
+            void makeUnitSf() const;
 
             void makeC() const;
             void makeCf() const;
@@ -477,7 +483,7 @@ public:
             const surfaceScalarField& magSf() const;
 
             //- Return cell face unit normals
-            tmp<surfaceVectorField> unitSf() const;
+            const surfaceVectorField& unitSf() const;
 
             //- Return cell face motion fluxes
             const surfaceScalarField& phi() const;

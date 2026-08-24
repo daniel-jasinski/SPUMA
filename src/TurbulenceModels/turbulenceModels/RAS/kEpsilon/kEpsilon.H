@@ -49,18 +49,36 @@ Description
             El Tahry, S. H. (1983).
             k-epsilon equation for compressible reciprocating engine flows.
             Journal of Energy, 7(4), 345-353.
+
+        Two-layer wall treatment to allow operation on low-Re grids:
+            Jongen, T. and Marx, Y.P. (1997) “Design of an Unconditionally
+            Stable, Positive Scheme for the k−epsilon and Two-Layer Turbulence
+            Models”, Computers & Fluids, 26(5), 469-487.
     \endverbatim
 
     The default model coefficients are
     \verbatim
         kEpsilonCoeffs
         {
-            Cmu         0.09;
-            C1          1.44;
-            C2          1.92;
-            C3          -0.33;
-            sigmak      1.0;
-            sigmaEps    1.3;
+            Cmu                 0.09;
+            C1                  1.44;
+            C2                  1.92;
+            C3                  -0.33;
+            sigmak              1.0;
+            sigmaEps            1.3;
+            twoLayerTreatment   false;
+
+            // If two twoLayerTreatment = true,
+
+            // Critical turbulence Reynolds number marking the separation
+            // of inner-layer and outer-layer. Can be adjusted from 50.0
+            // (low-speed flows) to 200.0 (default value).
+            ReyStar          200.0;
+
+            // Smoothness of transition from inner-layer to outer-layer.
+            // Typically from 0.05 (sharp transition) to 0.2 (smooth transition).
+            // For unstable cases, prefer larger values.
+            ReyFactor        0.05;
         }
     \endverbatim
 
@@ -113,10 +131,20 @@ protected:
             dimensionedScalar sigmak_;
             dimensionedScalar sigmaEps_;
 
+
         // Fields
 
             volScalarField k_;
             volScalarField epsilon_;
+
+
+        // Two-layer wall treatment
+
+            bool twoLayerTreatment_;
+            dimensionedScalar ReyStar_;
+            dimensionedScalar ReyFactor_;
+            std::unique_ptr<volScalarField::Internal> lEpsPtr_;
+            std::unique_ptr<volScalarField> lambdaEpsPtr_;
 
 
     // Protected Member Functions
@@ -165,26 +193,20 @@ public:
         //- Return the effective diffusivity for k
         tmp<volScalarField> DkEff() const
         {
-            return tmp<volScalarField>
+            return tmp<volScalarField>::New
             (
-                new volScalarField
-                (
-                    "DkEff",
-                    (this->nut_/sigmak_ + this->nu())
-                )
+                "DkEff",
+                (this->nut_/sigmak_ + this->nu())
             );
         }
 
         //- Return the effective diffusivity for epsilon
         tmp<volScalarField> DepsilonEff() const
         {
-            return tmp<volScalarField>
+            return tmp<volScalarField>::New
             (
-                new volScalarField
-                (
-                    "DepsilonEff",
-                    (this->nut_/sigmaEps_ + this->nu())
-                )
+                "DepsilonEff",
+                (this->nut_/sigmaEps_ + this->nu())
             );
         }
 

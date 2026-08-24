@@ -166,6 +166,12 @@ public:
         {
             return Sine<Type>::cosValue(t);
         }
+
+        //- Integrate between two (scalar) values
+        virtual Type integrate(const scalar x1, const scalar x2) const
+        {
+            return Sine<Type>::sinValue(x1) - Sine<Type>::sinValue(x2);
+        }
 };
 
 

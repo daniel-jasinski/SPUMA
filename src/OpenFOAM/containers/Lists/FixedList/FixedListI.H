@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2017-2023 OpenCFD Ltd.
+    Copyright (C) 2017-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -38,7 +38,7 @@ inline Foam::FixedList<T, N>::FixedList(const T& val)
 
 
 template<class T, unsigned N>
-inline Foam::FixedList<T, N>::FixedList(const Foam::zero)
+inline Foam::FixedList<T, N>::FixedList(Foam::zero)
 {
     this->fill(Foam::zero{});
 }
@@ -354,14 +354,19 @@ inline void Foam::FixedList<T, N>::fill(const T& val)
 
 
 template<class T, unsigned N>
-inline void Foam::FixedList<T, N>::fill(const Foam::zero)
+inline void Foam::FixedList<T, N>::fill(Foam::zero)
 {
-    // Usually small enough that parallel execution is pointless...
-    // Cannot use std::fill (ambiguous conversions for bool, char, etc)
-
-    for (unsigned i = 0; i < N; ++i)
+    if constexpr (std::is_arithmetic_v<T>)
     {
-        v_[i] = Zero;
+        // Usually small enough that parallel execution is pointless...
+        std::fill_n(v_, N, T(0));
+    }
+    else
+    {
+        for (unsigned i = 0; i < N; ++i)
+        {
+            v_[i] = Foam::zero{};
+        }
     }
 }
 
@@ -398,7 +403,7 @@ inline void Foam::FixedList<T, N>::transfer(FixedList<T, N>& list)
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
 template<class T, unsigned N>
-inline T& Foam::FixedList<T, N>::operator[](const label i)
+FOAM_DEVICE inline T& Foam::FixedList<T, N>::operator[](const label i)
 {
     #ifdef FULLDEBUG
     checkIndex(i);
@@ -408,7 +413,7 @@ inline T& Foam::FixedList<T, N>::operator[](const label i)
 
 
 template<class T, unsigned N>
-inline const T& Foam::FixedList<T, N>::operator[](const label i) const
+FOAM_DEVICE inline const T& Foam::FixedList<T, N>::operator[](const label i) const
 {
     #ifdef FULLDEBUG
     checkIndex(i);
@@ -441,7 +446,7 @@ inline void Foam::FixedList<T, N>::operator=(const T& val)
 
 
 template<class T, unsigned N>
-inline void Foam::FixedList<T, N>::operator=(const Foam::zero)
+inline void Foam::FixedList<T, N>::operator=(Foam::zero)
 {
     this->fill(Foam::zero{});
 }
@@ -496,6 +501,30 @@ inline typename Foam::FixedList<T, N>::const_iterator
 Foam::FixedList<T, N>::cbegin() const noexcept
 {
     return v_;
+}
+
+
+template<class T, unsigned N>
+inline typename Foam::FixedList<T, N>::iterator
+Foam::FixedList<T, N>::begin(const int i) noexcept
+{
+    return (v_ + (i < 0 ? 0 : int(N) < i ? int(N) : i));
+}
+
+
+template<class T, unsigned N>
+inline typename Foam::FixedList<T, N>::const_iterator
+Foam::FixedList<T, N>::begin(const int i) const noexcept
+{
+    return (v_ + (i < 0 ? 0 : int(N) < i ? int(N) : i));
+}
+
+
+template<class T, unsigned N>
+inline typename Foam::FixedList<T, N>::const_iterator
+Foam::FixedList<T, N>::cbegin(const int i) const noexcept
+{
+    return (v_ + (i < 0 ? 0 : int(N) < i ? int(N) : i));
 }
 
 

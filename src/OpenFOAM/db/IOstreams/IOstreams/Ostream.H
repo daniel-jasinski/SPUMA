@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2011-2016,2024 OpenFOAM Foundation
     Copyright (C) 2016-2023 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
@@ -154,6 +154,12 @@ public:
             //- Write int64_t
             virtual Ostream& write(const int64_t val) = 0;
 
+            //- Write uint32_t
+            virtual Ostream& write(const uint32_t val) = 0;
+
+            //- Write uint64_t
+            virtual Ostream& write(const uint64_t val) = 0;
+
             //- Write float
             virtual Ostream& write(const float val) = 0;
 
@@ -172,7 +178,7 @@ public:
 
             //- Emit begin marker for low-level raw binary output.
             //  The count indicates the number of bytes for subsequent
-            //  writeRaw calls.
+            //  writeRaw calls [currently only used by Pstream].
             virtual bool beginRawWrite(std::streamsize count) = 0;
 
             //- Emit end marker for low-level raw binary output.
@@ -327,29 +333,11 @@ public:
 
 // * * * * * * * * * * * * * * * Global Operators  * * * * * * * * * * * * * //
 
-#if __cplusplus >= 201703L
 //- Write operator for std::string_view
 inline Ostream& operator<<(Ostream& os, std::string_view s)
 {
     os.writeQuoted(s.data(), s.size(), true);  // quoted
     os.check("Foam::operator<<(Ostream&, std::string_view)");
-    return os;
-}
-#endif
-
-//- Write operator for character span. Output like string data
-inline Ostream& operator<<(Ostream& os, stdFoam::span<char> s)
-{
-    os.writeQuoted(s.data(), s.size(), true);  // quoted
-    os.check("Foam::operator<<(Ostream&, stdFoam::span<char>)");
-    return os;
-}
-
-//- Write operator for const character span. Output like string data
-inline Ostream& operator<<(Ostream& os, stdFoam::span<const char> s)
-{
-    os.writeQuoted(s.data(), s.size(), true);  // quoted
-    os.check("Foam::operator<<(Ostream&, stdFoam::span<const char>)");
     return os;
 }
 

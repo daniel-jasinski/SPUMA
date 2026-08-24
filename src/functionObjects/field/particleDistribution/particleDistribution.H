@@ -36,39 +36,37 @@ Description
     \table
       Operand        | Type | Location
       input          | -    | -
-      output file    | dat  | $FOAM_CASE/postProcessing/\<FO\>/\<time\>/\<file\>
+      output file    | dat  | postProcessing/<FO>/<time>/file
       output field   | -    | -
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    particleDistribution1
+    particleDistributionFO
     {
-        // Mandatory entries (unmodifiable)
-        type        particleDistribution;
-        libs        (fieldFunctionObjects);
-
-        // Mandatory entries (runtime modifiable)
-        cloud       <cloudName>;
+        // Mandatory entries
+        type            particleDistribution;
+        libs            (fieldFunctionObjects);
+        cloud           <word>;
         nameVsBinWidth
         (
             (d 0.1)
             (U 10)
         );
-        setFormat   raw;
+        setFormat   <word>;          // ensight, vtk, raw
 
-        // Optional entries (runtime modifiable)
-        tagField    none;
+        // Optional entries
+        tagField    <word>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: particleDistribution    | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       cloud        | Name of cloud to process           | word |  yes  | -
@@ -78,16 +76,8 @@ Usage
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link writeFile.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::writeFile
-    - ExtendedCodeGuide::functionObjects::field::particleDistribution
+      - \link functionObject.H \endlink
+      - \link writeFile.H \endlink
 
 SourceFiles
     particleDistribution.C
@@ -95,8 +85,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_particleDistribution_H
-#define functionObjects_particleDistribution_H
+#ifndef Foam_functionObjects_particleDistribution_H
+#define Foam_functionObjects_particleDistribution_H
 
 #include "fvMeshFunctionObject.H"
 #include "writeFile.H"
@@ -170,7 +160,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         particleDistribution
         (
             const word& name,
@@ -191,13 +181,13 @@ public:
 
     // Member Functions
 
-        //- Read the particleDistribution data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 
-        //- Execute, currently does nothing
+        //- Execute the function-object operations
         virtual bool execute();
 
-        //- Write the particleDistribution
+        //- Write the function-object results
         virtual bool write();
 };
 

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2019-2023 OpenCFD Ltd.
+    Copyright (C) 2019-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -275,24 +275,26 @@ cmptAv(const tmp<DimensionedField<Type, GeoMesh>>& tf1)
 template<class Type, class GeoMesh>                                            \
 dimensioned<ReturnType> Func                                                   \
 (                                                                              \
-    const DimensionedField<Type, GeoMesh>& f1                                  \
+    const DimensionedField<Type, GeoMesh>& f1,                                 \
+    const label comm                                                           \
 )                                                                              \
 {                                                                              \
     return dimensioned<ReturnType>                                             \
     (                                                                          \
         #Func "(" + f1.name() + ')',                                           \
         f1.dimensions(),                                                       \
-        gFunc(f1.field())                                                      \
+        gFunc(f1.field(), comm)                                                \
     );                                                                         \
 }                                                                              \
                                                                                \
 template<class Type, class GeoMesh>                                            \
 dimensioned<ReturnType> Func                                                   \
 (                                                                              \
-    const tmp<DimensionedField<Type, GeoMesh>>& tf1                            \
+    const tmp<DimensionedField<Type, GeoMesh>>& tf1,                           \
+    const label comm                                                           \
 )                                                                              \
 {                                                                              \
-    dimensioned<ReturnType> res = Func(tf1());                                 \
+    dimensioned<ReturnType> res = Func(tf1(), comm);                           \
     tf1.clear();                                                               \
     return res;                                                                \
 }
@@ -329,7 +331,7 @@ void clamp
 (
     DimensionedField<Type, GeoMesh>& result,
     const DimensionedField<Type, GeoMesh>& f1,
-    const Foam::zero_one
+    Foam::zero_one
 )
 {
     const MinMax<Type> range(Foam::zero_one{});
@@ -343,7 +345,7 @@ tmp<DimensionedField<Type, GeoMesh>>
 clamp
 (
     const DimensionedField<Type, GeoMesh>& f1,
-    const Foam::zero_one
+    Foam::zero_one
 )
 {
     auto tres =
@@ -365,7 +367,7 @@ tmp<DimensionedField<Type, GeoMesh>>
 clamp
 (
     const tmp<DimensionedField<Type, GeoMesh>>& tf1,
-    const Foam::zero_one
+    Foam::zero_one
 )
 {
     const auto& f1 = tf1();

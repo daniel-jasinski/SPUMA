@@ -37,7 +37,7 @@ Description
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    writeObjects1
+    writeObjectsFO
     {
         // Mandatory entries
         type          writeObjects;
@@ -163,7 +163,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         writeObjects
         (
             const word& name,
@@ -178,13 +178,13 @@ public:
 
     // Member Functions
 
-        //- Read the writeObjects data
+        //- Read the function-object dictionary
         virtual bool read(const dictionary&);
 
-        //- Do nothing
+        //- Execute the function-object operations (no-op)
         virtual bool execute();
 
-        //- Write the registered objects
+        //- Write the function-object results
         virtual bool write();
 };
 

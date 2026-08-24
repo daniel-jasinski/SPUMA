@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2014-2023 OpenCFD Ltd.
+    Copyright (C) 2014-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -197,16 +197,15 @@ void Foam::cellCellStencils::cellVolumeWeight::findHoles
             //Pout<< "Proper patch " << fvp.name() << " of type " << fvp.type()
             //    << endl;
 
-            const labelList& fc = fvp.faceCells();
-            forAll(fc, i)
+            for (const label celli : fvp.faceCells())
             {
-                label regionI = cellRegion[fc[i]];
+                label regionI = cellRegion[celli];
 
-                if (cellTypes[fc[i]] != HOLE && regionType[regionI] != 2)
+                if (cellTypes[celli] != HOLE && regionType[regionI] != 2)
                 {
                     //Pout<< "reachable region : " << regionI
-                    //    << " at cell " << mesh.cellCentres()[fc[i]]
-                    //    << " on zone " << zoneID[fc[i]] << endl;
+                    //    << " at cell " << mesh.cellCentres()[celli]
+                    //    << " on zone " << zoneID[celli] << endl;
                     regionType[regionI] = 2;
                 }
             }
@@ -227,7 +226,7 @@ void Foam::cellCellStencils::cellVolumeWeight::findHoles
     {
         // Synchronise region status on processors
         // (could instead swap status through processor patches)
-        Pstream::listCombineReduce(regionType, maxEqOp<label>());
+        Pstream::listReduce(regionType, maxOp<label>());
 
         // Communicate region status through interpolative cells
         labelList cellRegionType(labelUIndList(regionType, cellRegion));
@@ -301,7 +300,7 @@ void Foam::cellCellStencils::cellVolumeWeight::markPatchCells
     forAll(pbm, patchI)
     {
         const fvPatch& fvp = pbm[patchI];
-        const labelList& fc = fvp.faceCells();
+        const labelUList& fc = fvp.faceCells();
 
         if (isA<oversetFvPatch>(fvp))
         {
@@ -602,7 +601,7 @@ bool Foam::cellCellStencils::cellVolumeWeight::update()
     {
         nCellsPerZone[zoneID[cellI]]++;
     }
-    Pstream::listCombineReduce(nCellsPerZone, plusEqOp<label>());
+    Pstream::listReduce(nCellsPerZone, sumOp<label>());
 
     Info<< typeName << " : detected " << nZones
         << " mesh regions" << nl << endl;
@@ -1034,8 +1033,9 @@ bool Foam::cellCellStencils::cellVolumeWeight::update()
     oversetFvMeshBase::correctBoundaryConditions
     <
         volScalarField,
-        oversetFvPatchField<scalar>
-    >(cellInterpolationWeight_.boundaryFieldRef(), false);
+        oversetFvPatchField<scalar>,
+        false
+    >(cellInterpolationWeight_.boundaryFieldRef());
 
     DynamicList<label> interpolationCells;
     forAll(cellStencil_, cellI)

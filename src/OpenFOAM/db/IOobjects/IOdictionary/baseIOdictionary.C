@@ -113,12 +113,4 @@ bool Foam::baseIOdictionary::writeData(Ostream& os) const
 }
 
 
-// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
-
-void Foam::baseIOdictionary::operator=(const baseIOdictionary& rhs)
-{
-    dictionary::operator=(rhs);
-}
-
-
 // ************************************************************************* //

@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
-    Copyright (C) 2022 OpenCFD Ltd.
+    Copyright (C) 2022-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,16 +35,16 @@ Author
     Hrvoje Jasak, Wikki Ltd.
 
 SourceFiles
-    faFieldReconstructor.C
-    faFieldReconstructorTemplates.C
+    faFieldReconstructor.cxx
+    faFieldReconstructor.txx
 
 \*---------------------------------------------------------------------------*/
 
 #ifndef Foam_faFieldReconstructor_H
 #define Foam_faFieldReconstructor_H
 
-#include "PtrList.H"
 #include "faMesh.H"
+#include "PtrList.H"
 #include "IOobjectList.H"
 #include "faPatchFieldMapper.H"
 #include "labelIOList.H"
@@ -63,19 +63,19 @@ class faFieldReconstructor
     // Private Data
 
         //- Reconstructed mesh reference
-        faMesh& mesh_;
+        const faMesh& mesh_;
 
         //- List of processor meshes
-        const PtrList<faMesh>& procMeshes_;
+        const UPtrList<faMesh>& procMeshes_;
 
         //- List of processor edge addressing lists
-        const PtrList<labelIOList>& edgeProcAddressing_;
+        const UPtrList<labelIOList>& edgeProcAddressing_;
 
         //- List of processor face addressing lists
-        const PtrList<labelIOList>& faceProcAddressing_;
+        const UPtrList<labelIOList>& faceProcAddressing_;
 
         //- List of processor boundary addressing lists
-        const PtrList<labelIOList>& boundaryProcAddressing_;
+        const UPtrList<labelIOList>& boundaryProcAddressing_;
 
         //- Number of fields reconstructed
         label nReconstructed_;
@@ -157,11 +157,11 @@ public:
         //- Construct from components
         faFieldReconstructor
         (
-            faMesh& mesh,                       // Target mesh
-            const PtrList<faMesh>& procMeshes,  // Source meshes
-            const PtrList<labelIOList>& edgeProcAddressing,
-            const PtrList<labelIOList>& faceProcAddressing,
-            const PtrList<labelIOList>& boundaryProcAddressing
+            const faMesh& mesh,                 // Target mesh
+            const UPtrList<faMesh>& procMeshes, // Source meshes
+            const UPtrList<labelIOList>& edgeProcAddressing,
+            const UPtrList<labelIOList>& faceProcAddressing,
+            const UPtrList<labelIOList>& boundaryProcAddressing
         );
 
 
@@ -179,7 +179,7 @@ public:
         reconstructField
         (
             const IOobject& fieldObject,
-            const PtrList<GeometricField<Type, faPatchField, areaMesh>>&
+            const UPtrList<GeometricField<Type, faPatchField, areaMesh>>&
         ) const;
 
         //- Read and reconstruct area field
@@ -194,7 +194,7 @@ public:
         reconstructField
         (
             const IOobject& fieldObject,
-            const PtrList<GeometricField<Type, faePatchField, edgeMesh>>&
+            const UPtrList<GeometricField<Type, faePatchField, edgeMesh>>&
         ) const;
 
         //- Read and reconstruct edge field
@@ -252,7 +252,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-#   include "faFieldReconstructorTemplates.C"
+#   include "faFieldReconstructor.txx"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

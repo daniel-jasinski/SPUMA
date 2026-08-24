@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
     Copyright (C) 2020 OpenFOAM Foundation
     Copyright (C) 2020 OpenCFD Ltd.
+    Copyright (C) 2026 Cineca
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -53,10 +54,10 @@ Foam::nonUniformTable::nonUniformTable
 )
 :
     name_(name),
-    values_(),
+    values_(poolSwitch(1)),
     Trange_(),
     deltaT_(GREAT),
-    jumpTable_()
+    jumpTable_(poolSwitch(1))
 {
     dict.readEntry(name_, values_);
 
@@ -119,22 +120,6 @@ Foam::nonUniformTable::nonUniformTable
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-Foam::scalar Foam::nonUniformTable::f
-(
-    scalar p,
-    scalar T
-) const
-{
-    const label i = index(p, T);
-    const scalar Ti = values_[i].first();
-    const scalar lambda = (T - Ti)/(values_[i + 1].first() - Ti);
-
-    return
-        values_[i].second()
-      + lambda*(values_[i + 1].second() - values_[i].second());
-}
-
 
 Foam::scalar Foam::nonUniformTable::dfdT
 (

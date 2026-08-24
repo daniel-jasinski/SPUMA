@@ -36,58 +36,46 @@ Description
     Operands:
     \table
       Operand        | Type               | Location
-      input          | surfaceScalarField | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | surfaceScalarField | <time>/inputField
       output file    | -                  | -
-      output field   | surfaceScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | surfaceScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    PecletNo1
+    PecletNoFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            PecletNo;
         libs            (fieldFunctionObjects);
 
-        // Optional entries (runtime modifiable)
-        rho             rho;
+        // Optional entries
+        rho             <word>;
 
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: PecletNo                | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       rho          | Name of density field              | word |  no   | rho
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func PecletNo
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fvMeshFunctionObject
-    - Foam::functionObjects::fieldExpression
-    - ExtendedCodeGuide::functionObjects::field::PecletNo
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     PecletNo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_PecletNo_H
-#define functionObjects_PecletNo_H
+#ifndef Foam_functionObjects_PecletNo_H
+#define Foam_functionObjects_PecletNo_H
 
 #include "fieldExpression.H"
 #include "surfaceFieldsFwd.H"
@@ -130,7 +118,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         PecletNo
         (
             const word& name,
@@ -151,8 +139,8 @@ public:
 
     // Member Functions
 
-        //- Read the PecletNo data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 };
 
 

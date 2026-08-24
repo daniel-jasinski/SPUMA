@@ -6,7 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2011-2016 OpenFOAM Foundation
-    Copyright (C) 2016-2023 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -135,13 +135,13 @@ Note
 #include "emptyPolyPatch.H"
 #include "volPointInterpolation.H"
 #include "faceZoneMesh.H"
+#include "faMesh.H"
 #include "areaFields.H"
 #include "fvMeshSubsetProxy.H"
 #include "faceSet.H"
 #include "pointSet.H"
 #include "HashOps.H"
 #include "regionProperties.H"
-#include "stringListOps.H"  // For stringListOps::findMatching()
 
 #include "Cloud.H"
 #include "readFields.H"
@@ -166,56 +166,54 @@ Note
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-labelList getSelectedPatches
-(
-    const polyBoundaryMesh& patches,
-    const autoPtr<wordRes::filter>& patchSelector
-)
+namespace Foam
 {
-    labelList indices;
 
-    if (patchSelector && !patchSelector().empty())
+// Simple wrapper for polyBoundaryMesh::indices() with some additional logic
+struct polyBoundaryPatchSelector
+{
+    wordRes allow_;
+    wordRes deny_;
+
+    void clear()
     {
-        // Name-based selection
-        indices =
-        (
-            stringListOps::findMatching
-            (
-                patches,
-                patchSelector(),
-                nameOp<polyPatch>()
-            )
-        );
-    }
-    else
-    {
-        indices = identity(patches.size());
+        allow_.clear();
+        deny_.clear();
     }
 
-    // Remove undesirable patches
-
-    label count = 0;
-    for (const label patchi : indices)
+    //- Forward to polyBoundaryMesh::indices() with additional handling.
+    //  Prune emptyPolyPatch (always) and processorPolyPatch (in parallel)
+    labelList indices(const polyBoundaryMesh& pbm) const
     {
-        const polyPatch& pp = patches[patchi];
+        labelList ids = pbm.indices(allow_, deny_);
 
-        if (isType<emptyPolyPatch>(pp))
+        const bool excludeProcPatches = UPstream::parRun();
+
+        // Prune undesirable patches
+        label count = 0;
+        for (const label patchi : ids)
         {
-            continue;
-        }
-        else if (UPstream::parRun() && bool(isA<processorPolyPatch>(pp)))
-        {
-            break; // No processor patches for parallel output
+            const auto& pp = pbm[patchi];
+
+            if (isType<emptyPolyPatch>(pp))
+            {
+                continue;
+            }
+            else if (excludeProcPatches && bool(isA<processorPolyPatch>(pp)))
+            {
+                break;  // No processor patches for parallel output
+            }
+
+            ids[count] = patchi;
+            ++count;
         }
 
-        indices[count] = patchi;
-        ++count;
+        ids.resize(count);
+        return ids;
     }
+};
 
-    indices.resize(count);
-
-    return indices;
-}
+} // End namespace Foam
 
 
 //
@@ -232,7 +230,7 @@ vtk::outputOptions getOutputOptions(const argList& args)
 
         if (!args.found("ascii"))
         {
-            if (sizeof(float) != 4 || sizeof(label) != 4)
+            if constexpr (sizeof(float) != 4 || sizeof(label) != 4)
             {
                 opts.ascii(true);
 
@@ -436,6 +434,7 @@ int main(int argc, char *argv[])
     argList::addOptionCompat("one-boundary", {"allPatches", 1806});
 
     #include "addAllRegionOptions.H"
+    #include "addAllFaRegionOptions.H"
 
     argList::addOption
     (
@@ -481,7 +480,13 @@ int main(int argc, char *argv[])
         "Directory name for VTK output (default: 'VTK')"
     );
 
+    // Prevent volume BCs from triggering finite-area
+    regionModels::allowFaModels(false);
+
     #include "setRootCase.H"
+
+    // ------------------------------------------------------------------------
+    // Configuration
 
     /// const int optVerbose = args.verbose();
     const bool decomposePoly = args.found("poly-decomp");
@@ -552,44 +557,37 @@ int main(int argc, char *argv[])
     }
 
     // Patch selection/deselection
-    wordRes includedPatches, excludedPatches;
-    autoPtr<wordRes::filter> patchSelector(nullptr);
+    polyBoundaryPatchSelector patchSelector;
+
     if (doBoundary)
     {
-        bool resetFilter = false;
-        if (args.readListIfPresent<wordRe>("patches", includedPatches))
+        if
+        (
+            auto& slot = patchSelector.allow_;
+            args.readListIfPresent<wordRe>("patches", slot)
+        )
         {
-            resetFilter = true;
-            Info<< "Including patches "
-                << flatOutput(includedPatches) << nl << endl;
+            Info<< "Including patches " << flatOutput(slot) << nl << endl;
         }
-        if (args.readListIfPresent<wordRe>("exclude-patches", excludedPatches))
+        if
+        (
+            auto& slot = patchSelector.deny_;
+            args.readListIfPresent<wordRe>("exclude-patches", slot)
+        )
         {
-            resetFilter = true;
-            Info<< "Excluding patches "
-                << flatOutput(excludedPatches) << nl << endl;
-        }
-
-        if (resetFilter)
-        {
-            patchSelector =
-                autoPtr<wordRes::filter>::New(includedPatches, excludedPatches);
+            Info<< "Excluding patches " << flatOutput(slot) << nl << endl;
         }
     }
 
     // Field selection/deselection
     wordRes includedFields, excludedFields;
-    autoPtr<wordRes::filter> fieldSelector(nullptr);
     bool doConvertFields = !args.found("no-fields");
     if (doConvertFields)
     {
-        bool resetFilter = false;
         if (args.readListIfPresent<wordRe>("fields", includedFields))
         {
             Info<< "Including fields "
                 << flatOutput(includedFields) << nl << endl;
-
-            resetFilter = !includedFields.empty();
 
             if (includedFields.empty())
             {
@@ -603,22 +601,22 @@ int main(int argc, char *argv[])
         }
         if (args.readListIfPresent<wordRe>("exclude-fields", excludedFields))
         {
-            resetFilter = true;
             Info<< "Excluding fields "
                 << flatOutput(excludedFields) << nl << endl;
         }
 
-        if (resetFilter && doConvertFields)
+        if (!doConvertFields)
         {
-            fieldSelector =
-                autoPtr<wordRes::filter>::New(includedFields, excludedFields);
+            includedFields.clear();
+            excludedFields.clear();
         }
     }
-    else if (doConvertFields)
+    else
     {
         Info<< "Field conversion disabled with the '-no-fields' option" << nl;
     }
 
+    const wordRes::filter fieldSelector(includedFields, excludedFields);
 
     // Non-mandatory
     const wordRes selectedFaceZones(args.getList<wordRe>("faceZones", false));
@@ -630,8 +628,18 @@ int main(int argc, char *argv[])
     // Information for file series
     HashTable<vtk::seriesWriter, fileName> vtkSeries;
 
-    // Handle -allRegions, -regions, -region
+    // Handle volume region selections
     #include "getAllRegionOptions.H"
+
+    // Handle area region selections
+    #include "getAllFaRegionOptions.H"
+
+    if (!doFiniteArea)
+    {
+        areaRegionNames.clear();  // For consistency
+    }
+
+    // ------------------------------------------------------------------------
 
     // Names for sets and zones
     word cellSelectionName;
@@ -780,8 +788,11 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // fvMesh fields
             IOobjectList objects;
-            IOobjectList faObjects;
+
+            // faMesh fields (multiple finite-area regions per volume region)
+            HashTable<IOobjectList> faObjects;
 
             if (doConvertFields)
             {
@@ -789,39 +800,48 @@ int main(int argc, char *argv[])
                 objects =
                     IOobjectList(meshProxy.baseMesh(), runTime.timeName());
 
-                // List of area mesh objects (assuming single region)
-                faObjects =
-                    IOobjectList
-                    (
-                        runTime,
-                        runTime.timeName(),
-                        faMesh::dbDir(meshProxy.baseMesh(), word::null),
-                        IOobjectOption::NO_REGISTER
-                    );
+                objects.prune_0();  // Remove restart fields
 
-                if (fieldSelector && !fieldSelector().empty())
+                if (fieldSelector)
                 {
-                    objects.filterObjects(fieldSelector());
-                    faObjects.filterObjects(fieldSelector());
+                    objects.filterObjects(fieldSelector);
                 }
-
-                // Remove "*_0" restart fields
-                objects.prune_0();
-                faObjects.prune_0();
-
                 if (!doPointValues)
                 {
                     // Prune point fields if disabled
-                    objects.filterClasses
+                    objects.filterClasses(Foam::fieldTypes::is_point, true);
+                }
+
+
+                // Lists of finite-area fields
+                faObjects.reserve(areaRegionNames.size());
+
+                for (const word& areaName : areaRegionNames)
+                {
+                    // The finite-area objects for given area region.
+
+                    // finite-area : scan without yet having a mesh
+                    IOobjectList objs
                     (
-                        [](const word& clsName)
-                        {
-                            return fieldTypes::point.found(clsName);
-                        },
-                        true // prune
+                        faMesh::Registry(meshProxy.baseMesh()),
+                        runTime.timeName(),
+                        polyMesh::regionName(areaName),
+                        IOobjectOption::NO_REGISTER
                     );
+
+                    objs.prune_0();  // Remove restart fields
+                    if (fieldSelector)
+                    {
+                        objs.filterObjects(fieldSelector);
+                    }
+
+                    if (!objs.empty())
+                    {
+                        faObjects.emplace_set(areaName, std::move(objs));
+                    }
                 }
             }
+
 
             if (processorFieldsOnly)
             {

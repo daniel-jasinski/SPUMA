@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2024 OpenCFD Ltd.
+    Copyright (C) 2024-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -34,7 +34,6 @@ License
 #include "dummyTransform.H"
 #include "ReadFields.H"
 #include "surfaceFields.H"
-#include "PackedBoolList.H"
 #include "fvMeshTools.H"
 #include "cellSetOption.H"
 #include "cellBitSet.H"
@@ -324,7 +323,8 @@ Foam::functionObjects::cellDecomposer::cellDecomposer
     const dictionary& dict
 )
 :
-    fvMeshFunctionObject(name, runTime, dict)
+    fvMeshFunctionObject(name, runTime, dict),
+    cacheDecomposition_(false)
 {
     read(dict);
 }
@@ -342,6 +342,7 @@ bool Foam::functionObjects::cellDecomposer::read(const dictionary& dict)
         dict_ = dict.optionalSubDict(typeName + "Coeffs");
         dict_.readEntry("mapRegion", mapRegion_);
         dict_.readEntry("fields", fieldNames_);
+        dict_.readIfPresent("cacheDecomposition", cacheDecomposition_);
         makeMesh(dict_, mapRegion_);
     }
 
@@ -359,12 +360,43 @@ bool Foam::functionObjects::cellDecomposer::execute()
     {
         // Re-do mesh. Currently rebuilds whole mesh. Could move points only
         // for mesh motion.
-        tetDecompPtr_.clear();
-        mapPtr_.clear();
-        const_cast<Time&>(this->mesh_.time()).erase(mapRegion_);
-        makeMesh(dict_, mapRegion_);
-    }
+        const auto* mapRegionPtr =
+            this->mesh_.time().findObject<fvMesh>(mapRegion_);
 
+        if (cacheDecomposition_ && mapRegionPtr && tetDecompPtr_)
+        {
+            //- Could update points (on tetMesh and mapper). Gives AMI
+            //- issues currently.
+            // fvMesh& mapRegion = const_cast<fvMesh&>(*mapRegionPtr);
+            // const auto& cellToPoint = tetDecompPtr_().cellToPoint();
+            // const auto& faceToPoint = tetDecompPtr_().faceToPoint();
+            // pointField newPoints(mapRegion.nPoints());
+            // forAll(cellToPoint, celli)
+            // {
+            //     const label pti = cellToPoint[celli];
+            //     if (pti != -1)
+            //     {
+            //         newPoints[pti] = mesh_.cellCentres()[celli];
+            //     }
+            // }
+            // forAll(faceToPoint, facei)
+            // {
+            //     const label pti = faceToPoint[facei];
+            //     if (pti != -1)
+            //     {
+            //         newPoints[pti] = mesh_.faceCentres()[facei];
+            //     }
+            // }
+            // mapRegion.movePoints(newPoints);
+        }
+        else
+        {
+            tetDecompPtr_.clear();
+            mapPtr_.clear();
+            const_cast<Time&>(this->mesh_.time()).erase(mapRegion_);
+            makeMesh(dict_, mapRegion_);
+        }
+    }
 
     // Look up
     ok = mapFieldType<scalar>() || ok;
@@ -373,15 +405,14 @@ bool Foam::functionObjects::cellDecomposer::execute()
     ok = mapFieldType<symmTensor>() || ok;
     ok = mapFieldType<tensor>() || ok;
 
-    if (log)
-    {
-        if (!ok)
-        {
-            Info<< "    none" << nl;
-        }
 
-        Info<< endl;
+    if (!ok)
+    {
+        Log << "    none" << nl;
     }
+
+    Log << endl;
+
     return true;
 }
 
@@ -398,15 +429,13 @@ bool Foam::functionObjects::cellDecomposer::write()
     ok = writeFieldType<symmTensor>() || ok;
     ok = writeFieldType<tensor>() || ok;
 
-    if (log)
-    {
-        if (!ok)
-        {
-            Info<< "    none" << nl;
-        }
 
-        Info<< endl;
+    if (!ok)
+    {
+        Log << "    none" << nl;
     }
+
+    Log << endl;
 
     return true;
 }

@@ -6,6 +6,7 @@
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
     Copyright (C) 2016-2017 Wikki Ltd
+    Copyright (C) 2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,7 +34,7 @@ Author
     Zeljko Tukovic, FSB Zagreb
 
 SourceFiles
-    processorFaMeshes.C
+    processorFaMeshes.cxx
 
 \*---------------------------------------------------------------------------*/
 
@@ -59,8 +60,11 @@ class processorFaMeshes
 {
     // Private Data
 
-        //- List of processor finite volume meshes
-        const UPtrList<fvMesh>& fvMeshes_;
+        //- The area-region name
+        const word areaName_;
+
+        //- List of processor volume meshes (could/should be polyMesh)
+        const UPtrList<fvMesh>& volMeshes_;
 
         //- List of processor finite area meshes
         PtrList<faMesh> meshes_;
@@ -95,16 +99,30 @@ public:
     // Constructors
 
         //- Construct from components
-        explicit processorFaMeshes(const UPtrList<fvMesh>& procFvMeshes);
+        explicit processorFaMeshes
+        (
+            //! The processor volume meshes (could/should be polyMesh)
+            const UPtrList<fvMesh>& procVolMeshes,
+            //! The area-region name
+            const word& areaName = word()
+        );
 
 
     // Member Functions
 
+        //- The area-region name
+        const word& name() const noexcept { return areaName_; }
+
+        //- The number of processors used
+        label nProcs() const noexcept { return volMeshes_.size(); }
+
+        //- The processor finite-area meshes
         const PtrList<faMesh>& meshes() const noexcept
         {
             return meshes_;
         }
 
+        //- The processor finite-area meshes
         PtrList<faMesh>& meshes() noexcept
         {
             return meshes_;

@@ -31,8 +31,8 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Provides several methods to convert an input pressure
-    field into derived forms, including:
+    Provides several methods to convert an input pressure field into derived
+    forms, including:
 
     - static pressure
         \f[
@@ -78,43 +78,41 @@ Description
     Operands:
     \table
       Operand        | Type           | Location
-      input          | volScalarField | $FOAM_CASE/\<time\>/\<inpField\>
+      input          | volScalarField | <time>/inputField
       output file    | -              | -
-      output field   | volScalarField | $FOAM_CASE/\<time\>/\<outField\>
+      output field   | volScalarField | <time>/outputField
     \endtable
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    pressure1
+    pressureFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            pressure;
         libs            (fieldFunctionObjects);
+        mode            <word>;>;
 
-        // Mandatory entries (runtime modifiable)
-        mode            \<option\>;
+        // Optional entries
+        field           <word>;
+        U               <word>;
+        rho             <word>;
+        rhoInf          <scalar>;  // enabled if rho=rhoInf
+        pRef            <scalar>;
+        hydroStaticMode <word>;
+        g               <vector>;  // enabled if hydroStaticMode != none
+        hRef            <scalar>;  // enabled if hydroStaticMode != none
+        pInf            <scalar>;
+        UInf            <scalar>;
 
-        // Optional entries (runtime modifiable)
-        field           \<pName\>;
-        U               \<UName\>;
-        rho             <rhoName>;
-        rhoInf          1.0; // enabled if rho=rhoInf
-        pRef            0.0;
-        hydroStaticMode none;
-        g               (0 -9.81 0); // enabled if hydroStaticMode != none
-        hRef            0.0;         // enabled if hydroStaticMode != none
-        pInf            0.0;
-        UInf            (1 0 0);
-
-        // Optional (inherited) entries
+        // Inherited entries
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd  | Deflt
       type         | Type name: pressure                | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
       mode         | Calculation mode (see below)       | word |  yes  | -
@@ -158,24 +156,15 @@ Usage
     \endverbatim
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldExpression.H \endlink
-
-    Usage by the \c postProcess utility is not available.
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::pressure
+      - \link fieldExpression.H \endlink
 
 SourceFiles
     pressure.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_pressure_H
-#define functionObjects_pressure_H
+#ifndef Foam_functionObjects_pressure_H
+#define Foam_functionObjects_pressure_H
 
 #include "fieldExpression.H"
 #include "volFieldsFwd.H"
@@ -212,6 +201,7 @@ public:
             TOTAL_COEFF  = (TOTAL | COEFF),
         };
 
+        //- Names for mode types
         static const Enum<mode> modeNames;
 
         //- Enumeration for hydrostatic contributions
@@ -222,6 +212,7 @@ public:
             SUBTRACT
         };
 
+        //- Names for hydrostaticMode
         static const Enum<hydrostaticMode> hydrostaticModeNames;
 
 
@@ -322,7 +313,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         pressure
         (
             const word& name,
@@ -343,8 +334,8 @@ public:
 
     // Member Functions
 
-        //- Read the pressure data
-        virtual bool read(const dictionary&);
+        //- Read the function-object dictionary
+        virtual bool read(const dictionary& dict);
 };
 
 

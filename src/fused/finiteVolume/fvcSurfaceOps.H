@@ -35,9 +35,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-
-#ifndef fvcSurfaceOps_H
-#define fvcSurfaceOps_H
+#ifndef Foam_fvcSurfaceOps_H
+#define Foam_fvcSurfaceOps_H
 
 #include "primitiveFieldsFwd.H"
 #include "volFieldsFwd.H"
@@ -49,7 +48,7 @@ namespace Foam
 {
 
 //- In-place operations on Fields. Add to FieldFunctions.C ?
-#define INPLACE_PRODUCT_OPERATOR(product, CombineOp, Op, OpFunc)               \
+/*#define INPLACE_PRODUCT_OPERATOR(product, CombineOp, Op, OpFunc)               \
                                                                                \
 template<class Type1, class Type2>                                             \
 void OpFunc                                                                    \
@@ -68,7 +67,7 @@ void OpFunc                                                                    \
 INPLACE_PRODUCT_OPERATOR(outerProduct, +=, *, multiplyAdd)
 INPLACE_PRODUCT_OPERATOR(outerProduct, -=, *, multiplySubtract)
 
-#undef INPLACE_PRODUCT_OPERATOR
+#undef INPLACE_PRODUCT_OPERATOR*/
 
 
 

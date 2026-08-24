@@ -34,7 +34,6 @@ License
 #include "coupledFvPatchFields.H"
 #include "IndirectList.H"
 #include "UniformList.H"
-#include "demandDrivenData.H"
 
 #include "cyclicFvPatchField.H"
 #include "cyclicAMIFvPatchField.H"
@@ -1615,20 +1614,12 @@ flux() const
     (
         "flux(" + psi_.name() + ')',
         psi_.mesh(),
-        dimensions()
+        dimensions(),
+        lduMatrix::faceH(psi_.primitiveField())
     );
     auto& fieldFlux = tfieldFlux.ref();
-
     fieldFlux.setOriented();
 
-    for (direction cmpt=0; cmpt<pTraits<Type>::nComponents; cmpt++)
-    {
-        fieldFlux.primitiveFieldRef().replace
-        (
-            cmpt,
-            lduMatrix::faceH(psi_.primitiveField().component(cmpt))
-        );
-    }
 
     FieldField<Field, Type> InternalContrib = internalCoeffs_;
 
@@ -1676,13 +1667,15 @@ flux() const
         mapContributions(fieldi, fluxBoundaryContrib, NeighbourContrib, false);
     }
 
-    typename GeometricField<Type, fvsPatchField, surfaceMesh>::
-        Boundary& ffbf = fieldFlux.boundaryFieldRef();
 
-    forAll(ffbf, patchi)
     {
-        ffbf[patchi] = InternalContrib[patchi] - NeighbourContrib[patchi];
-        //DebugVar(gSum(ffbf[patchi]))
+        auto& ffbf = fieldFlux.boundaryFieldRef();
+
+        forAll(ffbf, patchi)
+        {
+            ffbf[patchi] = InternalContrib[patchi] - NeighbourContrib[patchi];
+            //DebugVar(gSum(ffbf[patchi]))
+        }
     }
 
     if (faceFluxCorrectionPtr_)
@@ -3160,6 +3153,77 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const fvMatrix<Type>& fvm)
     os.check(FUNCTION_NAME);
 
     return os;
+}
+
+
+// * * * * * * * * * * * * * Expression Templates  * * * * * * * * * * * * * //
+
+template<class Type>
+template<typename E>
+Foam::fvMatrix<Type>::fvMatrix
+(
+    const GeometricField<Type, fvPatchField, volMesh>& psi,
+    const Expression::fvMatrixExpression
+    <
+        E,
+        typename E::DiagExpr,
+        typename E::UpperExpr,
+        typename E::LowerExpr,
+        typename E::FaceFluxExpr,
+        typename E::SourceExpr
+   >& expr
+)
+:
+    lduMatrix(psi.mesh()),
+    psi_(psi),
+    useImplicit_(false),
+    lduAssemblyName_(),
+    nMatrix_(0),
+    dimensions_(expr.dimensions()),
+    source_(psi.size(), Zero),
+    internalCoeffs_(psi.mesh().boundary().size()),
+    boundaryCoeffs_(psi.mesh().boundary().size())
+{
+    DebugInFunction
+        << "Constructing fvMatrix<Type> from expression for field "
+        << psi_.name() << endl;
+
+    checkImplicit();
+
+    // Fill in diag,upper,lower etc.
+    expr.evaluate(*this);
+
+    auto& psiRef = this->psi(0);
+    const label currentStatePsi = psiRef.eventNo();
+    psiRef.boundaryFieldRef().updateCoeffs();
+    psiRef.eventNo() = currentStatePsi;
+}
+
+
+template<class Type>
+Foam::Expression::fvMatrixConstRefWrap<Foam::fvMatrix<Type>>
+Foam::fvMatrix<Type>::expr() const
+{
+    return Expression::fvMatrixConstRefWrap<Foam::fvMatrix<Type>>(*this);
+}
+
+
+template<class Type>
+template<typename E>
+void Foam::fvMatrix<Type>::operator=
+(
+    const Expression::fvMatrixExpression
+    <
+        E,
+        typename E::DiagExpr,
+        typename E::UpperExpr,
+        typename E::LowerExpr,
+        typename E::FaceFluxExpr,
+        typename E::SourceExpr
+   >& expr
+)
+{
+    expr.evaluate(*this);
 }
 
 

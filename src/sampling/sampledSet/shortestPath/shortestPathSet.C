@@ -38,6 +38,7 @@ License
 #include "PatchTools.H"
 #include "foamVtkSurfaceWriter.H"
 #include "indirectPrimitivePatch.H"
+#include "globalIndex.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -474,7 +475,8 @@ bool Foam::shortestPathSet::genSingleLeakPath
 
 
     // Pass1: Get distance to insideCelli
-
+    // Note: calculateDistance must be called on ALL processors, even if insideCelli == -1
+    // The FaceCellWave will propagate from the processor that has the seed cell
     calculateDistance(iter, mesh, insideCelli, allFaceInfo, allCellInfo);
 
 
@@ -483,22 +485,30 @@ bool Foam::shortestPathSet::genSingleLeakPath
     //        using FaceCellWave as well but is overly complex since
     //        does not allow logic comparing all faces of a cell.
 
+    // Check if target was reached - must check on processor that has outsideCelli
     bool targetFound = false;
     if (outsideCelli != -1)
     {
         int dummyTrackData;
         targetFound = allCellInfo[outsideCelli].valid(dummyTrackData);
-        if (iter == 0 && !targetFound)
-        {
-            WarningInFunction
-                << "Point " << outsidePoint
-                << " not reachable by walk from " << insidePoint
-                << ". Probably mesh has island/regions."
-                << " Skipped route detection." << endl;
-        }
+    }
+    
+    // Global check: reduce across all processors to see if ANY processor found the target
+    // This is necessary because outsideCelli might be on a different processor than insideCelli
+    bool globalTargetFound = returnReduceOr(targetFound);
+    
+    if (iter == 0 && !globalTargetFound)
+    {
+        WarningInFunction
+            << "Point " << outsidePoint
+            << " not reachable by walk from " << insidePoint
+            << ". Probably mesh has island/regions."
+            << " Inside cell found: " << (insideCelli != -1 ? "yes" : "no")
+            << ", Outside cell found: " << (outsideCelli != -1 ? "yes" : "no")
+            << ". Skipped route detection." << endl;
     }
 
-    if (!returnReduceOr(targetFound))
+    if (!globalTargetFound)
     {
         //Pout<< "now :"
         //    << " nLeakCell:"
@@ -514,10 +524,53 @@ bool Foam::shortestPathSet::genSingleLeakPath
 
 
     // Start with given target cell and walk back
-    // If point happens to be on multiple processors, random pick
+    // CRITICAL FIX: With many processors, outsideCelli might be -1 on most processors.
+    // We need to find the nearest cell to outsidePoint that has valid distance info.
     label frontCellI = outsideCelli;
     point origin(outsidePoint);
     bool findMinDistance = true;
+    
+    // If outsideCelli is -1, find the nearest cell to outsidePoint with valid distance
+    // This is critical for high processor counts where outsideCelli is on a different processor
+    // CRITICAL: This reduction must be called by ALL processors, even if frontCellI != -1
+    scalar minDist = GREAT;
+    label minCellI = -1;
+    int dummyTrackData = 0;
+    
+    if (frontCellI == -1)
+    {
+        // Search all local cells for the one closest to outsidePoint with valid distance
+        forAll(allCellInfo, celli)
+        {
+            if (allCellInfo[celli].valid(dummyTrackData))
+            {
+                scalar dist = mag(mesh.cellCentres()[celli] - outsidePoint);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    minCellI = celli;
+                }
+            }
+        }
+    }
+    
+    // Find global minimum across all processors using Tuple2 to track processor
+    // This MUST be called by ALL processors to avoid deadlock
+    typedef Tuple2<scalar, label> DistProc;
+    DistProc localMin(minDist, Pstream::myProcNo());
+    DistProc globalMin = localMin;
+    Pstream::combineReduce(globalMin, minFirstEqOp<scalar>());
+    
+    // Only use if we found a reasonably close cell (within mesh bounds scale)
+    // and if we're on the processor that has the minimum
+    if (frontCellI == -1)
+    {
+        const scalar searchRadius = mag(mesh.bounds().max() - mesh.bounds().min()) * 0.1;
+        if (globalMin.first() < searchRadius && globalMin.second() == Pstream::myProcNo() && minCellI != -1)
+        {
+            frontCellI = minCellI;
+        }
+    }
 
     while (true)
     {
@@ -937,8 +990,51 @@ void Foam::shortestPathSet::genSamples
 
     const topoDistanceData<label> maxData(labelMax, labelMax);
 
-    // Get the target point
-    const label outsideCelli = mesh.findCell(outsidePoint);
+    // Find outside cell globally - handle processor boundaries
+    // Force calculation of base points (needs to be synchronised)
+    (void)mesh.tetBasePtIs();
+    
+    const globalIndex& globalCells = mesh.globalData().globalMeshCellAddr();
+    label localOutsideCelli = mesh.findCell(outsidePoint);
+    label globalOutsideCelli = -1;
+    if (localOutsideCelli != -1)
+    {
+        globalOutsideCelli = globalCells.toGlobal(localOutsideCelli);
+    }
+    reduce(globalOutsideCelli, maxOp<label>());
+    
+    // If not found, try perturbation (points on processor boundaries)
+    if (globalOutsideCelli == -1)
+    {
+        const vector perturbVec = 1e-6 * (mesh.bounds().max() - mesh.bounds().min());
+        localOutsideCelli = mesh.findCell(outsidePoint + perturbVec);
+        if (localOutsideCelli != -1)
+        {
+            globalOutsideCelli = globalCells.toGlobal(localOutsideCelli);
+        }
+        reduce(globalOutsideCelli, maxOp<label>());
+    }
+    
+    // Convert back to local cell index on the processor that has it
+    label outsideCelli = -1;
+    label outsideProcI = -1;
+    if (globalOutsideCelli != -1)
+    {
+        outsideProcI = globalCells.whichProcID(globalOutsideCelli);
+        if (outsideProcI == Pstream::myProcNo())
+        {
+            outsideCelli = globalCells.toLocal(outsideProcI, globalOutsideCelli);
+        }
+    }
+    
+    // Debug output
+    if (debug)
+    {
+        Pout<< "Outside point " << outsidePoint 
+            << " -> global cell " << globalOutsideCelli
+            << " on proc " << outsideProcI
+            << ", local cell on proc " << Pstream::myProcNo() << ": " << outsideCelli << endl;
+    }
 
     // Maintain overall track length. Used to make curve distance continuous.
     scalar trackLength = 0;
@@ -953,6 +1049,7 @@ void Foam::shortestPathSet::genSamples
 
     label iter;
     bool markLeakPath = false;
+    bool gaveUp = false;  // Track if we gave up trying to close the gap
 
 
     for (iter = 0; iter < maxIter; iter++)
@@ -1040,6 +1137,7 @@ void Foam::shortestPathSet::genSamples
                 // nLeakFaces == nOldLeakFaces) so we're
                 // giving up. Convert all path faces into leak faces
                 //Pout<< "** giving up" << endl;
+                gaveUp = true;  // Mark that we're giving up
                 break;
             }
 
@@ -1123,7 +1221,10 @@ void Foam::shortestPathSet::genSamples
         fld.write();
     }
 
-    if (maxIter > 1 && iter == maxIter)
+    // Warn if we didn't successfully close the gap (either exhausted iterations or gave up)
+    // Use returnReduce to ensure consistent check across all processors
+    const bool shouldWarn = returnReduceOr(maxIter > 1 && (iter == maxIter || gaveUp));
+    if (shouldWarn && Pstream::master())
     {
         WarningInFunction << "Did not manage to close gap using " << iter
             << " leak paths" << nl << "This can cause problems when using the"
@@ -1202,9 +1303,57 @@ void Foam::shortestPathSet::genSamples
     label prevSegmenti = 0;
     scalar prevDistance = 0.0;
 
+    // Force calculation of base points (needs to be synchronised)
+    (void)mesh.tetBasePtIs();
+    
+    const globalIndex& globalCells = mesh.globalData().globalMeshCellAddr();
+
     for (auto insidePoint : insidePoints_)
     {
-        const label insideCelli = mesh.findCell(insidePoint);
+        // Find cell globally across all processors - handle processor boundaries
+        label localInsideCelli = mesh.findCell(insidePoint);
+        label globalInsideCelli = -1;
+        if (localInsideCelli != -1)
+        {
+            globalInsideCelli = globalCells.toGlobal(localInsideCelli);
+        }
+        reduce(globalInsideCelli, maxOp<label>());
+        
+        // If not found, try perturbation (points on processor boundaries)
+        if (globalInsideCelli == -1)
+        {
+            const vector perturbVec = 1e-6 * (mesh.bounds().max() - mesh.bounds().min());
+            localInsideCelli = mesh.findCell(insidePoint + perturbVec);
+            if (localInsideCelli != -1)
+            {
+                globalInsideCelli = globalCells.toGlobal(localInsideCelli);
+            }
+            reduce(globalInsideCelli, maxOp<label>());
+        }
+        
+        // Convert back to local cell index on the processor that has it
+        // CRITICAL: We need to know which processor has the cell for calculateDistance
+        // Even if insideCelli == -1 on this processor, calculateDistance must still be called
+        // because FaceCellWave propagates across processor boundaries
+        label insideCelli = -1;
+        label insideProcI = -1;
+        if (globalInsideCelli != -1)
+        {
+            insideProcI = globalCells.whichProcID(globalInsideCelli);
+            if (insideProcI == Pstream::myProcNo())
+            {
+                insideCelli = globalCells.toLocal(insideProcI, globalInsideCelli);
+            }
+        }
+        
+        // Debug output
+        if (debug)
+        {
+            Pout<< "Inside point " << insidePoint 
+                << " -> global cell " << globalInsideCelli
+                << " on proc " << insideProcI
+                << ", local cell on proc " << Pstream::myProcNo() << ": " << insideCelli << endl;
+        }
 
         for (auto outsidePoint : outsidePoints_)
         {

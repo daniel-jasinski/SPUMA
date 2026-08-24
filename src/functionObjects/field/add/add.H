@@ -32,7 +32,8 @@ Group
 
 Description
     Sums a given list of (at least two or more) fields and outputs the result
-    into a new field, where the fields possess the same sizes and dimensions:
+    into a new field. All input fields must have matching sizes and compatible
+    dimensions; otherwise, an error will be raised.
 
     \verbatim
         fieldResult = field1 + field2 + ... + fieldN
@@ -41,54 +42,39 @@ Description
     Operands:
     \table
       Operand      | Type                          | Location
-      input        | {vol,surface}\<Type\>Field(s) <!--
-               --> |$FOAM_CASE/\<time\>/\<inpField\>s
+      input        | {vol,surface}<Type>Field(s)   | <time>/inputFields
       output file  | -                             |-
-      output field | {vol,surface}\<Type\>Field    <!--
-               --> | $FOAM_CASE/\<time\>/\<outField\>
+      output field | {vol,surface}<Type>Field      | <time>/outputField
     \endtable
 
-    where \c \<Type\>=Scalar/Vector/SphericalTensor/SymmTensor/Tensor.
+    where \c Type can be one of:
+        \c Scalar, \c Vector, \c SphericalTensor, \c SymmTensor, or \c Tensor.
 
 Usage
     Minimal example by using \c system/controlDict.functions:
     \verbatim
-    add1
+    addFO
     {
-        // Mandatory entries (unmodifiable)
+        // Mandatory entries
         type            add;
         libs            (fieldFunctionObjects);
 
-        // Mandatory (inherited) entry (runtime modifiable)
-        fields          (<field1> <field2> ... <fieldN>);
-
-        // Optional (inherited) entries
+        // Inherited entries
+        fields          (<wordList>);  // (<field1> <field2> ... <fieldN>);
         ...
     }
     \endverbatim
 
     where the entries mean:
     \table
-      Property     | Description                        | Type | Req'd | Dflt
+      Property     | Description                        | Type | Reqd | Deflt
       type         | Type name: add                     | word |  yes  | -
       libs         | Library name: fieldFunctionObjects | word |  yes  | -
-      fields       | Names of the operand fields        | wordList |  yes  | -
+      fields | Names of operand fields (at least two) | wordList | yes | -
     \endtable
 
     The inherited entries are elaborated in:
-     - \link functionObject.H \endlink
-     - \link fieldsExpression.H \endlink
-
-    Minimal example by using the \c postProcess utility:
-    \verbatim
-        postProcess -func "add(<field1>, <field2>, ..., <fieldN>)"
-    \endverbatim
-
-See also
-    - Foam::functionObject
-    - Foam::functionObjects::fieldsExpression
-    - Foam::functionObjects::fvMeshFunctionObject
-    - ExtendedCodeGuide::functionObjects::field::add
+      - \link fieldsExpression.H \endlink
 
 SourceFiles
     add.C
@@ -96,8 +82,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_add_H
-#define functionObjects_add_H
+#ifndef Foam_functionObjects_add_H
+#define Foam_functionObjects_add_H
 
 #include "fieldsExpression.H"
 
@@ -129,6 +115,7 @@ class add
 
 public:
 
+    //- Grant fieldsExpression access to private and protected members
     friend class fieldsExpression;
 
 
@@ -138,7 +125,7 @@ public:
 
     // Constructors
 
-        //- Construct from Time and dictionary
+        //- Construct from name, Time and dictionary
         add
         (
             const word& name,

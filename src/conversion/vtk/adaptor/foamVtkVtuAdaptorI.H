@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2020 OpenCFD Ltd.
+    Copyright (C) 2016-2025 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,33 +28,57 @@ License
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 inline vtkSmartPointer<vtkPoints>
+Foam::vtk::vtuAdaptor::NewPoints
+(
+    vtkIdType count
+) const
+{
+    auto vtkpoints = vtkSmartPointer<vtkPoints>::New();
+    // if (narrowing || (sizeof(float) == sizeof(Foam::scalar)))
+    // {
+    //     vtkpoints->SetDataTypeToFloat();
+    // }
+    // else
+    // {
+    //     vtkpoints->SetDataTypeToDouble();
+    // }
+    vtkpoints->SetNumberOfPoints(count);
+
+    return vtkpoints;
+}
+
+
+inline vtkSmartPointer<vtkPoints>
 Foam::vtk::vtuAdaptor::points
 (
-    const fvMesh& mesh
+    const polyMesh& mesh
 ) const
 {
     // Convert OpenFOAM mesh vertices to VTK
-    auto vtkpoints = vtkSmartPointer<vtkPoints>::New();
 
-    // Normal points
-    const pointField& pts = mesh.points();
+    // Combine mesh points and any additional cellCentre points
+    // into a single field
 
-    // Additional cell centres
+    const auto& pts = mesh.points();
+    const auto& cc = mesh.cellCentres();
+
+    // The additional cellCentre points
     const labelUList& addPoints = this->additionalIds();
 
-    vtkpoints->SetNumberOfPoints(pts.size() + addPoints.size());
+    auto vtkpoints = NewPoints(pts.size() + addPoints.size());
 
     // Normal points
     vtkIdType pointId = 0;
     for (const point& p : pts)
     {
-        vtkpoints->SetPoint(pointId++, p.v_);
+        vtkpoints->SetPoint(pointId++, p.cdata());
     }
 
     // Cell centres
-    for (const label meshCelli : addPoints)
+    for (const label celli : addPoints)
     {
-        vtkpoints->SetPoint(pointId++, mesh.cellCentres()[meshCelli].v_);
+        const auto& p = cc[celli];
+        vtkpoints->SetPoint(pointId++, p.cdata());
     }
 
     return vtkpoints;
@@ -64,32 +88,36 @@ Foam::vtk::vtuAdaptor::points
 inline vtkSmartPointer<vtkPoints>
 Foam::vtk::vtuAdaptor::points
 (
-    const fvMesh& mesh,
+    const polyMesh& mesh,
     const labelUList& pointMap
 ) const
 {
     // Convert OpenFOAM mesh vertices to VTK
-    auto vtkpoints = vtkSmartPointer<vtkPoints>::New();
 
-    // Normal points
-    const pointField& pts = mesh.points();
+    // Combine mapped points and additional cellCentre points
+    // into a single field
 
-    // Additional cell centres
+    const auto& pts = mesh.points();
+    const auto& cc = mesh.cellCentres();
+
+    // The additional cellCentre points
     const labelUList& addPoints = this->additionalIds();
 
-    vtkpoints->SetNumberOfPoints(pointMap.size() + addPoints.size());
+    auto vtkpoints = NewPoints(pointMap.size() + addPoints.size());
 
     // Normal points
     vtkIdType pointId = 0;
-    for (const label meshPointi : pointMap)
+    for (const label pointi : pointMap)
     {
-        vtkpoints->SetPoint(pointId++, pts[meshPointi].v_);
+        const auto& p = pts[pointi];
+        vtkpoints->SetPoint(pointId++, p.cdata());
     }
 
     // Cell centres
-    for (const label meshCelli : addPoints)
+    for (const label celli : addPoints)
     {
-        vtkpoints->SetPoint(pointId++, mesh.cellCentres()[meshCelli].v_);
+        const auto& p = cc[celli];
+        vtkpoints->SetPoint(pointId++, p.cdata());
     }
 
     return vtkpoints;
@@ -203,6 +231,10 @@ Foam::vtk::vtuAdaptor::internal
 
     // Move into a vtkCellArray
     cells->SetData(cellOffsets, cellConnect);
+
+    // FUTURE: after VTK-9.4.0
+    //   (VTK_MAJOR_VERSION >= 9) && (VTK_NINOR_VERSION >= 4)
+    //   SetPolyhedralCells()
 
     if (facesUL.size())
     {
