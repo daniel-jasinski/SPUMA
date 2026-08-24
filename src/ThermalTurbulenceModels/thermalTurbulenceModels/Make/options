@@ -1,3 +1,10 @@
+/* Windows: define FOAM_THERMTURB_BUILDING_LIB so this library's own
+ * statics (e.g. thermalTurbulenceModel::propertiesName) dllexport in this
+ * library's TUs while leaving libOpenFOAM-owned data dllimport. */
+ifneq (,$(findstring windows,$(WM_OSTYPE)))
+    EXE_INC += -DFOAM_THERMTURB_BUILDING_LIB
+endif
+
 EXE_INC = \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude

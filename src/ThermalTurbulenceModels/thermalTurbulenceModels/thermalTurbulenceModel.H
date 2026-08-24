@@ -50,6 +50,23 @@ SourceFiles
 #include "nearWallDist.H"
 #include "geometricOneField.H"
 
+// FOAM_THERMTURB_EXPORT_DATA: per-library Windows DLL data export macro for
+// thermalTurbulenceModel statics. dllexport when compiling
+// libthermalTurbulenceModels itself (FOAM_THERMTURB_BUILDING_LIB defined in
+// its Make/options), dllimport in any consumer TU. Used instead of the
+// generic FOAM_EXPORT_DATA from stdFoam.H because that macro's single
+// FOAM_BUILDING_LIB flag would also re-export libOpenFOAM template
+// instantiations from this library.
+#if defined(_WIN32)
+# if defined(FOAM_THERMTURB_BUILDING_LIB)
+#  define FOAM_THERMTURB_EXPORT_DATA __declspec(dllexport)
+# else
+#  define FOAM_THERMTURB_EXPORT_DATA __declspec(dllimport)
+# endif
+#else
+# define FOAM_THERMTURB_EXPORT_DATA
+#endif
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -99,7 +116,7 @@ public:
     TypeName("thermalTurbulenceModel");
 
     //- Default name of the turbulence properties dictionary
-    static const word propertiesName;
+    FOAM_THERMTURB_EXPORT_DATA static const word propertiesName;
 
 
     // Constructors
