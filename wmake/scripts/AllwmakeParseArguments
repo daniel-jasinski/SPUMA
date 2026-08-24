@@ -247,7 +247,8 @@ then
         echo 1>&2
         # /usr/bin/tee may not exist in native Windows shells: fall back to PATH
         [ -x /usr/bin/tee ] && _wmake_tee=/usr/bin/tee || _wmake_tee=tee
-        exec wmake $wmakeOpt_frontend "$wmakeOpt_frontend_arg" "$wmakeOpt_all" \n            $wmakeOpt_debug $wmakeOpt_strict $wmakeOpt_queue $wmakeOpt_openmp $* 2>&1 | \
+        exec wmake $wmakeOpt_frontend "$wmakeOpt_frontend_arg" "$wmakeOpt_all" \
+            $wmakeOpt_debug $wmakeOpt_strict $wmakeOpt_queue $wmakeOpt_openmp $* 2>&1 | \
             "$_wmake_tee" $wmakeOpt_log
         # Need to cleanup after the tee
         rc=$? # Error code from tee (not wmake), but not entirely important
