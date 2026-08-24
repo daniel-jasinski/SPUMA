@@ -103,8 +103,6 @@ protected:
 
         mutable std::unique_ptr<fvMeshCsrAddressing> csrPtr_;
 
-        mutable fvMeshCsrAddressing* csrPtr_;
-
         //- Current time index for cell volumes
         //  Note.  The whole mechanism will be replaced once the
         //  dimensionedField is created and the dimensionedField
