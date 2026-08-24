@@ -39,6 +39,12 @@ case "$WM_OSTYPE" in
     _plib="$FOAM_LIBBIN/dummy/libPstream"
     [ -f "${_plib}.lib" ] && [ ! -f "${_plib}_static.lib" ] && \
         cp "${_plib}.lib" "${_plib}_static.lib"
+    # Bootstrap for fresh builds: the -lPstream in LINKLIBSO/LINKEXE resolves
+    # to Pstream.lib, which the Pstream/dummy DLL pass only produces AFTER
+    # libOpenFOAM links. Seed it from the static .lib; the DLL pass below
+    # overwrites it with the real import library.
+    [ -f "${_plib}.lib" ] && [ ! -f "$FOAM_LIBBIN/dummy/Pstream.lib" ] && \
+        cp "${_plib}.lib" "$FOAM_LIBBIN/dummy/Pstream.lib"
     FOAM_LINK_DUMMY_PSTREAM=libo wmake $targetType OpenFOAM
 
     # 2nd pass: link Pstream DLL against libOpenFOAM DLL
