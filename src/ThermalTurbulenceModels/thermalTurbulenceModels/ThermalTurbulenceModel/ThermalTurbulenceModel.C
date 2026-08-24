@@ -122,7 +122,7 @@ Foam::ThermalTurbulenceModel<Alpha, Rho, BasicTurbulenceModel, ThermoPhysicalMod
                 dict,
                 "simulationType",
                 modelType,
-                *dictionaryConstructorTablePtr_
+                *dictionaryConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

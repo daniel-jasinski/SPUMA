@@ -51,7 +51,7 @@ Foam::autoPtr<Foam::XiEqModel> Foam::XiEqModel::New
             dict,
             "XiEqModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

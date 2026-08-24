@@ -76,7 +76,7 @@ Foam::autoPtr<Foam::cellSizeCalculationType> Foam::cellSizeCalculationType::New
             dict,
             "cellSizeCalculationType",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

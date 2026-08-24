@@ -93,7 +93,7 @@ Foam::autoPtr<Foam::initialPointsMethod> Foam::initialPointsMethod::New
             dict,
             "initialPointsMethod",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

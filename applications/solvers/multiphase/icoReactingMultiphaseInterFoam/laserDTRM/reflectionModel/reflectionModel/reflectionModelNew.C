@@ -50,7 +50,7 @@ Foam::radiation::reflectionModel::New
             dict,
             "reflectionModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

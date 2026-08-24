@@ -89,7 +89,7 @@ Foam::cellSizeAndAlignmentControl::New
             dict,
             "cellSizeAndAlignmentControl",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

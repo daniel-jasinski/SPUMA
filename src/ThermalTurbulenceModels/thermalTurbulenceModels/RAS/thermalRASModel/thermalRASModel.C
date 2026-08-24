@@ -160,7 +160,7 @@ Foam::thermalRASModel<BasicTurbulenceModel>::New
                 dict,
                 "thermal RAS model",
                 modelType,
-                *dictionaryConstructorTablePtr_
+                *dictionaryConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

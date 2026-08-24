@@ -133,7 +133,7 @@ Foam::laminarThermalModel<BasicTurbulenceModel>::New
                 dict,
                 "laminar thermal model",
                 modelType,
-                *dictionaryConstructorTablePtr_
+                *dictionaryConstructorTablePtr_()
             ) << exit(FatalIOError);
         }
 

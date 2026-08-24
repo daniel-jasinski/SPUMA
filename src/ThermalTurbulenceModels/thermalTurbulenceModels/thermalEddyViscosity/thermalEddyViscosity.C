@@ -100,7 +100,7 @@ Foam::thermalEddyViscosity<BasicTurbulenceModel>::R() const
     {
         if
         (
-           !fvPatchField<symmTensor>::patchConstructorTablePtr_
+           !fvPatchField<symmTensor>::patchConstructorTablePtr_()
                 ->contains(patchFieldTypes[i])
         )
         {

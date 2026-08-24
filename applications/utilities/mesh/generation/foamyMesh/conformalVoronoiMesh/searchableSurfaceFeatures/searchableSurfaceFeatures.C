@@ -57,7 +57,7 @@ Foam::searchableSurfaceFeatures::New
             dict,
             "searchableSurfaceFeatures",
             modelType,
-            *dictConstructorTablePtr_
+            *dictConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

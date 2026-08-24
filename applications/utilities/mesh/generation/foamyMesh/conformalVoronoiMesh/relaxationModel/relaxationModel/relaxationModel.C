@@ -74,7 +74,7 @@ Foam::autoPtr<Foam::relaxationModel> Foam::relaxationModel::New
             dict,
             "relaxationModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

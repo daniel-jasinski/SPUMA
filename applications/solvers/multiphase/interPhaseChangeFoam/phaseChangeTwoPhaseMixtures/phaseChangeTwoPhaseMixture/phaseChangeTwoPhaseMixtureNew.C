@@ -65,7 +65,7 @@ Foam::phaseChangeTwoPhaseMixture::New
             dict,
             "phaseChangeTwoPhaseMixture",
             modelType,
-            *componentsConstructorTablePtr_
+            *componentsConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

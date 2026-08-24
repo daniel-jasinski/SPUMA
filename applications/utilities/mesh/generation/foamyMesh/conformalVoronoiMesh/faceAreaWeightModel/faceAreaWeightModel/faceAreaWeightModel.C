@@ -70,7 +70,7 @@ Foam::autoPtr<Foam::faceAreaWeightModel> Foam::faceAreaWeightModel::New
             dict,
             "faceAreaWeightModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

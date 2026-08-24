@@ -59,7 +59,7 @@ Foam::autoPtr<Foam::graphColoring> Foam::graphColoring::New
             dict,
             "graphColoring",
             graphColoringName,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

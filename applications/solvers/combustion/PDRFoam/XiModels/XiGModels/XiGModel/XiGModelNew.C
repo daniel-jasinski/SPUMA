@@ -51,7 +51,7 @@ Foam::autoPtr<Foam::XiGModel> Foam::XiGModel::New
             dict,
             "XiGModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

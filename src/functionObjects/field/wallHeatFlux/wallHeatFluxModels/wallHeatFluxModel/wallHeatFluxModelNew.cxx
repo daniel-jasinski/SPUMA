@@ -53,7 +53,7 @@ Foam::autoPtr<Foam::wallHeatFluxModel> Foam::wallHeatFluxModel::New
             dict,
             "wallHeatFluxModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 

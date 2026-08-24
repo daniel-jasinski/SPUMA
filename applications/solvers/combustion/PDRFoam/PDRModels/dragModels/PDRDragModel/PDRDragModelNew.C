@@ -52,7 +52,7 @@ Foam::autoPtr<Foam::PDRDragModel> Foam::PDRDragModel::New
             dict,
             "PDRDragModel",
             modelType,
-            *dictionaryConstructorTablePtr_
+            *dictionaryConstructorTablePtr_()
         ) << exit(FatalIOError);
     }
 
