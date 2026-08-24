@@ -46,7 +46,7 @@ namespace Foam
 
 #ifdef _WIN32
 declareStaticTypeName(Foam::IOField<Foam::tensorField>);
-declareStaticTypeName(Foam::CompactIOField<Foam::tensorField, Foam::tensor>);
+declareStaticTypeName(Foam::CompactIOField<Foam::tensorField>);
 #endif
 
 #endif

@@ -46,7 +46,7 @@ namespace Foam
 
 #ifdef _WIN32
 declareStaticTypeName(Foam::IOField<Foam::scalarField>);
-declareStaticTypeName(Foam::CompactIOField<Foam::scalarField, Foam::scalar>);
+declareStaticTypeName(Foam::CompactIOField<Foam::scalarField>);
 #endif
 
 #endif
