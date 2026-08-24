@@ -25,6 +25,7 @@ EXE_LIBS = \
     -lspecie \
     -lturbulenceModels \
     -lcompressibleTurbulenceModels \
+    -lthermalTurbulenceModels \
     -lcompressibleThermalTurbulenceModels \
     -lthermoTools \
     -latmosphericModels \
