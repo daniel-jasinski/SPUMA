@@ -28,4 +28,5 @@
 	url = https://gitlab.com/openfoam/community/research.git
 [submodule "foamExternalSolvers"]
 	path = modules/foamExternalSolvers
-	url = git@github.com:daniel-jasinski/foamExternalSolvers.git
+	url = https://github.com/daniel-jasinski/foamExternalSolvers.git
+	branch = win64sycl-port

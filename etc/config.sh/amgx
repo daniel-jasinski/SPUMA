@@ -1,9 +1,9 @@
 #----------------------------------*-sh-*--------------------------------------
 # =========                 |
-# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-#  \\    /   O peration     |
-#   \\  /    A nd           | www.openfoam.com
-#    \\/     M anipulation  |
+# \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \    /   O peration     |
+#   \  /    A nd           | www.openfoam.com
+#    \/     M anipulation  |
 #------------------------------------------------------------------------------
 #     Copyright (C) 2026 SPUMA contributors
 #------------------------------------------------------------------------------
@@ -21,9 +21,14 @@
 #     include/ and lib/) always wins; otherwise a ThirdParty-style default
 #     location is assumed.
 #
-#     On Windows the wrapper additionally needs the CUDA toolkit headers
-#     and import libraries: CUDA_PATH_SHORT (8.3 format, forward slashes)
-#     is derived from CUDA_PATH when not already set.
+#     On Windows, wmake passes variables to make unquoted: the AmgX prefix
+#     and a CUDA_CLANG path containing spaces are shortened to 8.3 form
+#     (forward slashes). CUDA_PATH_SHORT is derived from CUDA_PATH by wmake
+#     itself.
+#
+#     Runtime: the AmgX shared library must be found by the loader.
+#     Sourced from etc/bashrc (or via foamEtcFile -config amgx -- -force)
+#     the library directory is added to PATH (Windows) or LD_LIBRARY_PATH.
 #------------------------------------------------------------------------------
 
 amgx_version=amgx-2.5.0
@@ -33,37 +38,83 @@ then
     export AMGX_ARCH_PATH="$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$amgx_version"
 fi
 
-export AMGX_INC="$AMGX_ARCH_PATH/include"
-export AMGX_LIB="$AMGX_ARCH_PATH/lib"
+# END OF (NORMAL) USER EDITABLE PART
+#------------------------------------------------------------------------------
 
 case "$WM_OSTYPE" in
 (*[Ww]indows*)
-    # Spaces do not survive wmake's unquoted variable passing: shorten
-    # the AmgX prefix to 8.3 form (forward slashes) before deriving paths
-    if command -v cygpath >/dev/null
-    then
-        case "$AMGX_ARCH_PATH" in
+    # Spaces do not survive wmake's unquoted variable passing.
+    # Shorten to 8.3 form (forward slashes) - only accept the result when
+    # cygpath succeeded (the path exists) and the spaces are really gone
+    # (8.3 names may be disabled on the volume).
+    #   $1 = variable name (value is a path)
+    _amgxShorten()
+    {
+        eval "amgx_path=\"\$$1\""
+        case "$amgx_path" in
         (*' '*)
-            AMGX_ARCH_PATH="$(cygpath -m -s "$AMGX_ARCH_PATH" 2>/dev/null)"
-            export AMGX_ARCH_PATH
-            export AMGX_INC="$AMGX_ARCH_PATH/include"
-            export AMGX_LIB="$AMGX_ARCH_PATH/lib"
+            if command -v cygpath >/dev/null
+            then
+                amgx_short="$(cygpath -m -s "$amgx_path" 2>/dev/null)"
+            else
+                amgx_short=""
+            fi
+            case "$amgx_short" in
+            ('' | *' '*)
+                echo "amgx: cannot shorten $1='$amgx_path'" \
+                    "(spaces break wmake on Windows)" 1>&2
+                ;;
+            (*)
+                eval "$1=\"\$amgx_short\"; export $1"
+                ;;
+            esac
             ;;
         esac
+        unset amgx_path amgx_short
+    }
+
+    _amgxShorten AMGX_ARCH_PATH
+
+    # clang++ for the .cu sources (module option -cuda), used unquoted
+    # by the module's wmake/clang-cuda rules
+    if [ -n "$CUDA_CLANG" ]
+    then
+        _amgxShorten CUDA_CLANG
     fi
 
-    if [ -z "$CUDA_PATH_SHORT" ] && [ -n "$CUDA_PATH" ] \
-        && command -v cygpath >/dev/null
-    then
-        CUDA_PATH_SHORT="$(cygpath -m -s "$CUDA_PATH" 2>/dev/null)"
-        export CUDA_PATH_SHORT
-    fi
+    unset -f _amgxShorten
     ;;
 esac
+
+export AMGX_INC="$AMGX_ARCH_PATH/include"
+export AMGX_LIB="$AMGX_ARCH_PATH/lib"
 
 if [ -n "$FOAM_VERBOSE" ] && [ -n "$PS1" ]
 then
     echo "Using amgx ($amgx_version)  ->  $AMGX_ARCH_PATH" 1>&2
+fi
+
+# Runtime library path
+if command -v _foamAddLib >/dev/null
+then
+    # Normal sourcing (from etc/bashrc)
+    [ -d "$AMGX_LIB" ] && _foamAddLib "$AMGX_LIB"
+elif [ "$1" = "-force" ]
+then
+    # Forced command-line sourcing
+    case "$WM_OSTYPE" in
+    (*[Ww]indows*)
+        # DLLs are located via PATH
+        [ -d "$AMGX_LIB" ] && export PATH="$AMGX_LIB${PATH:+:}$PATH"
+        ;;
+    (*)
+        if output="$($WM_PROJECT_DIR/bin/tools/lib-dir -sh $AMGX_ARCH_PATH 2>/dev/null)"
+        then
+            eval "$output"
+        fi
+        unset output
+        ;;
+    esac
 fi
 
 unset amgx_version

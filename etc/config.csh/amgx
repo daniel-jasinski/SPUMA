@@ -1,0 +1,49 @@
+#----------------------------------*-sh-*--------------------------------------
+# =========                 |
+# \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \    /   O peration     |
+#   \  /    A nd           | www.openfoam.com
+#    \/     M anipulation  |
+#------------------------------------------------------------------------------
+#     Copyright (C) 2026 SPUMA contributors
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
+#
+# File
+#     etc/config.csh/amgx
+#
+# Description
+#     Setup for NVIDIA AmgX include/libraries (used by the
+#     modules/foamExternalSolvers AmgX4Foam module).
+#
+#     A pre-set AMGX_ARCH_PATH (pointing at an AmgX install prefix with
+#     include/ and lib/) always wins; otherwise a ThirdParty-style default
+#     location is assumed.
+#
+#     Runtime only: the build (module Allwmake) sources the sh version.
+#------------------------------------------------------------------------------
+
+set amgx_version=amgx-2.5.0
+
+if (! $?AMGX_ARCH_PATH) then
+    setenv AMGX_ARCH_PATH "$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$amgx_version"
+endif
+
+# END OF (NORMAL) USER EDITABLE PART
+#------------------------------------------------------------------------------
+
+setenv AMGX_INC "$AMGX_ARCH_PATH/include"
+setenv AMGX_LIB "$AMGX_ARCH_PATH/lib"
+
+if ($?FOAM_VERBOSE && $?prompt) then
+    echo "Using amgx ($amgx_version)  ->  $AMGX_ARCH_PATH"
+endif
+
+if ( -d "$AMGX_LIB" ) then
+    _foamAddLib "$AMGX_LIB"
+endif
+
+unset amgx_version
+
+#------------------------------------------------------------------------------
