@@ -26,3 +26,6 @@
 [submodule "plugins/research"]
 	path = plugins/research
 	url = https://gitlab.com/openfoam/community/research.git
+[submodule "foamExternalSolvers"]
+	path = modules/foamExternalSolvers
+	url = git@github.com:daniel-jasinski/foamExternalSolvers.git
