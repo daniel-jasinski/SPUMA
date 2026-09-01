@@ -1,0 +1,71 @@
+#----------------------------------*-sh-*--------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     |
+#   \\  /    A nd           | www.openfoam.com
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+#     Copyright (C) 2026 SPUMA contributors
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM, distributed under GPL-3.0-or-later.
+#
+# File
+#     etc/config.sh/amgx
+#
+# Description
+#     Setup for NVIDIA AmgX include/libraries (used by the
+#     modules/foamExternalSolvers AmgX4Foam module).
+#
+#     A pre-set AMGX_ARCH_PATH (pointing at an AmgX install prefix with
+#     include/ and lib/) always wins; otherwise a ThirdParty-style default
+#     location is assumed.
+#
+#     On Windows the wrapper additionally needs the CUDA toolkit headers
+#     and import libraries: CUDA_PATH_SHORT (8.3 format, forward slashes)
+#     is derived from CUDA_PATH when not already set.
+#------------------------------------------------------------------------------
+
+amgx_version=amgx-2.5.0
+
+if [ -z "$AMGX_ARCH_PATH" ]
+then
+    export AMGX_ARCH_PATH="$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$amgx_version"
+fi
+
+export AMGX_INC="$AMGX_ARCH_PATH/include"
+export AMGX_LIB="$AMGX_ARCH_PATH/lib"
+
+case "$WM_OSTYPE" in
+(*[Ww]indows*)
+    # Spaces do not survive wmake's unquoted variable passing: shorten
+    # the AmgX prefix to 8.3 form (forward slashes) before deriving paths
+    if command -v cygpath >/dev/null
+    then
+        case "$AMGX_ARCH_PATH" in
+        (*' '*)
+            AMGX_ARCH_PATH="$(cygpath -m -s "$AMGX_ARCH_PATH" 2>/dev/null)"
+            export AMGX_ARCH_PATH
+            export AMGX_INC="$AMGX_ARCH_PATH/include"
+            export AMGX_LIB="$AMGX_ARCH_PATH/lib"
+            ;;
+        esac
+    fi
+
+    if [ -z "$CUDA_PATH_SHORT" ] && [ -n "$CUDA_PATH" ] \
+        && command -v cygpath >/dev/null
+    then
+        CUDA_PATH_SHORT="$(cygpath -m -s "$CUDA_PATH" 2>/dev/null)"
+        export CUDA_PATH_SHORT
+    fi
+    ;;
+esac
+
+if [ -n "$FOAM_VERBOSE" ] && [ -n "$PS1" ]
+then
+    echo "Using amgx ($amgx_version)  ->  $AMGX_ARCH_PATH" 1>&2
+fi
+
+unset amgx_version
+
+#------------------------------------------------------------------------------
