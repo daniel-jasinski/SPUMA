@@ -94,18 +94,31 @@ then
     echo "Using amgx ($amgx_version)  ->  $AMGX_ARCH_PATH" 1>&2
 fi
 
-# Runtime library path
+# Runtime library path.
+# On Windows the directory goes on PATH (DLL lookup) in POSIX form:
+# _foamAddLib accepts only /-rooted paths, and a C:/ entry would be split
+# at its colon by the shell.
+amgx_libdir="$AMGX_LIB"
+case "$WM_OSTYPE" in
+(*[Ww]indows*)
+    if command -v cygpath >/dev/null
+    then
+        amgx_libdir="$(cygpath -u "$AMGX_LIB" 2>/dev/null || echo "$AMGX_LIB")"
+    fi
+    ;;
+esac
+
 if command -v _foamAddLib >/dev/null
 then
     # Normal sourcing (from etc/bashrc)
-    [ -d "$AMGX_LIB" ] && _foamAddLib "$AMGX_LIB"
+    [ -d "$amgx_libdir" ] && _foamAddLib "$amgx_libdir"
 elif [ "$1" = "-force" ]
 then
     # Forced command-line sourcing
     case "$WM_OSTYPE" in
     (*[Ww]indows*)
         # DLLs are located via PATH
-        [ -d "$AMGX_LIB" ] && export PATH="$AMGX_LIB${PATH:+:}$PATH"
+        [ -d "$amgx_libdir" ] && export PATH="$amgx_libdir${PATH:+:}$PATH"
         ;;
     (*)
         if output="$($WM_PROJECT_DIR/bin/tools/lib-dir -sh $AMGX_ARCH_PATH 2>/dev/null)"
@@ -117,6 +130,6 @@ then
     esac
 fi
 
-unset amgx_version
+unset amgx_version amgx_libdir
 
 #------------------------------------------------------------------------------
