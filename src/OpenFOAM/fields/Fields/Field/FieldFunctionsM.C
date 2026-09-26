@@ -687,8 +687,8 @@ void Func(                                                                      
         /* Check fields have same size */                                         \
         checkFields(result, f1, f2, "f1 = " #Func "(f2, f3, s)");                 \
         auto rp = result.begin();                                                 \
-        auto f1p = result.cbegin();                                               \
-        auto f2p = result.cbegin();                                               \
+        auto f1p = f1.cbegin();                                                   \
+        auto f2p = f2.cbegin();                                                   \
         auto Lambda = [=](label i) {rp[i] = ::Foam::Func(f1p[i], f2p[i], s3);};   \
         foamExecutor exec;                                                        \
         exec.parallelFor(Lambda, result.size());                                  \

@@ -452,9 +452,9 @@ void Foam::externalWallHeatFluxTemperatureFvPatchScalarField::updateCoeffs()
         }
     }
 
-    const scalar relaxation = this->relaxation_;
-    Foam::lerp(valueFraction0, valueFraction(), relaxation);
-    Foam::lerp(refValue0, refValue(), relaxation);
+    valueFraction() = lerp(valueFraction0, valueFraction(), relaxation_);
+    refValue() = lerp(refValue0, refValue(), relaxation_);
+
     mixedFvPatchScalarField::updateCoeffs();
 
     DebugInfo
