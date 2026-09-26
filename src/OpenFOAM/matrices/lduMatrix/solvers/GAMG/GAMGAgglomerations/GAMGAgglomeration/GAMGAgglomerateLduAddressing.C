@@ -203,8 +203,12 @@ void Foam::GAMGAgglomeration::agglomerateLduAddressing
     }
 
 
-    // Create face-flip status
-    faceFlipMap_.set(fineLevelIndex, new boolList(nFineFaces, false));
+    // Create face-flip status (read by the matrix agglomeration kernels)
+    faceFlipMap_.set
+    (
+        fineLevelIndex,
+        new boolList(nFineFaces, false, poolSwitch(1))
+    );
     boolList& faceFlipMap = faceFlipMap_[fineLevelIndex];
 
 
