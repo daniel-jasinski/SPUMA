@@ -79,7 +79,7 @@ void Foam::deviceHeRhoThermo<BasicPsiThermo, MixtureType>::calculate
     auto muCellsPtr = muCells.begin();
     auto alphaCellsPtr = alphaCells.begin();
     const auto hCellsPtr = hCells.cbegin();
-    const auto pCellsPtr = hCells.cbegin();
+    const auto pCellsPtr = pCells.cbegin();
     const MixtureType mixture(*this);
 
     auto Lambda = [=](label celli)
