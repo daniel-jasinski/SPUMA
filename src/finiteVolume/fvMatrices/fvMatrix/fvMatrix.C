@@ -295,8 +295,22 @@ void Foam::fvMatrix<Type>::setValuesFromList
     //      - cut connections to neighbours
     // - make (on non-adjusted cells) contribution explicit
 
-    if constexpr(std::is_same<UList<Type>, ListType<Type>>())
+    // Contiguous lists (UList, List, Field) take the device path.
+    // UIndirectList has no device-accessible storage and stays on the host.
+    if constexpr (std::is_base_of<UList<Type>, ListType<Type>>())
     {
+
+    // Host-only storage (e.g. DynamicList) is not device-accessible:
+    // take the host path through an indirect view
+    if (!cellLabels.usePool() || !values.usePool())
+    {
+        this->setValuesFromList
+        (
+            cellLabels,
+            UIndirectList<Type>(values, identity(values.size()))
+        );
+        return;
+    }
 
     // define ptr to pass to lambda
     foamExecutor exec;
@@ -305,8 +319,6 @@ void Foam::fvMatrix<Type>::setValuesFromList
     const auto valuesPtr = values.cbegin();
     const auto ownPtr = own.cbegin();
     const auto neiPtr = nei.cbegin();
-    auto upperPtr = upper().begin();
-    auto lowerPtr = lower().begin();
     auto srcPtr = source_.begin();
 
 
@@ -320,6 +332,12 @@ void Foam::fvMatrix<Type>::setValuesFromList
     //probably usless branch for symm and asymm
     if (symmetric() || asymmetric())
     {
+        // Only take non-const lower() of an asymmetric matrix: on a symmetric
+        // (or diagonal) matrix it allocates the lower triangle, turning the
+        // matrix asymmetric and changing the solver selection.
+        auto upperPtr = upper().begin();
+        auto lowerPtr = asymmetric() ? lower().begin() : upperPtr;
+
         auto Lambda = [=](label i)
         {
             const label celli = cellLabelsPtr[i];
