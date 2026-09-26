@@ -34,7 +34,63 @@ License
 #include "deviceM.H"
 #include "zero.H"
 
+#include <cstring>
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+namespace Detail
+{
+
+//- Bitwise snapshot of a kernel functor for submission to AdaptiveCpp.
+//  The CUDA and HIP executors pass the functor to a __global__ kernel by
+//  value: it is copied on the host and never copied or destroyed on the
+//  device. AdaptiveCpp's SSCP kernel entry instead copies the kernel object
+//  inside device code, running the copy constructor and destructor of every
+//  capture there. A capture that owns heap memory, such as the specie name
+//  (a word) inside the pureMixture captured by the device thermos, then
+//  calls std::string functions that the CUDA JIT cannot resolve, and the
+//  whole kernel fails to load. The snapshot gives SYCL kernels the CUDA/HIP
+//  semantics: F is copied bitwise and its special members never run on the
+//  device. The submitting functor outlives the kernel (every submission
+//  waits), so the snapshot never owns anything.
+template<class F>
+class syclKernelSnapshot
+{
+    union { F f_; };
+
+public:
+
+    explicit syclKernelSnapshot(const F& f)
+    {
+        std::memcpy
+        (
+            static_cast<void*>(&f_), static_cast<const void*>(&f), sizeof(F)
+        );
+    }
+
+    syclKernelSnapshot(const syclKernelSnapshot& s)
+    {
+        std::memcpy
+        (
+            static_cast<void*>(&f_), static_cast<const void*>(&s.f_), sizeof(F)
+        );
+    }
+
+    syclKernelSnapshot& operator=(const syclKernelSnapshot&) = delete;
+
+    ~syclKernelSnapshot()
+    {}
+
+    const F& operator*() const
+    {
+        return f_;
+    }
+};
+
+} // End namespace Detail
+} // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -46,9 +102,11 @@ void Foam::syclExecutor::_backendFor(F& lambda, const label& size)
 
     sycl::queue& q = getSyclQueue();
 
+    const Detail::syclKernelSnapshot<F> kernel(lambda);
+
     q.parallel_for(sycl::range<1>(size), [=](sycl::id<1> idx)
     {
-        lambda(idx[0]);
+        (*kernel)(idx[0]);
     }).wait();
 }
 
@@ -60,11 +118,13 @@ void Foam::syclExecutor::_backendSerialFor(F& lambda, const label& size)
 
     sycl::queue& q = getSyclQueue();
 
+    const Detail::syclKernelSnapshot<F> kernel(lambda);
+
     q.single_task([=]()
     {
         for (label i = 0; i < size; ++i)
         {
-            lambda(i);
+            (*kernel)(i);
         }
     }).wait();
 }
@@ -92,13 +152,15 @@ void Foam::syclExecutor::_backendReduce
         resultT* reduced = sycl::malloc_shared<resultT>(1, q);
         *reduced = identity;
 
+        const Detail::syclKernelSnapshot<F> kernel(lambda);
+
         q.parallel_for
         (
             sycl::range<1>(size),
             sycl::reduction(reduced, identity, op),
             [=](sycl::id<1> idx, auto& reducer)
             {
-                reducer.combine(lambda(idx[0]));
+                reducer.combine((*kernel)(idx[0]));
             }
         ).wait();
 
