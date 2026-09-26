@@ -125,8 +125,17 @@ Foam::lagrangianFieldDecomposer::decomposeFieldField
     const CompactIOField<Field<Type>>& field
 ) const
 {
+    // Mapping internal field values on the host: the elements own heap
+    // memory and cannot be deep-copied inside a device kernel
+    Field<Field<Type>> mapped(particleIndices_.size());
+
+    forAll(particleIndices_, i)
+    {
+        mapped[i] = field[particleIndices_[i]];
+    }
+
     // Create the field for the processor
-    auto tcfield = tmp<CompactIOField<Field<Type>>>::New
+    return tmp<CompactIOField<Field<Type>>>::New
     (
         IOobject
         (
@@ -138,26 +147,8 @@ Foam::lagrangianFieldDecomposer::decomposeFieldField
             IOobject::NO_WRITE,
             IOobject::NO_REGISTER
         ),
-        // Mapping internal field values
-        // Workaround for NVC++
-        #if defined(have_cuda) || defined(have_hip)
-        Field<Field<Type>>()
-        #else
-        Field<Field<Type>>(field, particleIndices_)
-        #endif
+        std::move(mapped)
     );
-
-    #if defined(have_cuda) || defined(have_hip)
-    auto& cfield = tcfield.ref();
-
-    for (label i=0; i<field.size(); ++i)
-    {
-        Field<Type> localField(field[i], particleIndices_);
-        cfield[i].transfer(localField);
-    }
-    #endif
-
-    return tcfield;
 }
 
 
