@@ -288,20 +288,32 @@ UNARY_FUNCTION(complex, complex, pow3)
 UNARY_FUNCTION(complex, complex, pow4)
 UNARY_FUNCTION(complex, complex, pow5)
 UNARY_FUNCTION(complex, complex, pow6)
-UNARY_FUNCTION(complex, complex, pow025)
-UNARY_FUNCTION(complex, complex, sqrt)
-UNARY_FUNCTION(complex, complex, exp)
-UNARY_FUNCTION(complex, complex, log)
-UNARY_FUNCTION(complex, complex, log10)
-UNARY_FUNCTION(complex, complex, sin)
-UNARY_FUNCTION(complex, complex, cos)
-UNARY_FUNCTION(complex, complex, tan)
-UNARY_FUNCTION(complex, complex, asin)
-UNARY_FUNCTION(complex, complex, acos)
-UNARY_FUNCTION(complex, complex, atan)
-UNARY_FUNCTION(complex, complex, sinh)
-UNARY_FUNCTION(complex, complex, cosh)
-UNARY_FUNCTION(complex, complex, tanh)
+
+// The std::complex transcendentals lower to C99 libm calls (csqrt, cexp, ...)
+// that the SYCL SSCP JIT cannot resolve, so evaluate them on the host there
+#ifdef have_sycl
+    #define COMPLEX_FUNCTION UNARY_FUNCTION_HOST
+#else
+    #define COMPLEX_FUNCTION UNARY_FUNCTION
+#endif
+
+COMPLEX_FUNCTION(complex, complex, pow025)
+COMPLEX_FUNCTION(complex, complex, sqrt)
+COMPLEX_FUNCTION(complex, complex, exp)
+COMPLEX_FUNCTION(complex, complex, log)
+COMPLEX_FUNCTION(complex, complex, log10)
+COMPLEX_FUNCTION(complex, complex, sin)
+COMPLEX_FUNCTION(complex, complex, cos)
+COMPLEX_FUNCTION(complex, complex, tan)
+COMPLEX_FUNCTION(complex, complex, asin)
+COMPLEX_FUNCTION(complex, complex, acos)
+COMPLEX_FUNCTION(complex, complex, atan)
+COMPLEX_FUNCTION(complex, complex, sinh)
+COMPLEX_FUNCTION(complex, complex, cosh)
+COMPLEX_FUNCTION(complex, complex, tanh)
+
+#undef COMPLEX_FUNCTION
+
 UNARY_FUNCTION_HOST(complex, complex, asinh)
 UNARY_FUNCTION_HOST(complex, complex, acosh)
 UNARY_FUNCTION_HOST(complex, complex, atanh)
