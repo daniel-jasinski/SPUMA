@@ -870,13 +870,26 @@ Type gWeightedAverage
 
     const label loopLen = fld.size();
 
-    const auto weightsPtr = weights.cbegin();
-    const auto fldPtr = fld.cbegin();
-    foamExecutor exec;
-    auto LambdaWeight = [=](label i){return Foam::mag(weightsPtr[i]);};
-    exec.reductionSum(LambdaWeight,&weight,loopLen);
-    auto LambdaResult = [=](label i){return Foam::mag(weightsPtr[i])*fldPtr[i];};
-    exec.reductionSum(LambdaResult,&result,loopLen);
+    if (weights.usePool() && fld.usePool())
+    {
+        const auto weightsPtr = weights.cbegin();
+        const auto fldPtr = fld.cbegin();
+        foamExecutor exec;
+        auto LambdaWeight = [=](label i){return Foam::mag(weightsPtr[i]);};
+        exec.reductionSum(LambdaWeight,&weight,loopLen);
+        auto LambdaResult = [=](label i){return Foam::mag(weightsPtr[i])*fldPtr[i];};
+        exec.reductionSum(LambdaResult,&result,loopLen);
+    }
+    else
+    {
+        /* pragmas... */
+        for (label i = 0; i < loopLen; ++i)
+        {
+            const scalar w = Foam::mag(weights[i]);
+            weight += w;
+            result += w*fld[i];
+        }
+    }
 
     // Communicator is not disabled
     if (comm >= 0)
