@@ -66,7 +66,7 @@ export WM_PROJECT_VERSION=v2512
 export WM_COMPILER_TYPE=system
 
 # [WM_COMPILER] - Compiler:
-# = Gcc | Clang | Icc | Icx | Amd | Arm | Cray | Fujitsu | Nvidia |
+# = Gcc | Clang | Icc | Icx | Amd | Arm | Cray | Fujitsu | Nvidia | Sycl |
 #   Gcc<digits> | Clang<digits>   | Amdclang
 export WM_COMPILER=Nvidia
 
@@ -209,6 +209,17 @@ fi
 
 # Cleanup variables (done as final statement for a clean exit code)
 unset foamOldDirs projectDir
+
+# The SYCL device backend follows the compiler selection: it is enabled by
+# the Sycl compiler and disabled (also when re-sourcing) by any other one
+case "$WM_COMPILER" in
+Sycl*)
+    export have_sycl=true
+    ;;
+*)
+    unset have_sycl
+    ;;
+esac
 
 # Ignore headers for unused device backend source files
 source "$WM_PROJECT_DIR/src/IgnoreHeaders"

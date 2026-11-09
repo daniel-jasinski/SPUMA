@@ -24,6 +24,9 @@
 # Derived files
 lex.yy.c
 
+# AdaptiveCpp JIT cache
+.acpp/
+
 # Core dumps
 core
 

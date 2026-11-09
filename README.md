@@ -62,10 +62,11 @@ For all other aspects of SPUMA utilization you can refer to the
 
 ## Compiling SPUMA
 
-SPUMA can be compiled to target three different hardware configurations:
+SPUMA can be compiled to target four different hardware configurations:
 * CPU only
 * Nvidia GPUs (CUDA backend)
 * AMD GPUs (HIP backend)
+* SYCL devices supported by AdaptiveCpp (SYCL backend)
 
 The procedure to compile the CPU only version of SPUMA is the same as that for the
 OpenFOAM release it is based on. To compile SPUMA for GPUs, some additional steps
@@ -123,6 +124,37 @@ Finally, run the `./Allwmake` script from the main folder to compile SPUMA.
 
 More information on compiling SPUMA for AMD GPUs can be found at
 [SPUMA/Wiki/How-to-build](https://gitlab.hpc.cineca.it/exafoam/spuma/-/wikis/How-to-build).
+
+#### SYCL (AdaptiveCpp) version
+
+Requires an [AdaptiveCpp](https://github.com/AdaptiveCpp/AdaptiveCpp)
+installation with the `acpp` compiler driver on `PATH`, built with the
+runtime backends you intend to use (CUDA, ROCm, OpenMP) and with the generic
+single-pass (SSCP) compiler, which is part of the default AdaptiveCpp
+compiler feature profile. Refer to the
+[AdaptiveCpp installation guide](https://github.com/AdaptiveCpp/AdaptiveCpp/blob/develop/doc/installing.md)
+for details. To build SPUMA with the SYCL backend, run:
+```
+export PATH=/path/to/AdaptiveCpp-install/bin:$PATH
+source etc/bashrc WM_COMPILER=Sycl
+```
+from the main SPUMA folder. Selecting the `Sycl` compiler enables the SYCL
+backend (`have_sycl=true`); no CUDA or ROCm compiler is needed to build SPUMA
+itself. Device kernels are compiled for the `generic` AdaptiveCpp target and
+JIT-compiled at run time for the device in use. This is the only supported
+target: the ahead-of-time targets of AdaptiveCpp (for example `cuda:sm_86`)
+are not supported.
+
+Finally, run the `./Allwmake` script from the main folder to compile SPUMA.
+
+At run time a GPU is used if AdaptiveCpp finds one, otherwise the default
+device is selected. Every process uses the first GPU reported by AdaptiveCpp:
+unlike the CUDA and HIP backends, the SYCL backend does not distribute the
+processes of a parallel run over several GPUs. On multi-GPU nodes, restrict
+the devices visible to each process instead (for Nvidia GPUs through
+`CUDA_VISIBLE_DEVICES`). Applications link against the AdaptiveCpp runtime
+(`libacpp-rt`) of the installation used at build time: keep that installation
+in place, or add its `lib` directory to `LD_LIBRARY_PATH`.
 
 #### Compile with Umpire support
 
