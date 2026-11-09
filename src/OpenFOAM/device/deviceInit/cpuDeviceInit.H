@@ -55,6 +55,8 @@ class cpuDeviceInit
 {
 public:
 
+    static void _backendShutdown() {}
+
     static void _backendInit()
     {
         if(!initDeviceFlag_)
