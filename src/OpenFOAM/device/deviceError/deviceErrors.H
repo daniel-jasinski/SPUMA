@@ -38,8 +38,29 @@ SourceFiles
 #ifndef Foam_device_errors_H
 #define Foam_device_errors_H
 
+#ifdef have_sycl
+
+#include <sycl/sycl.hpp>
+
+// AdaptiveCpp's generic (SSCP) target does not lower printf for PTX: a printf
+// reachable from a kernel stays an unresolved extern and the CUDA JIT rejects
+// the whole kernel. Its own device print builtin takes no format arguments
+// and cannot be linked by the host (OpenMP) JIT. assert() works on every
+// SSCP target, so on the device the message travels in the assertion text;
+// host code keeps the formatted message.
+#define fatalErrorInKernelFunction(msg, ...)                                  \
+        __acpp_if_target_host                                                 \
+        (                                                                     \
+            printf("\nError in kernel function: \n" msg "\n", ##__VA_ARGS__); \
+        )                                                                     \
+        assert(!"Error in kernel function: " msg);
+
+#else
+
 #define fatalErrorInKernelFunction(msg, ...)                               \
         printf("\nError in kernel function: \n" msg "\n", ##__VA_ARGS__);  \
         assert(0);
+
+#endif
 
 #endif

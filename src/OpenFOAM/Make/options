@@ -43,4 +43,11 @@ ifneq (,$(findstring true,$(have_cuda)))
     EXE_INC += -Dhave_cuda
 endif
 
+/* SYCL: the executor implementation files (.cpp) are included as headers */
+ifneq (,$(findstring true,$(have_sycl)))
+    EXE_INC += -Dhave_sycl
+    EXE_INC += -I$(LIB_SRC)/OpenFOAM/device/executor
+    EXE_INC += -I$(LIB_SRC)/OpenFOAM/device/memoryExecutor
+endif
+
 

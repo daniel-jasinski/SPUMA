@@ -45,6 +45,9 @@ SourceFiles
 #ifdef have_hip
     #include "hipMemoryExecutor.hpp"
 #endif
+#ifdef have_sycl
+    #include "syclMemoryExecutor.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -55,6 +58,8 @@ namespace Foam
     typedef cudaMemoryExecutor foamMemoryExecutor;
 #elif have_hip
     typedef hipMemoryExecutor foamMemoryExecutor;
+#elif have_sycl
+    typedef syclMemoryExecutor foamMemoryExecutor;
 #else
     typedef cpuMemoryExecutor foamMemoryExecutor;
 #endif

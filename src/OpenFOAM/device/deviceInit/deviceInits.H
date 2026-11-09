@@ -40,6 +40,8 @@ SourceFiles
     #include "cudaDeviceInit.cuh"
 #elif have_hip
     #include "hipDeviceInit.hpp"
+#elif have_sycl
+    #include "syclDeviceInit.H"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -51,6 +53,8 @@ namespace Foam
     typedef cudaDeviceInit foamDeviceInit;
 #elif have_hip
     typedef hipDeviceInit foamDeviceInit;
+#elif have_sycl
+    typedef syclDeviceInit foamDeviceInit;
 #else
     typedef cpuDeviceInit foamDeviceInit;
 #endif

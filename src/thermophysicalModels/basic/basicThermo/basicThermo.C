@@ -125,7 +125,7 @@ Foam::word Foam::basicThermo::makeThermoName
 {
     word thermoTypeStr = thermoTypeDict.get<word>("type");
 
-#if defined(have_cuda) || defined(have_hip)
+#if defined(have_cuda) || defined(have_hip) || defined(have_sycl)
     if (thermoTypeDict.getOrDefault<bool>("device", true))
     {
         if (!thermoTypeStr.empty()) 

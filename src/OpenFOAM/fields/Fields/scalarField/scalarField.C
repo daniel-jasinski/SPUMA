@@ -202,10 +202,21 @@ UNARY_FUNCTION(scalar, scalar, atanh)
 UNARY_FUNCTION(scalar, scalar, erf)
 UNARY_FUNCTION(scalar, scalar, erfc)
 UNARY_FUNCTION(scalar, scalar, lgamma)
-UNARY_FUNCTION(scalar, scalar, j0)
-UNARY_FUNCTION(scalar, scalar, j1)
-UNARY_FUNCTION(scalar, scalar, y0)
-UNARY_FUNCTION(scalar, scalar, y1)
+
+// The libm Bessel functions cannot be resolved by the SYCL SSCP JIT,
+// so evaluate them on the host there (as jn/yn below always are)
+#ifdef have_sycl
+    #define BESSEL_FUNCTION UNARY_FUNCTION_HOST
+#else
+    #define BESSEL_FUNCTION UNARY_FUNCTION
+#endif
+
+BESSEL_FUNCTION(scalar, scalar, j0)
+BESSEL_FUNCTION(scalar, scalar, j1)
+BESSEL_FUNCTION(scalar, scalar, y0)
+BESSEL_FUNCTION(scalar, scalar, y1)
+
+#undef BESSEL_FUNCTION
 
 UNARY_FUNCTION(scalar, scalar, degToRad)
 UNARY_FUNCTION(scalar, scalar, radToDeg)
